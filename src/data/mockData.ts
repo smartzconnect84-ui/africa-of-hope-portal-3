@@ -185,9 +185,9 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     sections: {
       summary: {
         eyebrow: "Who we are",
-        title: "",
-        subtitle: "",
-        body: "",
+        title: "A practical pathway into the future of work.",
+        subtitle: "Africa of Hope is a learning community built around access, applied skills and visible progress.",
+        body: "We help people discover relevant programmes, learn with confidence and move from application to completion with clear guidance at every step. Our work brings together training, mentorship and opportunity so learners can build a stronger future for themselves, their families and their communities.",
       },
       about: {
 eyebrow: "Our work",

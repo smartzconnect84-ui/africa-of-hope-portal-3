@@ -839,7 +839,7 @@ export default function AuthPortal({
 
   const auth = state.websiteSettings.auth;
   const heading =
-    done ? "Confirm your email" : tab === "signin" ? (auth.signinTitle || "Welcome back") : (auth.registerTitle || "Create your account");
+    done ? "Confirm your email" : tab === "signin" ? (auth.signinTitle || "Welcome to our School Portal") : (auth.registerTitle || "Create your account");
   const sub = done
     ? ""
     : tab === "signin"
@@ -853,7 +853,7 @@ export default function AuthPortal({
       <Showcase />
 
       <main className="flex min-h-[100dvh] flex-col px-4 py-6 sm:px-8">
-        <div className="flex items-center justify-between">
+          <div className="flex items-center">
           {onBackToSite ? (
             <button
               type="button"
@@ -863,21 +863,21 @@ export default function AuthPortal({
               <ArrowLeft className="h-4 w-4" /> Back to website
             </button>
           ) : <span />}
-          <div className="flex items-center gap-2 lg:hidden">
-            <BrandLockup
-              logoUrl={state.websiteSettings.logoUrl}
-              academyName={state.websiteSettings.academyName || state.settings.academyName}
-              tone="light"
-              size="sm"
-              showTagline={false}
-            />
-          </div>
         </div>
 
         <div className="flex flex-1 items-center justify-center py-8">
-          <div className={cn("w-full transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
+            <div className={cn("w-full transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
             <div className="mb-6 text-center">
-              <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
+              <BrandLockup
+                logoUrl={state.websiteSettings.logoUrl}
+                academyName={state.websiteSettings.academyName || state.settings.academyName}
+                tone="light"
+                size="lg"
+                showTagline={false}
+                className="mx-auto flex-col gap-2"
+                nameClassName="text-center text-sm sm:text-base"
+              />
+              <h2 className="mt-7 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
               {sub && <p className="mt-1.5 text-sm text-slate-500">{sub}</p>}
             </div>
 
