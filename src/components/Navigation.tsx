@@ -296,7 +296,7 @@ export default function Navigation({
   };
 
   const sidebar = (
-    <nav className="flex flex-col gap-1 p-3">
+    <nav className="flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain p-3 [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]">
       <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-800/60">
         {sidebarGroupLabel(ctx.role)}
       </p>
@@ -351,7 +351,7 @@ export default function Navigation({
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-3 sm:px-4">
           <button
             type="button"
-            className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+            className="rounded-xl p-2 text-white transition hover:bg-white/10 lg:hidden"
             onClick={() => setDrawer(true)}
             aria-label="Open navigation"
           >
@@ -534,7 +534,7 @@ export default function Navigation({
       )}
 
       <div className="mx-auto flex max-w-[1600px]">
-        <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 border-r border-emerald-900/10 bg-white/70 lg:block print:hidden">
+        <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 overflow-hidden border-r border-emerald-900/10 bg-white/70 lg:block print:hidden">
           {sidebar}
         </aside>
         <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
@@ -546,7 +546,7 @@ export default function Navigation({
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setDrawer(false)} />
-          <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl">
+          <div className="absolute left-0 top-0 flex h-full w-[min(19rem,88vw)] flex-col bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 p-4">
               <div className="flex items-center gap-2">
                 <BrandLockup
@@ -566,7 +566,7 @@ export default function Navigation({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            {sidebar}
+            <div className="min-h-0 flex-1 overflow-y-auto">{sidebar}</div>
           </div>
         </div>
       )}
