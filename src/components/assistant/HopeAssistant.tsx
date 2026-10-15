@@ -102,7 +102,7 @@ export default function HopeAssistant() {
             "fixed z-40 flex items-center gap-2 rounded-full bg-[#022c22] text-xs font-bold text-white shadow-2xl shadow-emerald-950/30 transition hover:brightness-110",
             surface === "portal"
               ? "bottom-4 left-4 h-8 w-8 justify-center p-0 lg:w-[157px] lg:justify-start lg:px-[11px]"
-              : "bottom-5 right-5 px-[14px] py-[10px] max-sm:top-24 max-sm:right-3 max-sm:bottom-auto max-sm:h-7 max-sm:w-7 max-sm:justify-center max-sm:p-0",
+              : "bottom-5 right-5 px-[14px] py-[10px] max-sm:bottom-4 max-sm:right-3 max-sm:h-8 max-sm:w-8 max-sm:justify-center max-sm:p-0",
           )}
         >
           <span className="grid h-[25px] w-[25px] place-items-center rounded-full bg-amber-400 text-[#022c22] max-sm:h-5 max-sm:w-5">
@@ -113,7 +113,7 @@ export default function HopeAssistant() {
       )}
 
       {open && (
-        <div className="fixed bottom-5 right-5 z-40 flex h-[420px] w-[266px] max-w-[92vw] flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl">
+        <div className="fixed bottom-4 right-3 z-40 flex h-[min(420px,calc(100dvh-2rem))] w-[min(320px,calc(100vw-1.5rem))] max-w-[92vw] flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl sm:bottom-5 sm:right-5 sm:h-[420px] sm:w-[266px]">
           <div className="flex items-center gap-2 bg-gradient-to-br from-emerald-900 to-[#022c22] p-[11px] text-white">
             <span className="relative grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl bg-amber-400 text-[#022c22]">
               <Bot className="h-[14px] w-[14px]" />

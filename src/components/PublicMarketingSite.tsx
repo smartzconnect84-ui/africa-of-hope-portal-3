@@ -223,10 +223,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <BrandLockup
               logoUrl={w.logoUrl}
               academyName={displayName}
-              tagline={w.tagline || "Institutional Training Academy"}
+              tagline={w.tagline}
               tone="dark"
               size="md"
-              taglineClassName="hidden sm:block"
+              showTagline={false}
+              nameClassName="hidden sm:block"
             />
           </a>
           <nav className="ml-auto hidden items-center gap-1 lg:flex">
@@ -289,7 +290,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               className="absolute right-0 top-0 h-full w-72 max-w-[85vw] bg-emerald-950 p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
-                <BrandLockup logoUrl={w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} />
+                <BrandLockup logoUrl={w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
                 <button
                   type="button"
                   onClick={() => setMenu(false)}
