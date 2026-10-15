@@ -23,12 +23,11 @@ export default function InstitutionSummarySection({
   settings: SystemSettings;
   programsCount?: number;
 }) {
-  const displayName = w.academyName || settings.academyName;
-  const motto = w.tagline || settings.motto;
-  const phone = w.contactPhone || settings.contactPhone || "+231776679963 / 088806137";
-  const email = w.contactEmail || settings.contactEmail || "afrohope033@gmail.com";
-  const address = w.address || settings.address || "Boystown Junction-Lower Margibi, Republic of Liberia";
-  const hours = w.officeHours || "Online 24/7";
+  const displayName = w?.academyName || settings?.academyName || "Africa of Hope";
+  const phone = w?.contactPhone || settings?.contactPhone || "+231776679963 / 088806137";
+  const email = w?.contactEmail || settings?.contactEmail || "afrohope033@gmail.com";
+  const address = w?.address || settings?.address || "Boystown Junction-Lower Margibi, Republic of Liberia";
+  const hours = w?.officeHours || "Online 24/7";
 
   const facts = [
     { icon: GraduationCap, label: "Programmes offered", value: String(programsCount ?? "—") },
@@ -50,7 +49,7 @@ export default function InstitutionSummarySection({
           <p className="mt-4 text-sm leading-7 text-slate-600 sm:text-base">
             {copy.body ||
               `Based at Boystown Junction-Lower Margibi, Republic of Liberia, ${displayName} exists to close the ` +
-                `distance between classroom learning and real work. ${motto ? `Our motto: "${motto}". ` : ""}` +
+                `distance between classroom learning and real work. ` +
                 "We run cohort-based certificate programmes, grade transparently, keep fees auditable, and issue " +
                 "certificates that any employer can verify online in seconds."}
           </p>

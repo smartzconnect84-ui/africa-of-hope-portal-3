@@ -99,9 +99,9 @@ export default function HopeAssistant() {
           onClick={() => setOpen(true)}
           aria-label={label}
           className={cn(
-            "fixed z-40 flex items-center gap-2 rounded-full bg-[#022c22] text-xs font-bold text-white shadow-2xl shadow-emerald-950/30 transition hover:brightness-110",
+            "fixed z-40 flex items-center gap-2 rounded-full bg-[#022c22] text-xs font-bold text-white shadow-2xl shadow-emerald-950/30 transition hover:brightness-110 hover:-translate-y-1",
             surface === "portal"
-              ? "bottom-4 left-4 h-8 w-8 justify-center p-0 lg:w-[157px] lg:justify-start lg:px-[11px]"
+              ? "bottom-4 right-4 left-auto h-8 w-8 justify-center p-0 lg:w-[157px] lg:justify-start lg:px-[11px]"
               : "bottom-5 right-5 px-[14px] py-[10px] max-sm:bottom-4 max-sm:right-3 max-sm:h-8 max-sm:w-8 max-sm:justify-center max-sm:p-0",
           )}
         >

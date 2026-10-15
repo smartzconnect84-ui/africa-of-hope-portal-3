@@ -348,7 +348,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 return (
                   <Section
                     key={key}
-                    copy={w.home.sections[key] ?? {}}
+                    copy={key === "about"
+                      ? {
+                          ...(w.home.sections[key] ?? {}),
+                          eyebrow: "Our work",
+                          title: "Skills, programmes and proof that move people forward.",
+                          subtitle: "A practical learning platform for ambitious people across Liberia and beyond.",
+                          body: "Africa of Hope connects learners to relevant programmes, supportive mentors and clear proceedings from application to certification. Explore what is happening, choose your next step and build momentum with a community that believes in progress.",
+                        }
+                      : w.home.sections[key] ?? {}}
                     w={w}
                     settings={settings}
                     onApply={openApply}

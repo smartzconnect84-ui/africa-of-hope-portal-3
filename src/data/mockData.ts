@@ -38,7 +38,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   logoUrl: "",
   faviconUrl: "",
   academyName: "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES",
-  tagline: "Empowering future tech leaders and innovators.",
+  tagline: "Practical pathways into work, enterprise and community leadership.",
   announcementText:
     "Admissions for the 2025/2026 intake are now open. Apply online in minutes.",
   announcementEnabled: true,
@@ -190,11 +190,11 @@ export const defaultWebsiteSettings: WebsiteSettings = {
         body: "",
       },
       about: {
-        eyebrow: "Our mission",
-        title: "African excellence, delivered as practical skill.",
-        subtitle: "",
-        body:
-          "Africa of Hope exists to close the distance between classroom learning and real work. We teach in cohorts, grade transparently, keep fees auditable, and issue certificates that any employer can verify online in seconds.",
+eyebrow: "Our work",
+    title: "Skills, programmes and proof that move people forward.",
+    subtitle: "A practical learning platform for ambitious people across Liberia and beyond.",
+    body:
+      "Africa of Hope connects learners to relevant programmes, supportive mentors and clear proceedings from application to certification. Explore what is happening, choose your next step and build momentum with a community that believes in progress.",
         image: WORKBENCH_IMG,
       },
       features: {
