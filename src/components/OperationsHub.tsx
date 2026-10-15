@@ -1,0 +1,176 @@
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import {
+  Activity,
+  Bell,
+  CalendarDays,
+  Download,
+  FileDown,
+  FileText,
+  LineChart,
+  Printer,
+  Search,
+  ShieldCheck,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useApp } from "@/context/AppContext";
+import { usePermissions } from "@/hooks/usePermission";
+import {
+  deleteDocument,
+  documentUrl,
+  formatBytes,
+  listDocuments,
+  uploadDocument,
+  validateFile,
+  DOCUMENT_CATEGORIES,
+  DOCUMENT_TYPES,
+  MAX_DOCUMENT_BYTES,
+  type DocumentCategory,
+  type ProfileDocument,
+} from "@/lib/storage";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
+
+type HubTab = "resources" | "notifications" | "timetable" | "analytics" | "audit";
+
+const tabs: { key: HubTab; label: string; icon: typeof FileText }[] = [
+  { key: "resources", label: "Resources", icon: FileText },
+  { key: "notifications", label: "Notifications", icon: Bell },
+  { key: "timetable", label: "Timetable", icon: CalendarDays },
+  { key: "analytics", label: "Analytics", icon: LineChart },
+  { key: "audit", label: "Audit", icon: ShieldCheck },
+];
+
+function downloadText(filename: string, content: string, type = "text/plain") {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportRows(filename: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return toast.info("There is nothing to export yet.");
+  const headers = Object.keys(rows[0]);
+  const csv = [headers.join(","), ...rows.map((row) => headers.map((key) => JSON.stringify(row[key] ?? "")).join(","))].join("\n");
+  downloadText(filename, csv, "text/csv;charset=utf-8");
+}
+
+export default function OperationsHub() {
+  const { state, currentUser } = useApp();
+  const permissions = usePermissions();
+  const [tab, setTab] = useState<HubTab>("resources");
+  const [documents, setDocuments] = useState<ProfileDocument[]>([]);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<DocumentCategory>("Other");
+  const [busy, setBusy] = useState(false);
+
+  const canManageResources = permissions.canAny("materials.manage", "materials.approve", "settings.manage");
+
+  useEffect(() => {
+    if (!currentUser) return;
+    void listDocuments(currentUser.id).then(setDocuments).catch(() => setDocuments([]));
+  }, [currentUser]);
+
+  const filteredDocuments = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return documents.filter((doc) => !normalized || `${doc.name} ${doc.category}`.toLowerCase().includes(normalized));
+  }, [documents, query]);
+
+  const activeAnnouncements = state.announcements.filter((item) => item.status !== "draft");
+  const timetableRows = state.cohorts.map((cohort) => ({
+    cohort: cohort.name,
+    programme: state.programs.find((program) => program.id === cohort.programId)?.title ?? "Programme",
+    teacher: state.users.find((user) => user.id === cohort.teacherId)?.name ?? "Unassigned",
+    starts: cohort.startDate,
+    ends: cohort.endDate,
+    room: cohort.room || "TBC",
+  }));
+
+  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !currentUser) return;
+    const error = validateFile(file, DOCUMENT_TYPES, MAX_DOCUMENT_BYTES);
+    if (error) return toast.error(error);
+    setBusy(true);
+    try {
+      await uploadDocument(currentUser.id, file, category);
+      setDocuments(await listDocuments(currentUser.id));
+      toast.success("Resource uploaded securely.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload resource.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openDocument(doc: ProfileDocument, download = false) {
+    try {
+      window.open(await documentUrl(doc.path, download), "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not open resource.");
+    }
+  }
+
+  async function removeDocument(doc: ProfileDocument) {
+    if (!window.confirm(`Remove ${doc.name}?`)) return;
+    try {
+      await deleteDocument(doc.path);
+      setDocuments((items) => items.filter((item) => item.path !== doc.path));
+      toast.success("Resource removed.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove resource.");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <SectionHeader title="Operations centre" subtitle="Resources, communication, schedules and accountable reporting in one place." action={<Button variant="outline" onClick={() => window.print()}><Printer data-icon="inline-start" /> Print</Button>} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={FileText} label="Resources" value={documents.length} hint="Secure personal files" />
+        <StatCard icon={Bell} label="Announcements" value={activeAnnouncements.length} hint="Published updates" tone="amber" />
+        <StatCard icon={Users} label="People" value={state.users.length} hint="Portal directory" tone="slate" />
+        <StatCard icon={Activity} label="Cohorts" value={state.cohorts.length} hint="Active learning groups" tone="rose" />
+      </div>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Operations modules">
+        {tabs.map(({ key, label, icon: Icon }) => (
+          <Button key={key} type="button" role="tab" aria-selected={tab === key} variant={tab === key ? "default" : "outline"} className="shrink-0" onClick={() => setTab(key)}>
+            <Icon data-icon="inline-start" />{label}
+          </Button>
+        ))}
+      </div>
+
+      {tab === "resources" && (
+        <section className={cn(panelClass, "p-4 sm:p-6")}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div><h3 className="font-semibold text-slate-900">Resource library</h3><p className="mt-1 text-sm text-slate-500">Upload, preview, download or remove documents from private storage.</p></div>
+            <div className="flex flex-wrap gap-2">
+              <select value={category} onChange={(event) => setCategory(event.target.value as DocumentCategory)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm" aria-label="Resource category">{DOCUMENT_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select>
+              <label className={cn("inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-emerald-800 px-3 text-sm font-medium text-white hover:bg-emerald-700", (!canManageResources || busy) && "pointer-events-none opacity-50")}><Upload data-icon="inline-start" />{busy ? "Uploading…" : "Upload"}<input type="file" className="sr-only" accept={DOCUMENT_TYPES.join(",")} onChange={handleUpload} disabled={!canManageResources || busy} /></label>
+            </div>
+          </div>
+          <div className="relative mt-5"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search resources" className="pl-9" /></div>
+          {filteredDocuments.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{filteredDocuments.map((doc) => <div key={doc.path} className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-3"><FileText className="h-5 w-5 shrink-0 text-emerald-700" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-800">{doc.name}</p><p className="text-xs text-slate-500">{doc.category} · {formatBytes(doc.size)}</p></div><Button size="icon" variant="ghost" aria-label={`Download ${doc.name}`} onClick={() => void openDocument(doc, true)}><Download /></Button>{canManageResources && <Button size="icon" variant="ghost" aria-label={`Remove ${doc.name}`} onClick={() => void removeDocument(doc)}><X /></Button>}</div>)}</div> : <div className="mt-5"><EmptyState icon={FileText} title="No resources found" hint="Upload a PDF, image or Word document to get started." /></div>}
+        </section>
+      )}
+
+      {tab === "notifications" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Notifications" subtitle="Published announcements currently visible in the portal." action={<Button variant="outline" onClick={() => exportRows("announcements.csv", activeAnnouncements.map(({ id, title, category, date, audience }) => ({ id, title, category, date, audience })))}><FileDown data-icon="inline-start" /> Export CSV</Button>} />{activeAnnouncements.length ? <div className="mt-5 grid gap-3">{activeAnnouncements.map((item) => <article key={item.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-600">{item.body}</p></div><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">{item.category}</span></div><p className="mt-3 text-xs text-slate-500">{item.date} · {item.audience ?? "all"}</p></article>)}</div> : <div className="mt-5"><EmptyState icon={Bell} title="No notifications" /></div>}</section>}
+
+      {tab === "timetable" && <section className={cn(panelClass, "overflow-hidden p-4 sm:p-6")}><SectionHeader title="Timetable overview" subtitle="Cohort dates, facilitators and room assignments." action={<Button variant="outline" onClick={() => exportRows("timetable.csv", timetableRows)}><FileDown data-icon="inline-start" /> Export CSV</Button>} /><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b text-xs uppercase tracking-wide text-slate-500">{["Cohort", "Programme", "Teacher", "Starts", "Ends", "Room"].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}</tr></thead><tbody>{timetableRows.map((row) => <tr key={row.cohort} className="border-b border-slate-100"><td className="px-3 py-3 font-medium">{row.cohort}</td><td className="px-3 py-3">{row.programme}</td><td className="px-3 py-3">{row.teacher}</td><td className="px-3 py-3">{row.starts}</td><td className="px-3 py-3">{row.ends}</td><td className="px-3 py-3">{row.room}</td></tr>)}</tbody></table></div></section>}
+
+      {tab === "analytics" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Analytics" subtitle="Live operational indicators calculated from the connected portal data." action={<Button variant="outline" onClick={() => exportRows("portal-analytics.json", [{ people: state.users.length, programmes: state.programs.length, cohorts: state.cohorts.length, assignments: state.assignments.length, certificates: state.certificates.length }])}><Download data-icon="inline-start" /> Export</Button>} /><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[{ label: "Active students", value: state.users.filter((user) => user.role === "Student" && user.status === "Active").length }, { label: "Published programmes", value: state.programs.length }, { label: "Assignments", value: state.assignments.length }, { label: "Certificates issued", value: state.certificates.length }, { label: "Attendance records", value: state.attendance.length }, { label: "Fee transactions", value: state.fees.length }].map((item) => <div key={item.label} className="rounded-xl bg-emerald-50 p-4"><p className="text-sm text-slate-600">{item.label}</p><p className="mt-2 text-3xl font-semibold text-emerald-900">{item.value}</p></div>)}</div></section>}
+
+      {tab === "audit" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Audit readiness" subtitle="Controls available to keep operations accountable." /><div className="mt-5 grid gap-3 md:grid-cols-2">{[{ title: "Role-based access", body: "Every module follows the current permission matrix before exposing actions." }, { title: "Private document storage", body: "Files use signed URLs and are scoped to the signed-in profile." }, { title: "Exportable records", body: "Announcements and timetable records can be exported for review." }, { title: "Live data refresh", body: "The portal listens for Supabase changes and refreshes operational data." }].map((item) => <div key={item.title} className="flex gap-3 rounded-xl border border-slate-200 p-4"><ShieldCheck className="h-5 w-5 shrink-0 text-emerald-700" /><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-500">{item.body}</p></div></div>)}</div></section>}
+    </div>
+  );
+}
+
+export { downloadText };
+export type { HubTab };
