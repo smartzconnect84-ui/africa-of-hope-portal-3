@@ -4,8 +4,8 @@ import {
   Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  Users, Award, Banknote, CircleDollarSign, Search, Plus, Check, X, BookOpen,
-  Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, UserX, GraduationCap,
+  Users, Award, Banknote, Search, Plus, Check, X, BookOpen,
+  Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, GraduationCap,
   Percent, Mail, Phone, BadgeAlert,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
@@ -645,7 +645,7 @@ export function TeacherDashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         {cohorts.map((c) => {
           const program = state.programs.find((p) => p.id === c.programId);
-          const rate = avgAttendance(state.attendance.filter((r) => r.cohortId === c.id), []);
+          const rate = avgAttendance(state.attendance, [c.id]);
           return (
             <Reveal key={c.id} className={cn(panelClass, "p-5")}>
               <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
@@ -666,10 +666,11 @@ export function TeacherDashboard() {
   );
 }
 
-function avgAttendance(records: { status: AttendanceStatus }[], _ids: string[]): number {
-  if (records.length === 0) return 0;
-  const attended = records.filter((r) => r.status !== "Absent").length;
-  return Math.round((attended / records.length) * 100);
+function avgAttendance(records: { cohortId: string; status: AttendanceStatus }[], cohortIds: string[]): number {
+  const scoped = records.filter((r) => cohortIds.includes(r.cohortId));
+  if (scoped.length === 0) return 0;
+  const attended = scoped.filter((r) => r.status !== "Absent").length;
+  return Math.round((attended / scoped.length) * 100);
 }
 
 export function AttendanceSheet() {

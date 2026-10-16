@@ -19,6 +19,7 @@ import {
   Newspaper,
   Smartphone,
   Mail,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -52,6 +53,7 @@ import BlogManager from "./components/portal/BlogManager";
 import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
+import OperationsHub from "./components/OperationsHub";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -221,6 +223,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Settings,
     visible: (ctx) => ctx.can("settings.manage"),
     render: () => <AdminSystemSettings />,
+  },
+  {
+    key: "operations",
+    label: "Operations Centre",
+    icon: Activity,
+    visible: (ctx) => ctx.canAny("settings.manage", "materials.approve"),
+    render: () => <OperationsHub />,
   },
   {
     key: "email-outbox",
