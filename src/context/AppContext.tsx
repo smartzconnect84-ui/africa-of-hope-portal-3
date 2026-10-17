@@ -108,6 +108,7 @@ interface AppContextValue {
   markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => void;
   addAssignment: (payload: Omit<Assignment, "id">) => void;
   gradeSubmission: (assignmentId: string, studentId: string, marks: number, feedback: string) => void;
+  submitSubmission: (assignmentId: string, studentId: string, text: string, attachment: string) => void;
   addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => void;
   issueCertificate: (studentId: string, programId: string, honors: string) => Certificate;
   addAnnouncement: (payload: Omit<Announcement, "id" | "date">) => void;
@@ -658,6 +659,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
             feedback,
             status: "Graded",
             submitted_at: patch.submittedAt,
+          }),
+        );
+      },
+      submitSubmission: (assignmentId, studentId, text, attachment) => {
+        const existing = state.submissions.find(
+          (s) => s.assignmentId === assignmentId && s.studentId === studentId,
+        );
+        const submittedAt = new Date().toISOString();
+        const patch = {
+          submittedAt,
+          status: "Submitted" as const,
+          responseText: text,
+          attachmentPath: (attachment || existing?.attachmentPath || null) as string | null,
+        };
+        setState((s) => ({
+          ...s,
+          submissions: existing
+            ? s.submissions.map((sub) => (sub.id === existing.id ? { ...sub, ...patch } : sub))
+            : [...s.submissions, { id: uid(), assignmentId, studentId, marks: null, feedback: "", ...patch }],
+        }));
+        if (existing) {
+          push(
+            "Hand-in",
+            supabase
+              .from("submissions")
+              .update({ status: "Submitted", submitted_at: submittedAt })
+              .eq("id", existing.id),
+          );
+          return;
+        }
+        push(
+          "Hand-in",
+          supabase.from("submissions").insert({
+            id: uid(),
+            assignment_id: assignmentId,
+            student_id: studentId,
+            status: "Submitted",
+            submitted_at: submittedAt,
           }),
         );
       },

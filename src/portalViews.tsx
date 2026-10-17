@@ -64,6 +64,8 @@ import OperationsHub from "./components/OperationsHub";
 import CoursePlayer from "./components/academic/CoursePlayer";
 import CourseDiscussions from "./components/academic/CourseDiscussions";
 import StudentCalendar from "./components/academic/StudentCalendar";
+import AssignmentInbox from "./components/academic/AssignmentInbox";
+import CompletionCertificates from "./components/academic/CompletionCertificates";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -86,7 +88,7 @@ function DashboardView({ role }: { role: Role | null }) {
 }
 
 function AssignmentsView({ role }: { role: Role | null }) {
-  return role === "Student" ? <StudentAssignments /> : <Gradebook />;
+  return role === "Student" ? <AssignmentInbox /> : <AssignmentInbox />;
 }
 
 function QuizzesView({ role }: { role: Role | null }) {
@@ -218,7 +220,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     label: (ctx) => (ctx.role === "Student" ? "My Certificates" : "Certificates"),
     icon: Award,
     visible: (ctx) => ctx.can("certificates.manage") || ctx.role === "Student",
-    render: () => <CertificateStudio />,
+    render: (ctx) => (ctx.role === "Student" ? <CompletionCertificates /> : <CertificateStudio />),
   },
   {
     key: "verification",
