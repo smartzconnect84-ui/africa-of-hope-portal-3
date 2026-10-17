@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   LogIn, Menu, X, Mail, Phone,
@@ -9,6 +9,8 @@ import { useApp } from "../context/AppContext";
 import type { AuthTab } from "./AuthPortal";
 import HeroSlider from "./HeroSlider";
 import { HOME_SECTION_REGISTRY } from "./home/registry";
+import ProgrammesCarousel from "./home/ProgrammesCarousel";
+import type { HomeSectionKey, SectionCopy } from "@/types";
 import Marquee from "./animata/container/marquee";
 import BrandLockup from "./brand/BrandLockup";
 import ProgrammesPage from "./public/ProgrammesPage";
@@ -27,6 +29,29 @@ const NAV_LINKS: [string, string][] = [
   ["#verify", "Verify"],
   ["#admissions", "Admissions"],
 ];
+
+// Homepage copy and photos applied over the saved CMS values so the landing
+// page stays short and shows the academy's own photos.
+const HOME_COPY_OVERRIDES: Partial<Record<HomeSectionKey, Partial<SectionCopy>>> = {
+  summary: {
+    title: "Practical skills for the future of work.",
+    body: "Tuition-free, cohort-based certificate programmes with mentors, clear guidance and verifiable certificates.",
+  },
+  about: {
+    eyebrow: "Our work",
+    title: "Skills, programmes and proof that move people forward.",
+    subtitle: "",
+    body: "We connect learners to relevant programmes and supportive mentors, from application to certification.",
+    image: "/images/our-work-graduates.jpg",
+  },
+  features: { subtitle: "" },
+  impact: {
+    title: "Student success and testimonies",
+    subtitle: "Real graduates, real results.",
+    image: "/images/student-success-certificate.jpg",
+  },
+  cta: { subtitle: "Applications take less than five minutes." },
+};
 
 const PROGRAMMES_RE = /^#(programmes|programs)$/i;
 const HOME_RE = /^#(home)?$/i;
@@ -346,51 +371,21 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               {visibleSections.map((key) => {
                 const Section = HOME_SECTION_REGISTRY[key];
                 return (
-                  <Section
-                    key={key}
-                    copy={key === "about"
-                      ? {
-                          ...(w.home.sections[key] ?? {}),
-                          eyebrow: "Our work",
-                          title: "Skills, programmes and proof that move people forward.",
-                          subtitle: "A practical learning platform for ambitious people across Liberia and beyond.",
-                          body: "Africa of Hope connects learners to relevant programmes, supportive mentors and clear proceedings from application to certification. Explore what is happening, choose your next step and build momentum with a community that believes in progress.",
-                        }
-                      : w.home.sections[key] ?? {}}
-                    w={w}
-                    settings={settings}
-                    onApply={openApply}
-                    onLogin={openLogin}
-                    programsCount={state.programs.length}
-                  />
+                  <Fragment key={key}>
+                    <Section
+                      copy={{ ...(w.home.sections[key] ?? {}), ...HOME_COPY_OVERRIDES[key] }}
+                      w={w}
+                      settings={settings}
+                      onApply={openApply}
+                      onLogin={openLogin}
+                      programsCount={state.programs.length}
+                    />
+                    {key === visibleSections[0] && (
+                      <ProgrammesCarousel programs={state.programs} onApply={openApply} />
+                    )}
+                  </Fragment>
                 );
               })}
-
-              <section id="programmes-teaser" className="scroll-mt-20 border-y border-emerald-900/10 bg-white py-14 sm:py-16">
-                <div className="mx-auto max-w-6xl px-4">
-                  <ScrollReveal className="flex flex-col items-start justify-between gap-6 rounded-3xl bg-gradient-to-br from-emerald-50 to-amber-50 p-8 sm:flex-row sm:items-center sm:p-10">
-                    <div className="max-w-xl">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Explore our programmes</p>
-                      <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">
-                        {state.programs.length > 0
-                          ? `${state.programs.length} certificate programmes, ready to apply online.`
-                          : "A growing catalogue of certificate programmes."}
-                      </h2>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">
-                        Browse the full programme catalogue — categories, duration, certification and entry requirements —
-                        then apply online in minutes.
-                      </p>
-                    </div>
-                    <motion.a
-                      href="#programmes"
-                      {...buttonMotionProps}
-                      className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                    >
-                      View all programmes <ChevronRight className="h-4 w-4" />
-                    </motion.a>
-                  </ScrollReveal>
-                </div>
-              </section>
 
               <section id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-16 sm:py-20">
                 <div className="mx-auto max-w-6xl px-4">
