@@ -1,0 +1,1 @@
+alter table public.announcements add column if not exists published_date date not null default current_date;

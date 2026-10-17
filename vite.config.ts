@@ -11,7 +11,7 @@ import dns from "node:dns";
 dns.setDefaultResultOrder("verbatim");
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig({ server: { host: true, allowedHosts: true, hmr: { clientPort: 443, protocol: 'wss' }, headers: { 'Cross-Origin-Embedder-Policy': 'credentialless', 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Resource-Policy': 'cross-origin' } },
   plugins: [
     clearLogPlugin(),
     react(),
@@ -20,11 +20,7 @@ export default defineConfig({
       typescript: true,
     }),
   ],
-  server: {
-    port: 3000,
-    host: true,
-    allowedHosts: true,
-  },
+  
   preview: {
     port: 3000,
     host: true,
