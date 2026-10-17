@@ -21,6 +21,7 @@ import BlogPostPage from "./public/BlogPostPage";
 import { ScrollReveal, StaggerGroup } from "./public/motion";
 import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
+import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
 const NAV_LINKS: [string, string][] = [
@@ -120,6 +121,7 @@ function HomeAnchorScroll({ anchor, reduceMotion }: { anchor: string | null; red
 
 export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: (tab?: AuthTab) => void }) {
   const { state } = useApp();
+  const { t } = useLocale();
   const { settings, websiteSettings: w } = state;
   const saved = w.navLinks.length > 0 ? w.navLinks : NAV_LINKS.map(([href, label]) => ({ id: href, href, label }));
   const navLinks = useMemo(() => {

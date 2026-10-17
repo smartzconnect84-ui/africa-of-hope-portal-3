@@ -6,6 +6,7 @@ import { AssistantVisibilityProvider } from "./context/AssistantVisibility";
 import { AuthProvider } from "@/auth/AuthProvider";
 import type { User } from "./types";
 import Navigation from "./components/Navigation";
+import { LanguageProvider } from "./lib/locale";
 import { useVisiblePortalViews, getPortalView } from "./portalViews";
 import PublicMarketingSite from "./components/PublicMarketingSite";
 import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/AuthPortal";
@@ -144,10 +145,12 @@ export default function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <Toaster position="top-right" richColors closeButton />
-        <AssistantVisibilityProvider>
-          <Shell />
-        </AssistantVisibilityProvider>
+        <LanguageProvider>
+          <Toaster position="top-right" richColors closeButton />
+          <AssistantVisibilityProvider>
+            <Shell />
+          </AssistantVisibilityProvider>
+        </LanguageProvider>
       </AppProvider>
     </AuthProvider>
   );
