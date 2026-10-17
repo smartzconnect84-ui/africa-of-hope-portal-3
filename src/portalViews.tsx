@@ -65,6 +65,7 @@ import OperationsHub from "./components/OperationsHub";
 import CoursePlayer from "./components/academic/CoursePlayer";
 import CourseDiscussions from "./components/academic/CourseDiscussions";
 import StudentCalendar from "./components/academic/StudentCalendar";
+import StudyPlanner from "./components/academic/StudyPlanner";
 import AssignmentInbox from "./components/academic/AssignmentInbox";
 import CompletionCertificates from "./components/academic/CompletionCertificates";
 import TeacherInsights from "./components/academic/TeacherInsights";
@@ -160,6 +161,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: CalendarDays,
     visible: () => true,
     render: () => <StudentCalendar />,
+  },
+  {
+    key: "study-plan",
+    label: "My Study Plan",
+    icon: CalendarRange,
+    visible: (ctx) => ctx.role === "Student",
+    render: () => <StudyPlanner />,
   },
   {
     key: "quizzes",

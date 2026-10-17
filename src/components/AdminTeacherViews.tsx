@@ -719,7 +719,7 @@ export function AttendanceSheet() {
       ) : (
         <div className={cn(panelClass, "p-4")}>
           <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[240px] flex-1 space-y-1.5">
+            <div className="min-w-0 flex-1 basis-full space-y-1.5 sm:basis-60">
               <Label>Cohort</Label>
               <Select value={cohortId} onValueChange={setCohortId}>
                 <SelectTrigger><SelectValue placeholder="Select cohort" /></SelectTrigger>
@@ -747,7 +747,7 @@ export function AttendanceSheet() {
 
           {cohort && (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[560px]">
+              <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
                     <th className={TH}>Student</th>
@@ -761,7 +761,7 @@ export function AttendanceSheet() {
                       <tr key={sid} className="border-b border-slate-50 last:border-0">
                         <td className={TD}>{stu?.name ?? sid}</td>
                         <td className={TD}>
-                          <div className="flex gap-1.5">
+                          <div className="flex flex-wrap gap-1.5">
                             {ATT.map((s) => (
                               <button
                                 key={s}

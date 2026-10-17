@@ -184,8 +184,8 @@ function Pop({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             className={cn(
-              "absolute top-full z-50 mt-2 max-h-[70vh] w-72 overflow-auto rounded-2xl border border-emerald-900/10 bg-white p-2 shadow-xl",
-              align === "right" ? "right-0" : "left-0",
+              "fixed inset-x-3 top-full z-50 mt-2 max-h-[70vh] overflow-auto rounded-2xl border border-emerald-900/10 bg-white p-2 shadow-xl sm:absolute sm:inset-x-auto sm:w-72",
+              align === "right" ? "sm:right-0" : "sm:left-0",
             )}
           >
             {children(() => setOpen(false))}
@@ -317,7 +317,7 @@ export default function Navigation({
 
   const sidebar = (
     <nav
-      className="flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
+      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
       <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-800/60">
@@ -564,7 +564,7 @@ export default function Navigation({
         >
           {sidebar}
         </aside>
-        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
+        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 lg:p-6">
           {view !== "announcements" && <PortalAnnouncementTicker onOpenBoard={() => go("announcements")} />}
           {children}
         </main>
@@ -596,7 +596,7 @@ export default function Navigation({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">{sidebar}</div>
+            <div className="flex min-h-0 flex-1 flex-col">{sidebar}</div>
           </div>
         </div>
       )}
