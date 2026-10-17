@@ -9,6 +9,7 @@ import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
 import { ROLES } from "../lib/permissions";
 import { useVisiblePortalViews, portalViewLabel } from "../portalViews";
+import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
 import { Button } from "@/components/ui/button";
@@ -297,6 +298,7 @@ export default function Navigation({
     return () => observer.disconnect();
   }, [bannerVisible]);
   const { ctx, views } = useVisiblePortalViews();
+  const { t } = useLocale();
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -339,7 +341,7 @@ export default function Navigation({
             )}
           >
             <Icon className={cn("h-4.5 w-4.5", active ? "text-amber-400" : "text-emerald-700/70")} />
-            {label}
+            {t(label)}
           </button>
         );
       })}
@@ -420,6 +422,7 @@ export default function Navigation({
           </div>
 
           <div className="ml-auto flex items-center gap-2 md:ml-2">
+            <LanguageSwitcher tone="light" className="hidden sm:flex" />
             {onExitToPublic && (
               <button
                 type="button"

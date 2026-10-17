@@ -281,11 +281,12 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 onClick={HOME_RE.test(l.href.trim()) ? goHomeTop : undefined}
                 className="aoh-nav-link rounded-xl px-3 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white"
               >
-                {l.label}
+                {t(l.label)}
               </a>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2 lg:ml-2">
+            <LanguageSwitcher tone="dark" className="hidden md:flex" />
             {w.header.showApply && (
               <motion.button
                 type="button"
@@ -293,7 +294,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 {...buttonMotionProps}
                 className="hidden h-10 items-center rounded-xl px-4 text-sm font-medium text-emerald-100 transition hover:bg-white/10 hover:text-white sm:inline-flex"
               >
-                {w.header.applyText || "Apply online"}
+                {t(w.header.applyText || "Apply online")}
               </motion.button>
             )}
             <motion.button
@@ -302,7 +303,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               {...buttonMotionProps}
               className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)]"
             >
-              <LogIn className="mr-1.5 h-4 w-4" /> Portal
+              <LogIn className="mr-1.5 h-4 w-4" /> {t("Portal")}
             </motion.button>
             <button
               type="button"
@@ -351,7 +352,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
                     className="min-h-10 rounded-xl px-3 py-3 text-sm font-medium text-emerald-100 transition hover:bg-white/10"
                   >
-                    {l.label}
+                    {t(l.label)}
                   </a>
                 ))}
                 {w.header.showApply && (
@@ -360,10 +361,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                     onClick={() => { setMenu(false); openApply(); }}
                     className="mt-3 min-h-10 rounded-xl bg-amber-400 px-3 py-3 text-sm font-semibold text-emerald-950"
                   >
-                    {w.header.applyText || "Apply online"}
+                    {t(w.header.applyText || "Apply online")}
                   </button>
                 )}
               </nav>
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <LanguageSwitcher tone="dark" className="w-full justify-center" />
+              </div>
             </motion.div>
           </motion.div>
         )}

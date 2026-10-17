@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState, SetupError, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/locale";
 import QuizPlayer from "../quiz/QuizPlayer";
 import QuizResult from "../quiz/QuizResult";
 import MaterialPreviewDialog from "./MaterialPreviewDialog";
@@ -59,6 +60,7 @@ export default function StudentLearningPath({
   units: LearningUnit[];
   materials: TrainingMaterial[];
 }) {
+  const { t } = useLocale();
   const { state, currentUser, refresh } = useApp();
   const userId = currentUser?.id;
   const cohortKey = currentUser?.cohortIds.join(",") ?? "";
@@ -249,7 +251,7 @@ export default function StudentLearningPath({
                     )}
                     {!completed && (
                       <Button size="sm" variant="outline" disabled={locked || cohortEnded || busyUnit === unit.id} onClick={() => void markComplete(unit)}>
-                        {busyUnit === unit.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}Mark complete
+                        {busyUnit === unit.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}{t("Mark complete")}
                       </Button>
                     )}
                     {quizAttempts.length > 0 && <span className="flex items-center gap-1 text-[11px] text-slate-500"><Repeat className="h-3 w-3" />{quizAttempts.length} quiz attempt{quizAttempts.length === 1 ? "" : "s"}</span>}

@@ -25,6 +25,7 @@ import {
   Smartphone,
   Mail,
   Activity,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -66,6 +67,7 @@ import CourseDiscussions from "./components/academic/CourseDiscussions";
 import StudentCalendar from "./components/academic/StudentCalendar";
 import AssignmentInbox from "./components/academic/AssignmentInbox";
 import CompletionCertificates from "./components/academic/CompletionCertificates";
+import TeacherInsights from "./components/academic/TeacherInsights";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -186,6 +188,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: ClipboardCheck,
     visible: (ctx) => ctx.canAny("attendance.manage", "attendance.own"),
     render: () => <AttendanceSheet />,
+  },
+  {
+    key: "insights",
+    label: "Progress Insights",
+    icon: TrendingUp,
+    visible: (ctx) => ctx.role === "Teacher" || ctx.role === "School Admin" || ctx.role === "Super Admin",
+    render: () => <TeacherInsights />,
   },
   {
     key: "assignments",

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 
+import { useLocale } from "@/lib/locale";
 const LOW_DATA_KEY = "aoh-course-player-low-data";
 
 function isVideo(mat: TrainingMaterial): boolean {
@@ -34,6 +35,7 @@ function embedUrl(url: string): string | null {
 /** F2: true course player — programmes → ordered lessons → video/PDF/link with progress, prerequisites and low-data mode. */
 export default function CoursePlayer() {
   const { state, currentUser } = useApp();
+  const { t } = useLocale();
   const [units, setUnits] = useState<LearningUnit[]>([]);
   const [materials, setMaterials] = useState<TrainingMaterial[]>([]);
   const [progress, setProgress] = useState<StudentProgressRow[]>([]);
@@ -130,11 +132,11 @@ export default function CoursePlayer() {
           </Select>
           {program && <p className="text-xs text-slate-500">{program.category} · {program.durationWeeks} weeks</p>}
           <div>
-            <div className="flex items-center justify-between text-xs font-semibold"><span>{doneCount}/{programUnits.length} lessons</span><span>{percent}%</span></div>
+            <div className="flex items-center justify-between text-xs font-semibold"><span>{doneCount}/{programUnits.length} {t("Lessons")}</span><span>{percent}%</span></div>
             <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${percent}%` }} /></div>
           </div>
           <Button variant={lowData ? "default" : "outline"} size="sm" className={cn("w-full", lowData && "bg-amber-600 hover:bg-amber-700")} onClick={() => setLowData((v) => !v)}>
-            <WifiOff className="mr-1 h-4 w-4" /> {lowData ? "Low-data mode: ON" : "Low-data mode: OFF"}
+            <WifiOff className="mr-1 h-4 w-4" /> {lowData ? `${t("Low-data mode")}: ON` : `${t("Low-data mode")}: OFF`}
           </Button>
           {lowData && <p className="text-[11px] text-amber-700">Videos are hidden to save data. Open links manually when you have Wi-Fi.</p>}
         </div>
@@ -189,7 +191,7 @@ export default function CoursePlayer() {
               })}
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              {!completedIds.has(active.id) && <Button disabled={busy === active.id} onClick={() => void markComplete(active)} className="bg-emerald-700 hover:bg-emerald-800">{busy === active.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} Mark lesson complete</Button>}
+              {!completedIds.has(active.id) && <Button disabled={busy === active.id} onClick={() => void markComplete(active)} className="bg-emerald-700 hover:bg-emerald-800">{busy === active.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} {t("Mark complete")}</Button>}
               {(() => {
                 const idx = programUnits.findIndex((u) => u.id === active.id);
                 const next = programUnits[idx + 1];
