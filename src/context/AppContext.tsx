@@ -10,7 +10,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchState, mergeWebsiteSettings, settingsRow, today, uid, type Row } from "@/data/liveData";
+import { fetchState, mergeThemeSettings, mergeWebsiteSettings, settingsRow, today, uid, type Row } from "@/data/liveData";
 import type {
   Announcement,
   AppState,
@@ -19,13 +19,14 @@ import type {
   Certificate,
   Cohort,
   FeeTransaction,
+  PortalThemeSettings,
   Program,
   Role,
   SystemSettings,
   User,
   WebsiteSettings,
 } from "../types";
-import { defaultSettings, defaultWebsiteSettings, initialState } from "../data/mockData";
+import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings, initialState } from "../data/mockData";
 import { DEFAULT_ROLE_PERMISSIONS, type PermissionKey } from "../lib/permissions";
 
 // v5: the roles & permissions migration tightens RLS considerably, so a
@@ -113,6 +114,7 @@ interface AppContextValue {
   updateSystemSettings: (patch: Partial<SystemSettings>) => void;
   /** Publishes a whole settings object live (the CMS editor's "Publish changes" button). */
   publishWebsiteSettings: (next: WebsiteSettings) => Promise<string | null>;
+  publishThemeSettings: (next: PortalThemeSettings) => Promise<string | null>;
   clearTransactionalData: () => void;
   importSystemData: (data: Partial<AppState>) => void;
   resetDemoData: () => void;
@@ -139,6 +141,7 @@ function normalize(raw: Partial<AppState> | null): AppState {
     ...(raw ?? {}),
     settings: { ...defaultSettings, ...(raw?.settings ?? {}) },
     websiteSettings: mergeWebsiteSettings(defaultWebsiteSettings, raw?.websiteSettings),
+    themeSettings: mergeThemeSettings(defaultThemeSettings, raw?.themeSettings),
   };
 }
 
@@ -288,6 +291,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase
         .from("system_settings")
         .update({ website_settings: websiteSettings })
+        .eq("id", true);
+      return error?.message ?? null;
+    };
+
+    const publishThemeSettings = async (themeSettings: PortalThemeSettings) => {
+      setState((s) => ({ ...s, themeSettings }));
+      // Updates only the theme_settings column, same reasoning as publishWebsiteSettings
+      // above: it must never clobber a parallel settings/website save.
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ theme_settings: themeSettings })
         .eq("id", true);
       return error?.message ?? null;
     };
@@ -716,10 +730,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           "Settings",
           supabase
             .from("system_settings")
-            .upsert(settingsRow(settings, state.websiteSettings), { onConflict: "id" }),
+            .upsert(settingsRow(settings, state.websiteSettings, state.themeSettings), { onConflict: "id" }),
         );
       },
       publishWebsiteSettings,
+      publishThemeSettings,
       clearTransactionalData: () => {
         setState((s) => ({ ...s, attendance: [], submissions: [], fees: [], certificates: [] }));
         ["attendance", "submissions", "fee_transactions", "certificates"].forEach((table) =>

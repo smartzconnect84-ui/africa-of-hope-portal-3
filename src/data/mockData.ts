@@ -1,4 +1,4 @@
-import type { AppState, SystemSettings, WebsiteSettings } from "../types";
+import type { AppState, PortalThemeSettings, SystemSettings, WebsiteSettings } from "../types";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS } from "../lib/permissions";
 
 // Reused across the About and Impact homepage sections and the CTA band so the
@@ -32,6 +32,16 @@ export const defaultSettings: SystemSettings = {
   intakeStatus: "Open",
   featuredProgramIds: [],
   assistantEnabled: true,
+};
+
+export const defaultThemeSettings: PortalThemeSettings = {
+  mode: "light",
+  primaryColor: "#065f46",
+  accentColor: "#f59e0b",
+  fontFamily: "sans",
+  iconStyle: "outline",
+  contentAlignment: "left",
+  borderRadius: "rounded",
 };
 
 export const defaultWebsiteSettings: WebsiteSettings = {
@@ -373,6 +383,7 @@ export const initialState: AppState = {
   announcements: [],
   settings: defaultSettings,
   websiteSettings: defaultWebsiteSettings,
+  themeSettings: defaultThemeSettings,
   rolePermissions: DEFAULT_ROLE_PERMISSIONS as unknown as Record<string, string[]>,
   permissionCatalogue: PERMISSIONS,
 };

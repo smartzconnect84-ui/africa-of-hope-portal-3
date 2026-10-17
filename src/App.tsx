@@ -94,6 +94,34 @@ function Shell() {
     }
   }, [state.websiteSettings, state.settings.academyName, site]);
 
+  // Applies the Admin > System Settings > Appearance theme as CSS variables
+  // and data attributes read by src/index.css, so a saved theme takes effect
+  // immediately without a rebuild.
+  useEffect(() => {
+    const theme = state.themeSettings;
+    const root = document.documentElement;
+    root.style.setProperty("--portal-primary", theme.primaryColor);
+    root.style.setProperty("--portal-accent", theme.accentColor);
+    root.style.setProperty(
+      "--portal-radius",
+      theme.borderRadius === "sharp" ? "0.25rem" : theme.borderRadius === "pill" ? "9999px" : "0.75rem",
+    );
+    root.dataset.portalFont = theme.fontFamily;
+    root.dataset.portalAlign = theme.contentAlignment;
+    root.dataset.portalIcons = theme.iconStyle;
+
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyMode = () => {
+      const dark = theme.mode === "dark" || (theme.mode === "system" && prefersDark.matches);
+      root.classList.toggle("dark", dark);
+    };
+    applyMode();
+    if (theme.mode === "system") {
+      prefersDark.addEventListener("change", applyMode);
+      return () => prefersDark.removeEventListener("change", applyMode);
+    }
+  }, [state.themeSettings]);
+
   return (
     <>
       {site === "public" ? (

@@ -151,6 +151,57 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
+/* Backend-driven appearance theme (Admin > System Settings > Appearance).
+   Values are overridden at runtime by App.tsx from the saved theme_settings
+   row; these are just the defaultThemeSettings fallback. */
+:root {
+  --portal-primary: #065f46;
+  --portal-accent: #f59e0b;
+  --portal-radius: 0.75rem;
+}
+
+html[data-portal-font="serif"] {
+  --font-portal: var(--font-serif);
+}
+html[data-portal-font="mono"] {
+  --font-portal: var(--font-mono);
+}
+html:not([data-portal-font="serif"]):not([data-portal-font="mono"]) {
+  --font-portal: var(--font-sans);
+}
+
+.font-portal {
+  font-family: var(--font-portal, var(--font-sans));
+}
+
+html[data-portal-align="center"] .portal-align {
+  text-align: center;
+}
+
+html[data-portal-icons="filled"] .portal-icon {
+  fill: currentColor;
+  fill-opacity: 0.18;
+}
+
+.bg-portal-primary {
+  background-color: var(--portal-primary);
+}
+.text-portal-primary {
+  color: var(--portal-primary);
+}
+.border-portal-primary {
+  border-color: var(--portal-primary);
+}
+.bg-portal-accent {
+  background-color: var(--portal-accent);
+}
+.text-portal-accent {
+  color: var(--portal-accent);
+}
+.rounded-portal {
+  border-radius: var(--portal-radius);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

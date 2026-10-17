@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
-  AlertTriangle, Building2, Database, Download, Globe, Lock, Megaphone, Palette,
+  AlertTriangle, Building2, Database, Download, Globe, Lock, Megaphone, Paintbrush, Palette,
   Percent, RefreshCw, Save, ShieldCheck, Trash2, Undo2, Upload, Users,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
-import type { AppState, SystemSettings } from "../types";
+import type { AppState, PortalThemeSettings, SystemSettings } from "../types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,16 +77,21 @@ function NumberField({
 
 export default function AdminSystemSettings() {
   const {
-    state, updateSystemSettings, clearTransactionalData, importSystemData, resetDemoData,
+    state, updateSystemSettings, publishThemeSettings, clearTransactionalData, importSystemData, resetDemoData,
   } = useApp();
 
   const [draft, setDraft] = useState<SystemSettings>(state.settings);
+  const [themeDraft, setThemeDraft] = useState<PortalThemeSettings>(state.themeSettings);
   const [confirm, setConfirm] = useState<null | "clear" | "reset">(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDraft(state.settings);
   }, [state.settings]);
+
+  useEffect(() => {
+    setThemeDraft(state.themeSettings);
+  }, [state.themeSettings]);
 
   const canManage = usePermission("settings.manage");
 
@@ -105,6 +110,18 @@ export default function AdminSystemSettings() {
 
   const set = <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  const setTheme = <K extends keyof PortalThemeSettings>(key: K, value: PortalThemeSettings[K]) =>
+    setThemeDraft((d) => ({ ...d, [key]: value }));
+
+  const saveTheme = async () => {
+    const error = await publishThemeSettings(themeDraft);
+    if (error) toast.error(error);
+    else toast.success("Appearance saved");
+  };
+
+  const radiusPx = (radius: PortalThemeSettings["borderRadius"]) =>
+    radius === "sharp" ? "0.25rem" : radius === "pill" ? "9999px" : "0.75rem";
 
   const save = () => {
     if (!draft.academyName.trim()) {
@@ -201,6 +218,7 @@ export default function AdminSystemSettings() {
       <Tabs defaultValue="branding">
         <TabsList className="flex w-full flex-wrap justify-start gap-1 bg-emerald-50 p-1">
           <TabsTrigger value="branding" className={TAB}><Palette className="mr-1.5 h-4 w-4" /> Branding</TabsTrigger>
+          <TabsTrigger value="appearance" className={TAB}><Paintbrush className="mr-1.5 h-4 w-4" /> Appearance</TabsTrigger>
           <TabsTrigger value="academic" className={TAB}><Percent className="mr-1.5 h-4 w-4" /> Academic rules</TabsTrigger>
           <TabsTrigger value="marketing" className={TAB}><Megaphone className="mr-1.5 h-4 w-4" /> Public site</TabsTrigger>
           <TabsTrigger value="data" className={TAB}><Database className="mr-1.5 h-4 w-4" /> Data controls</TabsTrigger>
@@ -256,6 +274,137 @@ export default function AdminSystemSettings() {
             <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-[11px] text-emerald-900">
               These details power the public website footer, the certificate header and the portal branding.
             </p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="appearance" className="mt-4">
+          <div className={`${panelClass} space-y-5 p-5`}>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">Portal appearance</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Colors, fonts, icon style and content alignment across the authenticated portal. Changes apply immediately to every signed-in user.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Color mode</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.mode}
+                  onChange={(e) => setTheme("mode", e.target.value as PortalThemeSettings["mode"])}
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">Match device</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Font family</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.fontFamily}
+                  onChange={(e) => setTheme("fontFamily", e.target.value as PortalThemeSettings["fontFamily"])}
+                >
+                  <option value="sans">Sans-serif</option>
+                  <option value="serif">Serif</option>
+                  <option value="mono">Monospace</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Content alignment</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.contentAlignment}
+                  onChange={(e) => setTheme("contentAlignment", e.target.value as PortalThemeSettings["contentAlignment"])}
+                >
+                  <option value="left">Left-aligned</option>
+                  <option value="center">Centered</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Icon style</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.iconStyle}
+                  onChange={(e) => setTheme("iconStyle", e.target.value as PortalThemeSettings["iconStyle"])}
+                >
+                  <option value="outline">Outline</option>
+                  <option value="filled">Filled</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Corner radius</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.borderRadius}
+                  onChange={(e) => setTheme("borderRadius", e.target.value as PortalThemeSettings["borderRadius"])}
+                >
+                  <option value="sharp">Sharp</option>
+                  <option value="rounded">Rounded</option>
+                  <option value="pill">Pill</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Primary color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Primary color"
+                    value={themeDraft.primaryColor}
+                    onChange={(e) => setTheme("primaryColor", e.target.value)}
+                    className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                  />
+                  <Input value={themeDraft.primaryColor} onChange={(e) => setTheme("primaryColor", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Accent color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    aria-label="Accent color"
+                    value={themeDraft.accentColor}
+                    onChange={(e) => setTheme("accentColor", e.target.value)}
+                    className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                  />
+                  <Input value={themeDraft.accentColor} onChange={(e) => setTheme("accentColor", e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 p-4" style={{ borderRadius: radiusPx(themeDraft.borderRadius) }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live preview</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <span
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white"
+                  style={{ backgroundColor: themeDraft.primaryColor, borderRadius: radiusPx(themeDraft.borderRadius) }}
+                >
+                  Primary action
+                </span>
+                <span
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-900"
+                  style={{ backgroundColor: themeDraft.accentColor, borderRadius: radiusPx(themeDraft.borderRadius) }}
+                >
+                  Accent highlight
+                </span>
+                <span
+                  className={
+                    themeDraft.fontFamily === "serif" ? "font-serif" : themeDraft.fontFamily === "mono" ? "font-mono" : "font-sans"
+                  }
+                >
+                  Sample heading in the selected font
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setThemeDraft(state.themeSettings)}>
+                <Undo2 className="mr-1.5 h-4 w-4" /> Discard
+              </Button>
+              <Button onClick={saveTheme} className="bg-emerald-700 hover:bg-emerald-800">
+                <Save className="mr-1.5 h-4 w-4" /> Save appearance
+              </Button>
+            </div>
           </div>
         </TabsContent>
 

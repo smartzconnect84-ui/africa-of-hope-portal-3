@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useApp } from "@/context/AppContext";
 import { usePermissions } from "@/hooks/usePermission";
 import {
@@ -63,6 +65,22 @@ function exportRows(filename: string, rows: Record<string, unknown>[]) {
   downloadText(filename, csv, "text/csv;charset=utf-8");
 }
 
+function exportPdf(filename: string, title: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return toast.info("There is nothing to export yet.");
+  const headers = Object.keys(rows[0]);
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text(title, 14, 16);
+  autoTable(doc, {
+    startY: 22,
+    head: [headers],
+    body: rows.map((row) => headers.map((key) => String(row[key] ?? ""))),
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [6, 95, 70] },
+  });
+  doc.save(filename);
+}
+
 export default function OperationsHub() {
   const { state, currentUser } = useApp();
   const permissions = usePermissions();
@@ -85,6 +103,9 @@ export default function OperationsHub() {
   }, [documents, query]);
 
   const activeAnnouncements = state.announcements.filter((item) => item.status !== "draft");
+  const notificationRows = activeAnnouncements.map(({ id, title, category, date, audience }) => ({
+    id, title, category, date, audience,
+  }));
   const timetableRows = state.cohorts.map((cohort) => ({
     cohort: cohort.name,
     programme: state.programs.find((program) => program.id === cohort.programId)?.title ?? "Programme",
@@ -93,6 +114,13 @@ export default function OperationsHub() {
     ends: cohort.endDate,
     room: cohort.room || "TBC",
   }));
+  const analyticsRows = [{
+    people: state.users.length,
+    programmes: state.programs.length,
+    cohorts: state.cohorts.length,
+    assignments: state.assignments.length,
+    certificates: state.certificates.length,
+  }];
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -162,11 +190,11 @@ export default function OperationsHub() {
         </section>
       )}
 
-      {tab === "notifications" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Notifications" subtitle="Published announcements currently visible in the portal." action={<Button variant="outline" onClick={() => exportRows("announcements.csv", activeAnnouncements.map(({ id, title, category, date, audience }) => ({ id, title, category, date, audience })))}><FileDown data-icon="inline-start" /> Export CSV</Button>} />{activeAnnouncements.length ? <div className="mt-5 grid gap-3">{activeAnnouncements.map((item) => <article key={item.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-600">{item.body}</p></div><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">{item.category}</span></div><p className="mt-3 text-xs text-slate-500">{item.date} · {item.audience ?? "all"}</p></article>)}</div> : <div className="mt-5"><EmptyState icon={Bell} title="No notifications" /></div>}</section>}
+      {tab === "notifications" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Notifications" subtitle="Published announcements currently visible in the portal." action={<div className="flex gap-2"><Button variant="outline" onClick={() => exportRows("announcements.csv", notificationRows)}><FileDown data-icon="inline-start" /> CSV</Button><Button variant="outline" onClick={() => exportPdf("announcements.pdf", "Notifications", notificationRows)}><FileText data-icon="inline-start" /> PDF</Button></div>} />{activeAnnouncements.length ? <div className="mt-5 grid gap-3">{activeAnnouncements.map((item) => <article key={item.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-600">{item.body}</p></div><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">{item.category}</span></div><p className="mt-3 text-xs text-slate-500">{item.date} · {item.audience ?? "all"}</p></article>)}</div> : <div className="mt-5"><EmptyState icon={Bell} title="No notifications" /></div>}</section>}
 
-      {tab === "timetable" && <section className={cn(panelClass, "overflow-hidden p-4 sm:p-6")}><SectionHeader title="Timetable overview" subtitle="Cohort dates, facilitators and room assignments." action={<Button variant="outline" onClick={() => exportRows("timetable.csv", timetableRows)}><FileDown data-icon="inline-start" /> Export CSV</Button>} /><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b text-xs uppercase tracking-wide text-slate-500">{["Cohort", "Programme", "Teacher", "Starts", "Ends", "Room"].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}</tr></thead><tbody>{timetableRows.map((row) => <tr key={row.cohort} className="border-b border-slate-100"><td className="px-3 py-3 font-medium">{row.cohort}</td><td className="px-3 py-3">{row.programme}</td><td className="px-3 py-3">{row.teacher}</td><td className="px-3 py-3">{row.starts}</td><td className="px-3 py-3">{row.ends}</td><td className="px-3 py-3">{row.room}</td></tr>)}</tbody></table></div></section>}
+      {tab === "timetable" && <section className={cn(panelClass, "overflow-hidden p-4 sm:p-6")}><SectionHeader title="Timetable overview" subtitle="Cohort dates, facilitators and room assignments." action={<div className="flex gap-2"><Button variant="outline" onClick={() => exportRows("timetable.csv", timetableRows)}><FileDown data-icon="inline-start" /> CSV</Button><Button variant="outline" onClick={() => exportPdf("timetable.pdf", "Timetable overview", timetableRows)}><FileText data-icon="inline-start" /> PDF</Button></div>} /><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b text-xs uppercase tracking-wide text-slate-500">{["Cohort", "Programme", "Teacher", "Starts", "Ends", "Room"].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}</tr></thead><tbody>{timetableRows.map((row) => <tr key={row.cohort} className="border-b border-slate-100"><td className="px-3 py-3 font-medium">{row.cohort}</td><td className="px-3 py-3">{row.programme}</td><td className="px-3 py-3">{row.teacher}</td><td className="px-3 py-3">{row.starts}</td><td className="px-3 py-3">{row.ends}</td><td className="px-3 py-3">{row.room}</td></tr>)}</tbody></table></div></section>}
 
-      {tab === "analytics" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Analytics" subtitle="Live operational indicators calculated from the connected portal data." action={<Button variant="outline" onClick={() => exportRows("portal-analytics.csv", [{ people: state.users.length, programmes: state.programs.length, cohorts: state.cohorts.length, assignments: state.assignments.length, certificates: state.certificates.length }])}><Download data-icon="inline-start" /> Export</Button>} /><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[{ label: "Active students", value: state.users.filter((user) => user.role === "Student" && user.status === "Active").length }, { label: "Published programmes", value: state.programs.length }, { label: "Assignments", value: state.assignments.length }, { label: "Certificates issued", value: state.certificates.length }, { label: "Attendance records", value: state.attendance.length }, { label: "Fee transactions", value: state.fees.length }].map((item) => <div key={item.label} className="rounded-xl bg-emerald-50 p-4"><p className="text-sm text-slate-600">{item.label}</p><p className="mt-2 text-3xl font-semibold text-emerald-900">{item.value}</p></div>)}</div></section>}
+      {tab === "analytics" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Analytics" subtitle="Live operational indicators calculated from the connected portal data." action={<div className="flex gap-2"><Button variant="outline" onClick={() => exportRows("portal-analytics.csv", analyticsRows)}><Download data-icon="inline-start" /> CSV</Button><Button variant="outline" onClick={() => exportPdf("portal-analytics.pdf", "Analytics", analyticsRows)}><FileText data-icon="inline-start" /> PDF</Button></div>} /><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[{ label: "Active students", value: state.users.filter((user) => user.role === "Student" && user.status === "Active").length }, { label: "Published programmes", value: state.programs.length }, { label: "Assignments", value: state.assignments.length }, { label: "Certificates issued", value: state.certificates.length }, { label: "Attendance records", value: state.attendance.length }, { label: "Fee transactions", value: state.fees.length }].map((item) => <div key={item.label} className="rounded-xl bg-emerald-50 p-4"><p className="text-sm text-slate-600">{item.label}</p><p className="mt-2 text-3xl font-semibold text-emerald-900">{item.value}</p></div>)}</div></section>}
 
       {tab === "audit" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Audit readiness" subtitle="Controls available to keep operations accountable." /><div className="mt-5 grid gap-3 md:grid-cols-2">{[{ title: "Role-based access", body: "Every module follows the current permission matrix before exposing actions." }, { title: "Private document storage", body: "Files use signed URLs and are scoped to the signed-in profile." }, { title: "Exportable records", body: "Announcements and timetable records can be exported for review." }, { title: "Live data refresh", body: "The portal listens for Supabase changes and refreshes operational data." }].map((item) => <div key={item.title} className="flex gap-3 rounded-xl border border-slate-200 p-4"><ShieldCheck className="h-5 w-5 shrink-0 text-emerald-700" /><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-500">{item.body}</p></div></div>)}</div></section>}
     </div>

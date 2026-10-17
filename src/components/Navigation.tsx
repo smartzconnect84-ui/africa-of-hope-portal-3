@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle, Bell, Search, LogOut, Menu, X, ChevronDown,
@@ -278,6 +278,24 @@ export default function Navigation({
   const { state, currentUser, login, logout, resetDemoData } = useApp();
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
+
+  // Measures the real header + marketing-banner height so the sticky
+  // sidebar's offset/height stays in sync with it (instead of assuming a
+  // fixed 4rem header that falls out of sync whenever the banner shows).
+  const headerRef = useRef<HTMLElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const [topOffset, setTopOffset] = useState(64);
+  const bannerVisible = state.settings.sitePublished && Boolean(state.settings.marketingBanner);
+
+  useEffect(() => {
+    const recompute = () =>
+      setTopOffset((headerRef.current?.offsetHeight ?? 64) + (bannerRef.current?.offsetHeight ?? 0));
+    recompute();
+    const observer = new ResizeObserver(recompute);
+    if (headerRef.current) observer.observe(headerRef.current);
+    if (bannerRef.current) observer.observe(bannerRef.current);
+    return () => observer.disconnect();
+  }, [bannerVisible]);
   const { ctx, views } = useVisiblePortalViews();
 
   const results = useMemo(() => {
@@ -296,7 +314,10 @@ export default function Navigation({
   };
 
   const sidebar = (
-    <nav className="flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain p-3 [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]">
+    <nav
+      className="flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
+      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
       <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-800/60">
         {sidebarGroupLabel(ctx.role)}
       </p>
@@ -347,7 +368,7 @@ export default function Navigation({
 
   return (
     <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 text-white backdrop-blur-md print:hidden">
+      <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 text-white backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-3 sm:px-4">
           <button
             type="button"
@@ -524,8 +545,8 @@ export default function Navigation({
         </div>
       </header>
 
-      {state.settings.sitePublished && state.settings.marketingBanner && (
-        <div className="border-b border-amber-300/60 bg-amber-50 print:hidden">
+      {bannerVisible && (
+        <div ref={bannerRef} className="sticky z-20 border-b border-amber-300/60 bg-amber-50 print:hidden" style={{ top: headerRef.current?.offsetHeight ?? 64 }}>
           <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 py-2 text-xs text-amber-900 sm:px-4">
             <Megaphone className="h-3.5 w-3.5 shrink-0 text-amber-600" />
             <span className="truncate">{state.settings.marketingBanner}</span>
@@ -534,7 +555,10 @@ export default function Navigation({
       )}
 
       <div className="mx-auto flex max-w-[1600px]">
-        <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-64 shrink-0 overflow-hidden border-r border-emerald-900/10 bg-white/70 lg:block print:hidden">
+        <aside
+          className="sticky hidden w-64 shrink-0 overflow-hidden border-r border-emerald-900/10 bg-white/70 lg:block print:hidden"
+          style={{ top: topOffset, height: `calc(100dvh - ${topOffset}px)` }}
+        >
           {sidebar}
         </aside>
         <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6">
@@ -546,7 +570,10 @@ export default function Navigation({
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setDrawer(false)} />
-          <div className="absolute left-0 top-0 flex h-full w-[min(19rem,88vw)] flex-col bg-white shadow-2xl">
+          <div
+            className="absolute left-0 top-0 flex h-full w-[min(20rem,92vw)] flex-col bg-white shadow-2xl"
+            style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+          >
             <div className="flex items-center justify-between border-b border-slate-100 p-4">
               <div className="flex items-center gap-2">
                 <BrandLockup
@@ -566,7 +593,7 @@ export default function Navigation({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">{sidebar}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">{sidebar}</div>
           </div>
         </div>
       )}

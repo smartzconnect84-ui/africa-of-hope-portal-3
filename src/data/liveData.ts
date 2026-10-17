@@ -7,12 +7,13 @@ import type {
   Cohort,
   FeeTransaction,
   HomeSectionKey,
+  PortalThemeSettings,
   Program,
   SystemSettings,
   User,
   WebsiteSettings,
 } from "../types";
-import { defaultSettings, defaultWebsiteSettings } from "./mockData";
+import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings } from "./mockData";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, type PermissionKey } from "../lib/permissions";
 
 export type Row = Record<string, unknown>;
@@ -50,7 +51,11 @@ function mapUser(p: Row, cohortIds: string[]): User {
   };
 }
 
-export function settingsRow(settings: SystemSettings, websiteSettings: WebsiteSettings) {
+export function settingsRow(
+  settings: SystemSettings,
+  websiteSettings: WebsiteSettings,
+  themeSettings: PortalThemeSettings,
+) {
   return {
     id: true,
     academy_name: settings.academyName,
@@ -72,6 +77,7 @@ export function settingsRow(settings: SystemSettings, websiteSettings: WebsiteSe
     featured_program_ids: settings.featuredProgramIds,
     assistant_enabled: settings.assistantEnabled,
     website_settings: websiteSettings,
+    theme_settings: themeSettings,
   };
 }
 
@@ -132,17 +138,35 @@ export function mergeWebsiteSettings(
   };
 }
 
+/**
+ * Deep-merges a saved `theme_settings` JSON blob onto the current defaults, so
+ * adding a new appearance field never leaves it blank for portals that saved
+ * their theme before the field existed.
+ */
+export function mergeThemeSettings(
+  defaults: PortalThemeSettings,
+  raw: unknown,
+): PortalThemeSettings {
+  return mergeObject(defaults as unknown as Record<string, unknown>, raw) as unknown as PortalThemeSettings;
+}
+
 function mapSettings(
   row: Row | null,
   fallback: SystemSettings,
   fallbackWebsite: WebsiteSettings,
-): { settings: SystemSettings; websiteSettings: WebsiteSettings } {
-  if (!row) return { settings: fallback, websiteSettings: fallbackWebsite };
+  fallbackTheme: PortalThemeSettings,
+): { settings: SystemSettings; websiteSettings: WebsiteSettings; themeSettings: PortalThemeSettings } {
+  if (!row) return { settings: fallback, websiteSettings: fallbackWebsite, themeSettings: fallbackTheme };
   const raw = row.website_settings;
   const websiteSettings =
     raw && typeof raw === "object" && Object.keys(raw as object).length
       ? mergeWebsiteSettings(fallbackWebsite, raw)
       : fallbackWebsite;
+  const rawTheme = row.theme_settings;
+  const themeSettings =
+    rawTheme && typeof rawTheme === "object" && Object.keys(rawTheme as object).length
+      ? mergeThemeSettings(fallbackTheme, rawTheme)
+      : fallbackTheme;
   return {
     settings: {
       academyName: txt(row.academy_name, fallback.academyName),
@@ -165,6 +189,7 @@ function mapSettings(
       assistantEnabled: flag(row, "assistant_enabled", fallback.assistantEnabled),
     },
     websiteSettings,
+    themeSettings,
   };
 }
 
@@ -284,6 +309,7 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     (settings.data as Row | null) ?? null,
     defaultSettings,
     defaultWebsiteSettings,
+    defaultThemeSettings,
   );
 
   const permissionCatalogue = ((permissionsRows.data ?? []) as Row[]).length
@@ -377,6 +403,7 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     })),
     settings: settingsPair.settings,
     websiteSettings: settingsPair.websiteSettings,
+    themeSettings: settingsPair.themeSettings,
     rolePermissions,
     permissionCatalogue,
   };

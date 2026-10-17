@@ -333,10 +333,21 @@ export interface AppState {
   announcements: Announcement[];
   settings: SystemSettings;
   websiteSettings: WebsiteSettings;
+  themeSettings: PortalThemeSettings;
   /** role name -> permission keys it holds. Loaded from `role_permissions`. */
   rolePermissions: Record<string, string[]>;
   /** The full permission catalogue, loaded from `permissions`. */
   permissionCatalogue: PermissionDef[];
+}
+
+export interface PortalThemeSettings {
+  mode: "light" | "dark" | "system";
+  primaryColor: string;
+  accentColor: string;
+  fontFamily: "sans" | "serif" | "mono";
+  iconStyle: "outline" | "filled";
+  contentAlignment: "left" | "center";
+  borderRadius: "sharp" | "rounded" | "pill";
 }
 
 export interface SystemSettings {
