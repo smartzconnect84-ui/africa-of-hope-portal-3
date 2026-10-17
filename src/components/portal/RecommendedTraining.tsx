@@ -4,12 +4,12 @@ import { SectionHeader, EmptyState, panelClass } from "../Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RECOMMENDED_MODULES } from "@/lib/trainingRecommendations";
-import { supabase } from "@/integrations/supabase/client";
+import { academicApi } from "@/lib/academics";
 import { useApp } from "../../context/AppContext";
 import { toast } from "sonner";
 
 export default function RecommendedTraining() {
-  const { state } = useApp();
+  const { state, currentUser } = useApp();
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [imported, setImported] = useState<string[]>([]);
@@ -22,23 +22,29 @@ export default function RecommendedTraining() {
   const doImport = async (id: string) => {
     const rec = RECOMMENDED_MODULES.find((m) => m.id === id);
     if (!rec) return;
+    const programId = (state as any).programs?.[0]?.id ?? null;
+    if (!programId) {
+      toast.error("Create a programme first, then import training modules into it.");
+      return;
+    }
+    if (!currentUser) {
+      toast.error("Sign in to import training modules.");
+      return;
+    }
     setBusy(id);
     try {
-      const api = getAcademicApi();
-      const programId = state.programs[0]?.id ?? null;
-      await api.createMaterial({
+      await academicApi.createMaterial({
         program_id: programId,
         cohort_id: null,
-        course_plan_id: null,
+        learning_unit_id: null,
+        created_by: currentUser.id,
         title: `${rec.title} — ${rec.provider}`,
-        kind: "link",
-        url: rec.url,
         description: `${rec.description}\n\nLevel: ${rec.level} · Duration: ${rec.duration} · Cost: ${rec.cost} · Best for: ${rec.bestFor}`,
+        material_type: "link",
+        external_url: rec.url,
         file_path: null,
         mime_type: null,
-        size_bytes: null,
-        available_from: null,
-      } as any);
+      });
       setImported((s) => [...s, id]);
       toast.success("Added to training materials for approval");
     } catch (e: any) {
