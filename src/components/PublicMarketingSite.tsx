@@ -14,6 +14,7 @@ import type { HomeSectionKey, SectionCopy } from "@/types";
 import Marquee from "./animata/container/marquee";
 import BrandLockup from "./brand/BrandLockup";
 import ProgrammesPage from "./public/ProgrammesPage";
+import PoliciesPage from "./public/PoliciesPage";
 import BlogListPage from "./public/BlogListPage";
 import BlogPostPage from "./public/BlogPostPage";
 import { ScrollReveal, StaggerGroup } from "./public/motion";
@@ -26,6 +27,7 @@ const NAV_LINKS: [string, string][] = [
   ["#about", "About"],
   ["#programmes", "Programmes"],
   ["#blog", "Blog"],
+  ["#policies", "Policies"],
   ["#verify", "Verify"],
   ["#admissions", "Admissions"],
 ];
@@ -54,18 +56,21 @@ const HOME_COPY_OVERRIDES: Partial<Record<HomeSectionKey, Partial<SectionCopy>>>
 };
 
 const PROGRAMMES_RE = /^#(programmes|programs)$/i;
+const POLICIES_RE = /^#policies$/i;
 const HOME_RE = /^#(home)?$/i;
 const BLOG_RE = /^#blog$/i;
 
 type View =
   | { type: "home"; anchor: string | null }
   | { type: "programmes" }
+  | { type: "policies" }
   | { type: "blog" }
   | { type: "blogPost"; slug: string };
 
 function parseHash(hash: string): View {
   const h = hash || "#home";
   if (PROGRAMMES_RE.test(h)) return { type: "programmes" };
+  if (POLICIES_RE.test(h)) return { type: "policies" };
   if (BLOG_RE.test(h)) return { type: "blog" };
   if (/^#blog\//i.test(h)) {
     const raw = h.replace(/^#blog\//i, "");
@@ -120,6 +125,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-programmes", href: "#programmes", label: "Programmes" }];
     if (!links.some((l) => BLOG_RE.test(l.href.trim())))
       links = [...links, { id: "nav-blog", href: "#blog", label: "Blog" }];
+    if (!links.some((l) => POLICIES_RE.test(l.href.trim())))
+      links = [...links, { id: "nav-policies", href: "#policies", label: "Policies" }];
     return links;
   }, [saved]);
   const displayName = w.academyName || settings.academyName;
@@ -159,6 +166,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   useEffect(() => {
     const base = displayName || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
     if (view.type === "programmes") document.title = `Programmes — ${base}`;
+    else if (view.type === "policies") document.title = `School Policies — ${base}`;
     else if (view.type === "blog" || view.type === "blogPost") document.title = `Blog — ${base}`;
     else document.title = base;
   }, [view, displayName]);
@@ -360,6 +368,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           transition={{ duration: 0.22, ease: "easeOut" }}
         >
           {view.type === "programmes" && <ProgrammesPage programs={state.programs} onApply={openApply} />}
+          {view.type === "policies" && <PoliciesPage />}
           {view.type === "blog" && <BlogListPage />}
           {view.type === "blogPost" && <BlogPostPage slug={view.slug} />}
 

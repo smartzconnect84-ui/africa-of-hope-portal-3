@@ -7,6 +7,8 @@ import {
   Award,
   ShieldQuestion,
   ShieldCheck,
+  Scale,
+  LibraryBig,
   Megaphone,
   ClipboardCheck,
   NotebookPen,
@@ -50,6 +52,8 @@ import StudentQuizzes from "./components/quiz/StudentQuizzes";
 import AcademicPlanning from "./components/AcademicPlanning";
 import AnnouncementManager from "./components/AnnouncementManager";
 import BlogManager from "./components/portal/BlogManager";
+import SchoolPolicies from "./components/policies/SchoolPolicies";
+import RecommendedTraining from "./components/portal/RecommendedTraining";
 import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
@@ -209,6 +213,20 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Newspaper,
     visible: (ctx) => ctx.can("blog.manage"),
     render: () => <BlogManager />,
+  },
+  {
+    key: "policies",
+    label: "School Policies",
+    icon: Scale,
+    visible: () => true,
+    render: () => <SchoolPolicies />,
+  },
+  {
+    key: "training-library",
+    label: "Training Library",
+    icon: LibraryBig,
+    visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
+    render: () => <RecommendedTraining />,
   },
   {
     key: "website",
