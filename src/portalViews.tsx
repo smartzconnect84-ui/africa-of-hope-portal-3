@@ -18,6 +18,9 @@ import {
   UserCircle,
   FileQuestion,
   CalendarRange,
+  CalendarDays,
+  GraduationCap,
+  MessagesSquare,
   Newspaper,
   Smartphone,
   Mail,
@@ -58,6 +61,9 @@ import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
 import OperationsHub from "./components/OperationsHub";
+import CoursePlayer from "./components/academic/CoursePlayer";
+import CourseDiscussions from "./components/academic/CourseDiscussions";
+import StudentCalendar from "./components/academic/StudentCalendar";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -129,6 +135,27 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: CalendarRange,
     visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve"),
     render: () => <AcademicPlanning />,
+  },
+  {
+    key: "course-player",
+    label: (ctx) => (ctx.role === "Student" ? "My Courses" : "Course Player"),
+    icon: GraduationCap,
+    visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve", "lessons.manage"),
+    render: () => <CoursePlayer />,
+  },
+  {
+    key: "discussions",
+    label: "Class Discussions",
+    icon: MessagesSquare,
+    visible: () => true,
+    render: () => <CourseDiscussions />,
+  },
+  {
+    key: "study-calendar",
+    label: "Study Calendar",
+    icon: CalendarDays,
+    visible: () => true,
+    render: () => <StudentCalendar />,
   },
   {
     key: "quizzes",
