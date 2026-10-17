@@ -137,8 +137,11 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                 style={{ width: `${100 / visible}%` }}
                 aria-hidden={i >= total || undefined}
               >
-                <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm">
-                  <img src={programImage(program)} alt="" className="h-40 w-full object-cover" loading="lazy" />
+                <article className="aoh-card group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm">
+                  <div className="aoh-zoom relative overflow-hidden">
+                    <img src={programImage(program)} alt="" className="h-40 w-full object-cover" loading="lazy" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-950/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  </div>
                   <div className="flex flex-1 flex-col p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
                       {program.category || "Certificate programme"}
@@ -153,9 +156,9 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                         type="button"
                         onClick={onApply}
                         tabIndex={i >= total ? -1 : undefined}
-                        className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:text-emerald-900"
+                        className="btn-sheen inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1.5 font-semibold text-white transition hover:bg-emerald-800"
                       >
-                        Apply <ChevronRight className="h-3.5 w-3.5" />
+                        Apply <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
                       </button>
                     </div>
                   </div>

@@ -261,7 +261,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 key={l.id}
                 href={l.href}
                 onClick={HOME_RE.test(l.href.trim()) ? goHomeTop : undefined}
-                className="rounded-xl px-3 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white"
+                className="aoh-nav-link rounded-xl px-3 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white"
               >
                 {l.label}
               </a>
@@ -282,7 +282,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               type="button"
               onClick={openLogin}
               {...buttonMotionProps}
-              className="inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300"
+              className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)]"
             >
               <LogIn className="mr-1.5 h-4 w-4" /> Portal
             </motion.button>
@@ -396,8 +396,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                         Stories, news and updates.
                       </h2>
                     </div>
-                    <a href="#blog" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
-                      Visit the blog <ArrowRight className="h-4 w-4" />
+                    <a href="#blog" className="group inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
+                      Visit the blog <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </a>
                   </ScrollReveal>
 
@@ -409,7 +409,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                           href={`#blog/${post.slug}`}
                           variants={fadeUpVariants}
                           whileHover={{ y: -6 }}
-                          className="flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg"
+                          className="aoh-card group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg"
                         >
                           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">{post.category || "News"}</p>
                           <h3 className="mt-2 line-clamp-2 text-base font-semibold text-emerald-950">{post.title}</h3>

@@ -437,3 +437,58 @@ html[data-portal-icons="filled"] .portal-icon {
 }
 
 /* animata-kit:end */
+
+/* ===== AOH public-site polish (buttons, cards, icons, text) ===== */
+@layer components {
+  /* Button sheen sweep — add class "btn-sheen" to a relative overflow-hidden button */
+  .btn-sheen { position: relative; overflow: hidden; isolation: isolate; }
+  .btn-sheen::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.55), transparent);
+    transform: skewX(-20deg); transition: left 0.6s ease; z-index: 1; pointer-events: none;
+  }
+  .btn-sheen:hover::after { left: 130%; }
+
+  /* Card lift + glow */
+  .aoh-card {
+    transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.28s ease, border-color 0.28s ease;
+  }
+  .aoh-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 45px -18px rgba(2,44,34,0.35), 0 4px 14px -6px rgba(245,158,11,0.25);
+    border-color: rgba(6,95,70,0.25);
+  }
+
+  /* Icon tile pop */
+  .aoh-icon-tile { transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease; }
+  .group:hover .aoh-icon-tile, a:hover .aoh-icon-tile { transform: scale(1.08) rotate(-4deg); }
+
+  /* Nav link underline */
+  .aoh-nav-link { position: relative; }
+  .aoh-nav-link::after {
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px;
+    border-radius: 999px; background: #fbbf24;
+    transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease;
+  }
+  .aoh-nav-link:hover::after { transform: scaleX(1); }
+
+  /* Image zoom inside overflow-hidden wrappers */
+  .aoh-zoom img { transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+  .aoh-zoom:hover img { transform: scale(1.07); }
+
+  /* Soft float for badges / decorative dots */
+  @keyframes aoh-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  .aoh-float { animation: aoh-float 5s ease-in-out infinite; }
+
+  /* Gradient headline shimmer */
+  @keyframes aoh-shimmer { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+  .aoh-shimmer-text {
+    background-size: 200% auto;
+    animation: aoh-shimmer 6s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-sheen::after, .aoh-float, .aoh-shimmer-text { animation: none !important; }
+    .aoh-card:hover, .aoh-zoom:hover img { transform: none; }
+  }
+}
