@@ -195,7 +195,7 @@ eyebrow: "Our work",
     subtitle: "A practical learning platform for ambitious people across Liberia and beyond.",
     body:
       "Africa of Hope connects learners to relevant programmes, supportive mentors and clear proceedings from application to certification. Explore what is happening, choose your next step and build momentum with a community that believes in progress.",
-        image: WORKBENCH_IMG,
+        image: "/images/our-work-graduates.jpg",
       },
       features: {
         eyebrow: "Why choose us",
@@ -205,9 +205,9 @@ eyebrow: "Our work",
       },
       impact: {
         eyebrow: "Student success",
-        title: "Student success and impact",
-        subtitle: "Hear it from our graduates and see the numbers behind every cohort.",
-        image: GRADUATE_IMG,
+        title: "Student success and testimonies",
+        subtitle: "Real graduates, real results.",
+        image: "/images/student-success-certificate.jpg",
       },
       admissions: {
         eyebrow: "How admission works",

@@ -65,13 +65,14 @@ export default function ImpactSection({ copy, w }: { copy: SectionCopy; w: Websi
           {copy.image && (
             <Reveal delay={0.12}>
               <div className="relative h-full overflow-hidden rounded-3xl ring-1 ring-white/10">
-                <img src={copy.image} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={copy.image}
+                  alt="Graduate receiving her Africa of Hope certificate"
+                  className="h-full min-h-[26rem] w-full object-cover object-[center_30%]"
+                />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-emerald-950 to-transparent p-5">
                   <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-400">
                     <BadgeCheck className="h-3.5 w-3.5" /> Verifiable credential
-                  </p>
-                  <p className="mt-1 text-sm text-white">
-                    Every certificate carries a unique serial that employers can confirm instantly.
                   </p>
                 </div>
               </div>

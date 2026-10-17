@@ -19,8 +19,8 @@ export default function AboutSection({
             <div className="relative">
               <img
                 src={copy.image}
-                alt=""
-                className="h-72 w-full rounded-3xl object-cover shadow-lg shadow-emerald-900/10 sm:h-96"
+                alt="Africa of Hope graduates celebrating their certification"
+                className="h-80 w-full rounded-3xl object-cover object-[center_20%] shadow-lg shadow-emerald-900/10 sm:h-[28rem]"
               />
               <div className="absolute -bottom-5 left-5 rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-md">
                 <p className="text-2xl font-semibold text-emerald-800">{w.partners.length || 18}</p>
@@ -43,7 +43,7 @@ export default function AboutSection({
           )}
           {copy.body && <p className="mt-4 text-sm text-slate-600 sm:text-base">{copy.body}</p>}
           {w.aboutPoints.length > 0 && (
-            <div className="mt-7 space-y-4">
+            <div className="mt-7 space-y-3">
               {w.aboutPoints.map((p) => {
                 const Icon = resolveIcon(p.icon);
                 return (
@@ -51,10 +51,7 @@ export default function AboutSection({
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-amber-300">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{p.title}</p>
-                      <p className="text-sm text-slate-500">{p.body}</p>
-                    </div>
+                    <p className="self-center text-sm font-semibold text-slate-800">{p.title}</p>
                   </div>
                 );
               })}

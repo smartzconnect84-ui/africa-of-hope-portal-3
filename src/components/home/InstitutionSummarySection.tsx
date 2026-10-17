@@ -1,4 +1,4 @@
-import { BadgeCheck, GraduationCap, Mail, MapPin, Phone, ShieldCheck, Sparkles } from "lucide-react";
+import { BadgeCheck, GraduationCap, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import type { SectionCopy, SystemSettings, WebsiteSettings } from "@/types";
 import { ScrollReveal, StaggerGroup } from "../public/motion";
 import { fadeUpVariants } from "../public/motionConstants";
@@ -24,10 +24,6 @@ export default function InstitutionSummarySection({
   programsCount?: number;
 }) {
   const displayName = w?.academyName || settings?.academyName || "Africa of Hope";
-  const phone = w?.contactPhone || settings?.contactPhone || "+231776679963 / 088806137";
-  const email = w?.contactEmail || settings?.contactEmail || "afrohope033@gmail.com";
-  const address = w?.address || settings?.address || "Boystown Junction-Lower Margibi, Republic of Liberia";
-  const hours = w?.officeHours || "Online 24/7";
 
   const facts = [
     { icon: GraduationCap, label: "Programmes offered", value: String(programsCount ?? "—") },
@@ -72,20 +68,6 @@ export default function InstitutionSummarySection({
           })}
         </StaggerGroup>
 
-        <ScrollReveal delay={0.08} className="mt-10 flex flex-col gap-3 rounded-2xl bg-emerald-950 p-5 text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-start gap-2 text-sm">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" /> {address}
-          </p>
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span className="inline-flex items-center gap-1.5">
-              <Phone className="h-4 w-4 shrink-0 text-amber-400" /> {phone}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Mail className="h-4 w-4 shrink-0 text-amber-400" /> {email}
-            </span>
-            <span className="text-amber-300">{hours}</span>
-          </div>
-        </ScrollReveal>
       </div>
     </section>
   );
