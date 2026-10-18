@@ -19,23 +19,31 @@ const FALLBACK_URL = "https://gatnzfjpuokopqyksqoy.supabase.co";
 const FALLBACK_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhdG56ZmpwdW9rb3BxeWtzcW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNjAyMTcsImV4cCI6MjEwNzgzNjIxN30.g0tptBFvclxGhqePFrWz0nov3R_DRsOgnSQJpKjdDT8";
 
-function readEnv(name: string): string {
+function readEnv(...names: string[]): string {
   try {
-    const value = (import.meta as unknown as { env?: Record<string, string> }).env?.[name];
-    return typeof value === "string" ? value.trim() : "";
+    const env = (import.meta as unknown as { env?: Record<string, string> }).env;
+    for (const name of names) {
+      const value = env?.[name];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
   } catch {
-    return "";
+    // Keep the production fallback available when no Vite env is injected.
   }
+  return "";
 }
 
-export const SUPABASE_URL: string = readEnv("VITE_SUPABASE_URL") || FALLBACK_URL;
-
-export const SUPABASE_ANON_KEY: string =
-  readEnv("VITE_SUPABASE_ANON_KEY") || FALLBACK_ANON_KEY;
-
-export const SUPABASE_USING_ENV = Boolean(
-  readEnv("VITE_SUPABASE_URL") && readEnv("VITE_SUPABASE_ANON_KEY"),
+const configuredUrl = readEnv("VITE_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL");
+const configuredAnonKey = readEnv(
+  "VITE_SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
 );
+
+export const SUPABASE_URL: string = configuredUrl || FALLBACK_URL;
+
+export const SUPABASE_ANON_KEY: string = configuredAnonKey || FALLBACK_ANON_KEY;
+
+export const SUPABASE_USING_ENV = Boolean(configuredUrl && configuredAnonKey);
 
 /** e.g. https://gatnzfjpuokopqyksqoy.supabase.co -> gatnzfjpuokopqyksqoy */
 export function supabaseProjectRef(url: string = SUPABASE_URL): string {
