@@ -11,6 +11,7 @@ import {
   createQuestion, createQuiz, deleteQuestion, deleteQuiz, fetchManageableQuizzes, fetchQuizQuestions,
   type QuestionDraft, type QuizDraft, updateQuestion, updateQuiz,
 } from "../../lib/quizzes";
+import { academicApi, type LearningUnit } from "@/lib/academics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -71,13 +72,14 @@ function blankQuestion(type: QuizQuestionType): DraftQuestion {
 function toDraftQuiz(q?: Quiz): QuizDraft {
   if (!q) {
     return {
-      title: "", description: "", programId: null, cohortId: null, status: "draft",
-      timeLimitMinutes: 20, maxAttempts: 1, passMark: 50, shuffleQuestions: false,
+      title: "", description: "", programId: null, cohortId: null, learningUnitId: null, status: "draft",
+      timeLimitMinutes: 20, maxAttempts: 3, passMark: 50, shuffleQuestions: false,
       shuffleOptions: false, showAnswers: "after_submit", opensAt: null, closesAt: null,
     };
   }
   return {
     title: q.title, description: q.description, programId: q.programId, cohortId: q.cohortId,
+    learningUnitId: q.learningUnitId ?? null,
     status: q.status, timeLimitMinutes: q.timeLimitMinutes, maxAttempts: q.maxAttempts, passMark: q.passMark,
     shuffleQuestions: q.shuffleQuestions, shuffleOptions: q.shuffleOptions, showAnswers: q.showAnswers,
     opensAt: q.opensAt, closesAt: q.closesAt,
@@ -282,6 +284,23 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
     () => (canManageAll ? state.cohorts : state.cohorts.filter((c) => c.teacherId === currentUser?.id)),
     [state.cohorts, canManageAll, currentUser?.id],
   );
+  const [lessons, setLessons] = useState<LearningUnit[]>([]);
+  const [lessonsLoading, setLessonsLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setLessonsLoading(true);
+    const pIds = settings.programId ? [settings.programId] : state.programs.map((p) => p.id);
+    const cIds = settings.cohortId ? [settings.cohortId] : cohorts.map((c) => c.id);
+    academicApi.units(pIds, cIds)
+      .then((rows) => { if (active) setLessons(rows); })
+      .catch(() => { if (active) setLessons([]); })
+      .finally(() => { if (active) setLessonsLoading(false); });
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.programId, settings.cohortId]);
+
+  const lessonName = (id: string | null) => lessons.find((l) => l.id === id)?.title;
 
   const totalPoints = questions.reduce((s, q) => s + (Number(q.points) || 0), 0);
 
@@ -419,6 +438,29 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-slate-500">Lesson (optional practice quiz)</Label>
+              <Select
+                value={settings.learningUnitId ?? "none"}
+                onValueChange={(v) => setSettings((s) => ({
+                  ...s,
+                  learningUnitId: v === "none" ? null : v,
+                  ...(v !== "none" && s.maxAttempts <= 1 ? { maxAttempts: 3 } : {}),
+                  ...(v !== "none" && s.showAnswers === "never" ? { showAnswers: "after_submit" as const } : {}),
+                }))}
+              >
+                <SelectTrigger><SelectValue placeholder={lessonsLoading ? "Loading lessons…" : "No linked lesson"} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No linked lesson</SelectItem>
+                  {lessons.map((l) => (<SelectItem key={l.id} value={l.id}>{l.title}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              {settings.learningUnitId ? (
+                <p className="text-[11px] text-emerald-700">Practice quiz — appears inside “{lessonName(settings.learningUnitId) ?? "the lesson"}” with instant scores and retakes.</p>
+              ) : (
+                <p className="text-[11px] text-slate-500">Link to a lesson to show it as practice inside the learning path.</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
@@ -559,7 +601,7 @@ export default function QuizBuilder() {
     <Reveal className="space-y-5">
       <SectionHeader
         title="Quizzes"
-        subtitle="Build timed, auto-graded quizzes for your programmes and cohorts."
+        subtitle="Build timed, auto-graded quizzes for your programmes, cohorts and lessons."
         action={<Button onClick={() => setEditing("new")}><Plus className="mr-1.5 h-4 w-4" /> New quiz</Button>}
       />
       {loading ? (
@@ -574,7 +616,7 @@ export default function QuizBuilder() {
                 <div>
                   <p className="font-semibold text-slate-900">{q.title}</p>
                   <p className="text-xs text-slate-500">
-                    {programName(q.programId) ?? cohortName(q.cohortId) ?? "No scope set"}
+                    {q.learningUnitId ? `Lesson practice · ${programName(q.programId) ?? cohortName(q.cohortId) ?? "Lesson"}` : (programName(q.programId) ?? cohortName(q.cohortId) ?? "No scope set")}
                   </p>
                 </div>
                 <Badge className={cn("shrink-0", statusTone(q.status))}>{q.status}</Badge>

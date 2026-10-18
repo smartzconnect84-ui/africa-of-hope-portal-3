@@ -116,24 +116,24 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   testimonials: [
     {
       id: "t-1",
-      name: "Amara N.",
+      name: "Musu K.",
       program: "Full Stack Web Development",
       quote:
-        "I joined with no coding background. Six months later I was shipping features for a fintech team in Lagos.",
+        "I started in Margibi with no coding background. Within six months I was building features for a Monrovia fintech team.",
     },
     {
       id: "t-2",
-      name: "Yusuf K.",
-      program: "Cloud Computing & DevOps",
+      name: "Joseph T.",
+      program: "Solar Installation & Maintenance",
       quote:
-        "The labs were real servers, real tickets. My certificate was verified by my employer in seconds.",
+        "The hands-on practicals prepared me for real rooftop installs. My certificate helped me land my first job with a solar company in Bong County.",
     },
     {
       id: "t-3",
-      name: "Chiamaka O.",
+      name: "Estelle W.",
       program: "UI/UX Product Design",
       quote:
-        "The portfolio I built here won my first three freelance contracts before I even graduated.",
+        "The portfolio I built here won my first freelance contracts with small businesses across Liberia, before I even graduated.",
     },
   ],
   faqs: [
@@ -215,8 +215,8 @@ eyebrow: "Our work",
       },
       impact: {
         eyebrow: "Student success",
-        title: "Student success and testimonies",
-        subtitle: "Real graduates, real results.",
+        title: "Student success stories from Liberia",
+        subtitle: "Real graduates from Monrovia, Margibi and beyond, building careers at home.",
         image: "/images/student-success-certificate.jpg",
       },
       admissions: {
@@ -267,16 +267,16 @@ eyebrow: "Our work",
       id: "pillar-3",
       icon: "Handshake",
       title: "Industry placement",
-      body: "Partner employers review top performers for internships and junior roles.",
+      body: "Partner employers across Liberia review top performers for internships and junior roles.",
     },
   ],
   partners: [
-    { id: "partner-1", name: "Lagos Tech Hub", logo: "" },
-    { id: "partner-2", name: "Savannah Energy", logo: "" },
-    { id: "partner-3", name: "Nimbus Cloud", logo: "" },
-    { id: "partner-4", name: "Kano Health Trust", logo: "" },
-    { id: "partner-5", name: "Umoja Bank", logo: "" },
-    { id: "partner-6", name: "Accra Digital Works", logo: "" },
+    { id: "partner-1", name: "Monrovia Tech & Fintech Employers", logo: "" },
+    { id: "partner-2", name: "Liberia Solar & Energy Installers", logo: "" },
+    { id: "partner-3", name: "Margibi Agro-Processing Firms", logo: "" },
+    { id: "partner-4", name: "Bong County Health Network", logo: "" },
+    { id: "partner-5", name: "Liberian Banks & Microfinance", logo: "" },
+    { id: "partner-6", name: "Buchanan Logistics & Trade", logo: "" },
   ],
   admissionSteps: [
     {

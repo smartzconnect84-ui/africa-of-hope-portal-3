@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
+import BackendStatusCard from "./admin/BackendStatusCard";
 
 const CURRENCIES = ["$", "₦", "KSh", "€", "GHS", "R"];
 const INTAKES = ["Open", "Closing soon", "Waitlist", "Closed"];
@@ -223,6 +224,7 @@ export default function AdminSystemSettings() {
           <TabsTrigger value="marketing" className={TAB}><Megaphone className="mr-1.5 h-4 w-4" /> Public site</TabsTrigger>
           <TabsTrigger value="data" className={TAB}><Database className="mr-1.5 h-4 w-4" /> Data controls</TabsTrigger>
           <TabsTrigger value="security" className={TAB}><ShieldCheck className="mr-1.5 h-4 w-4" /> Security and RBAC</TabsTrigger>
+          <TabsTrigger value="backend" className={TAB}><Database className="mr-1.5 h-4 w-4" /> Backend</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding" className="mt-4">
@@ -605,6 +607,10 @@ export default function AdminSystemSettings() {
               </p>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="backend" className="mt-4">
+          <BackendStatusCard />
         </TabsContent>
       </Tabs>
 

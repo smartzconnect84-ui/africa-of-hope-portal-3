@@ -95,6 +95,16 @@ export default function StudentLearningPath({
   const progressByUnit = useMemo(() => new Map(progress.map((row) => [row.learning_unit_id, row])), [progress]);
   const attemptsByQuiz = useMemo(() => groupAttemptsByQuiz(attempts), [attempts]);
   const quizzesById = useMemo(() => new Map(quizzes.map((q) => [q.id, q])), [quizzes]);
+  const quizzesByUnitId = useMemo(() => {
+    const map = new Map<string, Quiz[]>();
+    for (const q of quizzes) {
+      if (!q.learningUnitId) continue;
+      const list = map.get(q.learningUnitId) ?? [];
+      list.push(q);
+      map.set(q.learningUnitId, list);
+    }
+    return map;
+  }, [quizzes]);
 
   const groups = useMemo(() => {
     const map = new Map<string, LearningUnit[]>();
@@ -185,6 +195,7 @@ export default function StudentLearningPath({
               const quizSummary = quiz ? summarizeAttempts(quizAttempts, quiz.maxAttempts) : null;
               const quizNotYetOpen = quiz?.opensAt ? new Date(quiz.opensAt).getTime() > now : false;
               const quizClosedNow = quiz?.closesAt ? new Date(quiz.closesAt).getTime() < now : false;
+              const practiceQuizzes = (quizzesByUnitId.get(unit.id) ?? []).filter((q) => q.id !== unit.quiz_id);
               const submission = unit.classwork_assignment_id ? classworkSubmission(unit.classwork_assignment_id) : undefined;
               const assignment = unit.classwork_assignment_id ? state.assignments.find((a) => a.id === unit.classwork_assignment_id) : undefined;
 
@@ -234,6 +245,34 @@ export default function StudentLearningPath({
                         Quiz result
                       </Button>
                     )}
+                    {practiceQuizzes.map((pq) => {
+                      const pa = attemptsByQuiz.get(pq.id) ?? [];
+                      const ps = summarizeAttempts(pa, pq.maxAttempts);
+                      const pOpen = pq.opensAt ? new Date(pq.opensAt).getTime() > now : false;
+                      const pClosed = pq.closesAt ? new Date(pq.closesAt).getTime() < now : false;
+                      return (
+                        <span key={pq.id} className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/60 px-2.5 py-1.5">
+                          <span className="text-xs font-semibold text-emerald-900">Practice: {pq.title}</span>
+                          {ps.inProgress ? (
+                            <Button size="sm" className="h-7 bg-amber-400 text-amber-950 hover:bg-amber-500" disabled={locked || cohortEnded} onClick={() => setPlayingQuiz(pq.id)}>
+                              <PlayCircle className="mr-1 h-3.5 w-3.5" />Resume
+                            </Button>
+                          ) : ps.exhausted ? null : pOpen || pClosed ? (
+                            <span className="text-[11px] font-medium text-amber-700">{pOpen ? "Not open yet" : "Closed"}</span>
+                          ) : (
+                            <Button size="sm" variant="outline" className="h-7" disabled={locked || cohortEnded} onClick={() => setPlayingQuiz(pq.id)}>
+                              <PlayCircle className="mr-1 h-3.5 w-3.5" />{ps.attemptsUsed > 0 ? `Retake (${ps.attemptsUsed}/${pq.maxAttempts})` : "Practice"}
+                            </Button>
+                          )}
+                          {ps.best && (
+                            <button type="button" className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 hover:underline" onClick={() => setReviewingAttempt(ps.best!.attemptId)}>
+                              <Badge className={cn(ps.best.passed ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700")}>{ps.best.percent}%</Badge>
+                              Instant result
+                            </button>
+                          )}
+                        </span>
+                      );
+                    })}
                     {unit.classwork_assignment_id && (
                       !submission || submission.status === "Missing" ? (
                         <Button size="sm" variant="outline" disabled={locked || cohortEnded} onClick={() => setClasswork({ unit, assignmentId: unit.classwork_assignment_id as string, resuming: false })}>

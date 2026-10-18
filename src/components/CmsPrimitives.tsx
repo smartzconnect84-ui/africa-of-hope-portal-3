@@ -126,6 +126,7 @@ export function ImageBox({
     try {
       const url = await uploadSiteAsset(folder, file);
       onChange(url);
+      toast.success("Image uploaded. Click Publish changes to make it live.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not upload that image.");
     } finally {

@@ -59,6 +59,7 @@ function mapQuiz(r: Row): Quiz {
     description: txt(r.description),
     programId: orNull(r.program_id),
     cohortId: orNull(r.cohort_id),
+    learningUnitId: orNull(r.learning_unit_id),
     createdBy: orNull(r.created_by),
     status: txt(r.status, "draft") as QuizStatus,
     timeLimitMinutes: r.time_limit_minutes === null || r.time_limit_minutes === undefined ? null : num(r.time_limit_minutes),
@@ -105,6 +106,7 @@ export interface QuizDraft {
   description: string;
   programId: string | null;
   cohortId: string | null;
+  learningUnitId: string | null;
   status: QuizStatus;
   timeLimitMinutes: number | null;
   maxAttempts: number;
@@ -122,6 +124,7 @@ function quizRow(d: QuizDraft) {
     description: d.description,
     program_id: d.programId,
     cohort_id: d.cohortId,
+    learning_unit_id: d.learningUnitId,
     status: d.status,
     time_limit_minutes: d.timeLimitMinutes,
     max_attempts: d.maxAttempts,

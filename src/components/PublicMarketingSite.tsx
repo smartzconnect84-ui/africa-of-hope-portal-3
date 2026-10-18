@@ -16,6 +16,9 @@ import BrandLockup from "./brand/BrandLockup";
 import ProgrammesPage from "./public/ProgrammesPage";
 import PoliciesPage from "./public/PoliciesPage";
 import DonatePage from "./public/DonatePage";
+import CookiesPage from "./public/CookiesPage";
+import CookieConsent from "./public/CookieConsent";
+import InstallPrompt from "./pwa/InstallPrompt";
 import BlogListPage from "./public/BlogListPage";
 import BlogPostPage from "./public/BlogPostPage";
 import { ScrollReveal, StaggerGroup } from "./public/motion";
@@ -60,6 +63,7 @@ const HOME_COPY_OVERRIDES: Partial<Record<HomeSectionKey, Partial<SectionCopy>>>
 
 const PROGRAMMES_RE = /^#(programmes|programs)$/i;
 const POLICIES_RE = /^#policies$/i;
+const COOKIES_RE = /^#cookies$/i;
 const DONATE_RE = /^#donate$/i;
 const HOME_RE = /^#(home)?$/i;
 const BLOG_RE = /^#blog$/i;
@@ -68,6 +72,7 @@ type View =
   | { type: "home"; anchor: string | null }
   | { type: "programmes" }
   | { type: "policies" }
+  | { type: "cookies" }
   | { type: "donate" }
   | { type: "blog" }
   | { type: "blogPost"; slug: string };
@@ -76,6 +81,7 @@ function parseHash(hash: string): View {
   const h = hash || "#home";
   if (PROGRAMMES_RE.test(h)) return { type: "programmes" };
   if (POLICIES_RE.test(h)) return { type: "policies" };
+  if (COOKIES_RE.test(h)) return { type: "cookies" };
   if (DONATE_RE.test(h)) return { type: "donate" };
   if (BLOG_RE.test(h)) return { type: "blog" };
   if (/^#blog\//i.test(h)) {
@@ -176,6 +182,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     const base = displayName || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
     if (view.type === "programmes") document.title = `Programmes — ${base}`;
     else if (view.type === "policies") document.title = `School Policies — ${base}`;
+    else if (view.type === "cookies") document.title = `Cookies Policy — ${base}`;
     else if (view.type === "donate") document.title = `Donate & Support — ${base}`;
     else if (view.type === "blog" || view.type === "blogPost") document.title = `Blog — ${base}`;
     else document.title = base;
@@ -383,6 +390,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         >
           {view.type === "programmes" && <ProgrammesPage programs={state.programs} onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
+          {view.type === "cookies" && <CookiesPage />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
           {view.type === "blog" && <BlogListPage />}
           {view.type === "blogPost" && <BlogPostPage slug={view.slug} />}
@@ -551,12 +559,19 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <p>
               {w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}
             </p>
-            <p className="inline-flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5 text-emerald-700" /> {settings.academicYear} / {settings.semester}
+            <p className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+              <a href="#cookies" className="underline decoration-emerald-700/30 underline-offset-2 transition hover:text-emerald-800">Cookies</a>
+              <a href="#policies" className="underline decoration-emerald-700/30 underline-offset-2 transition hover:text-emerald-800">Policies</a>
+              <span className="inline-flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5 text-emerald-700" /> {settings.academicYear} / {settings.semester}
+              </span>
             </p>
           </div>
         </div>
       </footer>
+
+      <InstallPrompt />
+      <CookieConsent />
 
     </div>
     </MotionConfig>

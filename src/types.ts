@@ -406,6 +406,8 @@ export interface Quiz {
   description: string;
   programId: string | null;
   cohortId: string | null;
+  /** Optional lesson this quiz practices. When set, the quiz appears inside that lesson in the learning path. */
+  learningUnitId: string | null;
   createdBy: string | null;
   status: QuizStatus;
   timeLimitMinutes: number | null;

@@ -92,7 +92,12 @@ export default function StudentQuizzes() {
           return (
             <div key={quiz.id} className={cn(panelClass, "flex flex-col gap-3 p-5")}>
               <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold text-slate-900">{quiz.title}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900">{quiz.title}</p>
+                  {quiz.learningUnitId && (
+                    <span className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">Lesson practice · instant marking</span>
+                  )}
+                </div>
                 {best && (
                   <Badge className={best.passed ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700"}>
                     {best.percent}%

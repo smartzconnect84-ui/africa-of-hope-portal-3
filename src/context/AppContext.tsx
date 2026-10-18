@@ -769,7 +769,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           "Settings",
           supabase
             .from("system_settings")
-            .upsert(settingsRow(settings, state.websiteSettings, state.themeSettings), { onConflict: "id" }),
+            // website_settings and theme_settings are saved only by their own publish
+            // actions. Leaving them out (undefined is dropped from the payload) stops a
+            // stale copy here from erasing a logo or partner image that was just published.
+            .upsert(
+              { ...settingsRow(settings, state.websiteSettings, state.themeSettings), website_settings: undefined, theme_settings: undefined },
+              { onConflict: "id" },
+            ),
         );
       },
       publishWebsiteSettings,
