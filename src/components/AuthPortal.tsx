@@ -371,7 +371,7 @@ function SignInForm({
         <span className="h-px flex-1 bg-slate-200" /> or <span className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         <Button type="button" variant="outline" onClick={onVerify} className="h-11 rounded-xl border-slate-200">
           <ShieldCheck className="h-4 w-4 text-emerald-700" /> Verify certificate
         </Button>
@@ -541,7 +541,7 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
           {step === 0 && (
             <>
               <AuthField label="Full name" icon={UserIcon} autoComplete="name" value={reg.name} onChange={(v) => set("name", v)} placeholder="Amina Diallo" error={errors.name} autoFocus />
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <AuthField label="Email" icon={Mail} type="email" autoComplete="email" value={reg.email} onChange={(v) => set("email", v)} placeholder="amina@mail.com" error={errors.email} />
                 <AuthField label="Phone" icon={Phone} type="tel" autoComplete="tel" value={reg.phone} onChange={(v) => set("phone", v)} placeholder="+231 77 000 0000" error={errors.phone} />
               </div>
@@ -578,7 +578,7 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
                   className={cn(INPUT_CLASS, "pl-10 pr-3.5")}
                 />
               </div>
-              <div className="grid max-h-[22rem] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+              <div className="grid max-h-[22rem] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                 {programs.length === 0 && (
                   <p className="col-span-full rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
                     {state.programs.length === 0
@@ -849,10 +849,10 @@ export default function AuthPortal({
         : "Self-registration is currently closed. Please contact the admissions office.";
 
   return (
-    <div className="grid min-h-[100dvh] bg-[#f6f8f7] lg:grid-cols-2">
+    <div className="grid min-h-[100dvh] w-full max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden bg-[#f6f8f7] lg:grid-cols-2">
       <Showcase />
 
-      <main className="flex min-h-[100dvh] flex-col px-4 py-6 sm:px-8">
+      <main className="flex min-h-[100dvh] min-w-0 flex-col px-4 py-6 sm:px-8">
           <div className="flex items-center">
           {onBackToSite ? (
             <button
@@ -866,7 +866,7 @@ export default function AuthPortal({
         </div>
 
         <div className="flex flex-1 items-center justify-center py-8">
-            <div className={cn("w-full transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
+            <div className={cn("w-full min-w-0 transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
             <div className="mb-6 text-center">
               <BrandLockup
                 logoUrl={state.websiteSettings.logoUrl}

@@ -32,7 +32,7 @@ export default function CourseDiscussions() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [unitId, setUnitId] = useState("general");
-  const [replyBody, setReplyBody] = useState("");
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(threads)); }, [threads]);
 
@@ -76,11 +76,12 @@ export default function CourseDiscussions() {
   };
 
   const addReply = (threadId: string) => {
+    const replyBody = replyDrafts[threadId] ?? "";
     if (!replyBody.trim() || !currentUser) return;
     setThreads((prev) => prev.map((t) => t.id === threadId
       ? { ...t, replies: [...t.replies, { id: `r-${Date.now()}`, authorId: currentUser.id, authorName: currentUser.name, role: currentUser.role, body: replyBody.trim(), createdAt: new Date().toISOString(), isAnswer: false }] }
       : t));
-    setReplyBody("");
+    setReplyDrafts((d) => ({ ...d, [threadId]: "" }));
   };
 
   const markAnswer = (threadId: string, replyId: string) => {
@@ -160,7 +161,7 @@ export default function CourseDiscussions() {
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Input placeholder="Write a reply…" value={openThread === thread.id ? replyBody : ""} onChange={(e) => setReplyBody(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addReply(thread.id); }} />
+                    <Input placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addReply(thread.id); }} />
                     <Button size="sm" onClick={() => addReply(thread.id)} className="bg-emerald-700 hover:bg-emerald-800"><Send className="h-4 w-4" /></Button>
                   </div>
                 </div>
