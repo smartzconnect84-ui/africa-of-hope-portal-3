@@ -70,16 +70,27 @@ export interface ListPublishedPostsOptions {
 export async function listPublishedPosts(options: ListPublishedPostsOptions = {}): Promise<BlogPost[]> {
   const { limit } = options;
   try {
-    let query = supabase
-      .from("blog_posts")
-      .select("*")
-      .in("status", ["published", "scheduled"])
-      .lte("published_at", new Date().toISOString())
-      .order("published_at", { ascending: false });
-    if (limit) query = query.limit(limit);
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-    return (data ?? []).map(mapBlogRow);
+    const nowIso = new Date().toISOString();
+    // Published posts show even when `published_at` is null (legacy rows or
+    // rows saved without a timestamp); scheduled posts only once due.
+    const [pubRes, schedRes] = await Promise.all([
+      supabase
+        .from("blog_posts")
+        .select("*")
+        .eq("status", "published")
+        .order("published_at", { ascending: false }),
+      supabase
+        .from("blog_posts")
+        .select("*")
+        .eq("status", "scheduled")
+        .lte("published_at", nowIso)
+        .order("published_at", { ascending: false }),
+    ]);
+    if (pubRes.error) throw new Error(pubRes.error.message);
+    if (schedRes.error) throw new Error(schedRes.error.message);
+    const merged = [...(pubRes.data ?? []), ...(schedRes.data ?? [])].map(mapBlogRow);
+    merged.sort((a, b) => (b.publishedAt ?? b.createdAt).localeCompare(a.publishedAt ?? a.createdAt));
+    return limit ? merged.slice(0, limit) : merged;
   } catch {
     // Network errors (or the table not existing yet in an environment
     // where the migration hasn't run) should never break the public site.
@@ -96,10 +107,14 @@ export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
       .select("*")
       .eq("slug", slug)
       .in("status", ["published", "scheduled"])
-      .lte("published_at", new Date().toISOString())
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return data ? mapBlogRow(data) : null;
+    if (!data) return null;
+    const post = mapBlogRow(data);
+    // Null `published_at` on a published post is treated as already live
+    // (legacy rows); a scheduled post only shows once its time is due.
+    if (post.status === "scheduled" && post.publishedAt && post.publishedAt > new Date().toISOString()) return null;
+    return post;
   } catch {
     return null;
   }

@@ -501,7 +501,6 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-4">
           <div className="md:col-span-2">
             <BrandLockup logoUrl={w.logoUrl} academyName={displayName} tagline={w.tagline || settings.motto} tone="light" size="md" />
-            {w.footerAbout && <p className="mt-5 text-sm text-slate-600">{w.footerAbout}</p>}
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Explore</p>

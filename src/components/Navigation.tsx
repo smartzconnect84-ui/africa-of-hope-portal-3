@@ -388,7 +388,8 @@ export default function Navigation({
               tagline={state.websiteSettings.tagline || "Institutional Training Academy"}
               tone="dark"
               size="md"
-              taglineClassName="hidden sm:block"
+              nameClassName="hidden md:block"
+              taglineClassName="hidden md:block"
             />
           </div>
 

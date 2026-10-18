@@ -320,8 +320,7 @@ eyebrow: "Our work",
     { id: "flink-2", label: "Book a campus visit", href: "#" },
     { id: "flink-3", label: "Refund policy", href: "#" },
   ],
-  footerAbout:
-    "Certificates that open doors. Skills that build communities.",
+  footerAbout: "",
   assistantLauncherLabel: "AOH AI",
   auth: {
     showcaseImage: "",

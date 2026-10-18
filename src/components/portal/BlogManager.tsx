@@ -133,7 +133,7 @@ export default function BlogManager() {
   const startCreate = () => {
     setEditing(null);
     setForm(emptyForm);
-    setAction("draft");
+    setAction("publish");
     setScheduledAt("");
     setCoverFile(null);
     setCoverPreview(null);
