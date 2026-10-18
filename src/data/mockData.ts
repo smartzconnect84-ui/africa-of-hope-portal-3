@@ -21,14 +21,14 @@ export const defaultSettings: SystemSettings = {
   address: "Boystown Junction-Lower Margibi, Republic of Liberia",
   accreditationNo: "NBTE/ACC/2024/0491",
   currency: "$",
-  academicYear: "2025/2026",
+  academicYear: "2026/2027",
   semester: "First Semester",
   selfRegistrationOpen: true,
   studentIdPrefix: "AOH-STU",
   passMark: 60,
   minAttendance: 75,
   sitePublished: true,
-  marketingBanner: "Admissions for the 2025/2026 intake are now open. Apply online in minutes.",
+  marketingBanner: "Admissions for the 2026/2027 intake are now open. Apply online in minutes.",
   intakeStatus: "Open",
   featuredProgramIds: [],
   assistantEnabled: true,
@@ -50,7 +50,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   academyName: "AFRICA OF HOPE",
   tagline: "Practical pathways into work, enterprise and community leadership.",
   announcementText:
-    "Admissions for the 2025/2026 intake are now open. Apply online in minutes.",
+    "Admissions for the 2026/2027 intake are now open. Apply online in minutes.",
   announcementEnabled: true,
   heroSlides: [
     {

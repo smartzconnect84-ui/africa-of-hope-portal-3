@@ -57,7 +57,10 @@ export interface RegistrationPayload {
   phone: string;
   programIds: string[];
   note: string;
-  documents: string;
+  /** Highest completed level of schooling (replaces the old ID/Documents box). */
+  educationLevel: string;
+  /** Legacy field kept for older records; no longer collected. */
+  documents?: string;
 }
 
 export interface SignUpPayload extends RegistrationPayload {
@@ -353,7 +356,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           programIds: payload.programIds,
           cohortIds: [],
           note: payload.note,
-          documents: payload.documents,
+          educationLevel: payload.educationLevel,
+          documents: payload.documents ?? "",
         };
         setState((s) => ({ ...s, users: [...s.users, record] }));
         push(
@@ -369,6 +373,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             joined_date: record.joinedDate,
             program_ids: record.programIds,
             note: record.note,
+            education_level: record.educationLevel ?? null,
             documents: record.documents,
           }),
         );
@@ -379,7 +384,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone: payload.phone,
           program_ids: payload.programIds,
           note: payload.note,
-          documents: payload.documents,
+          education_level: payload.educationLevel ?? null,
+          documents: payload.documents ?? "",
         };
         const { data, error } = await supabase.auth.signUp({
           email,

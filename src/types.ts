@@ -25,6 +25,8 @@ export interface User {
   cohortIds: string[];
   note?: string;
   documents?: string;
+  /** Highest completed schooling, captured at registration. */
+  educationLevel?: string;
   avatarUrl?: string;
   bio?: string;
   address?: string;

@@ -420,9 +420,19 @@ function SignInForm({
 // ── Register (3-step wizard) ──────────────────────────────────────────────────
 
 const STEPS = ["Account", "Programmes", "Finish"];
+const EDUCATION_LEVELS = [
+  "Primary",
+  "Junior High (JHS)",
+  "Senior High (SHS)",
+  "TVET / Vocational",
+  "Diploma",
+  "Bachelor's Degree",
+  "Postgraduate",
+  "Other",
+];
 const emptyReg = {
   name: "", email: "", phone: "", password: "", confirm: "",
-  programIds: [] as string[], documents: "", note: "", agree: false,
+  programIds: [] as string[], educationLevel: "", note: "", agree: false,
 };
 type RegErrors = Partial<Record<keyof typeof emptyReg | "form", string>>;
 
@@ -468,7 +478,10 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
     if (s === 1 && state.programs.length > 0 && reg.programIds.length === 0) {
       e.programIds = "Select at least one programme";
     }
-    if (s === 2 && !reg.agree) e.agree = "Please confirm your details are accurate";
+    if (s === 2) {
+      if (!reg.educationLevel) e.educationLevel = "Select your level of education";
+      if (!reg.agree) e.agree = "Please confirm your details are accurate";
+    }
     return e;
   };
 
@@ -499,7 +512,7 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
       password: reg.password,
       programIds: reg.programIds,
       note: reg.note.trim(),
-      documents: reg.documents.trim(),
+      educationLevel: reg.educationLevel,
     });
     setBusy(false);
     if (result.error) {
@@ -643,13 +656,22 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
                   </div>
                 </div>
               )}
-              <AuthField
-                label="Supporting documents (optional)"
-                value={reg.documents}
-                onChange={(v) => set("documents", v)}
-                placeholder="e.g. ID card, transcripts"
-                hint={<p className="text-xs text-slate-500">You can upload files from your profile after you sign in.</p>}
-              />
+              <div className="space-y-1.5">
+                <label htmlFor="reg-education" className="text-sm font-medium text-slate-700">Level of Education <span className="text-rose-500">*</span></label>
+                <select
+                  id="reg-education"
+                  value={reg.educationLevel}
+                  onChange={(e) => set("educationLevel", e.target.value)}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
+                >
+                  <option value="">Select your highest completed level</option>
+                  {EDUCATION_LEVELS.map((level) => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
+                </select>
+                {errors.educationLevel && <FieldError>{errors.educationLevel}</FieldError>}
+                <p className="text-xs text-slate-500">You can upload supporting files from your profile after you sign in.</p>
+              </div>
               <div className="space-y-1.5">
                 <label htmlFor="reg-note" className="text-sm font-medium text-slate-700">Motivation (optional)</label>
                 <Textarea

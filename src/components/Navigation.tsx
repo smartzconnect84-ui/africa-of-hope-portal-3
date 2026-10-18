@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  AlertTriangle, Bell, Search, LogOut, Menu, X, ChevronDown,
-  BadgeCheck, RefreshCw, Globe, Megaphone, type LucideIcon,
+  AlertTriangle, Bell, LogOut, Menu, Search, X,
+  RefreshCw, Globe, Megaphone, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
-import { ROLES } from "../lib/permissions";
 import { useVisiblePortalViews, portalViewLabel } from "../portalViews";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
@@ -276,7 +275,7 @@ export default function Navigation({
   onExitToPublic?: () => void;
   children: ReactNode;
 }) {
-  const { state, currentUser, login, logout, resetDemoData } = useApp();
+  const { state, currentUser, logout, resetDemoData } = useApp();
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -393,7 +392,7 @@ export default function Navigation({
             />
           </div>
 
-          <div className="relative ml-auto hidden md:block">
+          <div className="relative ml-auto hidden xl:block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
@@ -427,7 +426,7 @@ export default function Navigation({
               <button
                 type="button"
                 onClick={onExitToPublic}
-                className="hidden items-center gap-2 rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-50 sm:flex"
+                className="hidden items-center gap-2 rounded-xl border border-emerald-900/10 bg-white px-3 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-50 lg:flex"
               >
                 <Globe className="h-4 w-4" /> Website
               </button>
@@ -461,54 +460,6 @@ export default function Navigation({
                       </span>
                     </button>
                   ))}
-                </div>
-              )}
-            </Pop>
-
-            <Pop
-              trigger={
-                <span className="flex items-center gap-2 rounded-xl border border-emerald-900/10 bg-white px-2.5 py-1.5 text-sm hover:bg-emerald-50">
-                  <BadgeCheck className="h-4 w-4 text-emerald-700" />
-                  <span className="hidden font-medium text-slate-700 sm:block">
-                    {currentUser?.role ?? "Guest"}
-                  </span>
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-                </span>
-              }
-            >
-              {(close) => (
-                <div className="p-1">
-                  <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Switch portal account
-                  </p>
-                  {state.users
-                    .filter((u) => (ROLES as string[]).includes(u.role))
-                    .slice(0, 12)
-                    .map((u) => (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => {
-                          void login(u.id);
-                          close();
-                          go("dashboard");
-                        }}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-emerald-50",
-                          u.id === currentUser?.id && "bg-emerald-50",
-                        )}
-                      >
-                        <UserAvatar user={u} className="h-8 w-8 text-[11px]" />
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-medium text-slate-800">
-                            {u.name}
-                          </span>
-                          <span className="block text-[11px] text-slate-500">
-                            {u.role} / {u.status}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
                 </div>
               )}
             </Pop>

@@ -7,23 +7,22 @@ import { cn } from "@/lib/utils";
  * public header, mobile drawer and footer, the auth sign-in/register
  * showcase, and the portal header/drawer.
  *
- * Logo visibility treatment: uploaded logos usually arrive on a solid white
- * (or dark) rectangle. True pixel-level background removal can't happen in
- * CSS, so the logo is seated on a small white plate (rounded, ringed,
- * shadowed) that visually "cuts" the rectangle away — the plate merges with
- * the logo's own background while lifting it off emerald/dark surfaces.
- * Sizes were stepped up ~30-40% for visibility; the outer flex row, gap and
+ * Logo treatment: the uploaded logo is rendered raw and transparent — no
+ * surrounding plate, box, ring or background shape anywhere in the system —
+ * and stepped up ~40% in size for visibility. The outer flex row, gap and
  * text block are untouched so nearby nav links, buttons, cards and text do
- * not shift.
+ * not shift. For a truly clean cut, upload a PNG with a transparent
+ * background in Website Settings → Branding; any flat background baked into
+ * the file itself can only be removed in an image editor, not in CSS.
  */
 
 type Size = "sm" | "md" | "lg";
 type Tone = "light" | "dark";
 
-const BOX: Record<Size, string> = {
-  sm: "h-12 w-12",
-  md: "h-16 w-16",
-  lg: "h-20 w-20",
+const IMG: Record<Size, string> = {
+  sm: "h-14 w-auto max-w-[190px]",
+  md: "h-16 w-auto max-w-[230px] sm:h-[4.5rem]",
+  lg: "h-20 w-auto max-w-[260px] sm:h-24",
 };
 
 const ICON: Record<Size, string> = {
@@ -86,33 +85,19 @@ export default function BrandLockup({
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
       {logoUrl ? (
-        <span
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={logoUrl}
+          alt={`${academyName} logo`}
+          loading="lazy"
           className={cn(
-            BOX[size],
-            "relative grid shrink-0 isolate place-items-center overflow-hidden rounded-2xl bg-[#07130e] p-0",
-            "shadow-[0_6px_18px_-6px_rgba(2,44,34,0.5)] ring-1",
-            tone === "dark" ? "ring-white/40" : "ring-emerald-900/10",
+            IMG[size],
+            "shrink-0 bg-transparent object-contain drop-shadow-[0_4px_10px_rgba(2,44,34,0.35)]",
           )}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoUrl}
-            alt={`${academyName} logo`}
-            loading="lazy"
-            className="h-full w-full scale-110 object-contain mix-blend-screen [filter:contrast(1.06)_saturate(1.1)_brightness(1.04)]"
-          />
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/60"
-          />
-        </span>
+        />
       ) : (
         <span
-          className={cn(
-            BOX[size],
-            "grid shrink-0 place-items-center rounded-2xl bg-white shadow-[0_6px_18px_-6px_rgba(2,44,34,0.5)] ring-1",
-            tone === "dark" ? "ring-white/40" : "ring-emerald-900/10",
-          )}
+          className="grid shrink-0 place-items-center bg-transparent"
           role="img"
           aria-label={`${academyName} logo`}
         >

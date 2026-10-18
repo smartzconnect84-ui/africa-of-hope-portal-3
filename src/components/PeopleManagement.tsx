@@ -56,6 +56,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState, SectionHeader, panelClass } from "./Navigation";
+import DataTools from "./DataTools";
 import { cn } from "@/lib/utils";
 
 const TH = "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500";
@@ -85,7 +86,7 @@ function slug(value: string) {
 type Tab = "staff" | "students" | "applicants";
 
 export default function PeopleManagement() {
-  const { currentUser } = useApp();
+  const { state, currentUser } = useApp();
   const { isSuperAdmin, can } = usePermissions();
   const [tab, setTab] = useState<Tab>("staff");
 
@@ -97,6 +98,16 @@ export default function PeopleManagement() {
       <SectionHeader
         title="Staff & Students"
         subtitle="Everyone with an account on the portal, in one directory."
+      />
+      <DataTools
+        name="directory"
+        rows={state.users}
+        columns={[
+          { key: "name", label: "Name" },
+          { key: "email", label: "Email" },
+          { key: "role", label: "Role" },
+          { key: "status", label: "Status" },
+        ]}
       />
 
       <div className="flex gap-1.5 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm">
