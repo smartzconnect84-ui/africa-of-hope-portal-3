@@ -385,7 +385,7 @@ export default function Navigation({
             <BrandLockup
               logoUrl={state.websiteSettings.logoUrl}
               academyName={state.websiteSettings.academyName || state.settings.academyName}
-              displayName="AOH"
+              displayName="AFRICA OF HOPE"
               tagline={state.websiteSettings.tagline || "Institutional Training Academy"}
               tone="dark"
               size="md"

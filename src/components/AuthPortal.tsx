@@ -220,7 +220,7 @@ function Showcase() {
           <BrandLockup
             logoUrl={w.logoUrl}
               academyName={w.academyName || state.settings.academyName}
-              displayName="AOH"
+              displayName="AFRICA OF HOPE"
               tagline={w.tagline || "Institutional Training Academy"}
             tone="dark"
             size="md"

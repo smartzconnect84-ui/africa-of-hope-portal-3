@@ -94,7 +94,7 @@ export default function CompletionCertificates() {
               {existing ? (
                 <div className="mt-4">
                   <div id={`completion-cert-${existing.serial}`} className="rounded-2xl border-[5px] border-double border-amber-400 bg-white p-6 text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-800">Africa of Hope School of Professional Studies</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-800">AFRICA OF HOPE</p>
                     <h4 className="mt-3 text-xl font-semibold">Certificate of Completion</h4>
                     <p className="mt-1 text-[10px] uppercase tracking-widest text-slate-400">Awarded to</p>
                     <p className="n mt-1 text-2xl font-bold text-emerald-900">{studentName}</p>

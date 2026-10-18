@@ -144,7 +144,12 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-donate", href: "#donate", label: "Donate" }];
     return links;
   }, [saved]);
-  const displayName = w.academyName || settings.academyName;
+  const displayName = useMemo(() => {
+    const full = (w.academyName || settings.academyName || "").trim();
+    // Short institutional name shown on tablet/desktop header + footer.
+    if (/africa\s+of\s+hope/i.test(full)) return "AFRICA OF HOPE";
+    return full || "AFRICA OF HOPE";
+  }, [w.academyName, settings.academyName]);
   const [menu, setMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : "#home"));

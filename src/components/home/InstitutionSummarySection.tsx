@@ -23,7 +23,7 @@ export default function InstitutionSummarySection({
   settings: SystemSettings;
   programsCount?: number;
 }) {
-  const displayName = w?.academyName || settings?.academyName || "Africa of Hope";
+  const displayName = w?.academyName || settings?.academyName || "AFRICA OF HOPE";
 
   const facts = [
     { icon: GraduationCap, label: "Programmes offered", value: String(programsCount ?? "—") },

@@ -21,9 +21,9 @@ type Size = "sm" | "md" | "lg";
 type Tone = "light" | "dark";
 
 const BOX: Record<Size, string> = {
-  sm: "h-11 w-11",
-  md: "h-14 w-14",
-  lg: "h-[4.5rem] w-[4.5rem]",
+  sm: "h-12 w-12",
+  md: "h-16 w-16",
+  lg: "h-20 w-20",
 };
 
 const ICON: Record<Size, string> = {
@@ -89,7 +89,7 @@ export default function BrandLockup({
         <span
           className={cn(
             BOX[size],
-            "relative grid shrink-0 isolate place-items-center overflow-hidden rounded-2xl bg-white p-1.5",
+            "relative grid shrink-0 isolate place-items-center overflow-hidden rounded-2xl bg-[#07130e] p-0",
             "shadow-[0_6px_18px_-6px_rgba(2,44,34,0.5)] ring-1",
             tone === "dark" ? "ring-white/40" : "ring-emerald-900/10",
           )}
@@ -99,7 +99,7 @@ export default function BrandLockup({
             src={logoUrl}
             alt={`${academyName} logo`}
             loading="lazy"
-            className="h-full w-full object-contain [filter:contrast(1.06)_saturate(1.08)_drop-shadow(0_1px_2px_rgba(2,44,34,0.25))]"
+            className="h-full w-full scale-110 object-contain mix-blend-screen [filter:contrast(1.06)_saturate(1.1)_brightness(1.04)]"
           />
           <span
             aria-hidden="true"
