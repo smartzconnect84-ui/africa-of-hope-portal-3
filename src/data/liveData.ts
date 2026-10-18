@@ -81,6 +81,53 @@ export function settingsRow(
   };
 }
 
+function explainSettingsError(message: string): string {
+  if (/column .* does not exist|schema cache|could not find the table/i.test(message)) {
+    return "System settings are not fully configured in the database yet. Ask an administrator to apply the latest portal migration, then save again.";
+  }
+  if (/permission denied|row-level security|42501/i.test(message)) {
+    return "You don't have permission to save these settings. Sign in as a Super Admin or School Admin.";
+  }
+  return message;
+}
+
+/**
+ * Writes one settings patch to the singleton system_settings row.
+ * Looks up the real row id first so a save still lands when the key is not the
+ * boolean `true` this app inserts, and reports a miss instead of pretending success.
+ */
+export async function persistSettingsPatch(patch: Record<string, unknown>): Promise<string | null> {
+  const existing = await supabase.from("system_settings").select("id").limit(1).maybeSingle();
+  if (existing.error) return explainSettingsError(existing.error.message);
+
+  const writeExisting = async (rowId: unknown) => {
+    const { data, error } = await supabase
+      .from("system_settings")
+      .update(patch)
+      .eq("id", rowId)
+      .select("id");
+    if (error) return explainSettingsError(error.message);
+    if (!data?.length) {
+      return "Settings were not saved. Your account may not have permission to update system settings.";
+    }
+    return null;
+  };
+
+  const rowId = existing.data?.id;
+  if (rowId !== undefined && rowId !== null) return writeExisting(rowId);
+
+  const inserted = await supabase.from("system_settings").insert({ id: true, ...patch }).select("id");
+  if (!inserted.error) return null;
+  if (/duplicate key|unique/i.test(inserted.error.message)) {
+    const retry = await supabase.from("system_settings").select("id").limit(1).maybeSingle();
+    if (retry.data && retry.data.id !== undefined && retry.data.id !== null) {
+      return writeExisting(retry.data.id);
+    }
+    return "A settings row exists but this account cannot update it. Sign in as a Super Admin or School Admin.";
+  }
+  return explainSettingsError(inserted.error.message);
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -193,10 +240,19 @@ function mapSettings(
   };
 }
 
+export interface SettingsLoadStatus {
+  /** A system_settings row was read. False means the CMS is still on local defaults. */
+  configured: boolean;
+  /** The row has a saved website_settings document, not just starter copy. */
+  websitePublished: boolean;
+  readError: string | null;
+}
+
 export interface FetchResult {
   state: AppState;
   /** Tables the current visitor could not read; their slices keep the previous values. */
   failed: string[];
+  settingsStatus: SettingsLoadStatus;
 }
 
 /**
@@ -422,9 +478,22 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
   if (bad("system_settings")) {
     state.settings = previous.settings;
     state.websiteSettings = previous.websiteSettings;
+    state.themeSettings = previous.themeSettings;
   }
+
+  const settingsRowData = (settings.data as Row | null) ?? null;
+  const rawWebsite = settingsRowData?.website_settings;
+  const settingsStatus: SettingsLoadStatus = {
+    configured: !settings.error && Boolean(settingsRowData),
+    websitePublished:
+      !settings.error &&
+      Boolean(rawWebsite) &&
+      typeof rawWebsite === "object" &&
+      Object.keys(rawWebsite as object).length > 0,
+    readError: settings.error?.message ?? null,
+  };
   if (bad("permissions")) state.permissionCatalogue = previous.permissionCatalogue;
   if (bad("role_permissions")) state.rolePermissions = previous.rolePermissions;
 
-  return { state, failed };
+  return { state, failed, settingsStatus };
 }
