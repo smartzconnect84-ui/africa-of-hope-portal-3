@@ -322,7 +322,7 @@ eyebrow: "Our work",
   ],
   footerAbout:
     "Certificates that open doors. Skills that build communities.",
-  assistantLauncherLabel: "Ask Hope",
+  assistantLauncherLabel: "AOH AI",
   auth: {
     showcaseImage: "",
     eyebrow: "Student and staff portal",

@@ -108,23 +108,16 @@ export async function checkSupabaseHealth(): Promise<HealthResult> {
     }
   }
 
-  // 3. Storage buckets.
-  const buckets: HealthResult["buckets"] = [];
+  // 3. Storage buckets. listBuckets() is service-role only and returns an empty
+  // list for the anon key even when the buckets exist, so probe each bucket.
+  const listed = new Set<string>();
   try {
-    const { data, error } = await supabase.storage.listBuckets();
-    if (error) throw new Error(error.message);
-    const names = new Set((data ?? []).map((b) => b.name));
-    for (const name of REQUIRED_BUCKETS) {
-      buckets.push(
-        names.has(name)
-          ? { name, ok: true, error: null }
-          : { name, ok: false, error: "Bucket missing — apply the storage migration" },
-      );
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Storage probe failed";
-    for (const name of REQUIRED_BUCKETS) buckets.push({ name, ok: false, error: message });
+    const { data } = await supabase.storage.listBuckets();
+    for (const bucket of data ?? []) listed.add(bucket.name);
+  } catch {
+    /* anon cannot list the catalogue; per-bucket probes still work */
   }
+  const buckets = await Promise.all(REQUIRED_BUCKETS.map((name) => probeBucket(name, listed)));
 
   return { ...base, tables, buckets };
 }
@@ -132,3 +125,50 @@ export async function checkSupabaseHealth(): Promise<HealthResult> {
 export const ENV_SNIPPET = `# Supabase — paste into Backend → Secrets (MonstarX) or a local .env file
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-public-key`;
+
+/** Paste into Supabase → SQL Editor. Does not touch system_settings. */
+export const STORAGE_BUCKET_SQL = `insert into storage.buckets (id, name, public)
+values
+  ('avatars', 'avatars', true),
+  ('program-images', 'program-images', true),
+  ('documents', 'documents', false),
+  ('site-assets', 'site-assets', true)
+on conflict (id) do update set public = excluded.public;
+
+drop policy if exists avatars_public_read on storage.objects;
+create policy avatars_public_read on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists program_images_public_read on storage.objects;
+create policy program_images_public_read on storage.objects for select
+  using (bucket_id = 'program-images');
+
+drop policy if exists site_assets_public_read on storage.objects;
+create policy site_assets_public_read on storage.objects for select
+  using (bucket_id = 'site-assets');`;
+
+async function probeBucket(
+  name: string,
+  listed: Set<string>,
+): Promise<{ name: string; ok: boolean; error: string | null }> {
+  if (listed.has(name)) return { name, ok: true, error: null };
+  try {
+    const { error } = await supabase.storage.from(name).list("", { limit: 1 });
+    if (!error) return { name, ok: true, error: null };
+    const message = error.message || "Storage probe failed";
+    if (/not found|does not exist/i.test(message)) {
+      return { name, ok: false, error: "Bucket missing — apply the storage migration" };
+    }
+    // The bucket exists; listing it may still be blocked for this key.
+    if (/row-level security|unauthorized|permission|jwt|policy/i.test(message)) {
+      return { name, ok: true, error: null };
+    }
+    return { name, ok: false, error: message };
+  } catch (err) {
+    return {
+      name,
+      ok: false,
+      error: err instanceof Error ? err.message : "Storage probe failed",
+    };
+  }
+}

@@ -189,7 +189,7 @@ export default function AdminWebsiteSettings() {
               onChange={(v) => patchHeader({ showApply: v })}
             />
           </div>
-          <Field label="Hope Assistant launcher label" value={draft.assistantLauncherLabel} onChange={(v) => patch({ assistantLauncherLabel: v })} />
+          <Field label="AOH AI launcher label" value={draft.assistantLauncherLabel} onChange={(v) => patch({ assistantLauncherLabel: v })} />
         </div>
       )}
 

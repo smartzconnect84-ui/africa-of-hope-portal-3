@@ -17,57 +17,66 @@ export class AssistantError extends Error {
   code: string;
   constructor(message: string, code: string) {
     super(message);
+    this.name = "AssistantError";
     this.code = code;
   }
 }
 
-const CONFIG_MESSAGE =
-  "Hope Assistant reached the server, but OpenAI did not answer. In Supabase project gatnzfjpuokopqyksqoy, open Edge Functions → Secrets and set OPENAI_API_KEY. Keep Assistant enabled in System Settings, then try again.";
-
-function messageFor(code: string, serverMessage: string, status: number): string {
-  if (code === "missing_key") return CONFIG_MESSAGE;
-  if (code === "disabled") {
-    return "Hope Assistant is turned off. Enable it in System Settings, then try again.";
-  }
-  if (code === "openai_auth") {
-    return "OpenAI rejected the API key on the assistant function. Replace OPENAI_API_KEY in the Supabase function secrets with a valid key, then try again.";
-  }
-  if (code === "openai_rate_limit") {
-    return "OpenAI rate-limited this request. Wait a moment and try again, or check that the API account still has usage allowance.";
-  }
-  if (code === "openai_model") {
-    return "The model gpt-4o-mini is not available to this OpenAI account. Check the account's model access, then try again.";
-  }
-  if (code === "unavailable" || status === 503) return CONFIG_MESSAGE;
-  if (code === "rate_limited") return serverMessage;
-  if (status === 404) {
-    return "The assistant function is not deployed on this Supabase project. Deploy it, then try again.";
-  }
-  return serverMessage || "Hope Assistant is unavailable right now. Please try again shortly.";
+function messageFor(code: string, status: number): string {
+  const messages: Record<string, string> = {
+    missing_key: "AOH AI is not configured yet. A school administrator needs to set the server-side GROQ_API_KEY secret in Supabase (Edge Functions → Secrets).",
+    disabled: "AOH AI is turned off in System Settings.",
+    groq_auth: "The AI provider rejected the server's credentials. Please ask the school administrator to check the Groq configuration.",
+    groq_rate_limit: "The AI provider's usage limit was reached. Please try again later or contact the school administrator.",
+    groq_model: "The configured AI model is not available. Please contact the school administrator.",
+    groq_error: "The AI provider could not complete this request. Please try again or contact the school administrator.",
+    openai_auth: "The AI provider rejected the server's credentials. Please ask the school administrator to check the Groq configuration.",
+    openai_rate_limit: "The AI provider's usage limit was reached. Please try again later or contact the school administrator.",
+    openai_model: "The configured AI model is not available. Please contact the school administrator.",
+    openai_error: "The AI provider could not complete this request. Please try again or contact the school administrator.",
+    rate_limited: "The assistant's usage limit has been reached. Please try again later.",
+    usage_unavailable: "The assistant's usage controls could not be checked. Please contact the school administrator; this is not a chat-limit notice.",
+    settings_unavailable: "Assistant settings could not be loaded. Please try again or contact the school administrator.",
+    context_unavailable: "Your school records could not be loaded safely. Please try again shortly.",
+    auth_required: "Your session could not be verified. Please sign in again before using the portal assistant.",
+    unauthorized: "Your session could not be verified. Please sign in again before using the portal assistant.",
+    forbidden: "Your account does not have permission to use the assistant. Please contact the school administrator.",
+    permissions_unavailable: "Assistant access could not be verified. Please try again or contact the school administrator.",
+    invalid_request: "Please send a non-empty message of at most 1,500 characters. If the problem continues, reopen the chat.",
+    interrupted: "The AI reply was interrupted and may be incomplete. Please try again.",
+    incomplete: "The AI reply did not complete and may be incomplete. Please retry or ask for one section at a time.",
+    truncated: "The reply reached its length limit and is incomplete. Please request a shorter answer or ask for one section at a time.",
+    unavailable: "The AI provider is temporarily unavailable. Please try again shortly.",
+    server_error: "AOH AI encountered a server error. Please try again or contact the school administrator.",
+    empty: "AOH AI returned an empty reply. Please try again.",
+  };
+  if (status === 404) return "The assistant function could not be found. Please ask the school administrator to check its Supabase deployment.";
+  return messages[code] ?? (status === 401 ? messages.auth_required : status === 403 ? messages.forbidden : "AOH AI is unavailable right now. Please try again shortly.");
 }
 
 function applySseLine(line: string, onDelta: (text: string) => void): "delta" | "done" | "ignore" {
   const trimmed = line.trim();
   if (!trimmed.startsWith("data:")) return "ignore";
   const payload = trimmed.slice(5).trim();
-  if (!payload || payload === "[DONE]") return "ignore";
+  if (!payload) return "ignore";
+  // Our backend must explicitly confirm completion; a Groq [DONE] alone
+  // must not bypass its error/usage handling.
+  let parsed: { delta?: unknown; done?: unknown; error?: unknown; code?: unknown };
   try {
-    const parsed = JSON.parse(payload) as { delta?: unknown; done?: unknown; error?: unknown; code?: unknown };
-    if (typeof parsed.error === "string") {
-      throw new AssistantError(
-        messageFor(String(parsed.code ?? "unavailable"), parsed.error, 502),
-        String(parsed.code ?? "unavailable"),
-      );
-    }
-    if (typeof parsed.delta === "string" && parsed.delta.length > 0) {
-      onDelta(parsed.delta);
-      return "delta";
-    }
-    if (parsed.done) return "done";
-  } catch (err) {
-    if (err instanceof AssistantError) throw err;
+    parsed = JSON.parse(payload);
+    if (!parsed || typeof parsed !== "object") throw new Error("Invalid event");
+  } catch {
+    throw new AssistantError(messageFor("interrupted", 502), "interrupted");
   }
-  return "ignore";
+  if (typeof parsed.error === "string") {
+    const code = typeof parsed.code === "string" ? parsed.code : "unavailable";
+    throw new AssistantError(messageFor(code, 502), code);
+  }
+  if (typeof parsed.delta === "string" && parsed.delta.length > 0) {
+    onDelta(parsed.delta);
+    return "delta";
+  }
+  return parsed.done === true ? "done" : "ignore";
 }
 
 export interface AssistantStatus {
@@ -77,33 +86,30 @@ export interface AssistantStatus {
   model: string;
 }
 
-/**
- * Safe status probe for the admin activation panel. Never exposes secrets —
- * only booleans (is the function live, is the assistant enabled, is an
- * OpenAI key set) plus the model name.
- */
+/** Configuration only: this probe does not send a request to Groq. */
 export async function checkAssistantStatus(): Promise<AssistantStatus> {
-  const base: AssistantStatus = { deployed: false, enabled: false, configured: false, model: "gpt-4o-mini" };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, {
       method: "GET",
+      signal: controller.signal,
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
-    if (resp.status === 404) return base;
-    const body = (await resp.json().catch(() => null)) as Partial<AssistantStatus> | null;
-    if (!body) return base;
-    return {
-      deployed: true,
-      enabled: Boolean(body.enabled),
-      configured: Boolean(body.configured),
-      model: typeof body.model === "string" && body.model ? body.model : base.model,
-    };
-  } catch {
-    return base;
+    const body = await resp.json().catch(() => null);
+    if (!resp.ok) throw new AssistantError(messageFor(String(body?.code ?? "unavailable"), resp.status), String(body?.code ?? "unavailable"));
+    if (!body || body.deployed !== true || typeof body.enabled !== "boolean" || typeof body.configured !== "boolean" || typeof body.model !== "string") {
+      throw new AssistantError("The assistant's status response could not be verified. Check its deployed version.", "invalid_status");
+    }
+    return { deployed: true, enabled: body.enabled, configured: body.configured, model: body.model };
+  } catch (err) {
+    if (err instanceof AssistantError) throw err;
+    throw new AssistantError("Could not check the assistant's configuration. Check your connection and try again.", "network");
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-/** Short non-streaming test used by the admin panel ("Hello, who are you?"). */
 export async function testAssistant(): Promise<string> {
   let reply = "";
   await streamAssistant({
@@ -114,23 +120,34 @@ export async function testAssistant(): Promise<string> {
   return reply;
 }
 
-/**
- * Streams a chat completion from the assistant edge function.
- * Rejects with an `AssistantError` so the panel can show the reason
- * instead of leaving the loading dots up forever.
- */
+/** Success requires both text and the backend's explicit completion event. */
 export async function streamAssistant(opts: StreamAssistantOptions): Promise<void> {
-  const sessionData = await Promise.race([
-    supabase.auth.getSession().catch(() => ({ data: { session: null } })),
-    new Promise<{ data: { session: null } }>((resolve) => setTimeout(() => resolve({ data: { session: null } }), 4000)),
-  ]);
-  const token = sessionData.data.session?.access_token;
+  if (opts.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  let sessionTimer: ReturnType<typeof setTimeout> | undefined;
+  let token: string | undefined;
+  try {
+    const sessionData = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<never>((_, reject) => {
+        sessionTimer = setTimeout(() => reject(new AssistantError("Your session check timed out. Please try again.", "auth_required")), 5000);
+      }),
+    ]);
+    if (sessionData.error) throw new AssistantError(messageFor("auth_required", 401), "auth_required");
+    token = sessionData.data.session?.access_token;
+  } catch (err) {
+    if (err instanceof AssistantError) throw err;
+    throw new AssistantError(messageFor("auth_required", 401), "auth_required");
+  } finally {
+    clearTimeout(sessionTimer);
+  }
+  if (opts.surface === "portal" && !token) throw new AssistantError(messageFor("auth_required", 401), "auth_required");
+  if (opts.signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 35_000);
+  const timer = setTimeout(() => controller.abort(), 70_000);
   const onAbort = () => controller.abort();
   opts.signal?.addEventListener("abort", onAbort);
-
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, {
       method: "POST",
@@ -140,42 +157,35 @@ export async function streamAssistant(opts: StreamAssistantOptions): Promise<voi
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${token ?? SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ messages: opts.messages, surface: opts.surface, view: opts.view }),
+      body: JSON.stringify({ messages: opts.messages.slice(-10), surface: opts.surface, view: opts.view }),
     });
-
     if (!resp.ok || !resp.body) {
-      let message = "Hope Assistant is unavailable right now. Please try again shortly.";
-      let code = "unavailable";
-      try {
-        const body = await resp.json();
-        if (body?.error) message = String(body.error);
-        if (body?.code) code = String(body.code);
-      } catch {
-        /* keep the default message if the error body isn't JSON */
-      }
-      throw new AssistantError(messageFor(code, message, resp.status), code);
+      const body = await resp.json().catch(() => null);
+      const code = typeof body?.code === "string" ? body.code : "unavailable";
+      throw new AssistantError(messageFor(code, resp.status), code);
     }
-
-    const reader = resp.body.getReader();
+    if (!resp.headers.get("content-type")?.includes("text/event-stream")) {
+      throw new AssistantError(messageFor("interrupted", 502), "interrupted");
+    }
+    reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffered = "";
-    let sawDelta = false;
-
+    let sawText = false;
     const consume = (flush: boolean) => {
       const lines = buffered.split("\n");
-      if (!flush) buffered = lines.pop() ?? "";
-      else buffered = "";
+      buffered = flush ? "" : lines.pop() ?? "";
       for (const line of lines) {
-        const kind = applySseLine(line, opts.onDelta);
-        if (kind === "delta") sawDelta = true;
-        if (kind === "done" && !sawDelta) {
-          throw new AssistantError("Hope Assistant returned an empty reply. Please try again.", "empty");
+        const kind = applySseLine(line, (text) => {
+          if (text.trim()) sawText = true;
+          opts.onDelta(text);
+        });
+        if (kind === "done") {
+          if (!sawText) throw new AssistantError(messageFor("empty", 502), "empty");
+          return true;
         }
-        if (kind === "done") return true;
       }
       return false;
     };
-
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -184,19 +194,19 @@ export async function streamAssistant(opts: StreamAssistantOptions): Promise<voi
     }
     buffered += decoder.decode();
     if (consume(true)) return;
-    if (!sawDelta) throw new AssistantError(CONFIG_MESSAGE, "empty");
+    throw new AssistantError(messageFor("interrupted", 502), "interrupted");
   } catch (err) {
-    if (opts.signal?.aborted) throw err;
+    if (opts.signal?.aborted) throw new DOMException("Aborted", "AbortError");
     if (err instanceof AssistantError) throw err;
-    const aborted = err instanceof DOMException && err.name === "AbortError";
+    const aborted = controller.signal.aborted;
     throw new AssistantError(
-      aborted
-        ? "Hope Assistant took too long to answer. Please try again."
-        : "Could not reach Hope Assistant. Check your connection and try again.",
+      aborted ? "AOH AI took too long to answer; any partial reply may be incomplete. Please try again." : "Could not reach AOH AI. Check your connection and try again.",
       aborted ? "timeout" : "network",
     );
   } finally {
     clearTimeout(timer);
     opts.signal?.removeEventListener("abort", onAbort);
+    if (reader) await reader.cancel().catch(() => {});
+    controller.abort();
   }
 }

@@ -12,14 +12,15 @@ interface ChatBubble {
   id: string;
   role: "user" | "assistant" | "error";
   content: string;
+  complete?: boolean;
 }
 
 function suggestionsFor(role: string | null): string[] {
   if (!role) {
     return [
       "What programmes do you offer?",
-      "How do I apply?",
-      "How can I verify a certificate?",
+      "Help me write a professional letter",
+      "Explain a topic for my studies",
     ];
   }
   if (role === "Student") {
@@ -47,16 +48,28 @@ export default function HopeAssistant() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Do not carry another account's private conversation into a new session.
+  useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBubbles([]);
+    setDraft("");
+    setSending(false);
+  }, [currentUser?.id]);
+
   if (!state.settings.assistantEnabled || hidden) return null;
 
-  const label = state.websiteSettings.assistantLauncherLabel || "Ask Hope";
+  const configuredLabel = state.websiteSettings.assistantLauncherLabel?.trim();
+  const label = !configuredLabel || /luna|hope assistant|afrohope ai/i.test(configuredLabel)
+    ? "AOH AI"
+    : configuredLabel;
   const surface: "public" | "portal" = currentUser ? "portal" : "public";
 
   async function send(text: string) {
     const content = text.trim();
-    if (!content || sending) return;
+    if (!content || content.length > 1500 || sending) return;
     const history: AssistantMessage[] = [
-      ...bubbles.filter((b) => b.role !== "error").map((b) => ({ role: b.role as "user" | "assistant", content: b.content })),
+      ...bubbles.filter((b) => b.role === "user" || (b.role === "assistant" && b.complete)).map((b) => ({ role: b.role as "user" | "assistant", content: b.content })),
       { role: "user", content },
     ];
     setBubbles((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content }]);
@@ -67,6 +80,7 @@ export default function HopeAssistant() {
     setBubbles((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     const controller = new AbortController();
+    let receivedText = false;
     abortRef.current = controller;
     try {
       await streamAssistant({
@@ -74,19 +88,22 @@ export default function HopeAssistant() {
         surface,
         signal: controller.signal,
         onDelta: (delta) => {
-          setBubbles((prev) => prev.map((b) => (b.id === assistantId ? { ...b, content: b.content + delta } : b)));
+          receivedText = receivedText || Boolean(delta.trim());
+          if (!controller.signal.aborted) setBubbles((prev) => prev.map((b) => (b.id === assistantId ? { ...b, content: b.content + delta } : b)));
         },
       });
+      if (!controller.signal.aborted) setBubbles((prev) => prev.map((b) => b.id === assistantId ? { ...b, complete: true } : b));
     } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
+      if (controller.signal.aborted || (e instanceof DOMException && e.name === "AbortError")) {
         setBubbles((prev) => prev.filter((b) => !(b.id === assistantId && b.content === "")));
         return;
       }
       const code = e instanceof AssistantError ? e.code : "unavailable";
-      // Offline fallback: when the AI backend isn't configured yet (missing key,
-      // disabled, unreachable), answer common academy questions from live portal
-      // data so the assistant is useful immediately. Clearly labelled offline.
-      if (["missing_key", "disabled", "unavailable", "network", "timeout", "server_error", "empty"].includes(code)) {
+      const message = e instanceof AssistantError ? e.message : "AOH AI is unavailable right now. Please try again shortly.";
+      // Preserve the actual failure, even when a limited local answer is available.
+      // Local/failed/partial replies must never become AI conversation context.
+      const hasPartialReply = receivedText;
+      if (!hasPartialReply && ["missing_key", "unavailable", "network", "timeout", "server_error", "empty"].includes(code)) {
         const local = answerLocally(content, {
           academyName: state.settings.academyName,
           programmes: state.programs.map((p) => ({ title: p.title, category: p.category, description: p.description })),
@@ -96,20 +113,22 @@ export default function HopeAssistant() {
           intakeStatus: state.settings.intakeStatus,
         });
         if (local) {
-          setBubbles((prev) => prev.map((b) => (b.id === assistantId ? { ...b, content: local } : b)));
-          setSending(false);
-          abortRef.current = null;
+          setBubbles((prev) => [
+            ...prev.map((b) => (b.id === assistantId ? { ...b, content: `**Limited local response — not an AI answer**\n\n${local}` } : b)),
+            { id: crypto.randomUUID(), role: "error", content: message },
+          ]);
           return;
         }
       }
-      const message = e instanceof AssistantError ? e.message : "Hope Assistant is unavailable right now. Please try again shortly.";
       setBubbles((prev) => {
         const withoutEmptyDraft = prev.filter((b) => !(b.id === assistantId && b.content === ""));
         return [...withoutEmptyDraft, { id: crypto.randomUUID(), role: "error", content: message }];
       });
     } finally {
-      setSending(false);
-      abortRef.current = null;
+      if (abortRef.current === controller) {
+        setSending(false);
+        abortRef.current = null;
+      }
     }
   }
 
@@ -145,8 +164,8 @@ export default function HopeAssistant() {
               <span className="absolute -right-0.5 -bottom-0.5 h-[7px] w-[7px] rounded-full bg-emerald-400 ring-1 ring-[#022c22]" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold">{label}</p>
-              <p className="truncate text-xs text-emerald-200">AOH assistant</p>
+              <p className="truncate text-xs font-bold">AOH AI</p>
+              <p className="truncate text-xs text-emerald-200">AFRICA OF HOPE</p>
             </div>
             <button
               type="button"
@@ -162,8 +181,7 @@ export default function HopeAssistant() {
             {bubbles.length === 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-slate-600">
-                  Hi{currentUser ? ` ${currentUser.name.split(" ")[0]}` : ""}! I'm {label}. Ask me about programmes,
-                  admissions, {currentUser ? "your fees, quizzes, " : ""}certificate verification, or how to use the portal.
+                  Hi{currentUser ? ` ${currentUser.name.split(" ")[0]}` : ""}! I'm AOH AI, your intelligent assistant from AFRICA OF HOPE. How can I help you today?
                 </p>
                 <div className="ml-1 flex flex-wrap gap-1">
                   {suggestionsFor(currentUser?.role ?? null).map((s) => (
@@ -216,7 +234,7 @@ export default function HopeAssistant() {
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="Ask Hope Assistant…"
+                placeholder="Ask AOH AI…"
                 maxLength={1500}
                 disabled={sending}
                 className="flex-1 bg-transparent py-1.5 text-xs outline-none disabled:opacity-60"
@@ -225,7 +243,7 @@ export default function HopeAssistant() {
                 <Send className="h-[11px] w-[11px]" />
               </Button>
             </div>
-            <p className="mt-1.5 text-center text-xs text-slate-400">Hope Assistant can make mistakes. Confirm anything important with the office.</p>
+            <p className="mt-1.5 text-center text-xs text-slate-400">AOH AI can make mistakes. Verify important information and school details.</p>
           </form>
         </div>
       )}

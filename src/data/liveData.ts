@@ -57,7 +57,6 @@ export function settingsRow(
   themeSettings: PortalThemeSettings,
 ) {
   return {
-    id: true,
     academy_name: settings.academyName,
     motto: settings.motto,
     contact_email: settings.contactEmail,
@@ -93,8 +92,8 @@ function explainSettingsError(message: string): string {
 
 /**
  * Writes one settings patch to the singleton system_settings row.
- * Looks up the real row id first so a save still lands when the key is not the
- * boolean `true` this app inserts, and reports a miss instead of pretending success.
+ * Uses the existing row's real primary key without changing it. New rows use
+ * the database's ID default. Reports a miss instead of pretending success.
  */
 export async function persistSettingsPatch(patch: Record<string, unknown>): Promise<string | null> {
   const existing = await supabase.from("system_settings").select("id").limit(1).maybeSingle();
@@ -116,8 +115,10 @@ export async function persistSettingsPatch(patch: Record<string, unknown>): Prom
   const rowId = existing.data?.id;
   if (rowId !== undefined && rowId !== null) return writeExisting(rowId);
 
-  const inserted = await supabase.from("system_settings").insert({ id: true, ...patch }).select("id");
-  if (!inserted.error) return null;
+  const inserted = await supabase.from("system_settings").insert(patch).select("id");
+  if (!inserted.error) {
+    return inserted.data?.length ? null : "Settings were not saved. No settings row was returned.";
+  }
   if (/duplicate key|unique/i.test(inserted.error.message)) {
     const retry = await supabase.from("system_settings").select("id").limit(1).maybeSingle();
     if (retry.data && retry.data.id !== undefined && retry.data.id !== null) {

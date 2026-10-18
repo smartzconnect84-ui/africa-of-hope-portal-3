@@ -82,6 +82,7 @@ export default function AdminSystemSettings() {
     state, updateSystemSettings, publishThemeSettings, clearTransactionalData, importSystemData, resetDemoData,
   } = useApp();
 
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<SystemSettings>(state.settings);
   const [themeDraft, setThemeDraft] = useState<PortalThemeSettings>(state.themeSettings);
   const [confirm, setConfirm] = useState<null | "clear" | "reset">(null);
@@ -125,7 +126,8 @@ export default function AdminSystemSettings() {
   const radiusPx = (radius: PortalThemeSettings["borderRadius"]) =>
     radius === "sharp" ? "0.25rem" : radius === "pill" ? "9999px" : "0.75rem";
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     if (!draft.academyName.trim()) {
       toast.error("Academy name cannot be empty");
       return;
@@ -134,8 +136,15 @@ export default function AdminSystemSettings() {
       toast.error("Pass mark must be between 0 and 100");
       return;
     }
-    updateSystemSettings(draft);
-    toast.success("System settings saved");
+    setSaving(true);
+    try {
+      const error = await updateSystemSettings(draft);
+      if (!error) toast.success("System settings saved");
+    } catch {
+      toast.error("Settings could not be saved. Check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleFeatured = (id: string) =>
@@ -203,8 +212,8 @@ export default function AdminSystemSettings() {
             <Button variant="outline" onClick={() => setDraft(state.settings)}>
               <Undo2 className="mr-1.5 h-4 w-4" /> Discard
             </Button>
-            <Button onClick={save} className="bg-emerald-700 hover:bg-emerald-800">
-              <Save className="mr-1.5 h-4 w-4" /> Save changes
+            <Button onClick={save} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800">
+              <Save className="mr-1.5 h-4 w-4" /> {saving ? "Saving…" : "Save changes"}
             </Button>
           </div>
         }
@@ -441,7 +450,7 @@ export default function AdminSystemSettings() {
               />
             </div>
             <ToggleRow
-              title="Hope Assistant enabled"
+              title="AOH AI enabled"
               hint="Turn off to hide the AI assistant everywhere (public site and portal) and return a friendly unavailable message."
               checked={draft.assistantEnabled}
               onChange={(v) => set("assistantEnabled", v)}

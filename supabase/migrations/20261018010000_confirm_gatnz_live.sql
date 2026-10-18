@@ -73,7 +73,6 @@ begin
   end loop;
 end $$;
 
--- 4. Marker row so Admin → Backend tab can prove this migration landed ─────────
-insert into public.system_settings (id, site_name, updated_at)
-values ('00000000-0000-0000-0000-000000000001', 'Africa of Hope', now())
-on conflict (id) do update set updated_at = now();
+-- Do not insert into system_settings here. Live id is uuid (not boolean), and a
+-- failed insert rolls back the bucket statements above. Buckets are provisioned
+-- on their own in 20261018020000_storage_buckets.sql.

@@ -101,8 +101,8 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "cms.manage", group: "Website", label: "Manage website content", description: "Edit the public website: homepage, login/register page, logo and footer.", sort: 180 },
   { key: "blog.manage", group: "Website", label: "Manage blog", description: "Write, schedule, publish and archive public blog posts.", sort: 185 },
   { key: "settings.manage", group: "Settings", label: "Manage system settings", description: "Edit academy details, academic calendar and portal-wide settings.", sort: 190 },
-  { key: "assistant.use", group: "AI", label: "Use Hope Assistant", description: "Chat with the Hope Assistant and get answers about your own data.", sort: 200 },
-  { key: "assistant.admin_help", group: "AI", label: "Assistant screen help & stats", description: "Get screen guidance and aggregate statistics from the Hope Assistant.", sort: 210 },
+  { key: "assistant.use", group: "AI", label: "Use AOH AI", description: "Chat with AOH AI for general help and authorized school information.", sort: 200 },
+  { key: "assistant.admin_help", group: "AI", label: "Assistant screen help & stats", description: "Get screen guidance and authorized aggregate statistics from AOH AI.", sort: 210 },
 ];
 
 export const PERMISSION_GROUPS = Array.from(new Set(PERMISSIONS.map((p) => p.group)));

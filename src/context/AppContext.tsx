@@ -10,7 +10,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchState, mergeThemeSettings, mergeWebsiteSettings, settingsRow, today, uid, type Row } from "@/data/liveData";
+import { fetchState, mergeThemeSettings, mergeWebsiteSettings, persistSettingsPatch, settingsRow, today, uid, type Row } from "@/data/liveData";
 import type {
   Announcement,
   AppState,
@@ -112,7 +112,7 @@ interface AppContextValue {
   addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => void;
   issueCertificate: (studentId: string, programId: string, honors: string) => Certificate;
   addAnnouncement: (payload: Omit<Announcement, "id" | "date">) => void;
-  updateSystemSettings: (patch: Partial<SystemSettings>) => void;
+  updateSystemSettings: (patch: Partial<SystemSettings>) => Promise<string | null>;
   /** Publishes a whole settings object live (the CMS editor's "Publish changes" button). */
   publishWebsiteSettings: (next: WebsiteSettings) => Promise<string | null>;
   publishThemeSettings: (next: PortalThemeSettings) => Promise<string | null>;
@@ -285,26 +285,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       null;
 
     const publishWebsiteSettings = async (websiteSettings: WebsiteSettings) => {
-      setState((s) => ({ ...s, websiteSettings }));
-      // Updates only the website_settings column (needs cms.manage, not settings.manage),
-      // instead of upserting the whole row, so it never overwrites settings a parallel
-      // "System Settings" save just wrote.
-      const { error } = await supabase
-        .from("system_settings")
-        .update({ website_settings: websiteSettings })
-        .eq("id", true);
-      return error?.message ?? null;
+      // Save only this column so parallel system/appearance saves are preserved.
+      const error = await persistSettingsPatch({ website_settings: websiteSettings });
+      if (!error) setState((s) => ({ ...s, websiteSettings }));
+      return error;
     };
 
     const publishThemeSettings = async (themeSettings: PortalThemeSettings) => {
-      setState((s) => ({ ...s, themeSettings }));
-      // Updates only the theme_settings column, same reasoning as publishWebsiteSettings
-      // above: it must never clobber a parallel settings/website save.
-      const { error } = await supabase
-        .from("system_settings")
-        .update({ theme_settings: themeSettings })
-        .eq("id", true);
-      return error?.message ?? null;
+      const error = await persistSettingsPatch({ theme_settings: themeSettings });
+      if (!error) setState((s) => ({ ...s, themeSettings }));
+      return error;
     };
 
     const patchUser = (id: string, patch: Row, local: (u: User) => User, label: string) => {
@@ -762,21 +752,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }),
         );
       },
-      updateSystemSettings: (patch) => {
-        const settings = { ...state.settings, ...patch };
-        setState((s) => ({ ...s, settings }));
-        push(
-          "Settings",
-          supabase
-            .from("system_settings")
-            // website_settings and theme_settings are saved only by their own publish
-            // actions. Leaving them out (undefined is dropped from the payload) stops a
-            // stale copy here from erasing a logo or partner image that was just published.
-            .upsert(
-              { ...settingsRow(settings, state.websiteSettings, state.themeSettings), website_settings: undefined, theme_settings: undefined },
-              { onConflict: "id" },
-            ),
-        );
+      updateSystemSettings: async (patch) => {
+        const settings = { ...stateRef.current.settings, ...patch };
+        const row = settingsRow(settings, state.websiteSettings, state.themeSettings);
+        // Website and appearance are published independently; never overwrite them here.
+        const { website_settings, theme_settings, ...systemPatch } = row;
+        const error = await persistSettingsPatch(systemPatch);
+        if (error) toast.error(`Settings: ${error}`);
+        else setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+        return error;
       },
       publishWebsiteSettings,
       publishThemeSettings,

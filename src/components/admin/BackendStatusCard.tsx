@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { panelClass } from "../Navigation";
 import {
   ENV_SNIPPET,
+  STORAGE_BUCKET_SQL,
   checkSupabaseHealth,
   type HealthResult,
 } from "@/lib/supabaseHealth";
@@ -30,7 +31,7 @@ export default function BackendStatusCard() {
   const { live } = useApp();
   const [result, setResult] = useState<HealthResult | null>(null);
   const [checking, setChecking] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"env" | "sql" | null>(null);
 
   const run = useCallback(async () => {
     setChecking(true);
@@ -48,15 +49,20 @@ export default function BackendStatusCard() {
   const healthyTables = result?.tables.filter((t) => t.ok).length ?? 0;
   const healthyBuckets = result?.buckets.filter((b) => b.ok).length ?? 0;
 
-  const copySnippet = async () => {
+  const copyText = async (kind: "env" | "sql", text: string) => {
     try {
-      await navigator.clipboard.writeText(ENV_SNIPPET);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 2000);
     } catch {
-      setCopied(false);
+      setCopied(null);
     }
   };
+
+  const bucketsMissing = (result?.buckets ?? []).some((b) => !b.ok);
+  const sqlEditorUrl = result?.projectRef
+    ? `https://supabase.com/dashboard/project/${result.projectRef}/sql/new`
+    : "https://supabase.com/dashboard";
 
   return (
     <div className={`${panelClass} space-y-5 p-5`}>
@@ -165,16 +171,36 @@ export default function BackendStatusCard() {
                   ))}
                 </ul>
               </div>
+              {bucketsMissing && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold">Create the missing buckets</p>
+                    <Button variant="outline" size="sm" onClick={() => copyText("sql", STORAGE_BUCKET_SQL)}>
+                      <Copy className="mr-1.5 h-3.5 w-3.5" /> {copied === "sql" ? "Copied" : "Copy SQL"}
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed">
+                    This app cannot create Storage buckets itself. Open the{" "}
+                    <a className="font-semibold underline" href={sqlEditorUrl} target="_blank" rel="noreferrer">
+                      Supabase SQL editor
+                    </a>
+                    , paste this script and run it, then press Re-check. It does not touch system_settings, so the earlier column error will not roll the buckets back.
+                  </p>
+                  <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-amber-900">
+                    {STORAGE_BUCKET_SQL}
+                  </pre>
+                </div>
+              )}
               <div className="rounded-2xl bg-slate-900 p-4 text-slate-100">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-semibold">Point the app at another project</p>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={copySnippet}
+                    onClick={() => copyText("env", ENV_SNIPPET)}
                     className="border-slate-600 bg-transparent text-slate-100 hover:bg-slate-800 hover:text-white"
                   >
-                    <Copy className="mr-1.5 h-3.5 w-3.5" /> {copied ? "Copied" : "Copy"}
+                    <Copy className="mr-1.5 h-3.5 w-3.5" /> {copied === "env" ? "Copied" : "Copy"}
                   </Button>
                 </div>
                 <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-emerald-200">
