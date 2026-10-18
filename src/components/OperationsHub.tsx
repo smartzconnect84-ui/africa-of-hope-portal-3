@@ -36,8 +36,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
+import EnquiryInbox from "./portal/EnquiryInbox";
+import { MessageCircle } from "lucide-react";
 
-type HubTab = "resources" | "notifications" | "timetable" | "analytics" | "audit";
+type HubTab = "resources" | "notifications" | "timetable" | "analytics" | "audit" | "enquiries";
 
 const tabs: { key: HubTab; label: string; icon: typeof FileText }[] = [
   { key: "resources", label: "Resources", icon: FileText },
@@ -45,6 +47,7 @@ const tabs: { key: HubTab; label: string; icon: typeof FileText }[] = [
   { key: "timetable", label: "Timetable", icon: CalendarDays },
   { key: "analytics", label: "Analytics", icon: LineChart },
   { key: "audit", label: "Audit", icon: ShieldCheck },
+  { key: "enquiries", label: "Enquiries", icon: MessageCircle },
 ];
 
 function downloadText(filename: string, content: string, type = "text/plain") {

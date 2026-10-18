@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { programImage } from "@/lib/programImages";
 import type { Program } from "@/types";
+import ProgramBrochureButton from "../public/ProgramBrochureButton";
 import { ScrollReveal } from "../public/motion";
 
 const INTERVAL_MS = 3500;
@@ -152,14 +153,19 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                         <Clock3 className="h-3.5 w-3.5 text-emerald-700" />
                         {program.durationWeeks ? `${program.durationWeeks} weeks` : "Flexible"}
                       </span>
-                      <button
-                        type="button"
-                        onClick={onApply}
-                        tabIndex={i >= total ? -1 : undefined}
-                        className="btn-sheen inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1.5 font-semibold text-white transition hover:bg-emerald-800"
-                      >
-                        Apply <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
-                      </button>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="[&_button]:h-7 [&_button]:px-2 [&_button]:text-[11px]">
+                          <ProgramBrochureButton program={program} variant="ghost" className="text-emerald-800 hover:text-emerald-900" />
+                        </span>
+                        <button
+                          type="button"
+                          onClick={onApply}
+                          tabIndex={i >= total ? -1 : undefined}
+                          className="btn-sheen inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1.5 font-semibold text-white transition hover:bg-emerald-800"
+                        >
+                          Apply <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                        </button>
+                      </span>
                     </div>
                   </div>
                 </article>

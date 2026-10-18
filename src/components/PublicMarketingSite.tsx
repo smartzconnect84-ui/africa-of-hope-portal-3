@@ -26,6 +26,8 @@ import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
 import PublicNav from "./public/PublicNav";
 import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
+import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
+import TermDatesPage from "./public/TermDatesPage";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
@@ -33,6 +35,7 @@ const NAV_LINKS: [string, string][] = [
   ["#home", "Home"],
   ["#about", "About"],
   ["#programmes", "Programmes"],
+  ["#term-dates", "Term dates"],
   ["#blog", "Blog"],
   ["#policies", "Policies"],
   ["#donate", "Donate"],
@@ -64,6 +67,7 @@ const HOME_COPY_OVERRIDES: Partial<Record<HomeSectionKey, Partial<SectionCopy>>>
 };
 
 const PROGRAMMES_RE = /^#(programmes|programs)$/i;
+const TERM_DATES_RE = /^#term-dates$/i;
 const POLICIES_RE = /^#policies$/i;
 const COOKIES_RE = /^#cookies$/i;
 const DONATE_RE = /^#donate$/i;
@@ -73,6 +77,7 @@ const BLOG_RE = /^#blog$/i;
 type View =
   | { type: "home"; anchor: string | null }
   | { type: "programmes" }
+  | { type: "term-dates" }
   | { type: "policies" }
   | { type: "cookies" }
   | { type: "donate" }
@@ -82,6 +87,7 @@ type View =
 function parseHash(hash: string): View {
   const h = hash || "#home";
   if (PROGRAMMES_RE.test(h)) return { type: "programmes" };
+  if (TERM_DATES_RE.test(h)) return { type: "term-dates" };
   if (POLICIES_RE.test(h)) return { type: "policies" };
   if (COOKIES_RE.test(h)) return { type: "cookies" };
   if (DONATE_RE.test(h)) return { type: "donate" };
@@ -138,6 +144,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [{ id: "nav-home", href: "#home", label: "Home" }, ...links];
     if (!links.some((l) => PROGRAMMES_RE.test(l.href.trim())))
       links = [...links, { id: "nav-programmes", href: "#programmes", label: "Programmes" }];
+    if (!links.some((l) => TERM_DATES_RE.test(l.href.trim())))
+      links = [...links, { id: "nav-termdates", href: "#term-dates", label: "Term dates" }];
     if (!links.some((l) => BLOG_RE.test(l.href.trim())))
       links = [...links, { id: "nav-blog", href: "#blog", label: "Blog" }];
     if (!links.some((l) => POLICIES_RE.test(l.href.trim())))
@@ -188,6 +196,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   useEffect(() => {
     const base = displayName || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
     if (view.type === "programmes") document.title = `Programmes — ${base}`;
+    else if (view.type === "term-dates") document.title = `Term dates — ${base}`;
     else if (view.type === "policies") document.title = `School Policies — ${base}`;
     else if (view.type === "cookies") document.title = `Cookies Policy — ${base}`;
     else if (view.type === "donate") document.title = `Donate & Support — ${base}`;
@@ -385,6 +394,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           transition={{ duration: 0.22, ease: "easeOut" }}
         >
           {view.type === "programmes" && <ProgrammesPage programs={state.programs} onApply={openApply} />}
+          {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
           {view.type === "cookies" && <CookiesPage />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
@@ -517,6 +527,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 </button>
               </li>
               <li>
+                <a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
+                  <ChevronRight className="h-3.5 w-3.5" /> Term dates
+                </a>
+              </li>
+              <li>
                 <a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
                   <ChevronRight className="h-3.5 w-3.5" /> Verify a certificate
                 </a>
@@ -565,6 +580,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         </div>
       </footer>
 
+      <WhatsAppEnquiry programs={state.programs} contactPhone={w.contactPhone || settings.contactPhone} />
       <ProgramAnnouncementPopup
         programs={state.programs}
         paused={menu}

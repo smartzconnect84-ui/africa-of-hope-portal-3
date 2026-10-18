@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { programImage } from "@/lib/programImages";
+import ProgramBrochureButton from "./ProgramBrochureButton";
 import type { Program } from "@/types";
 import { MotionCard, ScrollReveal, StaggerGroup } from "./motion";
 import { buttonMotionProps } from "./motionConstants";
@@ -140,14 +141,17 @@ export default function ProgrammesPage({
                       <dd>{program.certification || "Certificate on completion"}</dd>
                     </div>
                   </dl>
-                  <motion.button
-                    type="button"
-                    onClick={onApply}
-                    {...buttonMotionProps}
-                    className="mt-5 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-800 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                  >
-                    Apply for this programme <ChevronRight className="h-4 w-4" />
-                  </motion.button>
+                  <div className="mt-5 flex flex-col gap-2">
+                    <motion.button
+                      type="button"
+                      onClick={onApply}
+                      {...buttonMotionProps}
+                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-800 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                    >
+                      Apply for this programme <ChevronRight className="h-4 w-4" />
+                    </motion.button>
+                    <ProgramBrochureButton program={program} />
+                  </div>
                 </div>
               </MotionCard>
             ))}
