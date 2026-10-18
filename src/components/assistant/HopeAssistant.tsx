@@ -77,6 +77,10 @@ export default function HopeAssistant() {
         },
       });
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setBubbles((prev) => prev.filter((b) => !(b.id === assistantId && b.content === "")));
+        return;
+      }
       const message = e instanceof AssistantError ? e.message : "Hope Assistant is unavailable right now. Please try again shortly.";
       setBubbles((prev) => {
         const withoutEmptyDraft = prev.filter((b) => !(b.id === assistantId && b.content === ""));
@@ -168,12 +172,14 @@ export default function HopeAssistant() {
                       <div className="prose-sm [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-4">
                         <ReactMarkdown>{b.content}</ReactMarkdown>
                       </div>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 py-1">
+                    ) : sending ? (
+                      <span className="inline-flex items-center gap-1 py-1" aria-label="Waiting for a reply">
                         <i className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
                         <i className="h-1 w-1 animate-pulse rounded-full bg-emerald-500 [animation-delay:150ms]" />
                         <i className="h-1 w-1 animate-pulse rounded-full bg-emerald-500 [animation-delay:300ms]" />
                       </span>
+                    ) : (
+                      <span className="text-slate-500">No reply came back. Please try again.</span>
                     )}
                   </div>
                 )}

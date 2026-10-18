@@ -143,13 +143,20 @@ Deno.serve(async (req: Request) => {
 
     const admin = createClient(url, serviceKey);
 
-    // The system settings toggle (admin.system_settings.assistant_enabled) and
-    // a missing API key both produce the exact same friendly 503 — neither
-    // case should ever reach the model.
+    // A disabled toggle and a missing key must not reach the model. They
+    // return different codes so the chat can tell the admin what to fix.
     const { data: settingsRow } = await admin.from("system_settings").select("assistant_enabled").maybeSingle();
     const enabled = (settingsRow as Row | null)?.assistant_enabled !== false;
-    if (!openaiKey || !enabled) {
-      return json({ error: UNAVAILABLE_MESSAGE, code: "unavailable" }, 503);
+    if (!enabled) {
+      console.error("assistant unavailable: assistant_enabled is false");
+      return json({ error: "Hope Assistant is turned off in System Settings.", code: "disabled" }, 503);
+    }
+    if (!openaiKey) {
+      console.error("assistant unavailable: OPENAI_API_KEY is not set");
+      return json({
+        error: "Hope Assistant is not configured. Add the OPENAI_API_KEY secret to this function.",
+        code: "missing_key",
+      }, 503);
     }
 
     const body = await req.json().catch(() => null);
@@ -263,7 +270,13 @@ Deno.serve(async (req: Request) => {
     }).finally(() => clearTimeout(timeout));
 
     if (!openaiResp.ok || !openaiResp.body) {
-      return json({ error: UNAVAILABLE_MESSAGE, code: "unavailable" }, 503);
+      const status = openaiResp.status;
+      let code = "openai_error";
+      if (status === 401 || status === 403) code = "openai_auth";
+      else if (status === 429) code = "openai_rate_limit";
+      else if (status === 404) code = "openai_model";
+      console.error(`assistant openai failed status=${status} code=${code}`);
+      return json({ error: "Hope Assistant could not get a reply from OpenAI.", code }, 502);
     }
 
     const stream = new ReadableStream({
