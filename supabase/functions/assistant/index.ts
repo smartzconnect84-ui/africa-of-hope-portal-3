@@ -132,6 +132,34 @@ async function buildTeacherContext(admin: ReturnType<typeof createClient>, userI
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+
+  // ── safe status probe (no secrets leaked) ───────────────────────────
+  // GET /assistant returns { enabled, configured, model, deployed: true } so
+  // the portal's System Settings panel can show what still needs configuring.
+  // POST { "healthCheck": true } does the same for clients that can only POST.
+  async function statusPayload() {
+    try {
+      const url = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const admin = createClient(url, serviceKey);
+      const { data } = await admin.from("system_settings").select("assistant_enabled").maybeSingle();
+      const enabled = (data as Row | null)?.assistant_enabled !== false;
+      return json({
+        deployed: true,
+        enabled,
+        configured: Boolean(Deno.env.get("OPENAI_API_KEY")),
+        model: "gpt-4o-mini",
+      });
+    } catch {
+      return json({
+        deployed: true,
+        enabled: true,
+        configured: Boolean(Deno.env.get("OPENAI_API_KEY")),
+        model: "gpt-4o-mini",
+      });
+    }
+  }
+  if (req.method === "GET") return statusPayload();
   if (req.method !== "POST") return json({ error: "Method not allowed", code: "bad_method" }, 400);
 
   try {
@@ -161,6 +189,9 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => null);
     if (!body) return json({ error: "Invalid request body", code: "invalid_request" }, 400);
+
+    // POST health probe for clients that can only POST — same payload as GET.
+    if (body.healthCheck === true || body.status === true) return statusPayload();
 
     const messages = validateMessages(body.messages);
     if (!messages) return json({ error: "Invalid message history", code: "invalid_request" }, 400);

@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
 import BackendStatusCard from "./admin/BackendStatusCard";
+import AssistantStatusCard from "./admin/AssistantStatusCard";
 
 const CURRENCIES = ["$", "₦", "KSh", "€", "GHS", "R"];
 const INTAKES = ["Open", "Closing soon", "Waitlist", "Closed"];
@@ -609,7 +610,8 @@ export default function AdminSystemSettings() {
           </div>
         </TabsContent>
 
-        <TabsContent value="backend" className="mt-4">
+        <TabsContent value="backend" className="mt-4 space-y-4">
+          <AssistantStatusCard />
           <BackendStatusCard />
         </TabsContent>
       </Tabs>

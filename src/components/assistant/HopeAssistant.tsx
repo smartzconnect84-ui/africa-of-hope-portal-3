@@ -4,6 +4,7 @@ import { X, Send, Sparkles, Bot } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useAssistantVisibility } from "../../context/AssistantVisibility";
 import { streamAssistant, AssistantError, type AssistantMessage } from "../../lib/assistant";
+import { answerLocally } from "../../lib/assistantOffline";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +81,26 @@ export default function HopeAssistant() {
       if (e instanceof DOMException && e.name === "AbortError") {
         setBubbles((prev) => prev.filter((b) => !(b.id === assistantId && b.content === "")));
         return;
+      }
+      const code = e instanceof AssistantError ? e.code : "unavailable";
+      // Offline fallback: when the AI backend isn't configured yet (missing key,
+      // disabled, unreachable), answer common academy questions from live portal
+      // data so the assistant is useful immediately. Clearly labelled offline.
+      if (["missing_key", "disabled", "unavailable", "network", "timeout", "server_error", "empty"].includes(code)) {
+        const local = answerLocally(content, {
+          academyName: state.settings.academyName,
+          programmes: state.programs.map((p) => ({ title: p.title, category: p.category, description: p.description })),
+          contactEmail: state.settings.contactEmail,
+          contactPhone: state.settings.contactPhone,
+          address: state.settings.address,
+          intakeStatus: state.settings.intakeStatus,
+        });
+        if (local) {
+          setBubbles((prev) => prev.map((b) => (b.id === assistantId ? { ...b, content: local } : b)));
+          setSending(false);
+          abortRef.current = null;
+          return;
+        }
       }
       const message = e instanceof AssistantError ? e.message : "Hope Assistant is unavailable right now. Please try again shortly.";
       setBubbles((prev) => {

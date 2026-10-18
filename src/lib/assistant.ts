@@ -70,8 +70,52 @@ function applySseLine(line: string, onDelta: (text: string) => void): "delta" | 
   return "ignore";
 }
 
+export interface AssistantStatus {
+  deployed: boolean;
+  enabled: boolean;
+  configured: boolean;
+  model: string;
+}
+
 /**
- * Streams a reply from the `assistant` edge function over SSE.
+ * Safe status probe for the admin activation panel. Never exposes secrets —
+ * only booleans (is the function live, is the assistant enabled, is an
+ * OpenAI key set) plus the model name.
+ */
+export async function checkAssistantStatus(): Promise<AssistantStatus> {
+  const base: AssistantStatus = { deployed: false, enabled: false, configured: false, model: "gpt-4o-mini" };
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistant`, {
+      method: "GET",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (resp.status === 404) return base;
+    const body = (await resp.json().catch(() => null)) as Partial<AssistantStatus> | null;
+    if (!body) return base;
+    return {
+      deployed: true,
+      enabled: Boolean(body.enabled),
+      configured: Boolean(body.configured),
+      model: typeof body.model === "string" && body.model ? body.model : base.model,
+    };
+  } catch {
+    return base;
+  }
+}
+
+/** Short non-streaming test used by the admin panel ("Hello, who are you?"). */
+export async function testAssistant(): Promise<string> {
+  let reply = "";
+  await streamAssistant({
+    messages: [{ role: "user", content: "Hello, who are you?" }],
+    surface: "public",
+    onDelta: (d) => { reply += d; },
+  });
+  return reply;
+}
+
+/**
+ * Streams a chat completion from the assistant edge function.
  * Rejects with an `AssistantError` so the panel can show the reason
  * instead of leaving the loading dots up forever.
  */
