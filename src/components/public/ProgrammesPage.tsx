@@ -109,7 +109,7 @@ export default function ProgrammesPage({
             {filtered.map((program) => (
               <MotionCard
                 key={program.id}
-                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg"
+                className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 shadow-sm transition-shadow duration-200 hover:shadow-lg"
               >
                 <img
                   src={programImage(program)}

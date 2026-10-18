@@ -137,7 +137,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                 style={{ width: `${100 / visible}%` }}
                 aria-hidden={i >= total || undefined}
               >
-                <article className="aoh-card group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm">
+                <article className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 shadow-sm">
                   <div className="aoh-zoom relative overflow-hidden">
                     <img src={programImage(program)} alt="" className="h-40 w-full object-cover" loading="lazy" />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-950/25 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

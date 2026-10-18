@@ -449,6 +449,41 @@ html[data-portal-icons="filled"] .portal-icon {
   }
   .btn-sheen:hover::after { left: 130%; }
 
+  /* ---- Premium glassmorphism (subtle, brand-tinted) ---- */
+  /* Light glass for cards on light backgrounds. Semi-transparent white +
+     gentle blur + fine low-contrast border. Falls back to solid white
+     where backdrop-filter is unsupported. Blur stays <= 14px for perf. */
+  .aoh-glass {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: 0 12px 32px -16px rgba(2, 44, 34, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .aoh-glass {
+      -webkit-backdrop-filter: blur(14px) saturate(1.25);
+      backdrop-filter: blur(14px) saturate(1.25);
+    }
+  }
+  /* Dark glass for panels on the deep-green sections. */
+  .aoh-glass-dark {
+    background: rgba(6, 78, 59, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .aoh-glass-dark {
+      -webkit-backdrop-filter: blur(14px) saturate(1.2);
+      backdrop-filter: blur(14px) saturate(1.2);
+    }
+  }
+  @media (max-width: 640px) {
+    /* Lighter blur on phones for scroll performance. */
+    .aoh-glass, .aoh-glass-dark {
+      -webkit-backdrop-filter: blur(8px) saturate(1.15);
+      backdrop-filter: blur(8px) saturate(1.15);
+    }
+  }
+
   /* Card lift + glow */
   .aoh-card {
     transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.28s ease, border-color 0.28s ease;

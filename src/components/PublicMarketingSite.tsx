@@ -24,6 +24,8 @@ import BlogPostPage from "./public/BlogPostPage";
 import { ScrollReveal, StaggerGroup } from "./public/motion";
 import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
+import PublicNav from "./public/PublicNav";
+import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
@@ -271,7 +273,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       <motion.header
         animate={{ boxShadow: scrolled ? "0 10px 30px -12px rgba(2,44,34,0.45)" : "0 0px 0px rgba(2,44,34,0)" }}
         transition={{ duration: 0.25 }}
-        className="sticky top-0 z-40 border-b border-white/10 bg-emerald-950/90 text-white backdrop-blur-md"
+        className="sticky top-0 z-50 border-b border-white/10 bg-emerald-950/90 text-white backdrop-blur-md"
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
           <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
@@ -285,18 +287,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               nameClassName="hidden sm:block"
             />
           </a>
-          <nav className="ml-auto hidden items-center gap-1 lg:flex">
-            {navLinks.map((l) => (
-              <a
-                key={l.id}
-                href={l.href}
-                onClick={HOME_RE.test(l.href.trim()) ? goHomeTop : undefined}
-                className="aoh-nav-link rounded-xl px-3 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white"
-              >
-                {t(l.label)}
-              </a>
-            ))}
-          </nav>
+          <PublicNav links={navLinks} programs={state.programs} onHomeTop={goHomeTop} />
           <div className="ml-auto flex items-center gap-2 lg:ml-2">
             <LanguageSwitcher tone="dark" className="hidden md:flex" />
             {w.header.showApply && (
@@ -446,7 +437,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                           href={`#blog/${post.slug}`}
                           variants={fadeUpVariants}
                           whileHover={{ y: -6 }}
-                          className="aoh-card group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg"
+                          className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 p-5 shadow-sm transition-shadow hover:shadow-lg"
                         >
                           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">{post.category || "News"}</p>
                           <h3 className="mt-2 line-clamp-2 text-base font-semibold text-emerald-950">{post.title}</h3>
@@ -500,7 +491,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-4">
           <div className="md:col-span-2">
-            <BrandLockup logoUrl={w.logoUrl} academyName={displayName} tagline={w.tagline || settings.motto} tone="light" size="md" />
+            <BrandLockup logoUrl={w.logoUrl} academyName={displayName} tone="light" size="md" showTagline={false} />
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Explore</p>
@@ -574,6 +565,12 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         </div>
       </footer>
 
+      <ProgramAnnouncementPopup
+        programs={state.programs}
+        paused={menu}
+        onExplore={() => { window.location.hash = "#programmes"; }}
+        onApply={openApply}
+      />
       <InstallPrompt />
       <CookieConsent />
 
