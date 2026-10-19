@@ -94,9 +94,7 @@ export default function StudentQuizzes() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-900">{quiz.title}</p>
-                  {quiz.learningUnitId && (
-                    <span className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">Lesson practice · instant marking</span>
-                  )}
+                  <span className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">{quiz.timeLimitMinutes && quiz.maxAttempts === 1 ? "Timed exam · single attempt" : "Practice · instant marking"}</span>
                 </div>
                 {best && (
                   <Badge className={best.passed ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700"}>
@@ -106,7 +104,7 @@ export default function StudentQuizzes() {
               </div>
               {quiz.description && <p className="line-clamp-2 text-sm text-slate-500">{quiz.description}</p>}
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{quiz.timeLimitMinutes} min</span>
+                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{quiz.timeLimitMinutes ? `${quiz.timeLimitMinutes} min` : "No time limit"}</span>
                 <span className="flex items-center gap-1"><Repeat className="h-3.5 w-3.5" />{attemptsUsed}/{quiz.maxAttempts} attempts</span>
                 <span>{quiz.questionCount} questions · {quiz.totalPoints} pts</span>
               </div>
@@ -127,7 +125,7 @@ export default function StudentQuizzes() {
                   <Button size="sm" variant="outline" disabled>{notYetOpen ? "Not open yet" : "Closed"}</Button>
                 ) : (
                   <Button size="sm" onClick={() => setPlaying(quiz.id)}>
-                    <PlayCircle className="mr-1.5 h-4 w-4" />{attemptsUsed > 0 ? "Retake" : "Start quiz"}
+                    <PlayCircle className="mr-1.5 h-4 w-4" />{attemptsUsed > 0 ? "Retake" : quiz.timeLimitMinutes && quiz.maxAttempts === 1 ? "Start exam" : "Start quiz"}
                   </Button>
                 )}
                 {best && !exhausted && (

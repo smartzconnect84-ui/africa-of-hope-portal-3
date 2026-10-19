@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Clock, Flag, Check } from "lucide-react";
-import type { QuizAttemptPayload, QuizSubmitResult } from "../../types";
-import { saveQuizAnswer, startQuizAttempt, submitQuizAttempt } from "../../lib/quizzes";
+import type { Quiz, QuizAttemptPayload, QuizSubmitResult } from "../../types";
+import { fetchVisibleQuizzes, fetchMyQuizAttempts, saveQuizAnswer, startQuizAttempt, submitQuizAttempt } from "../../lib/quizzes";
 import { useAssistantVisibility } from "../../context/AssistantVisibility";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,8 @@ export default function QuizPlayer({
   onExit: () => void;
 }) {
   const { setHidden } = useAssistantVisibility();
+  const [pendingExam, setPendingExam] = useState<Quiz | null>(null);
+  const [consented, setConsented] = useState(false);
   const [payload, setPayload] = useState<QuizAttemptPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [index, setIndex] = useState(0);
@@ -50,6 +52,8 @@ export default function QuizPlayer({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitError, setSubmitError] = useState("");
+  const retryAtRef = useRef(0);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const submittedRef = useRef(false);
 
@@ -60,8 +64,19 @@ export default function QuizPlayer({
 
   useEffect(() => {
     let active = true;
-    startQuizAttempt(quizId)
+    (async () => {
+      if (!consented) {
+        const [quizzes, attempts] = await Promise.all([fetchVisibleQuizzes(), fetchMyQuizAttempts()]);
+        const quiz = quizzes.find((q) => q.id === quizId);
+        if (quiz?.timeLimitMinutes && quiz.maxAttempts === 1 && !attempts.some((a) => a.quizId === quizId && a.status === "in_progress")) {
+          if (active) setPendingExam(quiz);
+          return null;
+        }
+      }
+      return startQuizAttempt(quizId);
+    })()
       .then((p) => {
+        if (!p) return;
         if (!active) return;
         setPayload(p);
         setClockOffsetMs(new Date(p.serverNow).getTime() - Date.now());
@@ -81,7 +96,7 @@ export default function QuizPlayer({
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId]);
+  }, [quizId, consented]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -96,13 +111,19 @@ export default function QuizPlayer({
     async (localAnswers: Record<string, unknown>) => {
       if (!payload || submittedRef.current) return;
       submittedRef.current = true;
+      setSubmitting(true);
+      setSubmitError("");
+      Object.values(timers.current).forEach(clearTimeout);
       try {
         const result = await submitQuizAttempt(payload.attemptId, localAnswers);
         try { localStorage.removeItem(localKey(payload.attemptId)); } catch { /* ignore */ }
         onDone(payload.attemptId, result);
       } catch (e) {
         submittedRef.current = false;
-        toast.error(e instanceof Error ? e.message : "Could not submit the quiz");
+        retryAtRef.current = Date.now() + 15000;
+        setSubmitError(e instanceof Error ? e.message : "Could not submit. Your saved answers are retained. Reconnect and retry.");
+      } finally {
+        setSubmitting(false);
       }
     },
     [payload, onDone],
@@ -110,7 +131,7 @@ export default function QuizPlayer({
 
   // Auto-submit at 0:00. The timer keeps running even if the tab loses focus.
   useEffect(() => {
-    if (remainingMs !== null && remainingMs <= 0 && payload && !submittedRef.current) {
+    if (remainingMs !== null && remainingMs <= 0 && payload && !submittedRef.current && Date.now() >= retryAtRef.current) {
       finishAttempt(answers);
     }
   }, [remainingMs, payload, answers, finishAttempt]);
@@ -159,7 +180,10 @@ export default function QuizPlayer({
     }, AUTOSAVE_DELAY);
   }
 
+  useEffect(() => () => { Object.values(timers.current).forEach(clearTimeout); }, []);
+
   function setAnswer(questionId: string, value: unknown) {
+    if (submittedRef.current || submitting || (remainingMs !== null && remainingMs <= 0)) return;
     setAnswers((prev) => {
       const next = { ...prev, [questionId]: value };
       queueSave(questionId, value, next);
@@ -181,6 +205,18 @@ export default function QuizPlayer({
     [payload, answers],
   );
 
+  if (pendingExam && !consented) return (
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#f6f8f7] p-4">
+      <section className="aoh-card w-full max-w-lg rounded-2xl bg-white p-6" aria-labelledby="exam-ready">
+        <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Timed exam · single attempt</p>
+        <h2 id="exam-ready" className="mt-2 text-xl font-bold text-slate-900">{pendingExam.title}</h2>
+        <p className="mt-3 text-sm text-slate-600">You have {pendingExam.timeLimitMinutes} minutes, or until the exam closes if sooner. Starting uses your only attempt. The server clock continues if you leave, refresh or lose connection.</p>
+        <p className="mt-3 text-sm text-slate-600">Answers are saved as you work. At expiry, editing stops and the exam submits automatically. If offline, only answers received within the server deadline and its 10-second network grace can be graded.</p>
+        <div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => { setLoading(true); setConsented(true); }}>Start exam</Button><Button variant="outline" onClick={onExit}>Not yet</Button></div>
+      </section>
+    </div>
+  );
+
   if (loading || !payload) {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-[#f6f8f7]">
@@ -200,7 +236,7 @@ export default function QuizPlayer({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-base font-semibold text-slate-900">{payload.quiz.title}</p>
-              <p className="text-xs text-slate-500">Attempt {payload.attemptNo} of {payload.quiz.maxAttempts}</p>
+              <p className="text-xs text-slate-500">{payload.quiz.timeLimitMinutes && payload.quiz.maxAttempts === 1 ? "Timed exam · " : ""}Attempt {payload.attemptNo} of {payload.quiz.maxAttempts}. Leaving or refreshing does not pause the clock.</p>
             </div>
             {remainingMs !== null && (
               <div className="flex items-center gap-2 rounded-xl bg-[#022c22] px-3.5 py-2 text-amber-300">
@@ -223,7 +259,12 @@ export default function QuizPlayer({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        {(submitError || (remainingMs !== null && remainingMs <= 0)) && <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-slate-800">
+          {submitError || "Time is up. Submitting saved answers…"}
+          {submitError && <Button className="ml-2" size="sm" disabled={submitting} onClick={() => void finishAttempt(answers)}>Retry submission</Button>}
+          {submitError && <p className="mt-1 text-xs">The server deadline still applies. Late answers cannot replace those saved before expiry. Automatic retry runs every 15 seconds.</p>}
+        </div>}
+        <fieldset disabled={submitting || (remainingMs !== null && remainingMs <= 0)} className="grid min-w-0 gap-4 lg:grid-cols-[1fr_320px]">
           <div className="rounded-2xl border border-emerald-900/10 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-start justify-between gap-3">
               <h2 className="text-lg font-semibold leading-snug text-slate-900">{question.prompt}</h2>
@@ -344,10 +385,10 @@ export default function QuizPlayer({
             </div>
             <Button className="mt-4 w-full bg-amber-400 text-amber-950 hover:bg-amber-500" onClick={() => setConfirmOpen(true)}>Submit quiz</Button>
           </div>
-        </div>
+        </fieldset>
       </div>
 
-      {confirmOpen && (
+      {confirmOpen && remainingMs !== 0 && !(remainingMs !== null && remainingMs < 0) && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-900/40 p-4">
           <div className="w-full max-w-md rounded-2xl border border-emerald-900/10 bg-white p-6 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900">Submit your quiz?</h2>

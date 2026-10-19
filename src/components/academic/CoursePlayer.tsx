@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLearningMemory, type LearningMemory } from "@/lib/learningMemory";
+import { SavedLearningList } from "./ContinueLearning";
 import { toast } from "sonner";
-import { CheckCircle2, ChevronRight, FileText, Link2, ListVideo, Loader2, Lock, PlayCircle, WifiOff } from "lucide-react";
+import { Bookmark, CheckCircle2, ChevronRight, FileText, Link2, ListVideo, Loader2, Lock, PlayCircle, WifiOff } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type StudentProgressRow, type TrainingMaterial } from "@/lib/academics";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,30 @@ export default function CoursePlayer() {
   const [activeUnitId, setActiveUnitId] = useState("");
   const [lowData, setLowData] = useState(() => localStorage.getItem(LOW_DATA_KEY) === "1");
   const [busy, setBusy] = useState("");
+  const memory = useLearningMemory(currentUser?.id);
+  const restored = useRef(false);
+  const videoSavedAt = useRef(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const resume = (row: LearningMemory) => {
+    const unit = units.find((u) => u.id === row.unit_id);
+    if (!unit) { toast.error("This lesson is no longer available to your account."); return; }
+    setProgramId(unit.program_id); setActiveUnitId(unit.id);
+  };
+
+  useEffect(() => {
+    if (!memory.ready || loading || restored.current) return;
+    restored.current = true;
+    let requested = "";
+    try {
+      const entry = JSON.parse(sessionStorage.getItem("aoh-resume-lesson") || "null");
+      if (entry?.userId === currentUser?.id) requested = entry.unitId;
+      sessionStorage.removeItem("aoh-resume-lesson");
+    } catch { /* unavailable browser storage */ }
+    const row = requested ? memory.rows.find((r) => r.unit_id === requested) : [...memory.rows].filter((r) => r.last_opened_at && units.some((u) => u.id === r.unit_id)).sort((a, b) => (b.last_opened_at || "").localeCompare(a.last_opened_at || ""))[0];
+    if (row) resume(row);
+    // Restore once, not after each autosave.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memory.ready, loading]);
 
   useEffect(() => { localStorage.setItem(LOW_DATA_KEY, lowData ? "1" : "0"); }, [lowData]);
 
@@ -94,7 +120,31 @@ export default function CoursePlayer() {
 
   const doneCount = withLocks.filter((r) => completedIds.has(r.unit.id)).length;
   const percent = programUnits.length ? Math.round((doneCount / programUnits.length) * 100) : 0;
-  const active = withLocks.find((r) => r.unit.id === activeUnitId)?.unit ?? withLocks.find((r) => !r.locked && !completedIds.has(r.unit.id))?.unit ?? programUnits[0];
+  const active = withLocks.find((r) => r.unit.id === activeUnitId && !r.locked)?.unit ?? withLocks.find((r) => !r.locked && !completedIds.has(r.unit.id))?.unit ?? withLocks.find((r) => !r.locked)?.unit;
+  const savedPosition = memory.rows.find((r) => r.unit_id === active?.id);
+
+  useEffect(() => {
+    if (!active || !memory.ready || !restored.current) return;
+    const previous = memory.rows.find((r) => r.unit_id === active.id);
+    memory.save(active, { last_opened_at: new Date().toISOString() });
+    let restoring = true;
+    const timer = window.setTimeout(() => {
+      if (previous?.scroll_top && contentRef.current) window.scrollTo({ top: contentRef.current.getBoundingClientRect().top + window.scrollY + previous.scroll_top, behavior: "instant" });
+      restoring = false;
+    }, 300);
+    let debounce: ReturnType<typeof setTimeout>;
+    const record = () => {
+      if (restoring) return;
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        if (contentRef.current) memory.save(active, { scroll_top: Math.max(0, -contentRef.current.getBoundingClientRect().top) });
+      }, 1000);
+    };
+    window.addEventListener("scroll", record, { passive: true });
+    return () => { clearTimeout(timer); clearTimeout(debounce); window.removeEventListener("scroll", record); };
+    // Restore on lesson changes, not on each save.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.id, memory.ready]);
   const activeMaterials = useMemo(() => materials.filter((m) => active && m.learning_unit_id === active.id), [materials, active]);
 
   const markComplete = async (unit: LearningUnit) => {
@@ -123,7 +173,13 @@ export default function CoursePlayer() {
   const program = state.programs.find((p) => p.id === programId);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+    <div className="space-y-4">
+      <section className={cn(panelClass, "p-5")}>
+        <SavedLearningList rows={memory.rows} onResume={resume} />
+        <p className="mt-3 text-xs text-slate-500" role="status">{memory.notice || "Loading saved learning…"}</p>
+        {memory.notice.includes("only") && <Button variant="link" size="sm" onClick={() => void memory.retry()}>Retry sync</Button>}
+      </section>
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       <div className={cn(panelClass, "p-5 h-fit")}>
         <SectionHeader title="Course player" subtitle="Programmes → lessons → resources" />
         <div className="mt-4 space-y-3">
@@ -158,7 +214,7 @@ export default function CoursePlayer() {
         </div>
       </div>
 
-      <div className={cn(panelClass, "p-5 sm:p-6")}>
+      <div ref={contentRef} className={cn(panelClass, "p-5 sm:p-6")}>
         {!active ? <EmptyState icon={PlayCircle} title="Select a lesson" hint="Choose a lesson on the left to start learning." /> : (
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -168,21 +224,23 @@ export default function CoursePlayer() {
             </div>
             <h2 className="mt-2 text-xl font-bold text-slate-900">{active.title}</h2>
             {active.summary && <p className="mt-1 text-sm text-slate-600">{active.summary}</p>}
+            <Button className="mt-3" variant="outline" size="sm" disabled={!memory.ready} aria-pressed={!!savedPosition?.bookmarked} onClick={() => memory.save(active, { bookmarked: !savedPosition?.bookmarked })}><Bookmark className={cn("mr-1.5 h-4 w-4", savedPosition?.bookmarked && "fill-amber-400 text-amber-700")} />{savedPosition?.bookmarked ? "Bookmarked" : "Bookmark lesson"}</Button>
             <div className="mt-4 space-y-3">
               {activeMaterials.length === 0 && <EmptyState icon={FileText} title="No resources attached" hint="Your teacher has not attached videos or files to this lesson yet." />}
               {activeMaterials.map((mat) => {
                 const video = isVideo(mat);
                 const embed = mat.external_url ? embedUrl(mat.external_url) : null;
                 return (
-                  <div key={mat.id} className="rounded-xl border border-slate-150 bg-white p-3">
+                  <div key={mat.id} className={cn("rounded-xl border bg-white p-3", savedPosition?.resource_id === mat.id ? "border-emerald-500" : "border-slate-150")} onFocusCapture={() => { if (savedPosition?.resource_id !== mat.id) memory.save(active, { resource_id: mat.id, position_seconds: 0 }); }}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
                         {video ? <PlayCircle className="h-4 w-4 text-emerald-700" /> : mat.external_url ? <Link2 className="h-4 w-4 text-sky-700" /> : <FileText className="h-4 w-4 text-slate-500" />}
                         <span className="line-clamp-1">{mat.title}</span>
                       </p>
-                      <Button size="sm" variant="outline" onClick={() => void openMaterial(mat)}>Open</Button>
+                      <Button size="sm" variant="outline" onClick={() => { memory.save(active, { resource_id: mat.id }); void openMaterial(mat); }}>Open</Button>
                     </div>
                     {mat.description && <p className="mt-1 text-xs text-slate-500">{mat.description}</p>}
+                    {video && !lowData && mat.external_url && /\.(mp4|webm|ogg)(\?|$)/i.test(mat.external_url) && <video key={`${active.id}:${mat.id}`} controls preload="metadata" className="mt-2 w-full bg-black" src={mat.external_url} onLoadedMetadata={(e) => { if (savedPosition?.resource_id === mat.id && savedPosition.position_seconds > 0) e.currentTarget.currentTime = Math.min(savedPosition.position_seconds, e.currentTarget.duration || savedPosition.position_seconds); }} onTimeUpdate={(e) => { if (Date.now() - videoSavedAt.current < 5000) return; videoSavedAt.current = Date.now(); memory.save(active, { resource_id: mat.id, position_seconds: e.currentTarget.currentTime, last_opened_at: new Date().toISOString() }); }} onPause={(e) => memory.save(active, { resource_id: mat.id, position_seconds: e.currentTarget.currentTime })} />}
                     {video && embed && !lowData && (
                       <div className="mt-2 overflow-hidden rounded-lg border"><div className="aspect-video w-full"><iframe src={embed} title={mat.title} className="h-full w-full" allowFullScreen /></div></div>
                     )}
@@ -201,6 +259,7 @@ export default function CoursePlayer() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

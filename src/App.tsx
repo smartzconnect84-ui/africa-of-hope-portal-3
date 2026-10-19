@@ -53,6 +53,12 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
     setView("dashboard");
   }, [currentUser?.id]);
 
+  useEffect(() => {
+    const resume = () => setView("course-player");
+    window.addEventListener("aoh-resume-learning", resume);
+    return () => window.removeEventListener("aoh-resume-learning", resume);
+  }, []);
+
   if (!currentUser) return <AuthPortal onBackToSite={onExitToPublic} initialTab={initialTab} />;
   if (currentUser.role === "Student" && currentUser.status !== "Active") {
     return <PendingNotice user={currentUser} onSignOut={logout} />;
@@ -65,7 +71,7 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 
   return (
     <Navigation view={activeKey} onNavigate={setView} onExitToPublic={onExitToPublic}>
-      {activeView?.render(ctx)}
+      <div key={currentUser.id}>{activeView?.render(ctx)}</div>
     </Navigation>
   );
 }

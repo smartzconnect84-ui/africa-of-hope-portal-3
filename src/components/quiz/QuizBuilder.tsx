@@ -265,6 +265,7 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
   const { state, currentUser } = useApp();
   const canManageAll = usePermission("quizzes.manage_all");
   const [settings, setSettings] = useState<QuizDraft>(() => toDraftQuiz(quiz ?? undefined));
+  const [examMode, setExamMode] = useState(() => !!quiz?.timeLimitMinutes && quiz.maxAttempts === 1);
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
   const [loading, setLoading] = useState(!!quiz);
@@ -329,6 +330,10 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
     if (!settings.title.trim()) return "Give the quiz a title.";
     if (!settings.programId && !settings.cohortId) return "Pick a programme or a cohort.";
     if (questions.length === 0) return "Add at least one question.";
+    if (examMode && !settings.timeLimitMinutes) return "Set a duration for the exam.";
+    if (settings.timeLimitMinutes !== null && (!Number.isInteger(settings.timeLimitMinutes) || settings.timeLimitMinutes < 1 || settings.timeLimitMinutes > 1440)) return "Use 1 to 1,440 whole minutes, or leave empty for untimed practice.";
+    if (!Number.isInteger(settings.maxAttempts) || settings.maxAttempts < 1 || settings.maxAttempts > 20) return "Choose between 1 and 20 attempts.";
+    if (settings.opensAt && settings.closesAt && settings.opensAt >= settings.closesAt) return "Closing time must be after opening time.";
     for (const q of questions) {
       if (!q.prompt.trim()) return "Every question needs a prompt.";
       if ((q.type === "single" || q.type === "multi") && q.correct.length === 0) return "Mark a correct answer for every multiple-choice question.";
@@ -440,14 +445,14 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-slate-500">Lesson (optional practice quiz)</Label>
+              <Label className="text-xs text-slate-500">Linked lesson (optional)</Label>
               <Select
                 value={settings.learningUnitId ?? "none"}
                 onValueChange={(v) => setSettings((s) => ({
                   ...s,
                   learningUnitId: v === "none" ? null : v,
-                  ...(v !== "none" && s.maxAttempts <= 1 ? { maxAttempts: 3 } : {}),
-                  ...(v !== "none" && s.showAnswers === "never" ? { showAnswers: "after_submit" as const } : {}),
+                  ...(v !== "none" && !examMode && s.maxAttempts <= 1 ? { maxAttempts: 3 } : {}),
+                  ...(v !== "none" && !examMode && s.showAnswers === "never" ? { showAnswers: "after_submit" as const } : {}),
                 }))}
               >
                 <SelectTrigger><SelectValue placeholder={lessonsLoading ? "Loading lessons…" : "No linked lesson"} /></SelectTrigger>
@@ -457,16 +462,27 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
                 </SelectContent>
               </Select>
               {settings.learningUnitId ? (
-                <p className="text-[11px] text-emerald-700">Practice quiz — appears inside “{lessonName(settings.learningUnitId) ?? "the lesson"}” with instant scores and retakes.</p>
+                <p className="text-[11px] text-emerald-700">{examMode ? "Timed exam" : "Practice quiz"} — appears inside “{lessonName(settings.learningUnitId) ?? "the lesson"}”. {examMode ? "One attempt; the clock does not pause." : "Instant scores and configured retakes."}</p>
               ) : (
                 <p className="text-[11px] text-slate-500">Link to a lesson to show it as practice inside the learning path.</p>
               )}
+            </div>
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-3">
+              <label className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-900">
+                Timed exam mode
+                <input type="checkbox" checked={examMode} onChange={(e) => {
+                  const enabled = e.target.checked;
+                  setExamMode(enabled);
+                  setSettings((s) => ({ ...s, maxAttempts: enabled ? 1 : 3, timeLimitMinutes: enabled ? (s.timeLimitMinutes || 20) : s.timeLimitMinutes, showAnswers: enabled ? "never" : "after_submit" }));
+                }} />
+              </label>
+              <p className="mt-1 text-xs text-slate-600">One attempt, a continuous countdown and automatic submission at expiry. Answers are hidden by default. Existing attempts are retained when changing modes.</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Time limit (minutes)</Label>
                 <Input
-                  type="number" min={0}
+                  type="number" min={1} max={1440} step={1}
                   value={settings.timeLimitMinutes ?? ""}
                   placeholder="Untimed"
                   onChange={(e) => setSettings((s) => ({ ...s, timeLimitMinutes: e.target.value === "" ? null : Number(e.target.value) }))}
@@ -474,7 +490,7 @@ function QuizEditor({ quiz, onClose, onSaved }: { quiz: Quiz | null; onClose: ()
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Attempts allowed</Label>
-                <Input type="number" min={1} max={20} value={settings.maxAttempts} onChange={(e) => setSettings((s) => ({ ...s, maxAttempts: Number(e.target.value) || 1 }))} />
+                <Input type="number" min={1} max={20} disabled={examMode} value={settings.maxAttempts} onChange={(e) => setSettings((s) => ({ ...s, maxAttempts: Number(e.target.value) || 1 }))} />
               </div>
             </div>
             <div className="space-y-1">
@@ -616,7 +632,7 @@ export default function QuizBuilder() {
                 <div>
                   <p className="font-semibold text-slate-900">{q.title}</p>
                   <p className="text-xs text-slate-500">
-                    {q.learningUnitId ? `Lesson practice · ${programName(q.programId) ?? cohortName(q.cohortId) ?? "Lesson"}` : (programName(q.programId) ?? cohortName(q.cohortId) ?? "No scope set")}
+                    {q.timeLimitMinutes && q.maxAttempts === 1 ? "Timed exam · " : q.learningUnitId ? "Lesson practice · " : ""}{programName(q.programId) ?? cohortName(q.cohortId) ?? "No scope set"}
                   </p>
                 </div>
                 <Badge className={cn("shrink-0", statusTone(q.status))}>{q.status}</Badge>
