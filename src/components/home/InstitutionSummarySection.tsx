@@ -58,7 +58,7 @@ export default function InstitutionSummarySection({
               <motion.div
                 key={fact.label}
                 variants={fadeUpVariants}
-                className="rounded-2xl border border-emerald-900/10 bg-emerald-50/60 p-5"
+                className="aoh-card aoh-glass rounded-2xl p-5 transition-shadow hover:shadow-lg"
               >
                 <Icon className="h-5 w-5 text-emerald-700" aria-hidden="true" />
                 <p className="mt-3 text-2xl font-bold text-emerald-950">{fact.value}</p>

@@ -14,7 +14,7 @@ export default function CtaBand({
 }) {
   return (
     <section className="scroll-mt-24 bg-gradient-to-br from-emerald-800 to-emerald-950 py-14 text-white sm:py-16">
-      <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="aoh-glass-dark mx-auto flex max-w-6xl flex-col items-start gap-6 rounded-3xl px-6 py-8 lg:flex-row lg:items-center lg:justify-between">
         <Reveal className="max-w-xl">
           {copy.title && <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{copy.title}</h2>}
           {copy.subtitle && <p className="mt-2 text-sm text-emerald-100/85">{copy.subtitle}</p>}

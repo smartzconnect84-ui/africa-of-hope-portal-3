@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { programImage } from "@/lib/programImages";
+import { durationLabel } from "@/lib/programDelivery";
 import type { Program } from "@/types";
 import ProgramBrochureButton from "../public/ProgramBrochureButton";
 import { ScrollReveal } from "../public/motion";
@@ -151,11 +152,11 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                     <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-slate-500">
                       <span className="inline-flex items-center gap-1">
                         <Clock3 className="h-3.5 w-3.5 text-emerald-700" />
-                        {program.durationWeeks ? `${program.durationWeeks} weeks` : "Flexible"}
+                        {program.durationWeeks ? durationLabel(program) : "Flexible"}
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <span className="[&_button]:h-7 [&_button]:px-2 [&_button]:text-[11px]">
-                          <ProgramBrochureButton program={program} variant="ghost" className="text-emerald-800 hover:text-emerald-900" />
+                          <ProgramBrochureButton program={program} variant="ghost" className="bg-black text-white hover:bg-neutral-800 hover:text-white" />
                         </span>
                         <button
                           type="button"

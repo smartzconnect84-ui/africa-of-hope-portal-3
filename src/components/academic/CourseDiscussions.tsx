@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { BadgeCheck, Loader2, MessageCircle, Plus, Reply, Send } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { academicApi, type LearningUnit } from "@/lib/academics";
+import { academicApi, type LearningUnit, type DiscussionReply as ReplyRow, type DiscussionThread as Thread } from "@/lib/academics";
+import { cachedDiscussions, pendingDiscussionCount, queueReply, queueThread, syncDiscussions } from "@/lib/discussions";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,19 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 
-interface ReplyRow { id: string; authorId: string; authorName: string; role: string; body: string; createdAt: string; isAnswer: boolean; }
-interface Thread { id: string; cohortId: string; unitId: string | null; title: string; body: string; authorId: string; authorName: string; role: string; createdAt: string; replies: ReplyRow[]; }
-
-const STORE_KEY = "aoh-discussions-v1";
-
-function loadStore(): Thread[] {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY) ?? "[]") as Thread[]; } catch { return []; }
-}
-
-/** F6: cohort discussion + class Q&A per lesson with teacher answers. Stored locally so it works before any new backend table. */
+/** Cohort-scoped Supabase Q&A with per-user offline drafts and retry on reconnect. */
 export default function CourseDiscussions() {
   const { state, currentUser } = useApp();
-  const [threads, setThreads] = useState<Thread[]>(loadStore);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [syncError, setSyncError] = useState("");
+  const [pending, setPending] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const activeUserRef = useRef(currentUser?.id);
+  activeUserRef.current = currentUser?.id;
   const [units, setUnits] = useState<LearningUnit[]>([]);
   const [loadingUnits, setLoadingUnits] = useState(true);
   const [cohortId, setCohortId] = useState(currentUser?.cohortIds[0] ?? state.cohorts[0]?.id ?? "");
@@ -34,7 +33,38 @@ export default function CourseDiscussions() {
   const [unitId, setUnitId] = useState("general");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
 
-  useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(threads)); }, [threads]);
+  // Never read another signed-in user's cache, or the old shared-device v1 store.
+  const allowedCohortIds = useMemo(() => {
+    if (!currentUser) return [];
+    return state.cohorts.filter((c) => currentUser.role === "Student"
+      ? currentUser.cohortIds.includes(c.id)
+      : currentUser.role === "Teacher" ? c.teacherId === currentUser.id : true).map((c) => c.id);
+  }, [state.cohorts, currentUser]);
+  const cohortKey = allowedCohortIds.join(",");
+  const refresh = async () => {
+    if (!currentUser) return;
+    const userId = currentUser.id;
+    try {
+      const rows = await syncDiscussions(userId, allowedCohortIds);
+      if (activeUserRef.current !== userId) return;
+      setThreads(rows); setSyncError("");
+    } catch (err) {
+      if (activeUserRef.current !== userId) return;
+      setThreads(cachedDiscussions(userId, allowedCohortIds));
+      setSyncError(err instanceof Error ? err.message : "Could not sync discussions. Retry when connected.");
+    }
+    setPending(pendingDiscussionCount(userId));
+  };
+  useEffect(() => {
+    setThreads(currentUser ? cachedDiscussions(currentUser.id, allowedCohortIds) : []);
+    setOpenThread(""); setReplyDrafts({});
+    setCohortId((id) => allowedCohortIds.includes(id) ? id : allowedCohortIds[0] ?? "");
+    void refresh();
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 15000);
+    const online = () => { void refresh(); };
+    window.addEventListener("online", online);
+    return () => { window.clearInterval(timer); window.removeEventListener("online", online); };
+  }, [currentUser?.id, cohortKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,12 +79,11 @@ export default function CourseDiscussions() {
 
   const myCohorts = useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.role === "Student") return state.cohorts.filter((c) => currentUser.cohortIds.includes(c.id));
-    const mine = state.cohorts.filter((c) => currentUser.cohortIds.includes(c.id));
-    return mine.length ? mine : state.cohorts;
-  }, [state.cohorts, currentUser]);
+    return state.cohorts.filter((c) => allowedCohortIds.includes(c.id));
+  }, [state.cohorts, currentUser, allowedCohortIds]);
 
   const visible = threads
+    .filter((t) => allowedCohortIds.includes(t.cohortId))
     .filter((t) => !cohortId || t.cohortId === cohortId)
     .filter((t) => filterUnit === "all" || (filterUnit === "general" ? !t.unitId : t.unitId === filterUnit))
     .filter((t) => !search || `${t.title} ${t.body}`.toLowerCase().includes(search.toLowerCase()))
@@ -63,35 +92,55 @@ export default function CourseDiscussions() {
   const isStaff = currentUser && currentUser.role !== "Student";
   const unitName = (id: string | null) => !id ? "General" : units.find((u) => u.id === id)?.title ?? "Lesson";
 
-  const createThread = (e: FormEvent) => {
+  const createThread = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !body.trim() || !cohortId || !currentUser) return;
-    const thread: Thread = {
-      id: `t-${Date.now()}`, cohortId, unitId: unitId === "general" ? null : unitId,
-      title: title.trim(), body: body.trim(), authorId: currentUser.id,
-      authorName: currentUser.name, role: currentUser.role, createdAt: new Date().toISOString(), replies: [],
-    };
-    setThreads((prev) => [thread, ...prev]);
-    setTitle(""); setBody(""); setUnitId("general"); setShowNew(false);
+    if (savingRef.current || !title.trim() || !body.trim() || !allowedCohortIds.includes(cohortId) || !currentUser) return;
+    savingRef.current = true; setSaving(true);
+    try {
+      const thread: Thread = {
+        id: crypto.randomUUID(), cohortId, unitId: unitId === "general" ? null : unitId,
+        title: title.trim(), body: body.trim(), authorId: currentUser.id,
+        authorName: currentUser.name, role: currentUser.role, createdAt: new Date().toISOString(), replies: [],
+      };
+      queueThread(currentUser.id, thread);
+      setThreads(cachedDiscussions(currentUser.id, allowedCohortIds));
+      setTitle(""); setBody(""); setUnitId("general"); setShowNew(false);
+      await refresh();
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save question."); }
+    finally { savingRef.current = false; setSaving(false); }
   };
 
-  const addReply = (threadId: string) => {
+  const addReply = async (threadId: string) => {
     const replyBody = replyDrafts[threadId] ?? "";
-    if (!replyBody.trim() || !currentUser) return;
-    setThreads((prev) => prev.map((t) => t.id === threadId
-      ? { ...t, replies: [...t.replies, { id: `r-${Date.now()}`, authorId: currentUser.id, authorName: currentUser.name, role: currentUser.role, body: replyBody.trim(), createdAt: new Date().toISOString(), isAnswer: false }] }
-      : t));
-    setReplyDrafts((d) => ({ ...d, [threadId]: "" }));
+    if (savingRef.current || !replyBody.trim() || !currentUser) return;
+    savingRef.current = true; setSaving(true);
+    try {
+      const reply: ReplyRow = { id: crypto.randomUUID(), authorId: currentUser.id, authorName: currentUser.name, role: currentUser.role, body: replyBody.trim(), createdAt: new Date().toISOString(), isAnswer: false };
+      queueReply(currentUser.id, threadId, reply);
+      setThreads(cachedDiscussions(currentUser.id, allowedCohortIds));
+      setReplyDrafts((d) => ({ ...d, [threadId]: "" }));
+      await refresh();
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not save reply."); }
+    finally { savingRef.current = false; setSaving(false); }
   };
 
-  const markAnswer = (threadId: string, replyId: string) => {
-    setThreads((prev) => prev.map((t) => t.id === threadId
-      ? { ...t, replies: t.replies.map((r) => ({ ...r, isAnswer: r.id === replyId ? !r.isAnswer : r.isAnswer })) } : t));
+  const markAnswer = async (threadId: string, replyId: string) => {
+    if (savingRef.current) return;
+    const reply = threads.find((t) => t.id === threadId)?.replies.find((r) => r.id === replyId);
+    if (!reply) return;
+    savingRef.current = true; setSaving(true);
+    try { await academicApi.markDiscussionAnswer(replyId, !reply.isAnswer); await refresh(); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Could not mark answer."); }
+    finally { savingRef.current = false; setSaving(false); }
   };
 
   return (
     <div className={cn(panelClass, "p-5 sm:p-6")}>
       <SectionHeader title="Class discussions" subtitle="Lesson Q&A and cohort conversations" action={<Button size="sm" onClick={() => setShowNew((v) => !v)} className="bg-emerald-700 hover:bg-emerald-800"><Plus className="mr-1 h-4 w-4" /> Ask a question</Button>} />
+      {(syncError || pending > 0) && <div role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+        {syncError || "Syncing discussions…"} {pending > 0 && `${pending} unsent post(s) on this device only.`}
+        <Button variant="outline" size="sm" className="ml-2" disabled={saving} onClick={() => void refresh()}>Retry sync</Button>
+      </div>}
       <div className="mt-4 grid gap-2 sm:grid-cols-4">
         <Select value={cohortId} onValueChange={setCohortId}>
           <SelectTrigger><SelectValue placeholder="Cohort" /></SelectTrigger>
@@ -111,7 +160,7 @@ export default function CourseDiscussions() {
       {showNew && (
         <form onSubmit={createThread} className="mt-4 space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
           <div className="grid gap-2 sm:grid-cols-2">
-            <Input placeholder="Question title — e.g. Week 2 Excel formulas" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input maxLength={200} placeholder="Question title — e.g. Week 2 Excel formulas" value={title} onChange={(e) => setTitle(e.target.value)} />
             <Select value={unitId} onValueChange={setUnitId}>
               <SelectTrigger><SelectValue placeholder="Related lesson" /></SelectTrigger>
               <SelectContent>
@@ -120,10 +169,10 @@ export default function CourseDiscussions() {
               </SelectContent>
             </Select>
           </div>
-          <Textarea placeholder="Describe your question for your teacher and classmates…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
+          <Textarea maxLength={10000} placeholder="Describe your question for your teacher and classmates…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
-            <Button type="submit" className="bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1 h-4 w-4" /> Post to class</Button>
+            <Button type="submit" disabled={saving || !cohortId} className="bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1 h-4 w-4" /> Post to class</Button>
           </div>
         </form>
       )}
@@ -155,14 +204,14 @@ export default function CourseDiscussions() {
                         <span className="font-semibold text-slate-700">{reply.authorName} · {reply.role}</span>
                         <span>{new Date(reply.createdAt).toLocaleString()}</span>
                         {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Teacher answer</span>}
-                        {isStaff && <button className="ml-auto font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
+                        {isStaff && <button disabled={saving || pending > 0} className="ml-auto font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
                       </div>
                       <p className="mt-1 text-slate-700">{reply.body}</p>
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Input placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addReply(thread.id); }} />
-                    <Button size="sm" onClick={() => addReply(thread.id)} className="bg-emerald-700 hover:bg-emerald-800"><Send className="h-4 w-4" /></Button>
+                    <Input maxLength={10000} disabled={saving} placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addReply(thread.id); }} />
+                    <Button size="sm" disabled={saving} aria-label="Send reply" onClick={() => void addReply(thread.id)} className="bg-emerald-700 hover:bg-emerald-800"><Send className="h-4 w-4" /></Button>
                   </div>
                 </div>
               )}

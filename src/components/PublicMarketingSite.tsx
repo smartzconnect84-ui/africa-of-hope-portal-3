@@ -10,7 +10,6 @@ import type { AuthTab } from "./AuthPortal";
 import HeroSlider from "./HeroSlider";
 import { HOME_SECTION_REGISTRY } from "./home/registry";
 import ProgrammesCarousel from "./home/ProgrammesCarousel";
-import type { HomeSectionKey, SectionCopy } from "@/types";
 import Marquee from "./animata/container/marquee";
 import BrandLockup from "./brand/BrandLockup";
 import ProgrammesPage from "./public/ProgrammesPage";
@@ -28,6 +27,7 @@ import PublicNav from "./public/PublicNav";
 import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
 import TermDatesPage from "./public/TermDatesPage";
+import SupportSection from "./public/SupportSection";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
@@ -39,38 +39,17 @@ const NAV_LINKS: [string, string][] = [
   ["#blog", "Blog"],
   ["#policies", "Policies"],
   ["#donate", "Donate"],
+  ["#support", "Get involved"],
   ["#verify", "Verify"],
   ["#admissions", "Admissions"],
 ];
-
-// Homepage copy and photos applied over the saved CMS values so the landing
-// page stays short and shows the academy's own photos.
-const HOME_COPY_OVERRIDES: Partial<Record<HomeSectionKey, Partial<SectionCopy>>> = {
-  summary: {
-    title: "Practical skills for the future of work.",
-    body: "Tuition-free, cohort-based certificate programmes with mentors, clear guidance and verifiable certificates.",
-  },
-  about: {
-    eyebrow: "Our work",
-    title: "Skills, programmes and proof that move people forward.",
-    subtitle: "",
-    body: "We connect learners to relevant programmes and supportive mentors, from application to certification.",
-    image: "/images/our-work-graduates.jpg",
-  },
-  features: { subtitle: "" },
-  impact: {
-    title: "Student success and testimonies",
-    subtitle: "Real graduates, real results.",
-    image: "/images/student-success-certificate.jpg",
-  },
-  cta: { subtitle: "Applications take less than five minutes." },
-};
 
 const PROGRAMMES_RE = /^#(programmes|programs)$/i;
 const TERM_DATES_RE = /^#term-dates$/i;
 const POLICIES_RE = /^#policies$/i;
 const COOKIES_RE = /^#cookies$/i;
 const DONATE_RE = /^#donate$/i;
+const ADMISSIONS_RE = /^#(admissions|apply|apply-online)$/i;
 const HOME_RE = /^#(home)?$/i;
 const BLOG_RE = /^#blog$/i;
 
@@ -150,9 +129,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-blog", href: "#blog", label: "Blog" }];
     if (!links.some((l) => POLICIES_RE.test(l.href.trim())))
       links = [...links, { id: "nav-policies", href: "#policies", label: "Policies" }];
-    if (!links.some((l) => DONATE_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-donate", href: "#donate", label: "Donate" }];
-    return links;
+    // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
+    return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !ADMISSIONS_RE.test(l.href.trim()));
   }, [saved]);
   const displayName = useMemo(() => {
     const full = (w.academyName || settings.academyName || "").trim();
@@ -211,6 +189,32 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Mobile drawer: lock background scrolling, close on Escape, and close when
+  // the viewport grows to desktop where the drawer is replaced by the nav bar.
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenu(false);
+    };
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onDesktop = () => setMenu(false);
+    // Lock both the root and body: with `overflow-x: clip` the page scrolls on
+    // <html>, so locking <body> alone would no longer freeze the background.
+    const root = document.documentElement;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = root.style.overflow;
+    document.body.style.overflow = "hidden";
+    root.style.overflow = "hidden";
+    document.addEventListener("keydown", onKey);
+    desktop.addEventListener("change", onDesktop);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      root.style.overflow = previousRootOverflow;
+      document.removeEventListener("keydown", onKey);
+      desktop.removeEventListener("change", onDesktop);
+    };
+  }, [menu]);
 
   const goHomeTop = useCallback((e: MouseEvent) => {
     if (HOME_RE.test(window.location.hash || "#home")) {
@@ -282,7 +286,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       <motion.header
         animate={{ boxShadow: scrolled ? "0 10px 30px -12px rgba(2,44,34,0.45)" : "0 0px 0px rgba(2,44,34,0)" }}
         transition={{ duration: 0.25 }}
-        className="sticky top-0 z-50 border-b border-white/10 bg-emerald-950/90 text-white backdrop-blur-md"
+        className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md"
+        data-aoh-sticky-header=""
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
           <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
@@ -298,17 +303,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </a>
           <PublicNav links={navLinks} programs={state.programs} onHomeTop={goHomeTop} />
           <div className="ml-auto flex items-center gap-2 lg:ml-2">
-            <LanguageSwitcher tone="dark" className="hidden md:flex" />
-            {w.header.showApply && (
-              <motion.button
-                type="button"
-                onClick={openApply}
-                {...buttonMotionProps}
-                className="hidden h-10 items-center rounded-xl px-4 text-sm font-medium text-emerald-100 transition hover:bg-white/10 hover:text-white sm:inline-flex"
-              >
-                {t(w.header.applyText || "Apply online")}
-              </motion.button>
-            )}
+            <LanguageSwitcher tone="dark" className="flex" />
             <motion.button
               type="button"
               onClick={openLogin}
@@ -321,7 +316,10 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               type="button"
               onClick={() => setMenu(true)}
               aria-label="Open menu"
-              className="grid h-10 w-10 min-h-10 min-w-10 place-items-center rounded-xl text-emerald-100 hover:bg-white/10 lg:hidden"
+              aria-haspopup="dialog"
+              aria-expanded={menu}
+              aria-controls="public-mobile-menu"
+              className="grid h-10 w-10 min-h-10 min-w-10 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -339,11 +337,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           >
             <div className="absolute inset-0 bg-slate-950/60" onClick={() => setMenu(false)} />
             <motion.div
+              id="public-mobile-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Site menu"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="absolute right-0 top-0 h-full w-72 max-w-[85vw] bg-emerald-950 p-4 text-white shadow-2xl"
+              className="absolute right-0 top-0 flex h-full w-72 max-w-[85vw] flex-col bg-black p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -351,12 +353,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   type="button"
                   onClick={() => setMenu(false)}
                   aria-label="Close menu"
-                  className="grid h-10 w-10 min-h-10 min-w-10 place-items-center rounded-lg hover:bg-white/10"
+                  autoFocus
+                  className="grid h-10 w-10 min-h-10 min-w-10 place-items-center rounded-lg outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="mt-6 flex flex-col gap-1">
+              <nav className="-mr-1 mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
@@ -367,18 +370,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                     {t(l.label)}
                   </a>
                 ))}
-                {w.header.showApply && (
-                  <button
-                    type="button"
-                    onClick={() => { setMenu(false); openApply(); }}
-                    className="mt-3 min-h-10 rounded-xl bg-amber-400 px-3 py-3 text-sm font-semibold text-emerald-950"
-                  >
-                    {t(w.header.applyText || "Apply online")}
-                  </button>
-                )}
               </nav>
               <div className="mt-4 border-t border-white/10 pt-4">
-                <LanguageSwitcher tone="dark" className="w-full justify-center" />
+                <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
+                  {t("Portal")}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -386,13 +382,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        <motion.main
-          key={view.type === "blogPost" ? `blogPost:${view.slug}` : view.type}
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={reduceMotion ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.22, ease: "easeOut" }}
-        >
+        <motion.main key={hash} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           {view.type === "programmes" && <ProgrammesPage programs={state.programs} onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
@@ -411,7 +401,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 return (
                   <Fragment key={key}>
                     <Section
-                      copy={{ ...(w.home.sections[key] ?? {}), ...HOME_COPY_OVERRIDES[key] }}
+                      copy={w.home.sections[key] ?? {}}
                       w={w}
                       settings={settings}
                       onApply={openApply}
@@ -425,17 +415,35 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 );
               })}
 
+              <SupportSection onApply={openApply} />
+              {w.team.enabled && (
+                <section id="staff" className="scroll-mt-24 py-16">
+                  <div className="mx-auto max-w-6xl px-4">
+                    <h2 className="text-3xl font-bold text-emerald-950">{w.team.title}</h2>
+                    <p className="mt-3 text-slate-600">{w.team.description}</p>
+                    <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                      {w.team.members.map((member) => <article key={member.id} className="aoh-card rounded-2xl bg-white p-6">
+                        {member.image && <img src={member.image} alt={member.name} loading="lazy" decoding="async" className="mb-4 h-48 w-full rounded-xl object-cover" />}
+                        <h3 className="text-lg font-semibold">{member.name}</h3>
+                        <p className="text-sm font-semibold text-emerald-700">{member.role}</p>
+                        <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{member.bio}</p>
+                      </article>)}
+                    </div>
+                  </div>
+                </section>
+              )}
+
               <section id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-16 sm:py-20">
                 <div className="mx-auto max-w-6xl px-4">
                   <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Latest from our blog</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{w.publicCopy["blog.eyebrow"]}</p>
                       <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">
-                        Stories, news and updates.
+                        {w.publicCopy["blog.title"]}
                       </h2>
                     </div>
                     <a href="#blog" className="group inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
-                      Visit the blog <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                      {w.publicCopy["blog.link"]} <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </a>
                   </ScrollReveal>
 
@@ -466,8 +474,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   ) : (
                     <ScrollReveal delay={0.08} className="mt-8 rounded-2xl border border-dashed border-emerald-900/20 bg-white/60 p-8 text-center">
                       <BookOpen className="mx-auto h-6 w-6 text-emerald-700" aria-hidden="true" />
-                      <p className="mt-3 font-medium text-emerald-950">New stories are on the way.</p>
-                      <p className="mt-1 text-sm text-slate-600">Check back soon for news from the academy.</p>
+                      <p className="mt-3 font-medium text-emerald-950">{w.publicCopy["blog.emptyTitle"]}</p>
+                      <p className="mt-1 text-sm text-slate-600">{w.publicCopy["blog.emptyBody"]}</p>
                     </ScrollReveal>
                   )}
                 </div>
@@ -477,104 +485,85 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         </motion.main>
       </AnimatePresence>
 
-      <footer className="border-t border-emerald-900/10 bg-white">
-        <div className="border-b border-emerald-900/10 bg-emerald-950 text-white">
+      <footer className="bg-black text-white">
+        <div className="border-b border-white/10">
           <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:grid-cols-2 lg:grid-cols-4">
-            <p className="flex items-start gap-2 text-sm">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" /> {w.address || settings.address}
+            <p className="flex items-start gap-2.5 text-sm text-white/85">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><MapPin className="h-4 w-4 text-amber-400" /></span><span>{w.address || settings.address}</span>
             </p>
-            <p className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 shrink-0 text-amber-400" /> {w.contactPhone || settings.contactPhone}
+            <p className="flex items-center gap-2.5 text-sm text-white/85">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Phone className="h-4 w-4 text-amber-400" /></span><span>{w.contactPhone || settings.contactPhone}</span>
             </p>
             {(w.contactEmail || settings.contactEmail) && (
-              <p className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 shrink-0 text-amber-400" /> {w.contactEmail || settings.contactEmail}
+              <p className="flex items-center gap-2.5 text-sm text-white/85">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Mail className="h-4 w-4 text-amber-400" /></span><span className="break-all">{w.contactEmail || settings.contactEmail}</span>
               </p>
             )}
             {w.officeHours && (
-              <p className="flex items-center gap-2 text-sm">
-                <Globe className="h-4 w-4 shrink-0 text-amber-400" /> {w.officeHours}
+              <p className="flex items-center gap-2.5 text-sm text-white/85">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Globe className="h-4 w-4 text-amber-400" /></span><span>{w.officeHours}</span>
               </p>
             )}
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <BrandLockup logoUrl={w.logoUrl} academyName={displayName} tone="light" size="md" showTagline={false} />
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-12">
+          <div className="md:col-span-5">
+            <BrandLockup logoUrl={w.logoUrl} academyName={displayName} tone="dark" size="md" showTagline={false} />
+            <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
+              {w.footerAbout}
+            </p>
+            {w.socials.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                {w.socials.map((s) => (
+                  <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/80 transition hover:border-amber-400/60 hover:text-amber-300">{s.platform}</a>
+                ))}
+              </div>
+            )}
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button type="button" onClick={() => openApply()} className="inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">{w.publicCopy["footer.apply"]}</button>
+              <button type="button" onClick={openLogin} className="inline-flex h-10 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold text-white transition hover:border-amber-400/60 hover:text-amber-300">{w.publicCopy["footer.portal"]}</button>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Explore</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+          <div className="md:col-span-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.explore"]}</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-white/75">
               {navLinks.map((l) => (
-                <li key={l.id}>
-                  <a href={l.href} className="transition hover:text-emerald-800">{l.label}</a>
-                </li>
+                <li key={l.id}><a href={l.href} className="transition hover:text-amber-300">{t(l.label)}</a></li>
               ))}
             </ul>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Get started</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>
-                <button type="button" onClick={() => openApply()} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
-                  <ChevronRight className="h-3.5 w-3.5" /> Apply online
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
-                  <ChevronRight className="h-3.5 w-3.5" /> Portal
-                </button>
-              </li>
-              <li>
-                <a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
-                  <ChevronRight className="h-3.5 w-3.5" /> Term dates
-                </a>
-              </li>
-              <li>
-                <a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
-                  <ChevronRight className="h-3.5 w-3.5" /> Verify a certificate
-                </a>
-              </li>
+          <div className="md:col-span-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.programmes"]}</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-white/75">
+              {state.programs.slice(0, 6).map((p) => (
+                <li key={p.id}><a href="#programmes" className="transition hover:text-amber-300">{p.title}</a></li>
+              ))}
+              <li><a href="#programmes" className="inline-flex items-center gap-1 font-semibold text-amber-300 hover:text-amber-200">{w.publicCopy["footer.all"]} <ChevronRight className="h-3.5 w-3.5" /></a></li>
+            </ul>
+          </div>
+          <div className="md:col-span-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.started"]}</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-white/75">
+              <li><button type="button" onClick={() => openApply()} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</button></li>
+              <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
+              <li><a href="#support" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Donate</a></li>
+              <li><a href="#support" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Volunteer or partner</a></li>
+              <li><a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Term dates 2026/2027</a></li>
+              <li><a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Verify a certificate</a></li>
               {w.footerLinks.map((l) => (
-                <li key={l.id}>
-                  <a href={l.href || "#"} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800">
-                    <ChevronRight className="h-3.5 w-3.5" /> {l.label}
-                  </a>
-                </li>
+                <li key={l.id}><a href={l.href || "#"} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {l.label}</a></li>
               ))}
             </ul>
           </div>
         </div>
-        {w.socials.length > 0 && (
-          <div className="border-t border-emerald-900/10">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-4">
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Follow</span>
-              {w.socials.map((s) => (
-                <a
-                  key={s.id}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-800 transition hover:bg-emerald-100"
-                >
-                  {s.platform}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-        <div className="border-t border-emerald-900/10">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-[11px] text-slate-500">
-            <p>
-              {w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}
-            </p>
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-[11px] text-white/60">
+            <p>{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
             <p className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-              <a href="#cookies" className="underline decoration-emerald-700/30 underline-offset-2 transition hover:text-emerald-800">Cookies</a>
-              <a href="#policies" className="underline decoration-emerald-700/30 underline-offset-2 transition hover:text-emerald-800">Policies</a>
-              <span className="inline-flex items-center gap-1.5">
-                <Globe className="h-3.5 w-3.5 text-emerald-700" /> {settings.academicYear} / {settings.semester}
-              </span>
+              <a href="#cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>
+              <a href="#policies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Policies</a>
+              <span className="inline-flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-amber-400" /> {settings.academicYear} / {settings.semester}</span>
             </p>
           </div>
         </div>

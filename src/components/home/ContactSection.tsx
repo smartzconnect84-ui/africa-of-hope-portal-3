@@ -21,7 +21,10 @@ export default function ContactSection({
   if (cards.length === 0) return null;
 
   return (
-    <section id="contact" className="scroll-mt-24 bg-[#f6f8f7] py-14 sm:py-16">
+    <section
+      id="contact"
+      className="scroll-mt-24 bg-gradient-to-b from-[#eef4f0] via-[#f6f8f7] to-white py-14 sm:py-16"
+    >
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
           <div className="max-w-2xl">
@@ -41,7 +44,7 @@ export default function ContactSection({
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map(({ icon: Icon, label, value }) => (
             <Reveal key={label}>
-              <div className="h-full rounded-2xl border border-emerald-900/10 bg-white p-5">
+              <div className="aoh-card aoh-glass h-full rounded-2xl p-5 transition-shadow hover:shadow-lg">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-800">
                   <Icon className="h-5 w-5" />
                 </span>

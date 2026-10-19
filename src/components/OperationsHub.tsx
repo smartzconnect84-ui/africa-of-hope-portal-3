@@ -37,9 +37,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
 import EnquiryInbox from "./portal/EnquiryInbox";
-import { MessageCircle } from "lucide-react";
+import EngagementInbox from "./portal/EngagementInbox";
+import { MessageCircle, HeartHandshake } from "lucide-react";
 
-type HubTab = "resources" | "notifications" | "timetable" | "analytics" | "audit" | "enquiries";
+type HubTab = "resources" | "notifications" | "timetable" | "analytics" | "audit" | "enquiries" | "support";
 
 const tabs: { key: HubTab; label: string; icon: typeof FileText }[] = [
   { key: "resources", label: "Resources", icon: FileText },
@@ -48,6 +49,7 @@ const tabs: { key: HubTab; label: string; icon: typeof FileText }[] = [
   { key: "analytics", label: "Analytics", icon: LineChart },
   { key: "audit", label: "Audit", icon: ShieldCheck },
   { key: "enquiries", label: "Enquiries", icon: MessageCircle },
+  { key: "support", label: "Support forms", icon: HeartHandshake },
 ];
 
 function downloadText(filename: string, content: string, type = "text/plain") {
@@ -198,6 +200,8 @@ export default function OperationsHub() {
       {tab === "timetable" && <section className={cn(panelClass, "overflow-hidden p-4 sm:p-6")}><SectionHeader title="Timetable overview" subtitle="Cohort dates, facilitators and room assignments." action={<div className="flex gap-2"><Button variant="outline" onClick={() => exportRows("timetable.csv", timetableRows)}><FileDown data-icon="inline-start" /> CSV</Button><Button variant="outline" onClick={() => exportPdf("timetable.pdf", "Timetable overview", timetableRows)}><FileText data-icon="inline-start" /> PDF</Button></div>} /><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead><tr className="border-b text-xs uppercase tracking-wide text-slate-500">{["Cohort", "Programme", "Teacher", "Starts", "Ends", "Room"].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}</tr></thead><tbody>{timetableRows.map((row) => <tr key={row.cohort} className="border-b border-slate-100"><td className="px-3 py-3 font-medium">{row.cohort}</td><td className="px-3 py-3">{row.programme}</td><td className="px-3 py-3">{row.teacher}</td><td className="px-3 py-3">{row.starts}</td><td className="px-3 py-3">{row.ends}</td><td className="px-3 py-3">{row.room}</td></tr>)}</tbody></table></div></section>}
 
       {tab === "analytics" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Analytics" subtitle="Live operational indicators calculated from the connected portal data." action={<div className="flex gap-2"><Button variant="outline" onClick={() => exportRows("portal-analytics.csv", analyticsRows)}><Download data-icon="inline-start" /> CSV</Button><Button variant="outline" onClick={() => exportPdf("portal-analytics.pdf", "Analytics", analyticsRows)}><FileText data-icon="inline-start" /> PDF</Button></div>} /><div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[{ label: "Active students", value: state.users.filter((user) => user.role === "Student" && user.status === "Active").length }, { label: "Published programmes", value: state.programs.length }, { label: "Assignments", value: state.assignments.length }, { label: "Certificates issued", value: state.certificates.length }, { label: "Attendance records", value: state.attendance.length }, { label: "Fee transactions", value: state.fees.length }].map((item) => <div key={item.label} className="rounded-xl bg-emerald-50 p-4"><p className="text-sm text-slate-600">{item.label}</p><p className="mt-2 text-3xl font-semibold text-emerald-900">{item.value}</p></div>)}</div></section>}
+
+      {tab === "support" && <EngagementInbox />}
 
       {tab === "audit" && <section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Audit readiness" subtitle="Controls available to keep operations accountable." /><div className="mt-5 grid gap-3 md:grid-cols-2">{[{ title: "Role-based access", body: "Every module follows the current permission matrix before exposing actions." }, { title: "Private document storage", body: "Files use signed URLs and are scoped to the signed-in profile." }, { title: "Exportable records", body: "Announcements and timetable records can be exported for review." }, { title: "Live data refresh", body: "The portal listens for Supabase changes and refreshes operational data." }].map((item) => <div key={item.title} className="flex gap-3 rounded-xl border border-slate-200 p-4"><ShieldCheck className="h-5 w-5 shrink-0 text-emerald-700" /><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-500">{item.body}</p></div></div>)}</div></section>}
     </div>

@@ -68,7 +68,7 @@ export default function PoliciesPage() {
               ))}
             </nav>
             {active && (
-              <article className="rounded-2xl border border-emerald-900/10 bg-white p-6 shadow-sm sm:p-8">
+              <article className="aoh-card aoh-glass rounded-2xl p-6 shadow-sm sm:p-8">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-700">
                   {active.category} · v{active.version}
                   {active.effectiveDate ? ` · Effective ${active.effectiveDate}` : ""}

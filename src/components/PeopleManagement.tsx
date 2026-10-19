@@ -85,10 +85,10 @@ function slug(value: string) {
 
 type Tab = "staff" | "students" | "applicants";
 
-export default function PeopleManagement() {
+export default function PeopleManagement({ initialTab = "staff" }: { initialTab?: Tab } = {}) {
   const { state, currentUser } = useApp();
   const { isSuperAdmin, can } = usePermissions();
-  const [tab, setTab] = useState<Tab>("staff");
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   const canSeeStaff = can("staff.manage") || can("people.view");
   const canSeeStudents = can("students.manage") || can("people.view");

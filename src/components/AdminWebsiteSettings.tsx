@@ -21,6 +21,8 @@ const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] =
   { key: "admissions", label: "Admissions", icon: HelpCircle, hint: "Steps and requirements" },
   { key: "verify", label: "Verify", icon: HelpCircle, hint: "Certificate verification" },
   { key: "faqs", label: "FAQ", icon: HelpCircle, hint: "Questions and answers" },
+  { key: "support", label: "Support & staff", icon: Building2, hint: "Support forms and public staff profiles" },
+  { key: "editorial", label: "Public copy & newsletter", icon: Globe, hint: "Editorial labels and subscription section" },
   { key: "footer", label: "Contact & footer", icon: Link2, hint: "Address, phone, socials, links" },
   { key: "auth", label: "Login & register", icon: LogInIcon, hint: "Showcase, form text" },
 ];
@@ -182,12 +184,7 @@ export default function AdminWebsiteSettings() {
           />
           <div className="grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3">
             <Field label="Header login button text" value={draft.header.loginText} onChange={(v) => patchHeader({ loginText: v })} />
-            <Field label="Header apply button text" value={draft.header.applyText} onChange={(v) => patchHeader({ applyText: v })} />
-            <Toggle
-              label="Show apply button in header"
-              checked={draft.header.showApply}
-              onChange={(v) => patchHeader({ showApply: v })}
-            />
+            <p className="text-xs text-slate-500">Apply and Donate remain outside the navbar. Edit their footer labels in Public copy.</p>
           </div>
           <Field label="AOH AI launcher label" value={draft.assistantLauncherLabel} onChange={(v) => patch({ assistantLauncherLabel: v })} />
         </div>
@@ -276,10 +273,11 @@ export default function AdminWebsiteSettings() {
                     <Field label="Eyebrow" value={copy.eyebrow ?? ""} onChange={(v) => patchSection(key, { eyebrow: v })} />
                     <Field label="Title" value={copy.title ?? ""} onChange={(v) => patchSection(key, { title: v })} />
                     <Area label="Subtitle" rows={2} value={copy.subtitle ?? ""} onChange={(v) => patchSection(key, { subtitle: v })} />
+                    <Area label="Body" rows={3} value={copy.body ?? ""} onChange={(v) => patchSection(key, { body: v })} />
                     {(key === "admissions" || key === "cta") && (
                       <Field label="Button text" value={copy.ctaText ?? ""} onChange={(v) => patchSection(key, { ctaText: v })} />
                     )}
-                    {(key === "impact" || key === "cta") && (
+                    {(key === "about" || key === "impact" || key === "cta") && (
                       <ImageBox label="Image" folder="sections" value={copy.image ?? ""} onChange={(v) => patchSection(key, { image: v })} />
                     )}
                   </div>
@@ -452,6 +450,39 @@ export default function AdminWebsiteSettings() {
             </>
           )}
         />
+      )}
+
+      {tab === "support" && (
+        <div className="space-y-5">
+          <div className={`${panelClass} grid gap-4 p-5`}>
+            <Toggle label="Show support section" checked={draft.support.enabled} onChange={(enabled) => patch({ support: { ...draft.support, enabled } })} />
+            {(["eyebrow", "title", "description", "responseNote"] as const).map((key) => <Area key={key} label={key} value={draft.support[key]} onChange={(value) => patch({ support: { ...draft.support, [key]: value } })} rows={2} />)}
+            {draft.support.cards.map((card, i) => <div key={card.id} className="grid gap-3 rounded-xl border p-4">
+              <p className="text-sm font-semibold">{card.id} form</p>
+              {(["label", "blurb", "cta"] as const).map((key) => <Field key={key} label={key} value={card[key]} onChange={(value) => patch({ support: { ...draft.support, cards: draft.support.cards.map((row, j) => i === j ? { ...row, [key]: value } : row) } })} />)}
+            </div>)}
+          </div>
+          <div className={`${panelClass} grid gap-4 p-5`}>
+            <Toggle label="Show public staff profiles" hint="Only profiles you add here are published. Private staff accounts are never exposed." checked={draft.team.enabled} onChange={(enabled) => patch({ team: { ...draft.team, enabled } })} />
+            <Field label="Staff section title" value={draft.team.title} onChange={(title) => patch({ team: { ...draft.team, title } })} />
+            <Area label="Staff introduction" value={draft.team.description} onChange={(description) => patch({ team: { ...draft.team, description } })} />
+            <ListEditor title="Public staff profile" items={draft.team.members} onChange={(members) => patch({ team: { ...draft.team, members } })} addLabel="Add public staff profile" newItem={() => ({ id: genId("team"), name: "", role: "", bio: "", image: "" })} renderItem={(member: WebsiteSettings["team"]["members"][number], update) => <>
+              <Field label="Name" value={member.name} onChange={(name) => update({ name })} />
+              <Field label="Role" value={member.role} onChange={(role) => update({ role })} />
+              <Area label="Bio" value={member.bio} onChange={(bio) => update({ bio })} />
+              <ImageBox label="Photo" folder="team" value={member.image} onChange={(image) => update({ image })} />
+            </>} />
+          </div>
+        </div>
+      )}
+
+      {tab === "editorial" && (
+        <div className={`${panelClass} grid gap-4 p-5`}>
+          <p className="text-sm text-slate-500">Edit homepage blog, admissions and footer labels here. Programmes, blog posts and policies use their dedicated management screens.</p>
+          {Object.entries(draft.publicCopy).map(([key, value]) => <Area key={key} label={key} value={value} rows={2} onChange={(text) => patch({ publicCopy: { ...draft.publicCopy, [key]: text } })} />)}
+          <Toggle label="Show newsletter signup" checked={draft.newsletter.enabled} onChange={(enabled) => patch({ newsletter: { ...draft.newsletter, enabled } })} />
+          {(["title", "description", "consent", "button"] as const).map((key) => <Area key={key} label={`Newsletter ${key}`} value={draft.newsletter[key]} rows={2} onChange={(value) => patch({ newsletter: { ...draft.newsletter, [key]: value } })} />)}
+        </div>
       )}
 
       {tab === "footer" && (

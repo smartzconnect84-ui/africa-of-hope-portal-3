@@ -10,6 +10,7 @@ import { OPENED_FROM_RECOVERY_LINK, supabase } from "@/integrations/supabase/cli
 import { useApp, type SignUpResult } from "@/context/AppContext";
 import type { Role, User } from "@/types";
 import { programImage } from "@/lib/programImages";
+import { durationLabel } from "@/lib/programDelivery";
 import { cn } from "@/lib/utils";
 import { INPUT_CLASS, newPasswordErrors } from "@/lib/forms";
 import { VerificationPortal } from "./CertificateVerification";
@@ -621,7 +622,7 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-slate-800">{p.title}</span>
                         <span className="block text-[11px] text-slate-500">
-                          {p.category} · {p.durationWeeks} wks
+                          {p.category} · {durationLabel(p)}
                         </span>
                       </span>
                       <span

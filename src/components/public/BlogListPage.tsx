@@ -134,7 +134,7 @@ export default function BlogListPage() {
           <ScrollReveal className="mt-8">
             <a
               href={`#blog/${featured.slug}`}
-              className="group grid overflow-hidden rounded-3xl border border-emerald-900/10 bg-white shadow-sm transition hover:shadow-xl lg:grid-cols-2"
+              className="aoh-card aoh-glass group grid overflow-hidden rounded-3xl shadow-sm transition hover:shadow-xl lg:grid-cols-2"
             >
               <div className="h-56 overflow-hidden lg:h-full">
                 <CoverImage post={featured} className="transition duration-500 group-hover:scale-105" />
@@ -170,7 +170,7 @@ export default function BlogListPage() {
             {rest.map((post) => (
               <MotionCard
                 key={post.id}
-                className="flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-sm transition-shadow duration-200 hover:shadow-lg"
+                className="aoh-card aoh-glass flex h-full flex-col overflow-hidden rounded-2xl shadow-sm transition-shadow duration-200 hover:shadow-lg"
               >
                 <a href={`#blog/${post.slug}`} className="flex h-full flex-col">
                   <div className="h-40 overflow-hidden">

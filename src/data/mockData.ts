@@ -1,5 +1,7 @@
 import type { AppState, PortalThemeSettings, SystemSettings, WebsiteSettings } from "../types";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS } from "../lib/permissions";
+import { CATALOG_2026 } from "./programCatalog2026";
+import { DEFAULT_PUBLIC_COPY, DEFAULT_SUPPORT } from "./publicContent";
 
 // Reused across the About and Impact homepage sections and the CTA band so the
 // defaults look like today's live site until an admin uploads replacements.
@@ -45,10 +47,20 @@ export const defaultThemeSettings: PortalThemeSettings = {
 };
 
 export const defaultWebsiteSettings: WebsiteSettings = {
+  publicCopy: DEFAULT_PUBLIC_COPY,
+  support: DEFAULT_SUPPORT,
+  team: { enabled: false, title: "Meet our staff", description: "", members: [] },
+  newsletter: {
+    enabled: false,
+    title: "Stay in touch",
+    description: "Receive news and updates from Africa of Hope.",
+    consent: "I agree to receive email updates. I can unsubscribe at any time.",
+    button: "Subscribe",
+  },
   logoUrl: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
   faviconUrl: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
   academyName: "AFRICA OF HOPE",
-  tagline: "Practical pathways into work, enterprise and community leadership.",
+  tagline: "",
   announcementText:
     "Admissions for the 2026/2027 intake are now open. Apply online in minutes.",
   announcementEnabled: true,
@@ -113,29 +125,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     { id: "stat-3", value: "12", label: "Certificate programmes" },
     { id: "stat-4", value: "400+", label: "Graduates placed" },
   ],
-  testimonials: [
-    {
-      id: "t-1",
-      name: "Musu K.",
-      program: "Full Stack Web Development",
-      quote:
-        "I started in Margibi with no coding background. Within six months I was building features for a Monrovia fintech team.",
-    },
-    {
-      id: "t-2",
-      name: "Joseph T.",
-      program: "Solar Installation & Maintenance",
-      quote:
-        "The hands-on practicals prepared me for real rooftop installs. My certificate helped me land my first job with a solar company in Bong County.",
-    },
-    {
-      id: "t-3",
-      name: "Estelle W.",
-      program: "UI/UX Product Design",
-      quote:
-        "The portfolio I built here won my first freelance contracts with small businesses across Liberia, before I even graduated.",
-    },
-  ],
+  testimonials: [],
   faqs: [
     {
       id: "faq-1",
@@ -153,10 +143,16 @@ export const defaultWebsiteSettings: WebsiteSettings = {
       id: "faq-3",
       question: "How is tuition paid?",
       answer:
-        "Tuition can be paid in full or by instalment. Every payment is receipted in the student portal.",
+        "Every course is tuition-free — you only pay a one-time registration package: US$45 for six-month courses, US$30 for three-month, US$10 for one-month and US$5 for two-week courses. Seat reservations and receipts are handled in the student portal.",
     },
     {
       id: "faq-4",
+      question: "How many days a week will I attend?",
+      answer:
+        "You choose: fully online is 1 hour a day, 3 days a week; fully on-site is 2 hours daily, 2 days a week; partially online mixes both. The schedule follows the study plan you pick when applying.",
+    },
+    {
+      id: "faq-5",
       question: "Are certificates internationally recognised?",
       answer:
         "Certificates are issued under our accreditation and are verifiable online by any employer.",
@@ -195,7 +191,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     sections: {
       summary: {
         eyebrow: "Who we are",
-        title: "A practical pathway into the future of work.",
+        title: "Skills for the future of work.",
         subtitle: "Africa of Hope is a learning community built around access, applied skills and visible progress.",
         body: "We help people discover relevant programmes, learn with confidence and move from application to completion with clear guidance at every step. Our work brings together training, mentorship and opportunity so learners can build a stronger future for themselves, their families and their communities.",
       },
@@ -354,9 +350,9 @@ eyebrow: "Our work",
       { id: "auth-stat-3", value: "96%", label: "Completion rate" },
     ],
     testimonial: {
-      quote: "I joined with no coding background. Six months later I was shipping features for a fintech team in Lagos.",
-      name: "Amara N.",
-      program: "Full Stack Web Development",
+      quote: "",
+      name: "",
+      program: "",
       avatar: "",
     },
     signinTitle: "Welcome back",
@@ -372,7 +368,7 @@ eyebrow: "Our work",
 
 export const initialState: AppState = {
   users: [],
-  programs: [],
+  programs: CATALOG_2026,
   cohorts: [],
   attendance: [],
   assignments: [],

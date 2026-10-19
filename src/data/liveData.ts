@@ -14,6 +14,7 @@ import type {
   WebsiteSettings,
 } from "../types";
 import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings } from "./mockData";
+import { CATALOG_2026 } from "./programCatalog2026";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, type PermissionKey } from "../lib/permissions";
 
 export type Row = Record<string, unknown>;
@@ -329,10 +330,9 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     ),
   );
 
-  const moduleRows = (modules.data ?? []) as Row[];
-  const mappedPrograms: Program[] = ((programs.data ?? []) as Row[]).map((p) => ({
+  const moduleRows = (modules.data ?? []) as Row[];  const mappedPrograms: Program[] = ((programs.data ?? []) as Row[]).map((p) => ({
     id: txt(p.id),
-    title: txt(p.title),
+    title: txt(p.title) || txt(p.name),
     category: txt(p.category),
     durationWeeks: num(p, "duration_weeks"),
     tuition: num(p, "tuition"),
@@ -340,6 +340,12 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     description: txt(p.description),
     entryRequirements: txt(p.entry_requirements),
     imageUrl: p.image_url ? txt(p.image_url) : undefined,
+    deliveryModes: (Array.isArray(p.delivery_modes)
+      ? (p.delivery_modes as string[])
+      : typeof p.delivery_mode === "string"
+        ? [p.delivery_mode]
+        : []
+    ).filter((m) => m === "online" || m === "blended" || m === "onsite") as Program["deliveryModes"],
     modules: moduleRows
       .filter((m) => txt(m.program_id) === txt(p.id))
       .sort((a, b) => num(a, "position") - num(b, "position"))
@@ -394,7 +400,7 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
 
   const state: AppState = {
     users,
-    programs: mappedPrograms,
+    programs: mappedPrograms.length > 0 ? mappedPrograms : CATALOG_2026,
     cohorts: mappedCohorts,
     attendance: ((attendance.data ?? []) as Row[]).map((a) => ({
       id: txt(a.id),

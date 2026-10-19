@@ -1,7 +1,7 @@
 import type { Role } from "../types";
 
 /**
- * Single source of truth for the permission catalogue, the six fixed roles
+ * Single source of truth for the permission catalogue, the fixed roles
  * and the default role -> permission matrix. Mirrors the seed data in
  * supabase/migrations/20261014010000_roles_permissions_cms.sql exactly, so
  * the frontend has a sane fallback before that table loads (or before the
@@ -16,6 +16,7 @@ export const ROLES: Role[] = [
   "School Admin",
   "Teacher",
   "Registrar",
+  "Admission Officer",
   "Finance Officer",
   "Student",
 ];
@@ -26,6 +27,7 @@ export const STAFF_ROLES: Role[] = [
   "School Admin",
   "Teacher",
   "Registrar",
+  "Admission Officer",
   "Finance Officer",
 ];
 
@@ -160,6 +162,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "fees.view",
     "certificates.manage",
     "announcements.manage",
+    "assistant.use",
+    "assistant.admin_help",
+  ],
+  "Admission Officer": [
+    "people.view",
+    "students.manage",
     "assistant.use",
     "assistant.admin_help",
   ],

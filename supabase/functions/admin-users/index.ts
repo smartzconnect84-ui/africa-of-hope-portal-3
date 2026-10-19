@@ -12,7 +12,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...cors, "Content-Type": "application/json" },
   });
 
-const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher", "Registrar", "Finance Officer"];
+const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher", "Registrar", "Admission Officer", "Finance Officer"];
 
 /** True for Postgres error 23503 (foreign_key_violation), however it is wrapped by the client. */
 function isForeignKeyViolation(message: string): boolean {

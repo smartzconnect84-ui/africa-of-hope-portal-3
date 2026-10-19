@@ -22,7 +22,7 @@ export default function AboutSection({
                 alt="Africa of Hope graduates celebrating their certification"
                 className="h-80 w-full rounded-3xl object-cover object-[center_20%] shadow-lg shadow-emerald-900/10 sm:h-[28rem]"
               />
-              <div className="absolute -bottom-5 left-5 rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-md">
+              <div className="aoh-card aoh-glass absolute -bottom-5 left-5 rounded-2xl p-4">
                 <p className="text-2xl font-semibold text-emerald-800">{w.partners.length || 18}</p>
                 <p className="text-[11px] uppercase tracking-wide text-slate-500">Partner employers</p>
               </div>

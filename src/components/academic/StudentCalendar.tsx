@@ -18,6 +18,13 @@ function loadReminders(): Reminder[] {
   try { return JSON.parse(localStorage.getItem(REMINDER_KEY) ?? "[]") as Reminder[]; } catch { return []; }
 }
 
+// Date-only fields and class times are local wall-clock values. Convert actual
+// timestamps (lesson deadlines) to the same local representation before grouping.
+function localDateTime(value: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
 /** F7: one student calendar — live class sessions + lesson due dates + assignment deadlines + personal reminders. */
 export default function StudentCalendar() {
   const { state, currentUser } = useApp();
@@ -29,6 +36,13 @@ export default function StudentCalendar() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [note, setNote] = useState("");
+  const [now, setNow] = useState(() => localDateTime(new Date()));
+  useEffect(() => {
+    const tick = () => setNow(localDateTime(new Date()));
+    const timer = window.setInterval(tick, 30000);
+    window.addEventListener("focus", tick);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", tick); };
+  }, []);
 
   useEffect(() => { localStorage.setItem(REMINDER_KEY, JSON.stringify(reminders)); }, [reminders]);
 
@@ -53,7 +67,13 @@ export default function StudentCalendar() {
       list.push({ key: `session-${s.id}`, date: s.session_date, time: s.starts_at.slice(0, 5), title: s.title, kind: "Class", detail: `${s.starts_at.slice(0, 5)}–${s.ends_at.slice(0, 5)} · ${s.room || "Room TBA"}${s.attendance_required ? " · attendance required" : ""}` });
     }
     for (const u of units) {
-      if (u.due_at) list.push({ key: `unit-${u.id}`, date: u.due_at.slice(0, 10), time: u.due_at.slice(11, 16) || "23:59", title: u.title, kind: "Lesson due", detail: u.unit_type });
+      if (u.due_at) {
+        const deadline = new Date(u.due_at);
+        if (!Number.isNaN(deadline.getTime())) {
+          const local = localDateTime(deadline);
+          list.push({ key: `unit-${u.id}`, date: local.slice(0, 10), time: local.slice(11, 16), title: u.title, kind: "Lesson due", detail: u.unit_type });
+        }
+      }
     }
     const myAssignments = state.assignments.filter((a) => !currentUser?.cohortIds.length || currentUser.cohortIds.includes(a.cohortId));
     for (const a of myAssignments) {
@@ -76,7 +96,7 @@ export default function StudentCalendar() {
     return [...map.entries()];
   }, [events]);
 
-  const upcoming = events.filter((e) => `${e.date}T${e.time}` >= new Date().toISOString().slice(0, 16));
+  const upcoming = events.filter((e) => `${e.date}T${e.time}` >= now);
   const kindIcon = (kind: CalEvent["kind"]) => kind === "Class" ? Video : kind === "Lesson due" ? FileText : kind === "Assignment" ? ClipboardCheck : BellPlus;
 
   const addReminder = (e: FormEvent) => {
@@ -94,7 +114,7 @@ export default function StudentCalendar() {
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
       <div className={cn(panelClass, "p-5 h-fit")}>
-        <SectionHeader title="Study calendar" subtitle="Classes, due dates & reminders" />
+        <SectionHeader title="Study calendar" subtitle="Classes, due dates & reminders · local time" />
         <div className="mt-4 grid grid-cols-2 gap-2 text-center">
           <div className="rounded-xl bg-emerald-50 p-3"><p className="text-xl font-bold text-emerald-800">{upcoming.length}</p><p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Upcoming</p></div>
           <div className="rounded-xl bg-sky-50 p-3"><p className="text-xl font-bold text-sky-800">{sessions.length}</p><p className="text-[11px] font-semibold uppercase tracking-wide text-sky-700">Classes</p></div>
@@ -128,7 +148,7 @@ export default function StudentCalendar() {
               <div className="mt-2 space-y-2">
                 {rows.map((event) => {
                   const Icon = kindIcon(event.kind);
-                  const past = `${event.date}T${event.time}` < new Date().toISOString().slice(0, 16);
+                  const past = `${event.date}T${event.time}` < now;
                   return (
                     <div key={event.key} className={cn("flex items-start gap-3 rounded-xl border p-3", past ? "border-slate-100 bg-slate-50/60 opacity-70" : "border-slate-150 bg-white")}>
                       <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", event.kind === "Class" ? "bg-emerald-100 text-emerald-700" : event.kind === "Assignment" ? "bg-amber-100 text-amber-700" : event.kind === "Lesson due" ? "bg-sky-100 text-sky-700" : "bg-violet-100 text-violet-700")}><Icon className="h-4 w-4" /></span>

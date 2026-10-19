@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { unsubscribeSignature } from "../_shared/newsletter.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -99,6 +100,14 @@ function detailRow(label: string, value: unknown): string {
 
 /** Renders one of the three known templates. Falls back to the generic "notification" layout for anything else. */
 function renderTemplate(template: string, subject: string, payload: Record<string, unknown>): string {
+  if (template === "newsletter_confirmation") {
+    const link = String(payload.confirmation_url ?? "");
+    return wrapBrand(subject, `<p>Please confirm that you requested Africa of Hope newsletters.</p><p><a href="${escapeHtml(link)}">Confirm your subscription</a></p><p>This link expires after 24 hours. Ignore this email if you did not request it. No newsletter will be sent until you confirm.</p>`);
+  }
+  if (template === "newsletter") {
+    const body = String(payload.body ?? "").replaceAll("{{name}}", String(payload.recipient_name || "Reader"));
+    return wrapBrand(subject, `<p style="white-space:pre-wrap;font-size:14px;line-height:1.7">${escapeHtml(body)}</p><p style="margin-top:28px;font-size:12px">You received this newsletter because you confirmed your subscription. <a href="${escapeHtml(payload.unsubscribe_url)}">Unsubscribe from newsletters</a>.</p>`);
+  }
   if (template === "payment_receipt") {
     const rows = [
       detailRow("Receipt number", payload.receipt_number),
@@ -249,19 +258,47 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (!claimed) continue;
 
-      const html = renderTemplate(claimed.template, claimed.subject, claimed.payload ?? {});
       const attempts = (claimed.attempts ?? 0) + 1;
       const safeToName = sanitizeDisplayName(claimed.to_name);
 
       try {
+        const payload = { ...(claimed.payload ?? {}) };
+        let unsubscribeUrl = "";
+        if (claimed.template === "newsletter") {
+          // Consent can be withdrawn after queueing. Re-check at delivery time.
+          const { data: subscriber, error: subscriberError } = await admin.from("newsletter_subscribers").select("id,email,name,status").eq("id", payload.subscriber_id).maybeSingle();
+          if (subscriberError) throw subscriberError;
+          if (!subscriber || subscriber.status !== "active" || subscriber.email !== claimed.to_email) {
+            const { error } = await admin.from("email_outbox").update({ status: "skipped", last_error: "Newsletter consent is no longer active" }).eq("id", claimed.id);
+            if (error) throw error;
+            continue;
+          }
+          const signature = await unsubscribeSignature(subscriber.id, subscriber.email, Deno.env.get("NEWSLETTER_TOKEN_SECRET") ?? "");
+          unsubscribeUrl = `${url}/functions/v1/newsletter?action=unsubscribe&id=${encodeURIComponent(subscriber.id)}&signature=${signature}`;
+          payload.unsubscribe_url = unsubscribeUrl;
+          payload.recipient_name = subscriber.name;
+        }
+        if (claimed.template === "newsletter_confirmation") {
+          const { data: subscriber, error } = await admin.from("newsletter_subscribers").select("id").eq("email", claimed.to_email).eq("status", "pending").eq("confirmation_hash", payload.confirmation_hash).gt("confirmation_expires_at", new Date().toISOString()).maybeSingle();
+          if (error) throw error;
+          if (!subscriber) {
+            await admin.from("email_outbox").update({ status: "skipped", last_error: "Confirmation link expired or superseded" }).eq("id", claimed.id);
+            continue;
+          }
+          // Only permit links to our own confirmation endpoint.
+          if (!String(payload.confirmation_url ?? "").startsWith(`${url}/functions/v1/newsletter?action=confirm&token=`)) throw new Error("Invalid confirmation URL");
+        }
+        const html = renderTemplate(claimed.template, claimed.subject, payload);
         const resendResp = await fetch("https://api.resend.com/emails", {
           method: "POST",
-          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json", "Idempotency-Key": `aoh-outbox-${claimed.id}` },
+          signal: AbortSignal.timeout(20_000),
           body: JSON.stringify({
             from: emailFrom,
             to: [safeToName ? `${safeToName} <${claimed.to_email}>` : claimed.to_email],
             subject: claimed.subject,
             html,
+            ...(unsubscribeUrl ? { headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` } } : {}),
           }),
         });
         const resendJson = await resendResp.json().catch(() => ({}));

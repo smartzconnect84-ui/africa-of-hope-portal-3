@@ -6,9 +6,10 @@ import {
 import {
   Users, Award, Banknote, Search, Plus, Check, X, BookOpen,
   Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, GraduationCap,
-  Percent, Mail, Phone, BadgeAlert,
+  Percent, Mail, Phone, BadgeAlert, RefreshCw,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
+import { DELIVERY_META, durationLabel, programModes, scheduleLabel } from "@/lib/programDelivery";
 import type { AttendanceStatus, User } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -360,9 +361,17 @@ const emptyProgram = {
 };
 
 export function ProgramBuilder() {
-  const { state, addProgram } = useApp();
+  const { state, addProgram, seedCatalogue } = useApp();
   const [open, setOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [form, setForm] = useState(emptyProgram);
+
+  const seed = async () => {
+    setSeeding(true);
+    const error = await seedCatalogue();
+    setSeeding(false);
+    if (error) toast.error(error);
+  };
 
   const submit = () => {
     if (!form.title.trim() || !form.category.trim()) {
@@ -372,7 +381,7 @@ export function ProgramBuilder() {
     addProgram({
       title: form.title.trim(),
       category: form.category.trim(),
-      durationWeeks: Number(form.durationWeeks) || 8,
+      durationWeeks: Number(form.durationWeeks) || 26,
       tuition: Number(form.tuition) || 0,
       certification: form.certification,
       description: form.description,
@@ -390,11 +399,23 @@ export function ProgramBuilder() {
         title="Program Builder"
         subtitle="Design certification tracks, modules and tuition schedules"
         action={
-          <Button onClick={() => setOpen(true)} className="bg-emerald-700 hover:bg-emerald-800">
-            <Plus className="mr-1 h-4 w-4" /> New program
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={seed} disabled={seeding}>
+              <RefreshCw className={cn("mr-1 h-4 w-4", seeding && "animate-spin")} />
+              {seeding ? "Importing…" : "Import 2026 catalogue"}
+            </Button>
+            <Button onClick={() => setOpen(true)} className="bg-emerald-700 hover:bg-emerald-800">
+              <Plus className="mr-1 h-4 w-4" /> New program
+            </Button>
+          </div>
         }
       />
+      <p className="rounded-xl border border-emerald-900/10 bg-emerald-50/60 p-3 text-[11px] text-emerald-900">
+        <RefreshCw className="mr-1 inline h-3.5 w-3.5" />
+        <strong>Import 2026 catalogue</strong> writes the 31 courses that are missing from the live
+        programmes table into it — nothing is overwritten or duplicated. Use it when the public site
+        still shows the built-in catalogue, or run the same seed in the Supabase SQL editor.
+      </p>
       <div className="grid gap-4 md:grid-cols-2">
         {state.programs.map((p) => (
           <Reveal key={p.id} className={cn(panelClass, "flex flex-col overflow-hidden")}>
@@ -406,8 +427,12 @@ export function ProgramBuilder() {
                   <Badge variant="secondary" className="mt-1.5 bg-emerald-50 text-emerald-800">{p.category}</Badge>
                 </div>
                 <div className="text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Registration</p>
                   <p className="text-lg font-semibold text-emerald-800">{formatCurrency(p.tuition)}</p>
-                  <p className="text-[11px] text-slate-500">{p.durationWeeks} weeks</p>
+                  <p className="text-[11px] text-slate-500">{p.durationWeeks ? durationLabel(p) : "Duration not set"}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {programModes(p).map((m) => `${DELIVERY_META[m].short}: ${scheduleLabel(m)}`).join(" · ")}
+                  </p>
                 </div>
               </div>
               <p className="mt-3 text-sm text-slate-600">{p.description}</p>
@@ -436,7 +461,10 @@ export function ProgramBuilder() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Publish a new program</DialogTitle>
-            <DialogDescription>Define the track, tuition and module outline.</DialogDescription>
+            <DialogDescription>
+            Define the track, duration, registration fee and module outline. Class times follow the study mode:
+            fully online 1 hour a day, 3 days a week; fully on-site 2 hours daily, 2 days a week.
+          </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
@@ -453,11 +481,13 @@ export function ProgramBuilder() {
             </div>
             <div className="space-y-1.5">
               <Label>Duration (weeks)</Label>
-              <Input type="number" value={form.durationWeeks} onChange={(e) => setForm({ ...form, durationWeeks: e.target.value })} placeholder="16" />
+              <Input type="number" value={form.durationWeeks} onChange={(e) => setForm({ ...form, durationWeeks: e.target.value })} placeholder="26" />
+              <p className="text-[11px] text-slate-500">26 = 6 months · 13 = 3 months · 4 = 1 month · 2 = 2 weeks</p>
             </div>
             <div className="space-y-1.5">
-              <Label>Tuition (USD)</Label>
-              <Input type="number" value={form.tuition} onChange={(e) => setForm({ ...form, tuition: e.target.value })} placeholder="600" />
+              <Label>Registration fee (USD)</Label>
+              <Input type="number" value={form.tuition} onChange={(e) => setForm({ ...form, tuition: e.target.value })} placeholder="45" />
+              <p className="text-[11px] text-slate-500">45 = 6 months · 30 = 3 months · 10 = 1 month · 5 = 2 weeks</p>
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label>Description</Label>

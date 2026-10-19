@@ -92,6 +92,14 @@ function Shell() {
         document.head.appendChild(link);
       }
       link.href = w.faviconUrl;
+      // Keep the iOS home-screen icon in step with the CMS favicon.
+      let touch = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+      if (!touch) {
+        touch = document.createElement("link");
+        touch.rel = "apple-touch-icon";
+        document.head.appendChild(touch);
+      }
+      touch.href = w.faviconUrl;
     }
   }, [state.websiteSettings, state.settings.academyName, site]);
 

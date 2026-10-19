@@ -91,6 +91,14 @@ export interface TrainingMaterial {
   created_at: string;
 }
 
+export interface DiscussionReply {
+  id: string; authorId: string; authorName: string; role: string; body: string; createdAt: string; isAnswer: boolean;
+}
+export interface DiscussionThread {
+  id: string; cohortId: string; unitId: string | null; title: string; body: string;
+  authorId: string; authorName: string; role: string; createdAt: string; replies: DiscussionReply[];
+}
+
 export interface PortalNotification {
   id: string;
   recipient_id: string;
@@ -300,6 +308,39 @@ export function createAcademicApi(client: AcademicApiClient, now: () => number =
   }
 
   return {
+  async discussionThreads(cohortIds: string[]): Promise<DiscussionThread[]> {
+    if (!cohortIds.length) return [];
+    const { data, error } = await client.from("discussion_threads")
+      .select("*, discussion_replies(*)").in("cohort_id", cohortIds).order("created_at", { ascending: false });
+    if (error) throw new Error(explainAcademicError(error) ?? error.message);
+    return (data ?? []).map((t) => ({
+      id: t.id, cohortId: t.cohort_id, unitId: t.unit_id, title: t.title, body: t.body,
+      authorId: t.author_id, authorName: t.author_name, role: t.author_role, createdAt: t.created_at,
+      replies: (t.discussion_replies ?? []).map((r: Record<string, any>) => ({
+        id: r.id, authorId: r.author_id, authorName: r.author_name, role: r.author_role,
+        body: r.body, createdAt: r.created_at, isAnswer: r.is_answer,
+      })).sort((a: DiscussionReply, b: DiscussionReply) => a.createdAt.localeCompare(b.createdAt)),
+    }));
+  },
+  async postDiscussionThread(t: DiscussionThread) {
+    const { error } = await client.from("discussion_threads").upsert({
+      id: t.id, cohort_id: t.cohortId, unit_id: t.unitId, title: t.title, body: t.body,
+      author_id: t.authorId,
+    }, { onConflict: "id", ignoreDuplicates: true });
+    if (error) throw new Error(explainAcademicError(error) ?? error.message);
+  },
+  async postDiscussionReply(threadId: string, r: DiscussionReply) {
+    const { error } = await client.from("discussion_replies").upsert({
+      id: r.id, thread_id: threadId, author_id: r.authorId, body: r.body,
+    }, { onConflict: "id", ignoreDuplicates: true });
+    if (error) throw new Error(explainAcademicError(error) ?? error.message);
+  },
+  async markDiscussionAnswer(replyId: string, isAnswer: boolean) {
+    const { data, error } = await client.from("discussion_replies").update({ is_answer: isAnswer })
+      .eq("id", replyId).select("id");
+    if (error) throw new Error(explainAcademicError(error) ?? error.message);
+    if (!data?.length) throw new Error("Only this cohort's teacher or an academic administrator can mark answers.");
+  },
   enrollments(studentId?: string) {
     return rows<CourseEnrollment>("course_enrollments", (q) =>
       studentId ? q.eq("student_id", studentId).order("requested_at", { ascending: false }) : q.order("requested_at", { ascending: false }),

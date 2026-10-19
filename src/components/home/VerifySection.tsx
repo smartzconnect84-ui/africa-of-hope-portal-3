@@ -48,10 +48,13 @@ export default function VerifySection({
   if (!w.verifyEnabled) return null;
 
   return (
-    <section id="verify" className="scroll-mt-24 bg-[#f6f8f7] py-16 sm:py-20">
+    <section
+      id="verify"
+      className="scroll-mt-24 bg-gradient-to-b from-white via-[#f3f7f4] to-emerald-50/70 py-16 sm:py-20"
+    >
       <div className="mx-auto max-w-4xl px-4">
         <Reveal>
-          <div className="rounded-3xl border border-emerald-900/10 bg-white p-6 shadow-sm shadow-emerald-900/5 sm:p-8">
+          <div className="aoh-card aoh-glass rounded-3xl p-6 sm:p-8">
             {copy.eyebrow && (
               <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900">
                 <ShieldCheck className="h-3.5 w-3.5" /> {copy.eyebrow}

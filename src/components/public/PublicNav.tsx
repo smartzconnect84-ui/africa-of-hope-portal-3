@@ -4,6 +4,7 @@ import { ChevronDown, GraduationCap } from "lucide-react";
 import type { MouseEvent } from "react";
 import type { Program } from "@/types";
 import { programImage } from "@/lib/programImages";
+import { durationLabel } from "@/lib/programDelivery";
 import { useLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
@@ -35,15 +36,77 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
   const reduceMotion = useReducedMotion();
   const [openId, setOpenId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const pendingFocus = useRef<string | null>(null);
 
-  // Close on outside click or Escape.
+  const menuItems = (id: string): HTMLElement[] => {
+    const panel = rootRef.current?.querySelector<HTMLElement>(`[data-menu-panel="${id}"]`);
+    return panel ? Array.from(panel.querySelectorAll<HTMLElement>('[role="menuitem"]')) : [];
+  };
+
+  const focusItem = (id: string, index: number) => {
+    const items = menuItems(id);
+    if (items.length === 0) return;
+    items[(index + items.length) % items.length].focus();
+  };
+
+  /** Opens a menu. `focusFirst` moves keyboard focus into the panel (keyboard use only). */
+  const openMenu = (id: string, focusFirst = false) => {
+    pendingFocus.current = focusFirst ? id : null;
+    setOpenId(id);
+  };
+
+  const closeMenu = (restoreFocus = false) => {
+    const id = openId;
+    setOpenId(null);
+    if (restoreFocus && id) triggerRefs.current[id]?.focus();
+  };
+
+  // Move focus into the panel when it was opened from the keyboard.
+  useEffect(() => {
+    if (!openId || pendingFocus.current !== openId) return;
+    const id = openId;
+    pendingFocus.current = null;
+    const raf = window.requestAnimationFrame(() => focusItem(id, 0));
+    return () => window.cancelAnimationFrame(raf);
+  }, [openId]);
+
+  // Close on outside click, Escape or Tab; arrow keys and Home/End move
+  // through the menu items while a panel is open.
   useEffect(() => {
     if (!openId) return;
+    const id = openId;
     const onPointerDown = (e: PointerEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpenId(null);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenId(null);
+      const inside = !!rootRef.current?.contains(document.activeElement);
+      if (e.key === "Escape") {
+        setOpenId(null);
+        if (inside) triggerRefs.current[id]?.focus();
+        return;
+      }
+      if (!inside) return;
+      if (e.key === "Tab") {
+        setOpenId(null);
+        return;
+      }
+      const items = menuItems(id);
+      if (items.length === 0) return;
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        focusItem(id, current + 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        focusItem(id, current - 1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        focusItem(id, 0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        focusItem(id, items.length - 1);
+      }
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKey);
@@ -65,7 +128,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
   const direct = rest.slice(0, Math.max(0, maxDirect - (programmesLink ? 1 : 0)));
   const overflow = rest.slice(direct.length);
 
-  const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
+  const toggle = (id: string) => (openId === id ? closeMenu(false) : openMenu(id));
 
   const panelMotion = reduceMotion
     ? {}
@@ -85,14 +148,18 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
     return (
       <div className="relative" onMouseEnter={() => setOpenId("more")} onMouseLeave={() => setOpenId((c) => (c === "more" ? null : c))}>
         <button
+          ref={(node) => {
+            triggerRefs.current.more = node;
+          }}
           type="button"
           aria-haspopup="menu"
           aria-expanded={open}
+          aria-controls="public-nav-more-menu"
           onClick={() => toggle("more")}
           onKeyDown={(e) => {
-            if (e.key === "ArrowDown" && !open) {
+            if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !open) {
               e.preventDefault();
-              setOpenId("more");
+              openMenu("more", true);
             }
           }}
           className={cn(linkCls, "inline-flex items-center gap-1")}
@@ -105,17 +172,22 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
             <motion.div
               {...panelMotion}
               role="menu"
+              id="public-nav-more-menu"
               aria-label={t("More")}
+              data-menu-panel="more"
               className="absolute right-0 top-full z-50 w-56 pt-2"
             >
-              <div className="overflow-hidden rounded-2xl border border-emerald-900/10 bg-white p-1.5 shadow-xl shadow-emerald-950/15">
+              <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-2xl border border-emerald-900/10 bg-white p-1.5 shadow-xl shadow-emerald-950/15">
                 {overflow.map((l) => (
                   <a
                     key={l.id}
                     role="menuitem"
                     href={l.href}
-                    onClick={HOME_RE.test(l.href.trim()) ? onHomeTop : undefined}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900"
+                    onClick={(e) => {
+                      setOpenId(null);
+                      if (HOME_RE.test(l.href.trim())) onHomeTop(e);
+                    }}
+                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition hover:bg-emerald-50 hover:text-emerald-900 focus-visible:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                   >
                     {t(l.label)}
                   </a>
@@ -139,14 +211,18 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
         onMouseLeave={() => setOpenId((c) => (c === "programmes" ? null : c))}
       >
         <button
+          ref={(node) => {
+            triggerRefs.current.programmes = node;
+          }}
           type="button"
           aria-haspopup="menu"
           aria-expanded={open}
+          aria-controls="public-nav-programmes-menu"
           onClick={() => toggle("programmes")}
           onKeyDown={(e) => {
-            if (e.key === "ArrowDown" && !open) {
+            if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !open) {
               e.preventDefault();
-              setOpenId("programmes");
+              openMenu("programmes", true);
             }
           }}
           className={cn(linkCls, "inline-flex items-center gap-1")}
@@ -159,10 +235,12 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
             <motion.div
               {...panelMotion}
               role="menu"
+              id="public-nav-programmes-menu"
               aria-label={t(programmesLink.label)}
-              className="absolute left-1/2 top-full z-50 w-[22rem] -translate-x-1/2 pt-2"
+              data-menu-panel="programmes"
+              className="absolute left-1/2 top-full z-50 w-[22rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2"
             >
-              <div className="overflow-hidden rounded-2xl border border-emerald-900/10 bg-white p-1.5 shadow-xl shadow-emerald-950/15">
+              <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-2xl border border-emerald-900/10 bg-white p-1.5 shadow-xl shadow-emerald-950/15">
                 {featured.length > 0 ? (
                   <>
                     {featured.map((p) => (
@@ -170,7 +248,8 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
                         key={p.id}
                         role="menuitem"
                         href={programmesLink.href}
-                        className="group flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-emerald-50"
+                        onClick={() => setOpenId(null)}
+                        className="group flex items-center gap-3 rounded-xl px-2 py-2 outline-none transition hover:bg-emerald-50 focus-visible:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                       >
                         <img
                           src={programImage(p)}
@@ -184,7 +263,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
                           </span>
                           <span className="block text-xs text-slate-500">
                             {p.category || t("Certificate programme")}
-                            {p.durationWeeks ? ` · ${p.durationWeeks} ${t("weeks")}` : ""}
+                            {p.durationWeeks ? ` · ${durationLabel(p)}` : ""}
                           </span>
                         </span>
                       </a>
@@ -192,7 +271,8 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
                     <a
                       role="menuitem"
                       href={programmesLink.href}
-                      className="mt-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800"
+                      onClick={() => setOpenId(null)}
+                      className="mt-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white outline-none transition hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-900/40"
                     >
                       <GraduationCap className="h-4 w-4" aria-hidden="true" />
                       {t("View all programmes")}
@@ -202,7 +282,8 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
                   <a
                     role="menuitem"
                     href={programmesLink.href}
-                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900"
+                    onClick={() => setOpenId(null)}
+                    className="block rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 outline-none transition hover:bg-emerald-50 hover:text-emerald-900 focus-visible:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                   >
                     {t("View all programmes")}
                   </a>
@@ -216,7 +297,13 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
   };
 
   return (
-    <div ref={rootRef} className="ml-auto hidden items-center gap-1 lg:flex">
+    <div
+      ref={rootRef}
+      className="ml-auto hidden items-center gap-1 lg:flex"
+      onBlur={(e) => {
+        if (!rootRef.current?.contains(e.relatedTarget as Node | null)) setOpenId(null);
+      }}
+    >
       {direct.map((l) =>
         PROGRAMMES_RE.test(l.href.trim()) ? null : (
           <a

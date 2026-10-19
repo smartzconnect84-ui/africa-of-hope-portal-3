@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
+import { durationLabel } from "@/lib/programDelivery";
 
 import { useLocale } from "@/lib/locale";
 const LOW_DATA_KEY = "aoh-course-player-low-data";
@@ -130,7 +131,7 @@ export default function CoursePlayer() {
             <SelectTrigger><SelectValue placeholder="Choose programme" /></SelectTrigger>
             <SelectContent>{state.programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}</SelectContent>
           </Select>
-          {program && <p className="text-xs text-slate-500">{program.category} · {program.durationWeeks} weeks</p>}
+          {program && <p className="text-xs text-slate-500">{program.category} · {durationLabel(program)}</p>}
           <div>
             <div className="flex items-center justify-between text-xs font-semibold"><span>{doneCount}/{programUnits.length} {t("Lessons")}</span><span>{percent}%</span></div>
             <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${percent}%` }} /></div>

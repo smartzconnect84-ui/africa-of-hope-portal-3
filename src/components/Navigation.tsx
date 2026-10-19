@@ -205,8 +205,8 @@ function readDismissedIds(): string[] {
 }
 
 /**
- * G6: a dismissible ticker of currently-visible announcements for students
- * and teachers, shown above the portal content on every view except the
+ * G6: a dismissible ticker of currently-visible announcements for all
+ * signed-in users (every role), shown above the portal content on every view except the
  * Bulletin Board itself (which already lists them in full). The Marquee
  * provides a decorative, non-interactive scroll of the same text that's
  * already announced via the sr-only live region; a separate "View bulletin
@@ -221,11 +221,10 @@ function PortalAnnouncementTicker({ onOpenBoard }: { onOpenBoard: () => void }) 
   const [dismissedIds, setDismissedIds] = useState<string[]>(readDismissedIds);
 
   const items = useMemo(() => {
-    if (currentUser?.role !== "Student" && currentUser?.role !== "Teacher") return [];
     const now = Date.now();
     return state.announcements.filter((item) => {
       if ((item.audience ?? "all") === "public") return false;
-      if (!isAnnouncementLiveFor(item, currentUser.role, now)) return false;
+      if (!isAnnouncementLiveFor(item, currentUser?.role ?? "Student", now)) return false;
       return !dismissedIds.includes(item.id) && (item.title.trim() || item.body.trim());
     });
   }, [state.announcements, currentUser, dismissedIds]);
@@ -369,7 +368,7 @@ export default function Navigation({
 
   return (
     <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
-      <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 text-white backdrop-blur-md print:hidden">
+      <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-3 sm:px-4">
           <button
             type="button"
@@ -422,7 +421,7 @@ export default function Navigation({
           </div>
 
           <div className="ml-auto flex items-center gap-2 md:ml-2">
-            <LanguageSwitcher tone="light" className="hidden sm:flex" />
+            <LanguageSwitcher tone="dark" className="flex" />
             {onExitToPublic && (
               <button
                 type="button"
@@ -501,10 +500,13 @@ export default function Navigation({
       </header>
 
       {bannerVisible && (
-        <div ref={bannerRef} className="sticky z-20 border-b border-amber-300/60 bg-amber-50 print:hidden" style={{ top: headerRef.current?.offsetHeight ?? 64 }}>
+        <div ref={bannerRef} className="sticky z-20 overflow-hidden border-b border-amber-300/60 bg-amber-50 print:hidden" style={{ top: headerRef.current?.offsetHeight ?? 64 }}>
           <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 py-2 text-xs text-amber-900 sm:px-4">
-            <Megaphone className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-            <span className="truncate">{state.settings.marketingBanner}</span>
+            <Megaphone className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+            <span className="sr-only">{state.settings.marketingBanner}</span>
+            <Marquee repeat={2} pauseOnHover applyMask={false} className="min-w-0 flex-1 overflow-hidden p-0 text-xs font-medium text-amber-900 [--duration:30s] [--gap:3rem]" aria-hidden="true">
+              <span className="whitespace-nowrap">{state.settings.marketingBanner}</span>
+            </Marquee>
           </div>
         </div>
       )}

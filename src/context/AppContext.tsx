@@ -26,6 +26,7 @@ import type {
   User,
   WebsiteSettings,
 } from "../types";
+import { CATALOG_2026 } from "../data/programCatalog2026";
 import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings, initialState } from "../data/mockData";
 import { DEFAULT_ROLE_PERMISSIONS, type PermissionKey } from "../lib/permissions";
 
@@ -103,6 +104,8 @@ interface AppContextValue {
   changePassword: (password: string) => Promise<string | null>;
   updateProfile: (id: string, patch: ProfilePatch) => Promise<string | null>;
   setProgramImage: (id: string, imageUrl: string | null) => Promise<string | null>;
+  /** Inserts any 2026/2027 catalogue course missing from the live programmes table. Resolves to an error message, or null on success. */
+  seedCatalogue: () => Promise<string | null>;
   approveApplicant: (id: string) => void;
   rejectApplicant: (id: string) => void;
   toggleStudentStatus: (id: string) => void;
@@ -472,6 +475,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...s,
           programs: s.programs.map((p) => (p.id === id ? { ...p, imageUrl: imageUrl ?? undefined } : p)),
         }));
+        return null;
+      },
+      seedCatalogue: async () => {
+        const { data: liveRows, error: readError } = await supabase.from("programs").select("title");
+        if (readError) return migrationHint(readError.message, "Programme catalogue");
+        const liveTitles = new Set(
+          ((liveRows ?? []) as Row[]).map((row) => String(row.title ?? "").trim().toLowerCase()),
+        );
+        const missing = CATALOG_2026.filter((p) => !liveTitles.has(p.title.trim().toLowerCase()));
+        if (!missing.length) {
+          toast.success("The live catalogue already has every 2026/2027 course.");
+          return null;
+        }
+        const rows = missing.map((p) => ({
+          id: p.id,
+          title: p.title,
+          category: p.category,
+          duration_weeks: p.durationWeeks,
+          tuition: p.tuition,
+          certification: p.certification,
+          description: p.description,
+          entry_requirements: p.entryRequirements,
+          delivery_modes: p.deliveryModes,
+          study_plan: "Fully online, partially online or on-site",
+        }));
+        const { error } = await supabase.from("programs").insert(rows);
+        if (error) {
+          // Older table shapes have no delivery_modes / study_plan column yet.
+          const baseRows = rows.map(({ delivery_modes: _modes, study_plan: _plan, ...rest }) => rest);
+          const { error: retryError } = await supabase.from("programs").insert(baseRows);
+          if (retryError) return migrationHint(retryError.message, "Programme catalogue");
+          await refresh();
+          toast.success(`Imported ${baseRows.length} courses into the live catalogue.`);
+          return null;
+        }
+        await refresh();
+        toast.success(`Imported ${rows.length} courses into the live catalogue.`);
         return null;
       },
       approveApplicant: (id) =>

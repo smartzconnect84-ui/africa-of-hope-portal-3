@@ -57,7 +57,7 @@ export default function CookiesPage() {
           {SECTIONS.map((s) => (
             <article
               key={s.title}
-              className="rounded-2xl border border-emerald-900/10 bg-white p-6 shadow-sm sm:p-7"
+              className="aoh-card aoh-glass rounded-2xl p-6 shadow-sm sm:p-7"
             >
               <h2 className="text-base font-bold text-emerald-950 sm:text-lg">{s.title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-700">{s.body}</p>

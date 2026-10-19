@@ -90,6 +90,7 @@ export default function BrandLockup({
           src={logoUrl}
           alt={`${academyName} logo`}
           loading="lazy"
+          decoding="async"
           className={cn(
             IMG[size],
             "shrink-0 bg-transparent object-contain drop-shadow-[0_4px_10px_rgba(2,44,34,0.35)]",
@@ -115,7 +116,7 @@ export default function BrandLockup({
         >
           {visibleName}
         </p>
-        {showTagline && tagline && (
+        {showTagline && tagline && !/practical\s+pathway/i.test(tagline) && (
           <p className={cn(TAGLINE_SIZE[size], "truncate", TONE_TAGLINE[tone], taglineClassName)}>{tagline}</p>
         )}
       </div>

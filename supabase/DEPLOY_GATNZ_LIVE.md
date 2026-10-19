@@ -5,7 +5,11 @@
 **Unused project (do NOT use):** `txprgdnznzxpwpuqlxlq` (supabase-blue-ball) — pause/delete it in the dashboard after verifying.
 
 I cannot run SQL or deploy from here — there is no live Supabase connection in this
-builder, only files. Run these once from your machine (Supabase CLI logged in):
+builder, only files. **Pending SQL written after this doc (support/study plans, catalogue
+duration + fee rewrite, storage buckets): see `supabase/RUN_PENDING_SQL.md` for the
+per-file dashboard runbook and verification queries.**
+
+Run these once from your machine (Supabase CLI logged in):
 
 ```bash
 supabase link --project-ref gatnzfjpuokopqyksqoy

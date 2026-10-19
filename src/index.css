@@ -260,13 +260,29 @@ html[data-portal-icons="filled"] .portal-icon {
     @apply border-border outline-ring/50;
   }
   html {
-    overflow-x: hidden;
+    /* Reserve the sticky header's height so anchor jumps and page titles never
+       land underneath it. */
+    scroll-padding-top: calc(5rem + env(safe-area-inset-top, 0px));
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
-    overflow-x: hidden;
+    /* Kept off <body> on purpose: a horizontal `hidden` here detaches sticky
+       headers in older engines. The `clip` rule below is the real guard. */
+    overflow-x: visible;
+  }
+  /* `overflow-x: hidden` makes <body> a scroll container in Chrome and Safari,
+     which silently detaches every `position: sticky` header from the page
+     scroll (the header scrolls away and never returns). `clip` trims the same
+     horizontal overflow without creating a scroll box, so the public header and
+     the portal navigation stay pinned while scrolling in both directions. */
+  @supports (overflow: clip) {
+    html,
+    body {
+      overflow-x: clip;
+    }
   }
   button, a, [role="button"] {
     -webkit-tap-highlight-color: transparent;
@@ -450,13 +466,17 @@ html[data-portal-icons="filled"] .portal-icon {
   .btn-sheen:hover::after { left: 130%; }
 
   /* ---- Premium glassmorphism (subtle, brand-tinted) ---- */
-  /* Light glass for cards on light backgrounds. Semi-transparent white +
-     gentle blur + fine low-contrast border. Falls back to solid white
-     where backdrop-filter is unsupported. Blur stays <= 14px for perf. */
+  /* Light glass for cards on light backgrounds: semi-transparent white,
+     gentle blur, fine low-contrast border (brand green 0.12), soft shadow.
+     Text sits on a >=72% opaque surface so contrast stays AA-safe even over
+     photos. Solid fallback when backdrop-filter is unsupported. */
   .aoh-glass {
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.65);
-    box-shadow: 0 12px 32px -16px rgba(2, 44, 34, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(22, 128, 60, 0.14);
+    box-shadow:
+      0 12px 30px -18px rgba(2, 44, 34, 0.26),
+      0 1px 2px rgba(2, 44, 34, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
     .aoh-glass {
@@ -464,11 +484,19 @@ html[data-portal-icons="filled"] .portal-icon {
       backdrop-filter: blur(14px) saturate(1.25);
     }
   }
-  /* Dark glass for panels on the deep-green sections. */
+  @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    /* No blur support: go fully opaque so text never sits on a busy photo. */
+    .aoh-glass { background: #ffffff; }
+    .aoh-glass-dark { background: #064e3b; }
+  }
+
+  /* Dark glass for panels on the deep-green / photo sections. */
   .aoh-glass-dark {
-    background: rgba(6, 78, 59, 0.55);
+    background: rgba(6, 78, 59, 0.52);
     border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 12px 32px -16px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
   @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
     .aoh-glass-dark {
@@ -476,12 +504,36 @@ html[data-portal-icons="filled"] .portal-icon {
       backdrop-filter: blur(14px) saturate(1.2);
     }
   }
+
+  /* Keyboard focus on any glass card or link that uses it. */
+  .aoh-glass:focus-visible,
+  .aoh-glass-dark:focus-visible,
+  .aoh-card:focus-visible {
+    outline: 2px solid #16803c;
+    outline-offset: 3px;
+  }
+  .aoh-glass:focus-within,
+  .aoh-glass-dark:focus-within {
+    border-color: rgba(251, 191, 36, 0.55);
+  }
+
   @media (max-width: 640px) {
-    /* Lighter blur on phones for scroll performance. */
-    .aoh-glass, .aoh-glass-dark {
+    /* Lighter blur on phones for scroll performance, slightly more opaque
+       so small text stays readable. */
+    .aoh-glass {
+      background: rgba(255, 255, 255, 0.84);
       -webkit-backdrop-filter: blur(8px) saturate(1.15);
       backdrop-filter: blur(8px) saturate(1.15);
     }
+    .aoh-glass-dark {
+      background: rgba(6, 78, 59, 0.66);
+      -webkit-backdrop-filter: blur(8px) saturate(1.1);
+      backdrop-filter: blur(8px) saturate(1.1);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .aoh-glass { background: #ffffff; }
+    .aoh-glass-dark { background: #064e3b; }
   }
 
   /* Card lift + glow */

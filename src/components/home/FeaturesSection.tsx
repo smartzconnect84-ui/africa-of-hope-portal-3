@@ -25,7 +25,7 @@ export default function FeaturesSection({ copy, w }: { copy: SectionCopy; w: Web
             const Icon = resolveIcon(f.icon);
             return (
               <Reveal key={f.id} delay={i * 0.06}>
-                <div className="h-full rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
+                <div className="aoh-card aoh-glass-dark h-full rounded-2xl p-5">
                   <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-400/20 text-amber-300">
                     <Icon className="h-5 w-5" />
                   </span>

@@ -33,7 +33,10 @@ export default function ImpactSection({ copy, w }: { copy: SectionCopy; w: Websi
           <Reveal delay={0.05}>
             <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {w.stats.map((s) => (
-                <div key={s.id} className="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
+                <div
+                  key={s.id}
+                  className="aoh-card aoh-glass-dark rounded-2xl p-4 text-center transition-colors hover:border-amber-300/40"
+                >
                   <p className="text-2xl font-semibold text-amber-400">{s.value}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-wide text-emerald-100/70">{s.label}</p>
                 </div>
@@ -46,7 +49,7 @@ export default function ImpactSection({ copy, w }: { copy: SectionCopy; w: Websi
           <div className="grid gap-4 sm:grid-cols-2">
             {w.testimonials.map((t, i) => (
               <Reveal key={t.id} delay={i * 0.06} className="h-full">
-                <figure className="flex h-full flex-col rounded-2xl bg-white/10 p-5 ring-1 ring-white/10 backdrop-blur-sm">
+                <figure className="aoh-card aoh-glass-dark flex h-full flex-col rounded-2xl p-5">
                   <div className="flex gap-0.5 text-amber-400">
                     {[0, 1, 2, 3, 4].map((s) => (
                       <Star key={s} className="h-3.5 w-3.5 fill-current" />

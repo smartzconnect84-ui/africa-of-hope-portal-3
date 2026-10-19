@@ -61,6 +61,7 @@ import RecommendedTraining from "./components/portal/RecommendedTraining";
 import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
+import EngagementInbox from "./components/portal/EngagementInbox";
 import OperationsHub from "./components/OperationsHub";
 import CoursePlayer from "./components/academic/CoursePlayer";
 import CourseDiscussions from "./components/academic/CourseDiscussions";
@@ -87,6 +88,7 @@ export interface PortalView {
 function DashboardView({ role }: { role: Role | null }) {
   if (role === "Student") return <StudentPortal />;
   if (role === "Teacher") return <TeacherDashboard />;
+  if (role === "Admission Officer") return <PeopleManagement initialTab="applicants" />;
   return <AdminDashboard />;
 }
 
@@ -126,6 +128,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Users,
     visible: (ctx) => ctx.canAny("people.view", "students.manage", "staff.manage"),
     render: () => <PeopleManagement />,
+  },
+  {
+    key: "admissions-inbox",
+    label: "Admissions & support forms",
+    icon: Users,
+    visible: (ctx) => ctx.canAny("students.manage", "fees.manage"),
+    render: () => <EngagementInbox />,
   },
   {
     key: "roles",

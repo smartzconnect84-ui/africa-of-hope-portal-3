@@ -3,6 +3,7 @@ export type Role =
   | "School Admin"
   | "Teacher"
   | "Registrar"
+  | "Admission Officer"
   | "Finance Officer"
   | "Student";
 export type AcademicStatus = "Active" | "Suspended" | "Pending Approval";
@@ -40,11 +41,15 @@ export interface Module {
   summary: string;
 }
 
+export type DeliveryMode = "online" | "blended" | "onsite";
+
 export interface Program {
   id: string;
   title: string;
   category: string;
   durationWeeks: number;
+  /** How the programme is delivered: fully online, partially online, or on-site. */
+  deliveryModes?: DeliveryMode[];
   tuition: number;
   certification: string;
   description: string;
@@ -298,6 +303,22 @@ export interface WebsiteSettings {
   footerAbout: string;
   assistantLauncherLabel: string;
   auth: AuthSettings;
+  publicCopy: Record<string, string>;
+  support: {
+    enabled: boolean;
+    eyebrow: string;
+    title: string;
+    description: string;
+    responseNote: string;
+    cards: { id: string; label: string; blurb: string; cta: string }[];
+  };
+  team: {
+    enabled: boolean;
+    title: string;
+    description: string;
+    members: { id: string; name: string; role: string; bio: string; image: string }[];
+  };
+  newsletter: { enabled: boolean; title: string; description: string; consent: string; button: string };
 }
 
 export type WebsiteListKey =

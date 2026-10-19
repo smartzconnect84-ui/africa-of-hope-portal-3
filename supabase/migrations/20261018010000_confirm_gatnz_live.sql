@@ -75,4 +75,4 @@ end $$;
 
 -- Do not insert into system_settings here. Live id is uuid (not boolean), and a
 -- failed insert rolls back the bucket statements above. Buckets are provisioned
--- on their own in 20261018020000_storage_buckets.sql.
+-- on their own in 20261018030000_storage_buckets.sql.

@@ -156,7 +156,13 @@ export default function CompletionCertificates() {
                     <div className="px-6 pb-6 pt-5 text-center sm:px-8">
                       {logoUrl && (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={logoUrl} alt={`${academyName} logo`} className="mx-auto mb-2 h-16 w-auto bg-transparent object-contain" />
+                        <img
+                  src={logoUrl}
+                  alt={`${academyName} logo`}
+                  loading="lazy"
+                  decoding="async"
+                  className="mx-auto mb-2 h-16 w-auto bg-transparent object-contain"
+                />
                       )}
                       <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-600">Certificate of Completion</p>
                       <h4 className="mt-2 font-serif text-2xl text-emerald-950">This certificate is proudly awarded to</h4>

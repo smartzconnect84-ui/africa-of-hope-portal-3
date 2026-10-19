@@ -14,7 +14,10 @@ export default function AdmissionsSection({
   onApply: () => void;
 }) {
   return (
-    <section id="admissions" className="scroll-mt-24 bg-white py-16 sm:py-20">
+    <section
+      id="admissions"
+      className="scroll-mt-24 bg-gradient-to-b from-emerald-50/80 via-white to-amber-50/40 py-16 sm:py-20"
+    >
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
           <div className="max-w-2xl">
@@ -38,7 +41,7 @@ export default function AdmissionsSection({
               const Icon = resolveIcon(s.icon);
               return (
                 <Reveal key={s.id} delay={i * 0.06}>
-                  <div className="relative h-full rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-5">
+                  <div className="aoh-card aoh-glass relative h-full rounded-2xl p-5">
                     <span className="absolute -top-3 left-5 grid h-7 w-7 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white">
                       {i + 1}
                     </span>
@@ -57,8 +60,8 @@ export default function AdmissionsSection({
         <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-start">
           {w.admissionRequirements.length > 0 && (
             <Reveal delay={0.1}>
-              <div className="rounded-3xl border border-emerald-900/10 bg-[#f6f8f7] p-6">
-                <h3 className="text-lg font-semibold text-slate-900">What you need</h3>
+              <div className="aoh-card aoh-glass rounded-3xl p-6">
+                <h3 className="text-lg font-semibold text-slate-900">{w.publicCopy["admissions.requirements"]}</h3>
                 <ul className="mt-4 space-y-2.5">
                   {w.admissionRequirements.map((r) => (
                     <li key={r.id} className="flex items-start gap-2.5 text-sm text-slate-600">
@@ -70,10 +73,10 @@ export default function AdmissionsSection({
             </Reveal>
           )}
           <Reveal delay={0.16}>
-            <div className="flex h-full flex-col items-start justify-center gap-3 rounded-3xl bg-emerald-950 p-6 text-white">
-              <p className="text-lg font-semibold">Ready when you are.</p>
+            <div className="aoh-card aoh-glass-dark flex h-full flex-col items-start justify-center gap-3 rounded-3xl p-6 text-white">
+              <p className="text-lg font-semibold">{w.publicCopy["admissions.ready"]}</p>
               <p className="text-sm text-emerald-100/80">
-                Applications take less than five minutes and our registrar reviews every file personally.
+                {w.publicCopy["admissions.readyBody"]}
               </p>
               <Button onClick={onApply} className="mt-2 bg-amber-400 text-emerald-950 hover:bg-amber-300">
                 {copy.ctaText || "Apply online"} <ArrowRight className="ml-1.5 h-4 w-4" />

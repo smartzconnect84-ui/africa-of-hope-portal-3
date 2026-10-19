@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/context/AppContext";
+import NewsletterManager from "./NewsletterManager";
 
 const STATUS_TONE: Record<EmailOutboxStatus, string> = {
   queued: "bg-slate-100 text-slate-700",
@@ -84,6 +85,7 @@ export default function EmailOutboxPanel() {
 
   return (
     <div className="space-y-5">
+      <NewsletterManager />
       <SectionHeader
         title="Email delivery"
         subtitle="Outbound notification, receipt and rejection emails."
@@ -111,7 +113,7 @@ export default function EmailOutboxPanel() {
           </p>
           <p className="text-xs text-slate-500">
             {configured
-              ? "Resend is configured. Queued emails are sent automatically."
+              ? "Provider secrets are present, but delivery is not verified. Use Send queued now, or configure the scheduled worker. Review sent/failed results below."
               : "Add RESEND_API_KEY and EMAIL_FROM to the send-email function to start delivering. Emails keep queuing safely until then."}
           </p>
         </div>
