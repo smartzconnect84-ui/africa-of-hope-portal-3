@@ -28,7 +28,19 @@ function readEnv(name: string): string {
   }
 }
 
-export const SUPABASE_URL: string = readEnv("VITE_SUPABASE_URL") || FALLBACK_URL;
+/**
+ * A same-origin path such as `/supabase-api` is resolved against the page
+ * origin, so a dev server proxy (see vite.config.ts) can forward to a local
+ * Supabase stack that the browser cannot reach directly.
+ */
+function resolveUrl(value: string): string {
+  if (value.startsWith("/") && typeof window !== "undefined") {
+    return `${window.location.origin}${value.replace(/\/+$/, "")}`;
+  }
+  return value;
+}
+
+export const SUPABASE_URL: string = resolveUrl(readEnv("VITE_SUPABASE_URL")) || FALLBACK_URL;
 
 export const SUPABASE_ANON_KEY: string =
   readEnv("VITE_SUPABASE_ANON_KEY") || FALLBACK_ANON_KEY;
