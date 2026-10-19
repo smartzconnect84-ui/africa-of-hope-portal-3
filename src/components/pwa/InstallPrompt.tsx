@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Download, Share, Smartphone, X } from "lucide-react";
+import { Check, Download, Share, Smartphone, X } from "lucide-react";
 import { usePwaInstall } from "@/lib/pwa";
 
+const BRAND_ICON =
+  "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+
+/**
+ * Branded install prompt.
+ * Android/Chrome/desktop: uses the browser's `beforeinstallprompt` event.
+ * iOS Safari: no prompt event exists, so manual Add-to-Home-Screen steps are
+ * shown instead. Nothing is displayed once the app is already installed.
+ */
 export default function InstallPrompt() {
   const { canInstall, isIos, installed, dismissed, install, dismiss } = usePwaInstall();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
   if (installed || dismissed || done) return null;
-  // Android/Chrome: show when the browser fires beforeinstallprompt.
-  // iOS Safari: no prompt event — show manual Add-to-Home-Screen steps.
   const showIos = isIos && !installed;
   if (!canInstall && !showIos) return null;
 
@@ -29,45 +36,53 @@ export default function InstallPrompt() {
         exit={{ opacity: 0, y: 24, scale: 0.97 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         role="dialog"
-        aria-label="Install the Africa of Hope app"
-        className="fixed bottom-4 left-4 right-4 z-[70] mx-auto max-w-md rounded-2xl border border-emerald-900/10 bg-emerald-950 p-4 text-white shadow-2xl sm:bottom-6 sm:right-6 sm:left-auto sm:w-[380px]"
+        aria-label="Install the AFRICA OF HOPE app"
+        className="fixed inset-x-3 bottom-3 z-[70] mx-auto max-w-md rounded-2xl border-4 border-[#D4AF37] bg-black p-4 text-white shadow-2xl sm:inset-x-auto sm:bottom-6 sm:left-auto sm:right-6 sm:w-[382px]"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-start gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-400">
-            <Smartphone className="h-5 w-5 text-emerald-950" />
+          <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#D4AF37]/60 bg-white">
+            {canInstall || showIos ? (
+              <img src={BRAND_ICON} alt="" className="h-9 w-9 object-contain" />
+            ) : (
+              <Smartphone className="h-5 w-5 text-[#16803C]" aria-hidden="true" />
+            )}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Get the Africa of Hope app</p>
-            <p className="mt-0.5 text-xs leading-5 text-emerald-100/80">
+            <p className="text-sm font-semibold">Install the AFRICA OF HOPE app</p>
+            <p className="mt-0.5 text-xs leading-5 text-white/75">
               {canInstall
-                ? "Install it for one-tap access, offline reading and a full-screen experience."
-                : "Add it to your Home Screen for one-tap access and full-screen learning."}
+                ? "One-tap access from your home screen, full screen, with pages you visited still available offline."
+                : "Add it to your Home Screen for one-tap access and a full-screen experience."}
             </p>
+
             {showIos && !canInstall && (
-              <ol className="mt-2 space-y-1 text-xs leading-5 text-emerald-100/90">
+              <ol className="mt-2 space-y-1 text-xs leading-5 text-white/85">
                 <li className="flex items-center gap-1.5">
-                  <Share className="h-3.5 w-3.5 text-amber-400" /> 1. Tap the Share button in Safari
+                  <Share className="h-3.5 w-3.5 shrink-0 text-[#D4AF37]" aria-hidden="true" />
+                  1. Tap the Share button in Safari
                 </li>
                 <li>2. Choose “Add to Home Screen”</li>
-                <li>3. Tap “Add” — the app icon appears on your home screen</li>
+                <li>3. Tap “Add” — the icon appears on your home screen</li>
               </ol>
             )}
-            <div className="mt-3 flex items-center gap-2">
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {canInstall && (
                 <button
                   type="button"
                   onClick={onInstall}
                   disabled={busy}
-                  className="inline-flex h-10 min-h-10 items-center gap-1.5 rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300 disabled:opacity-60"
+                  className="inline-flex h-11 min-h-11 items-center gap-1.5 rounded-xl bg-[#16803C] px-4 text-sm font-semibold text-white transition hover:bg-[#12692f] disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
                 >
-                  <Download className="h-4 w-4" />
-                  {busy ? "Installing…" : "Install app"}
+                  {done ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                  {busy ? "Installing…" : done ? "Installed" : "Install app"}
                 </button>
               )}
               <button
                 type="button"
                 onClick={showIos && !canInstall ? () => setDone(true) : dismiss}
-                className="inline-flex h-10 min-h-10 items-center rounded-xl px-3 text-sm font-medium text-emerald-100/80 transition hover:bg-white/10 hover:text-white"
+                className="inline-flex h-11 min-h-11 items-center rounded-xl px-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
               >
                 {showIos && !canInstall ? "Got it" : "Not now"}
               </button>
@@ -77,9 +92,9 @@ export default function InstallPrompt() {
             type="button"
             onClick={dismiss}
             aria-label="Dismiss install prompt"
-            className="grid h-8 w-8 min-h-8 min-w-8 shrink-0 place-items-center rounded-lg text-emerald-100/70 hover:bg-white/10 hover:text-white"
+            className="grid h-9 w-9 min-h-9 min-w-9 shrink-0 place-items-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </motion.div>

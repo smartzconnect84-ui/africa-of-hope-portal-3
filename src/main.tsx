@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
-import { registerServiceWorker } from "./lib/pwa";
+import { dismissSplash, registerServiceWorker } from "./lib/pwa";
 
 registerServiceWorker();
 
@@ -11,3 +11,9 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </StrictMode>,
 );
+
+// The branded splash lives in index.html so it paints before the bundle loads.
+// Fade it out once React has committed the first screen.
+requestAnimationFrame(() => {
+  window.setTimeout(dismissSplash, 150);
+});

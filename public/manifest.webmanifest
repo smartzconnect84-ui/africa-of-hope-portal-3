@@ -1,16 +1,20 @@
 {
-  "name": "Africa of Hope School of Professional Studies",
-  "short_name": "Africa of Hope",
-  "description": "Practical certificate programmes, verifiable certificates, admissions in Liberia.",
+  "id": "/",
+  "name": "AFRICA OF HOPE",
+  "short_name": "AFRICA OF HOPE",
+  "description": "AFRICA OF HOPE School of Professional Studies — practical certificate programmes, online admissions, a student portal with verifiable certificates, and ways to donate or volunteer.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#022c22",
-  "theme_color": "#022c22",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#FFFFFF",
+  "theme_color": "#16803C",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["education"],
+  "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
+  "launch_handler": { "client_mode": "navigate-existing" },
   "icons": [
     {
       "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
@@ -26,9 +30,69 @@
     },
     {
       "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Programmes",
+      "short_name": "Programmes",
+      "description": "Browse certificate programmes, study plans and fees",
+      "url": "/#programmes",
+      "icons": [
+        {
+          "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Admissions",
+      "short_name": "Admissions",
+      "description": "Entry requirements, intake dates and how to apply",
+      "url": "/#admissions",
+      "icons": [
+        {
+          "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Get involved",
+      "short_name": "Support",
+      "description": "Donate, volunteer, partner or join the staff team",
+      "url": "/#support",
+      "icons": [
+        {
+          "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Blog",
+      "short_name": "Blog",
+      "description": "News and study guidance from AFRICA OF HOPE",
+      "url": "/#blog",
+      "icons": [
+        {
+          "src": "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

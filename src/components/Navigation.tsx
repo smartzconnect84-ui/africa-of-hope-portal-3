@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
 
 export const panelClass =
-  "rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5";
+  "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5";
 
 const toneMap = {
   emerald: "from-emerald-600 to-emerald-800 text-emerald-50",
@@ -277,6 +277,64 @@ export default function Navigation({
   const { state, currentUser, logout, resetDemoData } = useApp();
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Mobile drawer: lock the page behind it, close on Escape or when the
+  // viewport grows to the desktop sidebar, keep Tab inside the sheet and hand
+  // focus back to the menu button on close.
+  useEffect(() => {
+    if (!drawer) return;
+    const root = document.documentElement;
+    const previousBody = document.body.style.overflow;
+    const previousRoot = root.style.overflow;
+    document.body.style.overflow = "hidden";
+    root.style.overflow = "hidden";
+
+    const focusables = () =>
+      Array.from(
+        drawerRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDrawer(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      const inside = !!drawerRef.current?.contains(active);
+      if (e.shiftKey && (active === first || !inside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onDesktop = () => setDrawer(false);
+
+    document.addEventListener("keydown", onKeyDown);
+    desktop.addEventListener("change", onDesktop);
+    const raf = window.requestAnimationFrame(() => focusables()[0]?.focus());
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      desktop.removeEventListener("change", onDesktop);
+      window.cancelAnimationFrame(raf);
+      document.body.style.overflow = previousBody;
+      root.style.overflow = previousRoot;
+      menuButtonRef.current?.focus();
+    };
+  }, [drawer]);
 
   // Measures the real header + marketing-banner height so the sticky
   // sidebar's offset/height stays in sync with it (instead of assuming a
@@ -371,10 +429,14 @@ export default function Navigation({
       <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-3 sm:px-4">
           <button
+            ref={menuButtonRef}
             type="button"
-            className="rounded-xl p-2 text-white transition hover:bg-white/10 lg:hidden"
+            className="grid h-11 w-11 place-items-center rounded-xl text-white transition hover:bg-white/10 lg:hidden"
             onClick={() => setDrawer(true)}
             aria-label="Open navigation"
+            aria-haspopup="dialog"
+            aria-expanded={drawer}
+            aria-controls="portal-mobile-drawer"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -526,10 +588,14 @@ export default function Navigation({
 
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden print:hidden">
-          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setDrawer(false)} />
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]" onClick={() => setDrawer(false)} aria-hidden="true" />
           <div
-            className="absolute left-0 top-0 flex h-full w-[min(20rem,92vw)] flex-col bg-white shadow-2xl"
-            style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+            ref={drawerRef}
+            id="portal-mobile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Portal navigation"
+            className="aoh-drawer absolute left-0 top-0 flex w-[min(20rem,92vw)] flex-col border-r-[3px] border-[#D4AF37] bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-slate-100 p-4">
               <div className="flex items-center gap-2">
@@ -544,7 +610,7 @@ export default function Navigation({
               <button
                 type="button"
                 onClick={() => setDrawer(false)}
-                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                className="grid h-11 w-11 place-items-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                 aria-label="Close navigation"
               >
                 <X className="h-5 w-5" />

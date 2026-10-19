@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   LogIn, Menu, X, Mail, Phone,
@@ -16,6 +16,7 @@ import ProgrammesPage from "./public/ProgrammesPage";
 import PoliciesPage from "./public/PoliciesPage";
 import DonatePage from "./public/DonatePage";
 import CookiesPage from "./public/CookiesPage";
+import AboutPage from "./public/AboutPage";
 import CookieConsent from "./public/CookieConsent";
 import InstallPrompt from "./pwa/InstallPrompt";
 import BlogListPage from "./public/BlogListPage";
@@ -28,6 +29,7 @@ import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
 import TermDatesPage from "./public/TermDatesPage";
 import SupportSection from "./public/SupportSection";
+import NewsletterSignup from "./public/NewsletterSignup";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
@@ -52,6 +54,9 @@ const DONATE_RE = /^#donate$/i;
 const ADMISSIONS_RE = /^#(admissions|apply|apply-online)$/i;
 const HOME_RE = /^#(home)?$/i;
 const BLOG_RE = /^#blog$/i;
+// "About" is now its own full page (organisation profile). It replaced the
+// former #about anchor jump, so the default navbar "About" link opens it.
+const ABOUT_RE = /^#(about|about-us|who-we-are)$/i;
 
 type View =
   | { type: "home"; anchor: string | null }
@@ -61,6 +66,7 @@ type View =
   | { type: "cookies" }
   | { type: "donate" }
   | { type: "blog" }
+  | { type: "about" }
   | { type: "blogPost"; slug: string };
 
 function parseHash(hash: string): View {
@@ -71,6 +77,7 @@ function parseHash(hash: string): View {
   if (COOKIES_RE.test(h)) return { type: "cookies" };
   if (DONATE_RE.test(h)) return { type: "donate" };
   if (BLOG_RE.test(h)) return { type: "blog" };
+  if (ABOUT_RE.test(h)) return { type: "about" };
   if (/^#blog\//i.test(h)) {
     const raw = h.replace(/^#blog\//i, "");
     let slug = raw;
@@ -139,6 +146,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     return full || "AFRICA OF HOPE";
   }, [w.academyName, settings.academyName]);
   const [menu, setMenu] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : "#home"));
   const reduceMotion = useReducedMotion();
@@ -178,6 +187,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     else if (view.type === "policies") document.title = `School Policies — ${base}`;
     else if (view.type === "cookies") document.title = `Cookies Policy — ${base}`;
     else if (view.type === "donate") document.title = `Donate & Support — ${base}`;
+    else if (view.type === "about") document.title = `About AFRICA OF HOPE — ${base}`;
     else if (view.type === "blog" || view.type === "blogPost") document.title = `Blog — ${base}`;
     else document.title = base;
   }, [view, displayName]);
@@ -190,12 +200,37 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Mobile drawer: lock background scrolling, close on Escape, and close when
-  // the viewport grows to desktop where the drawer is replaced by the nav bar.
+  // Mobile drawer: lock background scrolling, close on Escape, close when the
+  // viewport grows to desktop where the drawer is replaced by the nav bar, keep
+  // Tab inside the sheet and hand focus back to the menu button on close.
   useEffect(() => {
     if (!menu) return;
+    const focusables = () =>
+      Array.from(
+        drawerRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenu(false);
+      if (e.key === "Escape") {
+        setMenu(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      const inside = !!drawerRef.current?.contains(active);
+      if (e.shiftKey && (active === first || !inside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     const desktop = window.matchMedia("(min-width: 1024px)");
     const onDesktop = () => setMenu(false);
@@ -213,6 +248,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       root.style.overflow = previousRootOverflow;
       document.removeEventListener("keydown", onKey);
       desktop.removeEventListener("change", onDesktop);
+      menuButtonRef.current?.focus();
     };
   }, [menu]);
 
@@ -313,6 +349,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               <LogIn className="mr-1.5 h-4 w-4" /> {t("Portal")}
             </motion.button>
             <button
+              ref={menuButtonRef}
               type="button"
               onClick={() => setMenu(true)}
               aria-label="Open menu"
@@ -337,6 +374,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           >
             <div className="absolute inset-0 bg-slate-950/60" onClick={() => setMenu(false)} />
             <motion.div
+              ref={drawerRef}
               id="public-mobile-menu"
               role="dialog"
               aria-modal="true"
@@ -345,7 +383,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="absolute right-0 top-0 flex h-full w-72 max-w-[85vw] flex-col bg-black p-4 text-white shadow-2xl"
+              className="aoh-drawer absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -387,6 +425,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
           {view.type === "cookies" && <CookiesPage />}
+          {view.type === "about" && <AboutPage />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
           {view.type === "blog" && <BlogListPage />}
           {view.type === "blogPost" && <BlogPostPage slug={view.slug} />}
@@ -416,6 +455,10 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               })}
 
               <SupportSection onApply={openApply} />
+              {/* Consent-based newsletter signup; hidden unless enabled in Website Settings. */}
+              <div className="bg-black">
+                <NewsletterSignup />
+              </div>
               {w.team.enabled && (
                 <section id="staff" className="scroll-mt-24 py-16">
                   <div className="mx-auto max-w-6xl px-4">

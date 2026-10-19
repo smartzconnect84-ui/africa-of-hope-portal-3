@@ -574,8 +574,94 @@ html[data-portal-icons="filled"] .portal-icon {
     animation: aoh-shimmer 6s linear infinite;
   }
 
+  /* ------------------------------------------------------- mobile hardening */
+  /* Installed-app safe areas: notches, rounded corners and home indicator. */
+  .aoh-safe-top { padding-top: env(safe-area-inset-top, 0px); }
+  .aoh-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .aoh-safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  /* `clip` guards against sideways scroll without creating a scroll container
+     (which would break the sticky header and fixed overlays). */
+  body { overflow-x: clip; overscroll-behavior-x: none; }
+
+  @media (pointer: coarse) {
+    button, [role="button"], summary { touch-action: manipulation; }
+  }
+
+  /* iOS Safari zooms the whole page when a focused control is under 16px. */
+  @media (max-width: 640px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea { font-size: 16px; }
+  }
+
+  /* CMS-editable copy must never push the layout sideways. */
+  .aoh-break-words { overflow-wrap: anywhere; word-break: break-word; }
+
+  /* Mobile drawers / sheets: scroll inside, respect the viewport and safe areas. */
+  .aoh-mobile-scroll {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .btn-sheen::after, .aoh-float, .aoh-shimmer-text { animation: none !important; }
     .aoh-card:hover, .aoh-zoom:hover img { transform: none; }
   }
+}
+
+/* ===== AOH thick gold card frames =====
+   Deliberately unlayered: Tailwind's utilities live in @layer utilities, so a
+   plain rule here wins over the per-card `border border-emerald-900/10`
+   classes already on the markup. That way every existing white, black and
+   green card surface (public site and portal) picks up the same gold frame
+   without rewriting each component. */
+:root {
+  --aoh-gold: #d4af37;
+  --aoh-gold-bright: #e9cc63;
+}
+
+.aoh-card,
+.aoh-gold-border,
+.aoh-glass,
+.aoh-glass-dark,
+[data-slot="card"] {
+  border: 3px solid var(--aoh-gold);
+  background-clip: padding-box;
+}
+
+.aoh-card:hover,
+.aoh-gold-border:hover,
+.aoh-glass:hover {
+  border-color: var(--aoh-gold-bright);
+}
+
+.aoh-card:focus-visible,
+.aoh-gold-border:focus-visible,
+.aoh-glass:focus-visible,
+.aoh-glass-dark:focus-visible {
+  outline: 2px solid var(--aoh-gold-bright);
+  outline-offset: 3px;
+}
+
+@media (forced-colors: active) {
+  .aoh-card, .aoh-gold-border, .aoh-glass, .aoh-glass-dark, [data-slot="card"] {
+    border-color: CanvasText;
+  }
+}
+
+/* Mobile drawers / sheets: stay inside the visual viewport on notched phones
+   and when browser toolbars collapse, and keep the content clear of the
+   home indicator. */
+.aoh-drawer {
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

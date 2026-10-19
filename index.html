@@ -3,46 +3,123 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<!-- Brand mark: the uploaded transparent logo (same file as the header logo). -->
+<!-- Brand mark: the official transparent logo (same file as the site header). -->
 <link crossorigin="" href="https://files.monstarx.app" rel="preconnect"/>
 <link href="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" rel="icon" sizes="any" type="image/png"/>
 <link href="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" rel="icon" sizes="192x192" type="image/png"/>
 <link href="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" rel="apple-touch-icon" sizes="180x180"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<meta content="Africa of Hope School of Professional Studies — practical certificate programmes, verifiable certificates, admissions in Liberia." name="description"/>
-<meta content="Africa of Hope School of Professional Studies" name="author"/>
-<meta content="Africa of Hope, professional studies, Liberia, certificate programmes, admissions, verify certificate" name="keywords"/>
+<meta content="AFRICA OF HOPE School of Professional Studies — practical certificate programmes, verifiable certificates, online admissions in Liberia." name="description"/>
+<meta content="AFRICA OF HOPE" name="author"/>
+<meta content="AFRICA OF HOPE, professional studies, Liberia, certificate programmes, admissions, verify certificate" name="keywords"/>
 <meta content="index, follow" name="robots"/>
-<meta content="#022c22" name="theme-color"/>
+<!-- Brand green is the browser/PWA chrome colour; installed dark UI uses black. -->
+<meta content="#16803C" name="theme-color"/>
+<meta content="#000000" media="(prefers-color-scheme: dark)" name="theme-color"/>
 <link href="/manifest.webmanifest" rel="manifest"/>
 <!-- Open Graph / Facebook -->
 <meta content="website" property="og:type"/>
 <meta content="/" property="og:url"/>
-<meta content="Africa of Hope School of Professional Studies" property="og:title"/>
+<meta content="AFRICA OF HOPE School of Professional Studies" property="og:title"/>
 <meta content="Practical certificate programmes with mentors and verifiable certificates. Apply online in minutes." property="og:description"/>
 <meta content="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" property="og:image"/>
-<meta content="Africa of Hope" property="og:site_name"/>
+<meta content="AFRICA OF HOPE" property="og:site_name"/>
 <!-- Twitter -->
 <meta content="summary_large_image" property="twitter:card"/>
 <meta content="/" property="twitter:url"/>
-<meta content="Africa of Hope School of Professional Studies" property="twitter:title"/>
+<meta content="AFRICA OF HOPE School of Professional Studies" property="twitter:title"/>
 <meta content="Practical certificate programmes with mentors and verifiable certificates." property="twitter:description"/>
 <meta content="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" property="twitter:image"/>
-<!-- Additional meta tags -->
+<!-- Installable app metadata -->
 <meta content="yes" name="mobile-web-app-capable"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
-<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
-<meta content="Africa of Hope School of Professional Studies" name="apple-mobile-web-app-title"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="AFRICA OF HOPE" name="apple-mobile-web-app-title"/>
+<meta content="AFRICA OF HOPE" name="application-name"/>
 <meta content="telephone=no" name="format-detection"/>
-<title>Africa of Hope School of Professional Studies | Certificates that open doors</title>
+<title>AFRICA OF HOPE School of Professional Studies | Certificates that open doors</title>
+<style>
+  /* Branded launch splash — replaced by the app as soon as React mounts. */
+  #aoh-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    color: #000000;
+    font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: calc(1.5rem + env(safe-area-inset-top)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
+    transition: opacity 380ms ease, visibility 380ms ease;
+  }
+  #aoh-splash[data-hidden="true"] { opacity: 0; visibility: hidden; }
+  #aoh-splash .aoh-splash-inner { display: grid; justify-items: center; gap: 0.9rem; text-align: center; }
+  #aoh-splash img {
+    width: 104px;
+    height: 104px;
+    object-fit: contain;
+    display: block;
+  }
+  #aoh-splash .aoh-splash-name {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #16803c;
+  }
+  #aoh-splash .aoh-splash-bar {
+    width: 132px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(22, 128, 60, 0.14);
+    overflow: hidden;
+  }
+  #aoh-splash .aoh-splash-bar span {
+    display: block;
+    height: 100%;
+    width: 45%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #16803c, #d4af37);
+    animation: aoh-splash-slide 1.15s ease-in-out infinite;
+  }
+  @keyframes aoh-splash-slide {
+    0% { transform: translateX(-110%); }
+    100% { transform: translateX(300%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #aoh-splash { transition: none; }
+    #aoh-splash .aoh-splash-bar span { animation: none; width: 100%; }
+  }
+  /* Never trap the page behind the splash if the bundle fails to run. */
+  noscript #aoh-splash, #aoh-splash[data-hidden="true"] { display: none; }
+</style>
 <script id="genvibe-inspector-loader">if(window.top!==window)document.write('<script src="https://genvibe.pro/inspector-script.js?v=e2b-capture2"><\/script>')</script><script type="application/ld+json">{
   "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": "Africa Of Hope Portal 3",
-  "description": "Africa Of Hope Portal 3 — built and maintained with AUREM."
-}</script></head>
+  "@type": "EducationalOrganization",
+  "name": "AFRICA OF HOPE",
+  "description": "AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates.",
+  "url": "/"
+}</script>
+</head>
 <body>
+<div id="aoh-splash" role="status" aria-live="polite" aria-label="Loading AFRICA OF HOPE">
+  <div class="aoh-splash-inner">
+    <img src="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" alt="AFRICA OF HOPE" width="104" height="104"/>
+    <p class="aoh-splash-name">AFRICA OF HOPE</p>
+    <div class="aoh-splash-bar" aria-hidden="true"><span></span></div>
+  </div>
+</div>
+<noscript><style>#aoh-splash{display:none}</style></noscript>
 <div id="root"></div>
 <script src="/src/main.tsx" type="module"></script>
+<script>
+  /* Safety net: if the app bundle never mounts, remove the launch splash so the
+     static HTML (error copy, noscript content) is never hidden behind it. */
+  window.setTimeout(function () {
+    var splash = document.getElementById("aoh-splash");
+    if (splash && !document.querySelector("#root > *")) splash.remove();
+  }, 12000);
+</script>
 </body>
 </html>

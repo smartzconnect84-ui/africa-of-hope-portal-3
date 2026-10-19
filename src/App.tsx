@@ -11,6 +11,8 @@ import { useVisiblePortalViews, getPortalView } from "./portalViews";
 import PublicMarketingSite from "./components/PublicMarketingSite";
 import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/AuthPortal";
 import HopeAssistant from "./components/assistant/HopeAssistant";
+import OfflineBanner from "./components/pwa/OfflineBanner";
+import UpdatePrompt from "./components/pwa/UpdatePrompt";
 import { Button } from "@/components/ui/button";
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
@@ -145,6 +147,8 @@ function Shell() {
       )}
       <PasswordRecoveryDialog />
       <HopeAssistant />
+      <OfflineBanner />
+      <UpdatePrompt />
     </>
   );
 }

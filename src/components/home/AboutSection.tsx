@@ -1,4 +1,4 @@
-import { ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import type { WebsiteSettings, SectionCopy, SystemSettings } from "@/types";
 import { Reveal } from "../Navigation";
 import { resolveIcon } from "./icons";
@@ -57,6 +57,12 @@ export default function AboutSection({
               })}
             </div>
           )}
+          <a
+            href="#about"
+            className="mt-7 inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900"
+          >
+            Read our full story <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
         </Reveal>
       </div>
     </section>
