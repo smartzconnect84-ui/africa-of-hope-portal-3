@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState, SectionHeader, panelClass } from "./Navigation";
 import DataTools from "./DataTools";
+import CongratulationsAction from './CongratulationsAction';
 import { cn } from "@/lib/utils";
 
 const TH = "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500";
@@ -307,6 +308,7 @@ function StaffActions({
 }) {
   return (
     <div className="flex items-center gap-1.5">
+      <CongratulationsAction user={user} />
       <Button
         size="sm"
         variant="outline"
@@ -579,6 +581,7 @@ function StudentsTab() {
                     <td className={TD}>{statusBadge(u.status)}</td>
                     <td className={TD}>
                       <div className="flex items-center gap-1.5">
+                        {canManage && <CongratulationsAction user={u} />}
                         {canManage && (
                           <Button
                             size="sm"
@@ -706,10 +709,15 @@ function ApplicantsTab() {
   const { state, approveApplicant, rejectApplicant } = useApp();
   const pending = state.users.filter((u) => u.role === "Student" && u.status === "Pending Approval");
   const [assignFor, setAssignFor] = useState<User | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
 
   async function approve(u: User) {
-    await approveApplicant(u.id);
-    toast.success(`${u.name} approved`);
+    setApproving(u.id);
+    try {
+      const error = await approveApplicant(u.id);
+      if (error) { toast.error(error); return; }
+      toast.success(`${u.name} approved. Welcome email automation requires the deployed backend; check Email outbox for delivery status.`);
+    } finally { setApproving(null); }
   }
 
   return (
@@ -735,11 +743,12 @@ function ApplicantsTab() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <CongratulationsAction user={u} />
                     <Button size="sm" variant="outline" onClick={() => setAssignFor(u)} data-component-id={`students-cohort-${rowSlug}`}>
                       Assign first
                     </Button>
-                    <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800" onClick={() => approve(u)} data-component-id={`students-approve-${rowSlug}`}>
+                    <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800" onClick={() => approve(u)} disabled={approving !== null} data-component-id={`students-approve-${rowSlug}`}>
                       <Check className="mr-1 h-3.5 w-3.5" /> Approve
                     </Button>
                     <Button

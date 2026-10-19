@@ -100,6 +100,17 @@ function detailRow(label: string, value: unknown): string {
 
 /** Renders one of the three known templates. Falls back to the generic "notification" layout for anything else. */
 function renderTemplate(template: string, subject: string, payload: Record<string, unknown>): string {
+  if (template === "account_registration" || template === "account_approved") {
+    let portalLink = '';
+    try {
+      const appUrl = new URL(Deno.env.get('APP_URL') || '');
+      if (appUrl.protocol === 'https:' && !appUrl.username && !appUrl.password) {
+        appUrl.hash = ''; appUrl.search = '';
+        portalLink = `<p style="margin-top:24px"><a href="${escapeHtml(appUrl.href)}" style="background:${BRAND_COLOR};color:white;padding:12px 18px;border-radius:8px;text-decoration:none">Visit AFRICA OF HOPE</a></p><p style="font-size:12px;color:#6b7280">Choose Login on the website. This is not a password or sign-in token.</p>`;
+      }
+    } catch { /* APP_URL is optional; never invent a production URL. */ }
+    return wrapBrand(subject, `<p style="font-size:14px;line-height:1.7;white-space:pre-wrap">${escapeHtml(payload.body)}</p>${portalLink}`);
+  }
   if (template === "newsletter_confirmation") {
     const link = String(payload.confirmation_url ?? "");
     return wrapBrand(subject, `<p>Please confirm that you requested Africa of Hope newsletters.</p><p><a href="${escapeHtml(link)}">Confirm your subscription</a></p><p>This link expires after 24 hours. Ignore this email if you did not request it. No newsletter will be sent until you confirm.</p>`);

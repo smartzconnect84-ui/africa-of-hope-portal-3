@@ -13,6 +13,8 @@ import { submitStudyPlan } from "@/lib/engagement";
 import { DELIVERY_META, costSummary, durationLabel, programModes, scheduleLabel } from "@/lib/programDelivery";
 import type { DeliveryMode, Program } from "@/types";
 import { cn } from "@/lib/utils";
+import { CurrencyConvertButton } from '../CurrencyConverter';
+import { normalizeCurrencyCode } from '@/lib/currency';
 
 const EDUCATION_LEVELS = [
   "Primary", "Junior High (JHS)", "Senior High (SHS)", "TVET / Vocational",
@@ -100,6 +102,7 @@ export default function StudyPlanDialog({
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">
+            <CurrencyConvertButton amount={cost.registrationAmount} currency={normalizeCurrencyCode(state.settings.currency)} />
             <div className="grid gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-600 sm:grid-cols-3">
               <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-emerald-700" /> {durationLabel(program)}</span>
               <span className="inline-flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5 text-emerald-700" /> {program.category}</span>

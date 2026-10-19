@@ -1,117 +1,65 @@
-import { BadgeCheck, Briefcase, Star, TrendingUp } from "lucide-react";
-import { useApp } from "@/context/AppContext";
-import type { WebsiteSettings, SectionCopy } from "@/types";
-import { Reveal } from "../Navigation";
+import { ArrowRight, Briefcase, GraduationCap, Quote } from 'lucide-react';
+import type { WebsiteSettings, SectionCopy } from '@/types';
+import { Reveal } from '../Navigation';
 
+/** CMS-led stories: no generated quotes, star ratings or inferred graduate counts. */
 export default function ImpactSection({ copy, w }: { copy: SectionCopy; w: WebsiteSettings }) {
-  const { state } = useApp();
-  const graduates = state.users.filter((u) => u.role === "Student").length;
-  const completionStat = w.stats.find((s) => /completion/i.test(s.label));
-
+  const stories = w.testimonials.filter((story) => story.quote.trim() && story.name.trim());
   return (
-    <section id="impact" className="scroll-mt-24 bg-emerald-950 py-16 text-white sm:py-20">
-      <div className="mx-auto max-w-6xl px-4">
+    <section id="impact" aria-labelledby="success-heading" className="relative scroll-mt-24 overflow-hidden bg-emerald-950 py-16 text-white sm:py-24">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-emerald-700/20 blur-3xl" />
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              {copy.title && (
-                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{copy.title}</h2>
-              )}
-              <p className="mt-1.5 text-sm text-emerald-100/80">
-                {copy.subtitle || `Learners enrolled in the portal right now: ${graduates}`}
-              </p>
+          <div className="flex flex-wrap items-end justify-between gap-6 border-b border-white/15 pb-8">
+            <div className="max-w-2xl min-w-0">
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-300"><GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> Our learning community</p>
+              <h2 id="success-heading" className="mt-4 break-words text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">{copy.title || 'Student Success Stories'}</h2>
+              {copy.subtitle && <p className="mt-4 text-base leading-7 text-emerald-100/85">{copy.subtitle}</p>}
             </div>
-            {completionStat && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold ring-1 ring-white/15">
-                <TrendingUp className="h-3.5 w-3.5 text-amber-400" /> {completionStat.value} {completionStat.label}
-              </span>
-            )}
+            <a href="#programmes" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-amber-400/60 px-5 text-sm font-semibold text-amber-200 transition hover:bg-amber-400 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300">Explore programmes <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
           </div>
         </Reveal>
 
-        {w.stats.length > 0 && (
-          <Reveal delay={0.05}>
-            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {w.stats.map((s) => (
-                <div
-                  key={s.id}
-                  className="aoh-card aoh-glass-dark rounded-2xl p-4 text-center transition-colors hover:border-amber-300/40"
-                >
-                  <p className="text-2xl font-semibold text-amber-400">{s.value}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wide text-emerald-100/70">{s.label}</p>
-                </div>
-              ))}
+        {copy.image && <Reveal delay={0.05} className="mt-8">
+          <figure className="aoh-card grid overflow-hidden rounded-3xl bg-emerald-900/40 md:grid-cols-[1.15fr_0.85fr]">
+            <div className="min-w-0 bg-emerald-900">
+              <img src={copy.image} alt="Africa of Hope learning community" loading="lazy" decoding="async" className="aspect-[4/3] h-full max-h-[34rem] w-full object-cover object-[center_30%] sm:aspect-[16/10] md:aspect-[4/3]" />
             </div>
-          </Reveal>
-        )}
+            <figcaption className="flex min-w-0 flex-col justify-center px-6 py-8 sm:p-10">
+              <span className="mb-5 h-1 w-12 rounded-full bg-amber-400" aria-hidden="true" />
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Opportunity through learning</p>
+              <h3 className="mt-3 text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">Knowledge. Confidence. Possibility.</h3>
+              <p className="mt-4 text-sm leading-7 text-emerald-50/85">Education is a foundation for opportunity and independence. At AFRICA OF HOPE, our focus is helping people build practical skills, develop their potential and take meaningful steps toward their future.</p>
+              <a href="#about" className="mt-6 inline-flex min-h-11 items-center gap-2 self-start text-sm font-semibold text-amber-200 underline decoration-amber-300/40 underline-offset-4 hover:text-amber-100">Meet the organization behind the mission <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" /></a>
+            </figcaption>
+          </figure>
+        </Reveal>}
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-[1.1fr_1fr]">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {w.testimonials.map((t, i) => (
-              <Reveal key={t.id} delay={i * 0.06} className="h-full">
-                <figure className="aoh-card aoh-glass-dark flex h-full flex-col rounded-2xl p-5">
-                  <div className="flex gap-0.5 text-amber-400">
-                    {[0, 1, 2, 3, 4].map((s) => (
-                      <Star key={s} className="h-3.5 w-3.5 fill-current" />
-                    ))}
-                  </div>
-                  <blockquote className="mt-3 flex-1 text-sm text-emerald-50/90">{t.quote}</blockquote>
-                  <figcaption className="mt-4 border-t border-white/10 pt-3">
-                    <p className="text-sm font-semibold">{t.name}</p>
-                    <p className="text-[11px] text-emerald-200/80">{t.program}</p>
-                  </figcaption>
-                </figure>
-              </Reveal>
-            ))}
+        {stories.length > 0 && <div className={`mt-8 grid min-w-0 gap-5 ${stories.length > 1 ? 'md:grid-cols-2' : ''}`}>
+          {stories.map((story, index) => <Reveal key={story.id} delay={Math.min(index * 0.05, 0.2)} className="h-full min-w-0">
+            <figure className="aoh-card flex h-full min-w-0 flex-col rounded-2xl bg-white p-6 text-emerald-950 sm:p-8">
+              <Quote className="h-8 w-8 text-amber-600" aria-hidden="true" />
+              <blockquote className="mt-4 flex-1 whitespace-pre-line break-words text-base leading-8 sm:text-lg">{story.quote}</blockquote>
+              <figcaption className="mt-6 flex min-w-0 items-center gap-3 border-t border-emerald-900/10 pt-5">
+                <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-emerald-100 text-base font-bold text-emerald-900">{story.name.trim().charAt(0).toUpperCase()}</span>
+                <div className="min-w-0"><p className="break-words text-sm font-bold">{story.name}</p>{story.program && <p className="mt-1 break-words text-xs leading-5 text-slate-600">{story.program}</p>}</div>
+              </figcaption>
+            </figure>
+          </Reveal>)}
+        </div>}
+
+        {w.stats.length > 0 && <Reveal delay={0.1} className="mt-8">
+          <dl className="grid grid-cols-1 divide-y divide-white/15 rounded-2xl border border-white/15 bg-white/5 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
+            {w.stats.map((stat) => <div key={stat.id} className="min-w-0 px-5 py-6 sm:py-8"><dd className="break-words text-3xl font-bold tracking-tight text-amber-300 sm:text-4xl">{stat.value}</dd><dt className="mt-2 break-words text-xs font-medium uppercase leading-5 tracking-wider text-emerald-100">{stat.label}</dt></div>)}
+          </dl>
+        </Reveal>}
+
+        {w.partners.length > 0 && <Reveal delay={0.1}>
+          <div className="mt-10 border-t border-white/15 pt-8">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-100"><Briefcase className="h-4 w-4" aria-hidden="true" /> Our partners</p>
+            <ul className="mt-5 flex flex-wrap items-center gap-3">{w.partners.map((partner) => <li key={partner.id} className="min-w-0 max-w-full rounded-xl bg-white px-4 py-3 text-emerald-950">{partner.logo ? <img src={partner.logo} alt={partner.name} loading="lazy" className="h-9 max-w-full object-contain sm:max-w-40" /> : <span className="break-words text-sm font-semibold">{partner.name}</span>}</li>)}</ul>
           </div>
-
-          {copy.image && (
-            <Reveal delay={0.12}>
-              <div className="relative h-full overflow-hidden rounded-3xl ring-1 ring-white/10">
-                <img
-                  src={copy.image}
-                  alt="Graduate receiving her Africa of Hope certificate"
-                  className="h-full min-h-[26rem] w-full object-cover object-[center_30%]"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-emerald-950 to-transparent p-5">
-                  <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-400">
-                    <BadgeCheck className="h-3.5 w-3.5" /> Verifiable credential
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-          )}
-        </div>
-
-        {w.partners.length > 0 && (
-          <Reveal delay={0.1}>
-            <div className="mt-10 border-t border-white/10 pt-8">
-              <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-200/80">
-                <Briefcase className="h-3.5 w-3.5" /> Industry partners
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {w.partners.map((p) =>
-                  p.logo ? (
-                    <img
-                      key={p.id}
-                      src={p.logo}
-                      alt={p.name}
-                      title={p.name}
-                      className="h-9 rounded-lg bg-white/10 object-contain px-2 py-1"
-                    />
-                  ) : (
-                    <span
-                      key={p.id}
-                      className="rounded-xl bg-white/10 px-3.5 py-2 text-xs font-medium text-emerald-50 ring-1 ring-white/10"
-                    >
-                      {p.name}
-                    </span>
-                  ),
-                )}
-              </div>
-            </div>
-          </Reveal>
-        )}
+        </Reveal>}
       </div>
     </section>
   );

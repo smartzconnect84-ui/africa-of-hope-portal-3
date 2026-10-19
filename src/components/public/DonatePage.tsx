@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { CurrencyConvertButton } from '../CurrencyConverter';
 
 const AMOUNTS = [2000, 5000, 10000, 25000, 50000, 100000];
 const METHODS = [
@@ -102,6 +103,7 @@ export default function DonatePage({ onLogin }: { onLogin: () => void }) {
             </div>
             <div className="mt-3">
               <Label htmlFor="donate-custom">Custom amount (FCFA)</Label>
+              <div className="my-2"><CurrencyConvertButton amount={total} currency="XAF" /></div>
               <Input id="donate-custom" inputMode="numeric" placeholder="e.g. 15000" value={custom} onChange={(e) => setCustom(e.target.value)} className="mt-1" />
             </div>
             <p className="mt-5 text-[11px] font-semibold uppercase tracking-widest text-slate-500">Pay with</p>

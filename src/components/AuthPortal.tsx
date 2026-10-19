@@ -219,7 +219,7 @@ function Showcase() {
       <div className="relative flex h-full flex-col justify-between gap-10 p-10 text-white xl:p-14">
         <div className="flex items-center gap-3">
           <BrandLockup
-            logoUrl={w.logoUrl}
+            logoUrl={w.logos?.auth || w.logoUrl}
               academyName={w.academyName || state.settings.academyName}
               displayName="AFRICA OF HOPE"
               tagline={w.tagline || "Institutional Training Academy"}
@@ -892,7 +892,7 @@ export default function AuthPortal({
             <div className={cn("w-full min-w-0 transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
             <div className="mb-6 text-center">
               <BrandLockup
-                logoUrl={state.websiteSettings.logoUrl}
+                logoUrl={state.websiteSettings.logos?.auth || state.websiteSettings.logoUrl}
                 academyName={state.websiteSettings.academyName || state.settings.academyName}
                 tone="light"
                 size="lg"

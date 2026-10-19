@@ -57,6 +57,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     consent: "I agree to receive email updates. I can unsubscribe at any time.",
     button: "Subscribe",
   },
+  logos: { header: '', footer: '', portal: '', auth: '', certificate: '', brochure: '' },
   logoUrl: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
   faviconUrl: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
   academyName: "AFRICA OF HOPE",

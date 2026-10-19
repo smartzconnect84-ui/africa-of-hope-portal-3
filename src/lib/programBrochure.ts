@@ -41,7 +41,7 @@ export function brochureHtml(
   settings: SystemSettings,
   w: WebsiteSettings,
 ): string {
-  const logo = w.logoUrl || "";
+  const logo = w.logos?.brochure || w.logoUrl || "";
   const year = academicYear(settings);
   const modes = programModes(program);
   const cost = costSummary(program, settings);

@@ -12,6 +12,7 @@ import { MotionCard, ScrollReveal, StaggerGroup } from "./motion";
 import { buttonMotionProps } from "./motionConstants";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
+import { CurrencyConvertButton } from '../CurrencyConverter';
 
 const MODE_ICON: Record<DeliveryMode, typeof Laptop> = {
   online: Laptop,
@@ -72,6 +73,7 @@ export default function ProgrammesPage({
 
   return (
     <div className="min-h-[70dvh] bg-[#f6f8f7]">
+      <div className="mx-auto flex max-w-6xl justify-end px-4 py-3"><CurrencyConvertButton /></div>
       <section className="relative overflow-hidden border-b border-black bg-black py-16 text-white sm:py-20">
         <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden="true">
           <div className="absolute -top-24 right-[-6rem] h-72 w-72 rounded-full bg-amber-400/25 blur-3xl" />

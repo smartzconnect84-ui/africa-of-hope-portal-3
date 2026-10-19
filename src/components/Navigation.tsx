@@ -443,7 +443,7 @@ export default function Navigation({
 
           <div className="flex min-w-0 items-center gap-3">
             <BrandLockup
-              logoUrl={state.websiteSettings.logoUrl}
+              logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
               academyName={state.websiteSettings.academyName || state.settings.academyName}
               displayName="AFRICA OF HOPE"
               tagline={state.websiteSettings.tagline || "Institutional Training Academy"}
@@ -600,7 +600,7 @@ export default function Navigation({
             <div className="flex items-center justify-between border-b border-slate-100 p-4">
               <div className="flex items-center gap-2">
                 <BrandLockup
-                  logoUrl={state.websiteSettings.logoUrl}
+                  logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
                   academyName={state.websiteSettings.academyName || state.settings.academyName}
                   tone="light"
                   size="sm"

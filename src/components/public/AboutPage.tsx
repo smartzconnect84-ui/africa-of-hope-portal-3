@@ -11,6 +11,7 @@ import {
   ABOUT_NAV,
   ABOUT_PROMISE,
   ABOUT_STORY,
+  ABOUT_SUMMARY,
   ABOUT_VALUES,
   ABOUT_WHY,
   ABOUT_WHO,
@@ -87,7 +88,7 @@ export default function AboutPage() {
       <nav aria-label="About sections" className="border-b border-emerald-900/10 bg-white">
         <div className="mx-auto max-w-6xl overflow-x-auto px-4 py-3">
           <ul className="flex w-max items-center gap-2">
-            {ABOUT_NAV.map((item) => (
+            {[{ id: ABOUT_SUMMARY.id, label: 'At a glance' }, ...ABOUT_NAV].map((item) => (
               <li key={item.id}>
                 <button
                   type="button"
@@ -103,6 +104,7 @@ export default function AboutPage() {
       </nav>
 
       {/* -------------------------------------------------------------- prose */}
+      <ProseBlock data={ABOUT_SUMMARY} tone="muted" />
       <ProseBlock data={ABOUT_WHO} tone="white" />
       <ProseBlock data={ABOUT_STORY} tone="muted" />
 

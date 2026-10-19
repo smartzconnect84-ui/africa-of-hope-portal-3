@@ -166,8 +166,17 @@ export default function AdminWebsiteSettings() {
             <Field label="Tagline" value={draft.tagline} onChange={(v) => patch({ tagline: v })} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <ImageBox label="Logo" folder="logo" value={draft.logoUrl} onChange={(v) => patch({ logoUrl: v })} />
+            <ImageBox label="Default logo (fallback)" folder="logo" value={draft.logoUrl} onChange={(v) => patch({ logoUrl: v })} />
             <ImageBox label="Favicon" folder="favicon" round value={draft.faviconUrl} onChange={(v) => patch({ faviconUrl: v })} />
+          </div>
+          <div className="border-t border-slate-100 pt-5">
+            <h2 className="text-base font-semibold text-slate-900">Logos by placement</h2>
+            <p className="mt-1 text-sm text-slate-500">Upload a different logo for each location. Empty locations use the default logo. Removing an override does not delete the uploaded file.</p>
+            <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {([['header', 'Public header & mobile menu'], ['footer', 'Public footer'], ['portal', 'Portal header & mobile menu'], ['auth', 'Sign in & registration'], ['certificate', 'Completion certificates'], ['brochure', 'Programme brochures']] as const).map(([key, label]) => (
+                <ImageBox key={key} label={label} folder={`logo/${key}`} value={draft.logos?.[key] || ''} onChange={(value) => patch({ logos: { ...draft.logos, [key]: value } })} />
+              ))}
+            </div>
           </div>
           <Area label="Announcement Banner Text" value={draft.announcementText} onChange={(v) => patch({ announcementText: v })} rows={2} />
           <Toggle

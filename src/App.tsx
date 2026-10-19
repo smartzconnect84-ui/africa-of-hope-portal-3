@@ -13,6 +13,7 @@ import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/A
 import HopeAssistant from "./components/assistant/HopeAssistant";
 import OfflineBanner from "./components/pwa/OfflineBanner";
 import UpdatePrompt from "./components/pwa/UpdatePrompt";
+import CurrencyConverter from "./components/CurrencyConverter";
 import { Button } from "@/components/ui/button";
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
@@ -145,6 +146,7 @@ function Shell() {
       ) : (
         <Portal onExitToPublic={() => setSite("public")} initialTab={authTab} />
       )}
+      <CurrencyConverter />
       <PasswordRecoveryDialog />
       <HopeAssistant />
       <OfflineBanner />

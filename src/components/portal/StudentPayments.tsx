@@ -19,6 +19,7 @@ import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "../Navi
 import { cn } from "@/lib/utils";
 import { money } from "./paymentFormat";
 import PaymentStatusBadge from "./PaymentStatusBadge";
+import { CurrencyConvertButton } from '../CurrencyConverter';
 
 const CATEGORIES = ["Tuition", "Registration", "Exam", "Certificate"];
 
@@ -102,6 +103,7 @@ export default function StudentPayments() {
   return (
     <div className="space-y-5">
       <SectionHeader title="Pay fees" subtitle="Report a mobile money payment and track its confirmation." />
+      <CurrencyConvertButton amount={form.amount ? Number(form.amount) : undefined} currency={form.currency} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard icon={Banknote} label="Confirmed (USD)" value={money(confirmedTotal, "USD")} />

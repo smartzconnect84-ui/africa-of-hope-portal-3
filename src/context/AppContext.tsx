@@ -106,7 +106,7 @@ interface AppContextValue {
   setProgramImage: (id: string, imageUrl: string | null) => Promise<string | null>;
   /** Inserts any 2026/2027 catalogue course missing from the live programmes table. Resolves to an error message, or null on success. */
   seedCatalogue: () => Promise<string | null>;
-  approveApplicant: (id: string) => void;
+  approveApplicant: (id: string) => Promise<string | null>;
   rejectApplicant: (id: string) => void;
   toggleStudentStatus: (id: string) => void;
   addProgram: (payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => void;
@@ -514,13 +514,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast.success(`Imported ${rows.length} courses into the live catalogue.`);
         return null;
       },
-      approveApplicant: (id) =>
-        patchUser(
-          id,
-          { status: "Active", note: "Approved by registrar" },
-          (u) => ({ ...u, status: "Active", note: "Approved by registrar" }),
-          "Approval",
-        ),
+      approveApplicant: async (id) => {
+        try {
+          const { data, error } = await supabase.from('profiles')
+            .update({ status: 'Active', note: 'Approved by registrar' })
+            .eq('id', id).eq('status', 'Pending Approval').select('id,status').single();
+          if (error) return `Approval failed: ${error.message}`;
+          if (!data || data.status !== 'Active') return 'Approval was not saved. Refresh the account and retry.';
+          setState((s) => ({ ...s, users: s.users.map((u) => u.id === id ? { ...u, status: 'Active', note: 'Approved by registrar' } : u) }));
+          return null;
+        } catch (err) { return err instanceof Error ? err.message : 'Approval could not be saved. Please retry.'; }
+      },
       rejectApplicant: (id) =>
         patchUser(
           id,

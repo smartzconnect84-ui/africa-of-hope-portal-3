@@ -11,6 +11,8 @@ import { submitSupportPledge, type SupportKind } from "@/lib/engagement";
 import { ScrollReveal } from "./motion";
 import { buttonMotionProps } from "./motionConstants";
 import { cn } from "@/lib/utils";
+import { CurrencyConvertButton } from '../CurrencyConverter';
+import { normalizeCurrencyCode } from '@/lib/currency';
 
 const ICONS = { donation: HandHeart, volunteer: Users, partner: Handshake, staff: Users };
 const isKind = (id: string): id is SupportKind => id in ICONS;
@@ -164,6 +166,7 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
                     </div>
                     <div>
                       <Label htmlFor="support-amount">Amount ({currency})</Label>
+                        <div className="my-2"><CurrencyConvertButton amount={amount} currency={normalizeCurrencyCode(currency)} /></div>
                       <Input id="support-amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)} className="mt-1" />
                     </div>
                     <div>

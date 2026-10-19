@@ -23,6 +23,8 @@ import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navig
 import ProgramCover from "./ProgramCover";
 import { cn } from "@/lib/utils";
 
+import { CurrencyConvertButton } from './CurrencyConverter';
+
 const FEE_CATEGORIES: FeeCategory[] = ["Registration", "Tuition", "Exam", "Certificate"];
 const ANN_CATEGORIES: AnnouncementCategory[] = ["Urgent", "Academic", "Financial"];
 const ANN_TONE: Record<AnnouncementCategory, string> = {
@@ -350,6 +352,7 @@ export function FeeRegister() {
         }
       />
 
+      <CurrencyConvertButton currency="USD" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={Banknote} label={isStaff ? "Total collected" : "Total paid"} value={formatCurrency(isStaff ? collected : scoped.reduce((s, f) => s + f.amount, 0))} />
         {isStaff ? (
@@ -407,6 +410,7 @@ export function FeeRegister() {
                     <Button size="sm" variant="outline" onClick={() => setReceipt(f.id)}>
                       <Printer className="mr-1 h-3.5 w-3.5" /> Receipt
                     </Button>
+                    <CurrencyConvertButton amount={f.amount} currency="USD" />
                   </td>
                 </tr>
               ))}

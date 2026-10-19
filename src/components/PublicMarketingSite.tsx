@@ -328,7 +328,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
           <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
             <BrandLockup
-              logoUrl={w.logoUrl}
+              logoUrl={w.logos?.header || w.logoUrl}
               academyName={displayName}
               tagline={w.tagline}
               tone="dark"
@@ -386,7 +386,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               className="aoh-drawer absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
-                <BrandLockup logoUrl={w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
+                <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
                 <button
                   type="button"
                   onClick={() => setMenu(false)}
@@ -552,7 +552,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-12">
           <div className="md:col-span-5">
-            <BrandLockup logoUrl={w.logoUrl} academyName={displayName} tone="dark" size="md" showTagline={false} />
+            <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="dark" size="md" showTagline={false} />
             <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">
               {w.footerAbout}
             </p>

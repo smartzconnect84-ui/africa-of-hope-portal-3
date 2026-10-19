@@ -269,7 +269,11 @@ export interface AuthSettings {
   pendingBody: string;
 }
 
+export type LogoPlacement = "header" | "footer" | "portal" | "auth" | "certificate" | "brochure";
+
 export interface WebsiteSettings {
+  /** Placement-specific overrides; blank entries inherit the default logo. */
+  logos?: Partial<Record<LogoPlacement, string>>;
   logoUrl: string;
   faviconUrl: string;
   academyName: string;

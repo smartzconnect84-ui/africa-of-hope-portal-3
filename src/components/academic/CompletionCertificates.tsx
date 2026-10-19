@@ -16,7 +16,7 @@ export default function CompletionCertificates() {
   const [loading, setLoading] = useState(true);
 
   const academyName = state.websiteSettings.academyName || state.settings.academyName || "AFRICA OF HOPE";
-  const logoUrl = state.websiteSettings.logoUrl;
+  const logoUrl = state.websiteSettings.logos?.certificate || state.websiteSettings.logoUrl;
   const academicYear = state.settings.academicYear;
 
   useEffect(() => {

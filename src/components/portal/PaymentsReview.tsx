@@ -22,6 +22,7 @@ import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "../Navi
 import { cn } from "@/lib/utils";
 import { money } from "./paymentFormat";
 import PaymentStatusBadge from "./PaymentStatusBadge";
+import { CurrencyConvertButton } from '../CurrencyConverter';
 
 const STATUS_FILTERS: Array<{ value: PaymentSubmissionStatus | "all"; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -385,6 +386,7 @@ export default function PaymentsReview() {
   return (
     <div className="space-y-5">
       <SectionHeader title="Payment confirmations" subtitle="Review reported mobile money payments and manage payment channels." />
+      <CurrencyConvertButton />
       <Tabs defaultValue="submissions">
         <TabsList>
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
