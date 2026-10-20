@@ -22,6 +22,7 @@ import {
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navigation";
 import ProgramCover from "./ProgramCover";
 import ContinueLearning from "./academic/ContinueLearning";
+import ReminderSettings from "./academic/ReminderSettings";
 import { cn } from "@/lib/utils";
 
 import { CurrencyConvertButton } from './CurrencyConverter';
@@ -116,6 +117,7 @@ export function StudentPortal() {
       />
 
       <ContinueLearning key={currentUser.id} />
+      <ReminderSettings key={`reminders-${currentUser.id}`} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard icon={Percent} label="Attendance" value={`${rate}%`} hint={`${att.length} sessions recorded`} />
         <StatCard icon={Banknote} label="Balance due" value={formatCurrency(Math.max(due - paid, 0))} tone="amber" hint={`${formatCurrency(paid)} paid`} />

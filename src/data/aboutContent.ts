@@ -75,6 +75,7 @@ export const ABOUT_WHO: AboutProse = {
   paragraphs: [
     "We believe every person deserves dignity, opportunity, access to knowledge, and the chance to build a better future. Guided by this conviction, we pursue initiatives that respond to community needs, develop human potential, and contribute to meaningful social and economic progress.",
     "Our work spans education and professional training, healthcare initiatives, rehabilitation, agriculture, media and entertainment, advocacy, humanitarian outreach, and child welfare development.",
+    "Our School of Professional Studies offers both online and on-site training. Online learning makes professional development more accessible, while on-site learning supports face-to-face guidance and practical engagement. Together, these options help learners develop relevant knowledge and skills in a way that fits their circumstances; available study modes are listed for each programme.",
     "As a parent organization, AFRICA OF HOPE brings these diverse areas of work together under a shared purpose: transforming hope into practical action and creating opportunities that enable individuals and communities to thrive.",
     "We are committed to a people-centered approach that values compassion, integrity, inclusion, innovation, accountability, and sustainability. Through programs, partnerships, and community-focused initiatives, we seek to build pathways toward self-reliance, personal growth, and lasting positive change.",
   ],

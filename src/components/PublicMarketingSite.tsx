@@ -30,6 +30,7 @@ import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
 import TermDatesPage from "./public/TermDatesPage";
 import SupportSection from "./public/SupportSection";
 import NewsletterSignup from "./public/NewsletterSignup";
+import NewsletterAction from "./public/NewsletterAction";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
@@ -67,10 +68,13 @@ type View =
   | { type: "donate" }
   | { type: "blog" }
   | { type: "about" }
+  | { type: "newsletter"; action: "confirm" | "unsubscribe"; params: string }
   | { type: "blogPost"; slug: string };
 
 function parseHash(hash: string): View {
   const h = hash || "#home";
+  const newsletter = h.match(/^#newsletter\/(confirm|unsubscribe)\?(.*)$/i);
+  if (newsletter) return { type: "newsletter", action: newsletter[1].toLowerCase() as "confirm" | "unsubscribe", params: newsletter[2] };
   if (PROGRAMMES_RE.test(h)) return { type: "programmes" };
   if (TERM_DATES_RE.test(h)) return { type: "term-dates" };
   if (POLICIES_RE.test(h)) return { type: "policies" };
@@ -123,6 +127,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const { state } = useApp();
   const { t } = useLocale();
   const { settings, websiteSettings: w } = state;
+  const publicPrograms = useMemo(() => state.programs.filter(p => p.published !== false), [state.programs]);
   const saved = w.navLinks.length > 0 ? w.navLinks : NAV_LINKS.map(([href, label]) => ({ id: href, href, label }));
   const navLinks = useMemo(() => {
     let links = saved;
@@ -295,7 +300,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
   return (
     <MotionConfig reducedMotion="user">
-    <div id="top" className="min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
+    <div id="top" className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
       {w.announcementEnabled && bannerItems.length > 0 && (
         <div className="overflow-hidden bg-amber-400 text-emerald-950" role="region" aria-label="Announcements">
           <div className="sr-only" aria-live="polite">
@@ -337,7 +342,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               nameClassName="hidden sm:block"
             />
           </a>
-          <PublicNav links={navLinks} programs={state.programs} onHomeTop={goHomeTop} />
+          <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
           <div className="ml-auto flex items-center gap-2 lg:ml-2">
             <LanguageSwitcher tone="dark" className="flex" />
             <motion.button
@@ -421,11 +426,12 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
       <AnimatePresence mode="wait">
         <motion.main key={hash} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-          {view.type === "programmes" && <ProgrammesPage programs={state.programs} onApply={openApply} />}
+          {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
           {view.type === "cookies" && <CookiesPage />}
           {view.type === "about" && <AboutPage />}
+          {view.type === "newsletter" && <NewsletterAction key={`${view.action}:${view.params}`} action={view.action} params={view.params} />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
           {view.type === "blog" && <BlogListPage />}
           {view.type === "blogPost" && <BlogPostPage slug={view.slug} />}
@@ -445,10 +451,10 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                       settings={settings}
                       onApply={openApply}
                       onLogin={openLogin}
-                      programsCount={state.programs.length}
+                      programsCount={publicPrograms.length}
                     />
                     {key === visibleSections[0] && (
-                      <ProgrammesCarousel programs={state.programs} onApply={openApply} />
+                      <ProgrammesCarousel programs={publicPrograms} onApply={openApply} />
                     )}
                   </Fragment>
                 );
@@ -612,9 +618,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         </div>
       </footer>
 
-      <WhatsAppEnquiry programs={state.programs} contactPhone={w.contactPhone || settings.contactPhone} />
+      <WhatsAppEnquiry programs={publicPrograms} contactPhone={w.contactPhone || settings.contactPhone} />
       <ProgramAnnouncementPopup
-        programs={state.programs}
+        programs={publicPrograms}
         paused={menu}
         onExplore={() => { window.location.hash = "#programmes"; }}
         onApply={openApply}

@@ -9,7 +9,7 @@
  * never touched by this worker, so private student and admin data can never be
  * served from a cache.
  */
-const VERSION = "v3";
+const VERSION = "v5";
 const SHELL_CACHE = `aoh-shell-${VERSION}`;
 const ASSET_CACHE = `aoh-assets-${VERSION}`;
 const IMAGE_CACHE = `aoh-images-${VERSION}`;
@@ -29,7 +29,7 @@ const IMAGE_EXT = /\.(png|jpe?g|webp|avif|svg|gif|ico)$/i;
 /** Requests that must always go straight to the network. */
 function isPrivateRequest(url) {
   return (
-    /\/(auth|rest|storage|realtime)\/v1\//.test(url.pathname) ||
+    /\/(auth|rest|storage|realtime|functions)\/v1\//.test(url.pathname) ||
     /supabase\.(co|in)$/.test(url.hostname) ||
     /googleapis\.com$/.test(url.hostname) ||
     url.pathname.startsWith("/api/") ||
@@ -77,6 +77,51 @@ self.addEventListener("message", (event) => {
   if (event.data === "SKIP_WAITING" || event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+/* ------------------------------------------------------------ push (f65) */
+
+/**
+ * Deadline reminders. The payload is JSON: { title, body, url, tag }.
+ * Shown with the brand mark so an alert is recognisable on the lock screen.
+ */
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data ? event.data.text() : "" };
+  }
+  const title = payload.title || "AFRICA OF HOPE reminder";
+  const options = {
+    body: payload.body || "You have an upcoming deadline in the student portal.",
+    icon: BRAND_ICON,
+    badge: BRAND_ICON,
+    tag: payload.tag || "aoh-reminder",
+    data: { url: payload.url || "/" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+/** Tapping a reminder focuses the open app, or opens the reminder's page. */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  let target = self.location.origin + "/";
+  try {
+    const requested = new URL(event.notification.data?.url || "/", self.location.origin);
+    if (requested.origin === self.location.origin) target = requested.href;
+  } catch { /* invalid payload: open home */ }
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (new URL(client.url).origin === self.location.origin && "focus" in client) {
+          client.navigate?.(target).catch(() => undefined);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });
 
 /** Keeps the image cache from growing without bound on low-storage phones. */
@@ -177,7 +222,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Fonts, manifest and other static files: cache-first, refreshed in the background.
-  if (/\.(css|js|woff2?|ttf|webmanifest|json)$/i.test(url.pathname)) {
+  if (/\.(woff2?|ttf)$/i.test(url.pathname)) {
     event.respondWith(cacheFirstAsset(request));
   }
+  // Worker, manifest, JSON and non-hashed scripts must remain network-fresh.
 });

@@ -12,6 +12,23 @@ export async function subscribeNewsletter(email: string, name: string, consent: 
   if (!data?.ok) throw new Error(data?.error ?? 'Could not queue your confirmation email. Please retry.');
   return String(data.message ?? 'Check your inbox for a confirmation link.');
 }
+export async function completeNewsletterAction(action: 'confirm' | 'unsubscribe', params: URLSearchParams) {
+  const body = action === 'confirm'
+    ? { action, token: params.get('token') }
+    : { action, id: params.get('id'), signature: params.get('signature') };
+  const { data, error } = await supabase.functions.invoke('newsletter', { body });
+  if (error) {
+    // Edge Function HTTP errors carry the server's actionable JSON response.
+    const response = (error as { context?: Response }).context;
+    if (response && typeof response.json === 'function') {
+      const result = await response.json().catch(() => null);
+      if (result?.error) throw new Error(String(result.error));
+    }
+    fail(error);
+  }
+  if (!data?.ok) throw new Error(data?.error ?? 'Unable to process this link. Please retry.');
+  return String(data.message ?? 'Your newsletter preference has been updated.');
+}
 export async function loadNewsletterAdmin() {
   const [templates, campaigns, subscribers, active, pending, unsubscribed] = await Promise.all([
     supabase.from('email_templates').select('*').order('updated_at', { ascending: false }),

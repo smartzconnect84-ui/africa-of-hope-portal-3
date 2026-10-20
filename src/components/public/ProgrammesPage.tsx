@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { courseId } from "@/lib/identifiers";
 import { Award, BookOpen, ChevronRight, Clock3, Globe, Laptop, MapPin, Search, Sparkles, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { programImage } from "@/lib/programImages";
 import { DELIVERY_META, costSummary, durationLabel, modesPresent, programModes, scheduleLabel } from "@/lib/programDelivery";
 import ProgramBrochureButton from "./ProgramBrochureButton";
+import WhatsAppShareButton from "./WhatsAppShareButton";
 import StudyPlanDialog from "./StudyPlanDialog";
 import type { DeliveryMode, Program } from "@/types";
 import { MotionCard, ScrollReveal, StaggerGroup } from "./motion";
@@ -13,6 +15,7 @@ import { buttonMotionProps } from "./motionConstants";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { CurrencyConvertButton } from '../CurrencyConverter';
+import { normalizeCurrencyCode } from '@/lib/currency';
 
 const MODE_ICON: Record<DeliveryMode, typeof Laptop> = {
   online: Laptop,
@@ -50,6 +53,7 @@ export default function ProgrammesPage({
       if (!q) return true;
       return (
         p.title.toLowerCase().includes(q) ||
+        courseId(p).toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
         (p.category || "").toLowerCase().includes(q)
       );
@@ -73,7 +77,6 @@ export default function ProgrammesPage({
 
   return (
     <div className="min-h-[70dvh] bg-[#f6f8f7]">
-      <div className="mx-auto flex max-w-6xl justify-end px-4 py-3"><CurrencyConvertButton /></div>
       <section className="relative overflow-hidden border-b border-black bg-black py-16 text-white sm:py-20">
         <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden="true">
           <div className="absolute -top-24 right-[-6rem] h-72 w-72 rounded-full bg-amber-400/25 blur-3xl" />
@@ -166,6 +169,11 @@ export default function ProgrammesPage({
           })}
         </div>
 
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-emerald-900/10 bg-white px-3 py-2.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-900/70">Compare fees in your currency</span>
+          <CurrencyConvertButton amount={filtered[0]?.tuition ?? 0} currency={normalizeCurrencyCode(state.settings.currency)} label="Currency converter" />
+        </div>
+
         {filtered.length > 0 ? (
           <div className="mt-8 space-y-10">
             {groups.map(([groupName, items]) => (
@@ -198,6 +206,7 @@ export default function ProgrammesPage({
                             <BookOpen className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
                           </div>
                           <h3 className="mt-2 text-lg font-semibold text-emerald-950">{program.title}</h3>
+                          <p className="mt-1 break-all font-mono text-[10px] text-slate-500">Course ID: {courseId(program)}</p>
                           <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                             {program.description || "Programme details will be available soon."}
                           </p>
@@ -245,6 +254,7 @@ export default function ProgrammesPage({
                               Plan & apply <ChevronRight className="h-4 w-4" />
                             </motion.button>
                             <ProgramBrochureButton program={program} />
+                            <WhatsAppShareButton program={program} />
                           </div>
                         </div>
                       </MotionCard>

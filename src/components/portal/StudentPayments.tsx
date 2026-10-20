@@ -207,7 +207,8 @@ export default function StudentPayments() {
                     {s.status === "rejected" && s.reviewNote && <p className="mt-1 text-xs text-rose-700">Reason: {s.reviewNote}</p>}
                     {s.status === "confirmed" && s.receiptNumber && <p className="mt-1 text-xs text-emerald-700">Receipt {s.receiptNumber}</p>}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CurrencyConvertButton amount={s.amount} currency={s.currency} />
                     <PaymentStatusBadge status={s.status} />
                     {s.status === "confirmed" && (
                       <Button size="sm" variant="outline" onClick={() => setReceiptId(s.id)}><Printer className="mr-1 h-3.5 w-3.5" /> Receipt</Button>

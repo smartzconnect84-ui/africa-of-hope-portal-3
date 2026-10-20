@@ -665,3 +665,94 @@ html[data-portal-icons="filled"] .portal-icon {
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ===== AOH public-site motion: every button and icon responds =====
+   Scoped to the public marketing site root (.aoh-public) so portal tables and
+   admin controls keep their calmer behaviour. Uses the individual transform
+   properties (translate/scale/rotate) so it never fights Framer Motion, which
+   writes `transform` on the same elements. */
+.aoh-public :is(a, button, [role="button"], summary, [role="tab"]) {
+  transition:
+    translate 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    scale 0.18s ease,
+    rotate 0.28s ease,
+    box-shadow 0.3s ease,
+    background-color 0.28s ease,
+    border-color 0.28s ease,
+    color 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.aoh-public :is(a, button, [role="button"], summary, [role="tab"]) svg {
+  transition:
+    scale 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    rotate 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.28s ease,
+    opacity 0.28s ease;
+  transform-origin: center;
+}
+
+/* Lift + gold glow on hover. */
+.aoh-public :is(a, button, [role="button"], [role="tab"]):hover {
+  translate: 0 -2px;
+}
+
+.aoh-public :is(button, [role="button"], [role="tab"]):hover {
+  box-shadow: 0 10px 24px -14px rgba(2, 44, 34, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.28);
+}
+
+/* Icons lean and grow with their control. */
+.aoh-public :is(a, button, [role="button"], [role="tab"]):hover svg {
+  scale: 1.12;
+  rotate: -6deg;
+}
+
+/* Icon-only controls get a fuller spin so the motion reads on small targets. */
+.aoh-public :is(a, button)[aria-label]:hover svg {
+  rotate: -14deg;
+  scale: 1.18;
+}
+
+/* Tactile press feedback. */
+.aoh-public :is(a, button, [role="button"], [role="tab"]):active {
+  scale: 0.97;
+  translate: 0 0;
+}
+
+.aoh-public :is(button, [role="button"]):focus-visible,
+.aoh-public a:focus-visible {
+  outline: 2px solid var(--aoh-gold-bright);
+  outline-offset: 3px;
+}
+
+/* Text links on the public site sweep a gold underline in from the left. */
+.aoh-public a.aoh-text-link {
+  background-image: linear-gradient(var(--aoh-gold), var(--aoh-gold));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  transition: background-size 0.3s ease, color 0.28s ease;
+}
+
+.aoh-public a.aoh-text-link:hover { background-size: 100% 2px; }
+
+@media (hover: none) {
+  /* Touch devices have no hover: keep only the press feedback. */
+  .aoh-public :is(a, button, [role="button"], [role="tab"]):hover { translate: 0 0; box-shadow: none; }
+  .aoh-public :is(a, button, [role="button"], [role="tab"]):hover svg { scale: 1; rotate: 0deg; }
+  .aoh-public :is(a, button, [role="button"], [role="tab"]):active svg { scale: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aoh-public :is(a, button, [role="button"], summary, [role="tab"]),
+  .aoh-public :is(a, button, [role="button"], summary, [role="tab"]) svg {
+    transition-duration: 0.01ms !important;
+    animation: none !important;
+  }
+  .aoh-public :is(a, button, [role="button"], [role="tab"]):hover,
+  .aoh-public :is(a, button, [role="button"], [role="tab"]):active {
+    translate: 0 0;
+    scale: 1;
+  }
+  .aoh-public :is(a, button, [role="button"], [role="tab"]):hover svg { scale: 1; rotate: 0deg; }
+}

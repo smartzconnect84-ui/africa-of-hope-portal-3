@@ -10,7 +10,8 @@ const DISMISSED_KEY = "aoh-pwa-dismissed-at";
 
 export function isIos(): boolean {
   if (typeof navigator === "undefined") return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 export function isStandalone(): boolean {
@@ -110,100 +111,121 @@ export function usePwaInstall() {
 
 /* ------------------------------------------------------- service worker core */
 
-type UpdateListener = (hasUpdate: boolean) => void;
-
+type UpdateState = { hasUpdate: boolean; busy: boolean; error: string; notice: string };
 let waitingWorker: ServiceWorker | null = null;
-let reloadWhenActivated = false;
-const updateListeners = new Set<UpdateListener>();
+let registrationStarted = false;
+let reloadRequested = false;
+let reloaded = false;
+let activationTimer: number | undefined;
+let updateState: UpdateState = { hasUpdate: false, busy: false, error: "", notice: "" };
+const updateListeners = new Set<(state: UpdateState) => void>();
 
-function notifyUpdate(hasUpdate: boolean) {
-  updateListeners.forEach((listener) => listener(hasUpdate));
+function publishUpdate(patch: Partial<UpdateState>) {
+  updateState = { ...updateState, ...patch };
+  updateListeners.forEach(listener => listener(updateState));
 }
-
 function requestReloadOnce() {
-  if (reloadWhenActivated) return;
-  reloadWhenActivated = true;
+  if (reloaded) return;
+  reloaded = true;
+  window.clearTimeout(activationTimer);
   window.location.reload();
 }
 
-/** Activates the waiting worker so the next load serves the new build. */
-export function applyServiceWorkerUpdate() {
-  const worker =
-    waitingWorker ??
-    null;
-  if (!worker) {
-    requestReloadOnce();
-    return;
+export async function checkForAppUpdate() {
+  publishUpdate({ error: "", notice: "Checking for updates…" });
+  try {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) throw new Error("App updates require HTTPS and a browser with service worker support.");
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    if (!registration) throw new Error("The app worker is not ready. Reload this page online and try again.");
+    await registration.update();
+    if (registration.waiting) {
+      waitingWorker = registration.waiting;
+      publishUpdate({ hasUpdate: true, notice: "An update is ready to install." });
+    } else {
+      publishUpdate({ notice: registration.installing ? "An update is downloading. You will be notified when it is ready." : "No waiting update found." });
+    }
+  } catch (error) {
+    publishUpdate({ error: error instanceof Error ? error.message : "Could not check for updates. Try again online.", notice: "" });
   }
-  reloadWhenActivated = true;
-  worker.postMessage({ type: "SKIP_WAITING" });
-  // Safety net: if the browser never fires `controllerchange`, reload anyway.
-  window.setTimeout(() => {
-    if (reloadWhenActivated) requestReloadOnce();
-  }, 4000);
+}
+
+/** Only reload after activation and only following an explicit click in this tab. */
+export async function applyServiceWorkerUpdate() {
+  if (updateState.busy) return;
+  publishUpdate({ busy: true, error: "", notice: "" });
+  try {
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    const worker = registration?.waiting ?? (waitingWorker?.state === "installed" ? waitingWorker : null);
+    if (!worker) throw new Error("The waiting update is no longer available. Check for updates again.");
+    reloadRequested = true;
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "activated" && reloadRequested) requestReloadOnce();
+    });
+    worker.postMessage({ type: "SKIP_WAITING" });
+    activationTimer = window.setTimeout(() => {
+      if (worker.state === "activated") requestReloadOnce();
+      else {
+        reloadRequested = false;
+        publishUpdate({ busy: false, error: "Activation timed out. Your work has not been reloaded. Try again online." });
+      }
+    }, 12000);
+  } catch (error) {
+    reloadRequested = false;
+    publishUpdate({ busy: false, error: error instanceof Error ? error.message : "Update failed. Try again." });
+  }
 }
 
 export function registerServiceWorker() {
-  if (typeof window === "undefined") return;
-  if (!("serviceWorker" in navigator)) return;
-  // Only register on http(s) — avoids noise in sandboxed previews.
-  if (!/^https?:$/.test(window.location.protocol)) return;
-
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !window.isSecureContext || registrationStarted) return;
+  registrationStarted = true;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloadWhenActivated) requestReloadOnce();
+    if (reloadRequested) requestReloadOnce();
   });
-
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js", { scope: "/" })
-      .then((registration) => {
-        const flag = (worker: ServiceWorker | null) => {
-          if (!worker) return;
-          waitingWorker = worker;
-          notifyUpdate(true);
-        };
-
-        // An update may already be waiting from a previous visit.
-        if (registration.waiting && navigator.serviceWorker.controller) flag(registration.waiting);
-
-        registration.addEventListener("updatefound", () => {
-          const installing = registration.installing;
-          if (!installing) return;
-          installing.addEventListener("statechange", () => {
-            if (installing.state === "installed" && navigator.serviceWorker.controller) {
-              flag(installing);
-            }
-          });
+  const start = async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
+      const flag = (worker: ServiceWorker | null) => {
+        if (!worker) return;
+        waitingWorker = worker;
+        publishUpdate({ hasUpdate: true, error: "", notice: "An update is ready to install." });
+      };
+      if (registration.waiting) flag(registration.waiting);
+      const watch = () => {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) flag(registration.waiting ?? worker);
         });
-
-        // Look for a new deploy when the user returns to the tab. The browser
-        // throttles this compare itself, so it is cheap.
-        document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "visible") {
-            registration.update().catch(() => undefined);
-          }
-        });
-      })
-      .catch(() => undefined);
-  });
+      };
+      watch();
+      registration.addEventListener("updatefound", watch);
+      const check = () => { if (navigator.onLine) void registration.update().catch(() => undefined); };
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
+      window.addEventListener("online", check);
+      window.setInterval(() => { if (document.visibilityState === "visible") check(); }, 60 * 60 * 1000);
+      check();
+    } catch (error) {
+      publishUpdate({ error: error instanceof Error ? error.message : "App worker registration failed." });
+    }
+  };
+  if (document.readyState === "complete") void start();
+  else window.addEventListener("load", () => void start(), { once: true });
 }
 
 export function useServiceWorkerUpdate() {
-  const [hasUpdate, setHasUpdate] = useState(false);
+  const [state, setState] = useState(updateState);
   const [dismissed, setDismissed] = useState(false);
-
   useEffect(() => {
-    const listener: UpdateListener = (value) => setHasUpdate(value);
-    updateListeners.add(listener);
-    if (waitingWorker) setHasUpdate(true);
-    return () => {
-      updateListeners.delete(listener);
-    };
+    updateListeners.add(setState);
+    setState(updateState);
+    return () => { updateListeners.delete(setState); };
   }, []);
-
   return {
-    hasUpdate: hasUpdate && !dismissed,
+    ...state,
+    hasUpdate: state.hasUpdate && !dismissed,
+    updateReady: state.hasUpdate,
     applyUpdate: applyServiceWorkerUpdate,
+    checkUpdate: () => { setDismissed(false); void checkForAppUpdate(); },
     dismissUpdate: () => setDismissed(true),
   };
 }

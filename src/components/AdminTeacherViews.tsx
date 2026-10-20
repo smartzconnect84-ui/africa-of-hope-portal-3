@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { courseId } from "@/lib/identifiers";
 import { toast } from "sonner";
 import {
   Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -424,6 +425,7 @@ export function ProgramBuilder() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">{p.title}</h3>
+                  <p className="mt-1 break-all font-mono text-[10px] text-slate-500">Course ID: {courseId(p)}</p>
                   <Badge variant="secondary" className="mt-1.5 bg-emerald-50 text-emerald-800">{p.category}</Badge>
                 </div>
                 <div className="text-right">

@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
  * showcase, and the portal header/drawer.
  *
  * Logo treatment: the uploaded logo is rendered raw and transparent — no
- * surrounding plate, box, ring or background shape anywhere in the system —
- * and stepped up ~40% in size for visibility. The outer flex row, gap and
+ * surrounding plate, box, ring, drop shadow or background shape anywhere in
+ * the system — and stepped up ~40% in size for visibility. The outer flex row, gap and
  * text block are untouched so nearby nav links, buttons, cards and text do
  * not shift. For a truly clean cut, upload a PNG with a transparent
  * background in Website Settings → Branding; any flat background baked into
@@ -93,7 +93,7 @@ export default function BrandLockup({
           decoding="async"
           className={cn(
             IMG[size],
-            "shrink-0 bg-transparent object-contain drop-shadow-[0_4px_10px_rgba(2,44,34,0.35)]",
+            "shrink-0 bg-transparent object-contain [filter:none] [text-shadow:none] [box-shadow:none]",
           )}
         />
       ) : (

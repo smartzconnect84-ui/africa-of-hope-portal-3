@@ -1,4 +1,5 @@
-import { ArrowRight, Briefcase, GraduationCap, Quote } from 'lucide-react';
+import { ArrowRight, GraduationCap, Quote } from 'lucide-react';
+import PartnerShowcase from './PartnerShowcase';
 import type { WebsiteSettings, SectionCopy } from '@/types';
 import { Reveal } from '../Navigation';
 
@@ -54,12 +55,7 @@ export default function ImpactSection({ copy, w }: { copy: SectionCopy; w: Websi
           </dl>
         </Reveal>}
 
-        {w.partners.length > 0 && <Reveal delay={0.1}>
-          <div className="mt-10 border-t border-white/15 pt-8">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-100"><Briefcase className="h-4 w-4" aria-hidden="true" /> Our partners</p>
-            <ul className="mt-5 flex flex-wrap items-center gap-3">{w.partners.map((partner) => <li key={partner.id} className="min-w-0 max-w-full rounded-xl bg-white px-4 py-3 text-emerald-950">{partner.logo ? <img src={partner.logo} alt={partner.name} loading="lazy" className="h-9 max-w-full object-contain sm:max-w-40" /> : <span className="break-words text-sm font-semibold">{partner.name}</span>}</li>)}</ul>
-          </div>
-        </Reveal>}
+        <PartnerShowcase w={w} />
       </div>
     </section>
   );

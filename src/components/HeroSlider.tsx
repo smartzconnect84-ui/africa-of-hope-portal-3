@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   BadgeCheck,
   LogIn,
+  HeartHandshake,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 
@@ -34,7 +35,7 @@ const SLIDES: Slide[] = [
     title: "Empowering Future",
     highlight: "Tech Leaders & Innovators",
     description:
-      "Join hands-on, accredited certificate programs crafted to take you from foundational knowledge to job-ready mastery.",
+      "Explore practical programmes from AFRICA OF HOPE, with course duration, study options and registration details in our catalogue.",
   },
   {
     image:
@@ -48,11 +49,11 @@ const SLIDES: Slide[] = [
   {
     image:
       "https://dala-prod-public-storage.s3.eu-west-1.amazonaws.com/attachments/7df501ed-0d87-47d4-9851-c8a5505b89b3/1791902768234_IMG-20251117-WA0113.webp",
-    eyebrow: "Accredited Certification • Official Recognition",
+    eyebrow: "Professional Learning • Certificate Verification",
     title: "Verifiable Credentials That",
     highlight: "Open Real Career Doors",
     description:
-      "Every graduate receives an authenticated, QR-verifiable certificate recognized across top industry partners.",
+      "Use the certificate verification page to check credentials issued through AFRICA OF HOPE.",
   },
   {
     image:
@@ -270,6 +271,13 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               >
                 Apply Online <ArrowRight className="h-4 w-4" />
               </button>
+              <a
+                href="#donate"
+                aria-label="Donate to AFRICA OF HOPE"
+                className="group inline-flex h-11 items-center gap-2 rounded-xl border-2 border-amber-300/80 bg-emerald-950/70 px-5 text-sm font-semibold text-white ring-1 ring-amber-300/20 transition hover:border-amber-200 hover:bg-emerald-900 hover:text-amber-100 active:scale-[0.98]"
+              >
+                <HeartHandshake className="h-4 w-4 text-amber-300 transition group-hover:scale-110" aria-hidden="true" /> Donate
+              </a>
               <button
                 type="button"
                 onClick={onEnterPortal}

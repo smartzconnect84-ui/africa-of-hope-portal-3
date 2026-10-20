@@ -138,7 +138,10 @@ function SubmissionsTab() {
                       <p className="text-sm font-semibold text-slate-900">{studentName(s.studentId)}</p>
                       <PaymentStatusBadge status={s.status} />
                     </div>
-                    <p className="mt-1 text-sm font-medium text-emerald-800">{money(s.amount, s.currency)} · {s.category}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-emerald-800">
+                      {money(s.amount, s.currency)} · {s.category}
+                      <CurrencyConvertButton amount={s.amount} currency={s.currency} />
+                    </p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-slate-500"><Phone className="h-3 w-3" /> {s.payerPhone} · {PAYMENT_PROVIDER_LABELS[s.provider]}</p>
                     <p className="text-xs text-slate-500">Ref {s.transactionReference} · Paid {s.paidOn}</p>
                     {s.note && <p className="mt-1 text-xs text-slate-500">Note: {s.note}</p>}

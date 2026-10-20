@@ -53,23 +53,31 @@
     transition: opacity 380ms ease, visibility 380ms ease;
   }
   #aoh-splash[data-hidden="true"] { opacity: 0; visibility: hidden; }
-  #aoh-splash .aoh-splash-inner { display: grid; justify-items: center; gap: 0.9rem; text-align: center; }
+  #aoh-splash .aoh-splash-inner { display: grid; justify-items: center; gap: 1rem; text-align: center; width: 100%; }
+  /* Responsive launch logo: large enough to be read at arm's length on a phone,
+     still inside the safe area on 320px screens and landscape phones. */
   #aoh-splash img {
-    width: 104px;
-    height: 104px;
+    width: clamp(180px, 52vw, 300px);
+    height: auto;
+    max-height: 46vh;
     object-fit: contain;
     display: block;
+    margin-inline: auto;
   }
   #aoh-splash .aoh-splash-name {
     margin: 0;
-    font-size: 0.72rem;
+    font-size: clamp(0.78rem, 2.6vw, 0.95rem);
     font-weight: 800;
     letter-spacing: 0.24em;
     text-transform: uppercase;
     color: #16803c;
   }
+  @media (min-width: 768px) {
+    #aoh-splash .aoh-splash-inner { gap: 1.25rem; }
+    #aoh-splash img { width: clamp(240px, 26vw, 340px); max-height: 48vh; }
+  }
   #aoh-splash .aoh-splash-bar {
-    width: 132px;
+    width: clamp(160px, 42vw, 210px);
     height: 4px;
     border-radius: 999px;
     background: rgba(22, 128, 60, 0.14);
@@ -105,7 +113,7 @@
 <body>
 <div id="aoh-splash" role="status" aria-live="polite" aria-label="Loading AFRICA OF HOPE">
   <div class="aoh-splash-inner">
-    <img src="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" alt="AFRICA OF HOPE" width="104" height="104"/>
+    <img src="https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png" alt="AFRICA OF HOPE" width="340" height="340" fetchpriority="high" decoding="async"/>
     <p class="aoh-splash-name">AFRICA OF HOPE</p>
     <div class="aoh-splash-bar" aria-hidden="true"><span></span></div>
   </div>

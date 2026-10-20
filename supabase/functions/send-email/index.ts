@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { unsubscribeSignature } from "../_shared/newsletter.ts";
+import { unsubscribeSignature, newsletterActionUrl, sha256 } from "../_shared/newsletter.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -296,8 +296,14 @@ Deno.serve(async (req: Request) => {
             await admin.from("email_outbox").update({ status: "skipped", last_error: "Confirmation link expired or superseded" }).eq("id", claimed.id);
             continue;
           }
-          // Only permit links to our own confirmation endpoint.
-          if (!String(payload.confirmation_url ?? "").startsWith(`${url}/functions/v1/newsletter?action=confirm&token=`)) throw new Error("Invalid confirmation URL");
+          // Validate both the destination and the token against the pending record.
+          // Accept older queued endpoint links as well as branded website links.
+          const confirmation = new URL(String(payload.confirmation_url ?? ""));
+          const legacyPrefix = `${url}/functions/v1/newsletter?action=confirm&token=`;
+          const legacy = confirmation.toString().startsWith(legacyPrefix);
+          const token = legacy ? confirmation.searchParams.get("token") ?? "" : new URLSearchParams(confirmation.hash.split("?")[1] ?? "").get("token") ?? "";
+          if (!/^[a-f0-9]{64}$/.test(token) || await sha256(token) !== payload.confirmation_hash) throw new Error("Invalid confirmation token");
+          if (!legacy && confirmation.toString() !== newsletterActionUrl(Deno.env.get("PUBLIC_SITE_URL") ?? "", "confirm", { token })) throw new Error("Invalid confirmation URL");
         }
         const html = renderTemplate(claimed.template, claimed.subject, payload);
         const resendResp = await fetch("https://api.resend.com/emails", {

@@ -15,6 +15,8 @@ export type AnnouncementCategory = "Urgent" | "Academic" | "Financial";
 
 export interface User {
   id: string;
+  /** Database-assigned, immutable number (all account roles). */
+  accountNumber?: string;
   name: string;
   email: string;
   phone: string;
@@ -45,6 +47,8 @@ export type DeliveryMode = "online" | "blended" | "onsite";
 
 export interface Program {
   id: string;
+  /** Database-assigned, immutable course number. */
+  courseNumber?: string;
   title: string;
   category: string;
   durationWeeks: number;
@@ -56,6 +60,8 @@ export interface Program {
   entryRequirements: string;
   modules: Module[];
   imageUrl?: string;
+  /** Explicit backend publication state; legacy records without a flag remain public. */
+  published?: boolean;
 }
 
 export interface Cohort {
@@ -121,6 +127,9 @@ export interface Certificate {
   honors: string;
   grade: string;
   status: CertificateStatus;
+  revokedAt?: string;
+  revokedBy?: string;
+  revocationReason?: string;
 }
 
 export interface Announcement {
@@ -203,6 +212,7 @@ export interface PartnerItem {
   id: string;
   name: string;
   logo: string;
+  description?: string;
 }
 
 export interface StepItem {
@@ -300,6 +310,7 @@ export interface WebsiteSettings {
   home: HomeSettings;
   aboutPoints: PillarItem[];
   partners: PartnerItem[];
+  partnerShowcase?: { title: string; description: string; autoRotate: boolean };
   admissionSteps: StepItem[];
   admissionRequirements: TextItem[];
   verifyPoints: TextItem[];

@@ -1,5 +1,6 @@
 import type { Program, SystemSettings, WebsiteSettings } from "@/types";
 import { programImage } from "./programImages";
+import { courseId } from "./identifiers";
 import {
   DELIVERY_META,
   costSummary,
@@ -117,6 +118,7 @@ td.plabel{font-weight:700;white-space:nowrap;color:#052e22}
   </div>
   <div style="margin-top:20px"><span class="pill">${esc(program.certification || program.category || "Certificate programme")}</span></div>
   <h1>${esc(program.title)}</h1>
+  <p style="color:#fcd34d;font-size:11px">Course ID: ${esc(courseId(program))}</p>
   <p class="desc">${esc(program.description || "Practical, project-based certificate programme with mentor support and verifiable certification.")}</p>
 </div>
 <img class="photo" src="${esc(photo)}" alt="" />

@@ -275,6 +275,7 @@ export default function AdminWebsiteSettings() {
           <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
             {(Object.keys(SECTION_LABELS) as HomeSectionKey[]).map((key) => {
               const copy = draft.home.sections[key];
+              if (key === "summary") return <div key={key} className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-sm font-semibold text-slate-700">Who we are</p><p className="mt-2 text-xs leading-5 text-slate-500">The homepage shares the approved Who we are profile from the About page. Edit the shared profile in src/data/aboutContent.ts to keep both pages consistent. Programme totals follow published records, and location follows Contact &amp; footer.</p></div>;
               return (
                 <div key={key} className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{SECTION_LABELS[key]}</p>
@@ -339,6 +340,7 @@ export default function AdminWebsiteSettings() {
         <div className="space-y-6">
           <div className={`${panelClass} p-5`}>
             <p className="mb-3 text-sm font-semibold text-slate-700">Stats ribbon</p>
+            <p className="mb-4 text-xs leading-5 text-slate-500">Publish only verified figures. These are approved editorial statistics, not calculated from private student records. Programme counts elsewhere follow the published catalogue automatically.</p>
             <ListEditor
               title="Stat"
               items={list("stats")}
@@ -374,17 +376,24 @@ export default function AdminWebsiteSettings() {
             />
           </div>
           <div className={`${panelClass} p-5`}>
-            <p className="mb-3 text-sm font-semibold text-slate-700">Industry partners</p>
+            <p className="mb-3 text-sm font-semibold text-slate-700">Industry and partnerships</p>
+            <div className="mb-5 grid gap-3">
+              <Field label="Section title" value={draft.partnerShowcase?.title ?? "Industry and partnerships"} onChange={title => patch({ partnerShowcase: { title, description: draft.partnerShowcase?.description ?? "", autoRotate: draft.partnerShowcase?.autoRotate !== false } })} />
+              <Area label="Section introduction" value={draft.partnerShowcase?.description ?? ""} onChange={description => patch({ partnerShowcase: { title: draft.partnerShowcase?.title ?? "Industry and partnerships", description, autoRotate: draft.partnerShowcase?.autoRotate !== false } })} />
+              <Toggle label="Auto-rotate partners" hint="Rotate every 6 seconds; pauses on hover, focus and hidden tabs. Reduced-motion visitors use manual controls." checked={draft.partnerShowcase?.autoRotate !== false} onChange={autoRotate => patch({ partnerShowcase: { title: draft.partnerShowcase?.title ?? "Industry and partnerships", description: draft.partnerShowcase?.description ?? "", autoRotate } })} />
+              <p className="text-xs leading-5 text-slate-500">Add confirmed partners only. Upload a logo or photo and describe the partnership. Publish changes to save the text and image references to the backend. The showcase appears in the Impact section when it is visible and at least one partner is added.</p>
+            </div>
             <ListEditor
               title="Partner"
               items={list("partners")}
               onChange={(items) => setList("partners", items)}
               addLabel="Add partner"
-              newItem={() => ({ id: genId("partner"), name: "New partner", logo: "" })}
+              newItem={() => ({ id: genId("partner"), name: "New partner", logo: "", description: "" })}
               renderItem={(p: WebsiteSettings["partners"][number], update) => (
                 <>
                   <Field label="Name" value={p.name} onChange={(v) => update({ name: v })} />
-                  <ImageBox label="Logo (optional)" folder="partners" value={p.logo} onChange={(v) => update({ logo: v })} />
+                  <Area label="Partnership description" value={p.description ?? ""} rows={3} onChange={description => update({ description })} />
+                  <ImageBox label="Partner logo or image (optional)" folder="partners" value={p.logo} onChange={(v) => update({ logo: v })} />
                 </>
               )}
             />
@@ -490,6 +499,7 @@ export default function AdminWebsiteSettings() {
           <p className="text-sm text-slate-500">Edit homepage blog, admissions and footer labels here. Programmes, blog posts and policies use their dedicated management screens.</p>
           {Object.entries(draft.publicCopy).map(([key, value]) => <Area key={key} label={key} value={value} rows={2} onChange={(text) => patch({ publicCopy: { ...draft.publicCopy, [key]: text } })} />)}
           <Toggle label="Show newsletter signup" checked={draft.newsletter.enabled} onChange={(enabled) => patch({ newsletter: { ...draft.newsletter, enabled } })} />
+          <p className="text-xs leading-5 text-slate-500">Subscriptions require email confirmation. Manage subscribers and campaigns in the existing Newsletter screen. Production requires the newsletter migration, newsletter and send-email functions, a scheduled email worker, a verified Resend sender, PUBLIC_SITE_URL and NEWSLETTER_TOKEN_SECRET. See supabase/NEWSLETTER_PRODUCTION.md. Publishing this switch alone does not verify delivery.</p>
           {(["title", "description", "consent", "button"] as const).map((key) => <Area key={key} label={`Newsletter ${key}`} value={draft.newsletter[key]} rows={2} onChange={(value) => patch({ newsletter: { ...draft.newsletter, [key]: value } })} />)}
         </div>
       )}

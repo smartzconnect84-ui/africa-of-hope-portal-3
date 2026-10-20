@@ -24,7 +24,7 @@ const SECTIONS = [
   },
   {
     title: "6. Contact us",
-    body: "Questions about cookies or personal data? Contact the registrar: +231776679963 / 088806137 or afrohope033@gmail.com, Boystown Junction–Lower Margibi, Republic of Liberia. We review this policy each academic year; the current version applies from the 2025/2026 session.",
+    body: "Questions about cookies or personal data? Contact the registrar: +231776679963 or afrohope033@gmail.com, Boystown Junction–Lower Margibi, Republic of Liberia. We review this policy each academic year; the current version applies from the 2025/2026 session.",
   },
 ];
 

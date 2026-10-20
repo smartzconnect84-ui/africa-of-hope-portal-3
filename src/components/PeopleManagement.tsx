@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { accountId } from "@/lib/identifiers";
 import { toast } from "sonner";
 import {
   Users,
@@ -232,6 +233,7 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
                         </span>
                         <div>
                           <p className="font-medium text-slate-800">{u.name}</p>
+                          <p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p>
                           {u.title && <p className="text-[11px] text-slate-500">{u.title}</p>}
                         </div>
                       </div>
@@ -568,7 +570,7 @@ function StudentsTab() {
                         <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
                           {initials(u.name)}
                         </span>
-                        <span className="font-medium text-slate-800">{u.name}</span>
+                        <div><span className="font-medium text-slate-800">{u.name}</span><p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p></div>
                       </div>
                     </td>
                     <td className={TD}>

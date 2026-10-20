@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { courseId } from "@/lib/identifiers";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { programImage } from "@/lib/programImages";
 import { durationLabel } from "@/lib/programDelivery";
 import type { Program } from "@/types";
 import ProgramBrochureButton from "../public/ProgramBrochureButton";
+import WhatsAppShareButton from "../public/WhatsAppShareButton";
 import { ScrollReveal } from "../public/motion";
 
 const INTERVAL_MS = 3500;
@@ -149,6 +151,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                       {program.category || "Certificate programme"}
                     </p>
                     <h3 className="mt-1.5 line-clamp-2 text-base font-semibold text-emerald-950">{program.title}</h3>
+                    <p className="mt-1 break-all font-mono text-[10px] text-slate-500">Course ID: {courseId(program)}</p>
                     <div className="mt-auto flex items-center justify-between gap-2 pt-4 text-xs text-slate-500">
                       <span className="inline-flex items-center gap-1">
                         <Clock3 className="h-3.5 w-3.5 text-emerald-700" />
@@ -158,6 +161,12 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                         <span className="[&_button]:h-7 [&_button]:px-2 [&_button]:text-[11px]">
                           <ProgramBrochureButton program={program} variant="ghost" className="bg-black text-white hover:bg-neutral-800 hover:text-white" />
                         </span>
+                        <WhatsAppShareButton
+                          program={program}
+                          variant="ghost"
+                          label="Share"
+                          className="h-7 w-auto px-1.5 text-[11px]"
+                        />
                         <button
                           type="button"
                           onClick={onApply}

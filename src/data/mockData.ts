@@ -2,6 +2,7 @@ import type { AppState, PortalThemeSettings, SystemSettings, WebsiteSettings } f
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS } from "../lib/permissions";
 import { CATALOG_2026 } from "./programCatalog2026";
 import { DEFAULT_PUBLIC_COPY, DEFAULT_SUPPORT } from "./publicContent";
+import { ABOUT_META } from "./aboutContent";
 
 // Reused across the About and Impact homepage sections and the CTA band so the
 // defaults look like today's live site until an admin uploads replacements.
@@ -19,7 +20,7 @@ export const defaultSettings: SystemSettings = {
   academyName: "AFRICA OF HOPE",
   motto: "Certificates that open doors. Skills that build communities.",
   contactEmail: "",
-  contactPhone: "For Inquiries: +231776679963/088806137 or afrohope033@gmail.com",
+  contactPhone: "For Inquiries: +231776679963 or afrohope033@gmail.com",
   address: "Boystown Junction-Lower Margibi, Republic of Liberia",
   accreditationNo: "NBTE/ACC/2024/0491",
   currency: "$",
@@ -51,7 +52,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   support: DEFAULT_SUPPORT,
   team: { enabled: false, title: "Meet our staff", description: "", members: [] },
   newsletter: {
-    enabled: false,
+    enabled: true,
     title: "Stay in touch",
     description: "Receive news and updates from Africa of Hope.",
     consent: "I agree to receive email updates. I can unsubscribe at any time.",
@@ -72,7 +73,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
       title: "Empowering Future",
       highlight: "Tech Leaders & Innovators",
       description:
-        "Join hands-on, accredited certificate programs crafted to take you from foundational knowledge to job-ready mastery.",
+        "Explore professional training programmes with practical skills and study options to support your next step.",
       image:
         "https://dala-prod-public-storage.s3.eu-west-1.amazonaws.com/attachments/7df501ed-0d87-47d4-9851-c8a5505b89b3/1791902768004_IMG-20250919-WA0127.webp",
     },
@@ -88,11 +89,11 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     },
     {
       id: "hero-3",
-      eyebrow: "Accredited Certification",
+      eyebrow: "Certificate verification",
       title: "Verifiable Credentials That",
       highlight: "Open Real Career Doors",
       description:
-        "Every graduate receives an authenticated, QR-verifiable certificate recognized across top industry partners.",
+        "Use our certificate verification service to check credentials issued through Africa of Hope.",
       image:
         "https://dala-prod-public-storage.s3.eu-west-1.amazonaws.com/attachments/7df501ed-0d87-47d4-9851-c8a5505b89b3/1791902768234_IMG-20251117-WA0113.webp",
     },
@@ -120,12 +121,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
         "Every instalment, receipt and balance is visible in your student portal, with no hidden charges.",
     },
   ],
-  stats: [
-    { id: "stat-1", value: "96%", label: "Completion rate" },
-    { id: "stat-2", value: "18", label: "Partner employers" },
-    { id: "stat-3", value: "12", label: "Certificate programmes" },
-    { id: "stat-4", value: "400+", label: "Graduates placed" },
-  ],
+  stats: ABOUT_META.stats.map((stat) => ({ ...stat })),
   testimonials: [],
   faqs: [
     {
@@ -173,7 +169,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     { id: "nav-5", label: "Admissions", href: "#admissions" },
   ],
   footerCopyright: "All rights reserved.",
-  contactPhone: "For Inquiries: +231776679963/088806137 or afrohope033@gmail.com",
+  contactPhone: "For Inquiries: +231776679963 or afrohope033@gmail.com",
   contactEmail: "",
   address: "Boystown Junction-Lower Margibi, Republic of Liberia",
   officeHours: "Online 24/7",
@@ -267,14 +263,8 @@ eyebrow: "Our work",
       body: "Partner employers across Liberia review top performers for internships and junior roles.",
     },
   ],
-  partners: [
-    { id: "partner-1", name: "Monrovia Tech & Fintech Employers", logo: "" },
-    { id: "partner-2", name: "Liberia Solar & Energy Installers", logo: "" },
-    { id: "partner-3", name: "Margibi Agro-Processing Firms", logo: "" },
-    { id: "partner-4", name: "Bong County Health Network", logo: "" },
-    { id: "partner-5", name: "Liberian Banks & Microfinance", logo: "" },
-    { id: "partner-6", name: "Buchanan Logistics & Trade", logo: "" },
-  ],
+  partners: [],
+  partnerShowcase: { title: "Industry & partnerships", description: "Working together to expand opportunity and strengthen communities.", autoRotate: true },
   admissionSteps: [
     {
       id: "step-1",
@@ -345,11 +335,7 @@ eyebrow: "Our work",
         description: "Encrypted sessions and registrar-approved access.",
       },
     ],
-    stats: [
-      { id: "auth-stat-1", value: "30+", label: "Programmes" },
-      { id: "auth-stat-2", value: "400+", label: "Graduates placed" },
-      { id: "auth-stat-3", value: "96%", label: "Completion rate" },
-    ],
+    stats: [],
     testimonial: {
       quote: "",
       name: "",

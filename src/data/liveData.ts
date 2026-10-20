@@ -15,6 +15,7 @@ import type {
 } from "../types";
 import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings } from "./mockData";
 import { CATALOG_2026 } from "./programCatalog2026";
+import { programIsPublished, removeDemoPublicData } from "../lib/publicSiteData";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, type PermissionKey } from "../lib/permissions";
 
 export type Row = Record<string, unknown>;
@@ -34,6 +35,7 @@ const flag = (p: Row, key: string, fallback: boolean) =>
 function mapUser(p: Row, cohortIds: string[]): User {
   return {
     id: txt(p.id),
+    accountNumber: p.account_number == null ? undefined : txt(p.account_number),
     name: txt(p.name) || txt(p.full_name) || txt(p.email) || "Unnamed member",
     email: txt(p.email),
     phone: txt(p.phone),
@@ -181,10 +183,10 @@ export function mergeWebsiteSettings(
   raw: unknown,
 ): WebsiteSettings {
   const merged = mergeObject(defaults as unknown as Record<string, unknown>, raw) as unknown as WebsiteSettings;
-  return {
+  return removeDemoPublicData({
     ...merged,
     home: { ...merged.home, order: normalizeHomeOrder(merged.home.order, defaults.home.order) },
-  };
+  });
 }
 
 /**
@@ -332,7 +334,9 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
 
   const moduleRows = (modules.data ?? []) as Row[];  const mappedPrograms: Program[] = ((programs.data ?? []) as Row[]).map((p) => ({
     id: txt(p.id),
+    courseNumber: p.course_number == null ? undefined : txt(p.course_number),
     title: txt(p.title) || txt(p.name),
+    published: programIsPublished(p),
     category: txt(p.category),
     durationWeeks: num(p, "duration_weeks"),
     tuition: num(p, "tuition"),
@@ -449,7 +453,10 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
       issueDate: txt(c.issue_date).slice(0, 10),
       honors: txt(c.honors),
       grade: txt(c.grade),
-      status: (txt(c.status, "Valid") as Certificate["status"]) || "Valid",
+      status: c.status === "Valid" ? "Valid" : "Revoked",
+      revokedAt: c.revoked_at ? txt(c.revoked_at) : undefined,
+      revokedBy: c.revoked_by ? txt(c.revoked_by) : undefined,
+      revocationReason: c.revocation_reason ? txt(c.revocation_reason) : undefined,
     })),
     announcements: ((announcements.data ?? []) as Row[]).map((a) => ({
       id: txt(a.id),

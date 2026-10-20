@@ -17,6 +17,9 @@ import { panelClass, Reveal, SectionHeader } from "./Navigation";
 import { AuthField } from "./AuthPortal";
 import { INPUT_CLASS, newPasswordErrors } from "@/lib/forms";
 import UserAvatar from "./UserAvatar";
+import ReminderSettings from "./academic/ReminderSettings";
+import { accountId } from "@/lib/identifiers";
+import { useServiceWorkerUpdate } from "@/lib/pwa";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -26,11 +29,12 @@ import {
 
 const PRIMARY = "h-10 rounded-xl bg-emerald-700 text-white hover:bg-emerald-800";
 
-type Tab = "details" | "documents" | "security";
+type Tab = "details" | "documents" | "security" | "device";
 const TABS: [Tab, string, LucideIcon][] = [
   ["details", "Personal details", UserIcon],
   ["documents", "Documents", FolderOpen],
   ["security", "Security", ShieldCheck],
+  ["device", "Device & updates", Phone],
 ];
 
 export default function ProfilePage() {
@@ -66,8 +70,26 @@ export default function ProfilePage() {
       {tab === "details" && <DetailsForm key={currentUser.id} user={currentUser} />}
       {tab === "documents" && <DocumentsPanel user={currentUser} />}
       {tab === "security" && <SecurityPanel user={currentUser} />}
+      {tab === "device" && <DeviceSettings />}
     </div>
   );
+}
+
+function DeviceSettings() {
+  const update = useServiceWorkerUpdate();
+  return <div className="space-y-5">
+    <section className={`${panelClass} p-5`} aria-label="App updates">
+      <h2 className="font-semibold text-slate-900">App updates</h2>
+      <p className="mt-1 text-sm text-slate-600">Check for a new version on any supported device. Save forms and finish assessments before installing an update. Your app will not reload without your action.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button variant="outline" disabled={update.busy} onClick={update.checkUpdate}>Check for updates</Button>
+        {update.updateReady && <Button disabled={update.busy} onClick={() => void update.applyUpdate()}>{update.busy ? "Updating…" : "Install update & reload"}</Button>}
+      </div>
+      {update.notice && <p role="status" className="mt-2 text-xs text-slate-600">{update.notice}</p>}
+      {update.error && <p role="alert" className="mt-2 text-xs text-rose-700">{update.error}</p>}
+    </section>
+    <ReminderSettings />
+  </div>;
 }
 
 // ── Header with avatar upload ────────────────────────────────────────────────
@@ -150,6 +172,7 @@ function ProfileHeader({ user }: { user: User }) {
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-xl font-semibold text-slate-900">{user.name}</h3>
+          <p className="mt-1 break-all font-mono text-xs text-emerald-800">Account ID: {accountId(user)}</p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
             <span className="inline-flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {user.email}</span>
             {user.phone && <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {user.phone}</span>}
