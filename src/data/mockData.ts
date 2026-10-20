@@ -48,6 +48,7 @@ export const defaultThemeSettings: PortalThemeSettings = {
 };
 
 export const defaultWebsiteSettings: WebsiteSettings = {
+  brandRevision: 1,
   publicCopy: DEFAULT_PUBLIC_COPY,
   support: DEFAULT_SUPPORT,
   team: { enabled: false, title: "Meet our staff", description: "", members: [] },

@@ -4,23 +4,24 @@ import { Award, Download, Loader2, Printer, BadgeCheck, Lock, FileJson, FileSpre
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type StudentProgressRow } from "@/lib/academics";
 import {
-  downloadCertificatePdf, downloadCertificatesCsv, downloadCertificatesJson,
-  type CertificateLookup,
+  downloadCertificatesCsv, downloadCertificatesJson,
 } from "@/lib/certificateDownloads";
+import { downloadCertificatePdf, viewFor } from "@/lib/certificatePdf";
+import CertificateDocument, { printCertificateElement } from "@/components/certificate/CertificateDocument";
 import { Button } from "@/components/ui/button";
 import { EmptyState, SectionHeader, StatCard, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 
-/** F9: students automatically get a printable certificate when they finish a programme (100% of lessons complete). */
+/** Students get a printable certificate once every lesson of a programme is complete (100%). */
 export default function CompletionCertificates() {
   const { state, currentUser, issueCertificate } = useApp();
   const [units, setUnits] = useState<LearningUnit[]>([]);
   const [progress, setProgress] = useState<StudentProgressRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const academyName = state.websiteSettings.academyName || state.settings.academyName || "AFRICA OF HOPE";
-  const logoUrl = state.websiteSettings.logos?.certificate || state.websiteSettings.logoUrl;
   const academicYear = state.settings.academicYear;
 
   useEffect(() => {
@@ -53,12 +54,20 @@ export default function CompletionCertificates() {
     });
   }, [state.programs, state.certificates, units, doneIds, currentUser]);
 
-  const lookup: CertificateLookup = {
+  const lookup = {
     users: state.users,
     programs: state.programs,
     academyName,
     academicYear,
   };
+
+  const viewOf = (cert: Parameters<typeof viewFor>[0] & { studentId: string; programId: string }) =>
+    viewFor(
+      cert,
+      state.users.find((u) => u.id === cert.studentId),
+      state.programs.find((p) => p.id === cert.programId),
+      state.websiteSettings,
+    );
 
   const claim = async (programId: string, title: string) => {
     if (!currentUser) return;
@@ -73,47 +82,26 @@ export default function CompletionCertificates() {
     }
   };
 
-  const certInner = (serial: string) => {
-    const el = document.getElementById(`completion-cert-${serial}`);
-    return el ? el.outerHTML : "";
+  const printCert = (certId: string, serial: string) => {
+    const cert = state.certificates.find((item) => item.id === certId && item.studentId === currentUser?.id);
+    if (!cert || cert.status !== "Valid") { toast.error("This certificate is not valid and cannot be printed."); return; }
+    if (!printCertificateElement(`certificate-${cert.serial}`, `Certificate ${serial} — ${academyName}`)) {
+      toast.error("Allow pop-ups to print your certificate.");
+    }
   };
 
-  const printCert = (serial: string) => {
-    const inner = certInner(serial);
-    if (!inner) { window.print(); return; }
-    const html = `<html><head><title>Certificate ${serial} — ${academyName}</title><style>
-      *{box-sizing:border-box} body{font-family:Georgia,'Times New Roman',serif;display:flex;justify-content:center;padding:32px;background:#fff;color:#0f172a}
-      .sheet{width:760px;border:1px solid #d6c08a;padding:10px}
-      .frame{border:3px double #b45309;padding:0}
-      .band{background:linear-gradient(135deg,#064e3b,#065f46 60%,#047857);color:#fff;text-align:center;padding:22px 24px 18px}
-      .band .inst{font-size:13px;letter-spacing:.35em;font-weight:bold}
-      .band .yr{margin-top:6px;font-size:11px;letter-spacing:.2em;opacity:.85}
-      .body{padding:34px 48px 30px;text-align:center}
-      .body img.logo{height:72px;margin:0 auto 8px;display:block}
-      .eyebrow{font-size:11px;letter-spacing:.3em;color:#b45309;font-weight:bold;text-transform:uppercase}
-      h1{font-size:34px;margin:10px 0 4px;color:#064e3b}
-      .rule{width:120px;height:3px;background:linear-gradient(90deg,#b45309,#fbbf24,#b45309);margin:14px auto}
-      .awarded{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#94a3b8}
-      .name{font-size:30px;font-weight:bold;color:#064e3b;margin:6px 0}
-      .desc{font-size:13px;color:#475569;max-width:520px;margin:8px auto 0;line-height:1.6}
-      .meta{margin-top:16px;font-size:11px;color:#94a3b8;letter-spacing:.08em}
-      .sigs{display:flex;justify-content:space-between;margin:34px 20px 0}
-      .sig{width:200px;text-align:center;font-size:11px;color:#475569}
-      .sig .line{border-top:1px solid #94a3b8;padding-top:6px;margin-top:34px}
-    </style></head><body><div class="sheet"><div class="frame">${inner}</div></div></body></html>`;
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) { toast.error("Allow pop-ups to print"); return; }
-    w.document.write(html); w.document.close(); w.focus(); w.print();
-  };
-
-  const downloadCert = (certId: string) => {
+  const downloadCert = async (certId: string) => {
     const cert = state.certificates.find((c) => c.id === certId);
-    if (!cert) { toast.error("Certificate is not ready yet."); return; }
+    if (!cert || cert.studentId !== currentUser?.id) { toast.error("Certificate is not ready yet."); return; }
+    if (cert.status !== "Valid") { toast.error("Revoked certificates cannot be downloaded as certificates."); return; }
+    setBusyId(cert.id);
     try {
-      downloadCertificatePdf(cert, lookup);
+      await downloadCertificatePdf(viewOf(cert));
       toast.success(`Certificate ${cert.serial} downloaded as PDF.`);
-    } catch {
-      toast.error("The PDF could not be generated. Use Print and save as PDF instead.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The PDF could not be generated.");
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -126,14 +114,12 @@ export default function CompletionCertificates() {
     toast.success(`${count} certificate${count === 1 ? "" : "s"} exported as ${format.toUpperCase()}.`);
   };
 
-  const studentName = currentUser ? currentUser.name : "";
-
   if (loading) return <div className={cn(panelClass, "grid place-items-center p-10")}><Loader2 className="h-6 w-6 animate-spin text-emerald-700" /></div>;
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <SectionHeader title="My Completion Certificates" subtitle="Finish 100% of a programme to unlock your printable certificate" />
+        <SectionHeader title="My Completion Certificates" subtitle="Finish 100% of a programme to unlock your officially verifiable certificate" />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => exportIssued("csv")}>
             <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Export CSV
@@ -151,7 +137,7 @@ export default function CompletionCertificates() {
       {rows.length === 0 ? (
         <EmptyState icon={Award} title="No enrolments yet" hint="Enrol in a programme to start earning certificates." />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-2">
           {rows.map(({ program, total, done, pct, complete, existing }) => (
             <div key={program.id} className={cn(panelClass, "p-5")}>
               <div className="flex items-start justify-between gap-3">
@@ -160,7 +146,7 @@ export default function CompletionCertificates() {
                   <p className="text-xs text-slate-500">{done}/{total} lessons · {pct}%</p>
                 </div>
                 {existing
-                  ? <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">Issued · {existing.serial}</span>
+                  ? <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", existing.status === "Valid" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800")}>{existing.status} · {existing.serial}</span>
                   : complete
                     ? <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">Ready to claim</span>
                     : <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600"><Lock className="h-3 w-3" /> Locked</span>}
@@ -168,53 +154,23 @@ export default function CompletionCertificates() {
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${pct}%` }} /></div>
               {existing ? (
                 <div className="mt-4">
-                  {/* ── Modern certificate template ─────────────────────────── */}
-                  <div id={`completion-cert-${existing.serial}`} className="overflow-hidden rounded-xl border border-amber-200/70 bg-white shadow-sm">
-                    <div className="bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-700 px-6 pb-5 pt-6 text-center text-white">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.35em]">{academyName}</p>
-                      <p className="mt-1.5 text-[10px] uppercase tracking-[0.2em] text-emerald-200/90">Academic year {academicYear}</p>
-                    </div>
-                    <div className="px-6 pb-6 pt-5 text-center sm:px-8">
-                      {logoUrl && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={logoUrl}
-                          alt={`${academyName} logo`}
-                          loading="lazy"
-                          decoding="async"
-                          className="mx-auto mb-2 h-16 w-auto bg-transparent object-contain"
-                        />
-                      )}
-                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-600">Certificate of Completion</p>
-                      <h4 className="mt-2 font-serif text-2xl text-emerald-950">This certificate is proudly awarded to</h4>
-                      <div className="mx-auto mt-3 h-[3px] w-28 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600" />
-                      <p className="mt-3 font-serif text-3xl font-bold text-emerald-900">{studentName}</p>
-                      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
-                        for successfully completing all requirements of the{" "}
-                        <strong className="text-slate-800">{program.title}</strong> programme
-                        {existing.honors && existing.honors !== "Pass" ? <> with <strong className="text-slate-800">{existing.honors}</strong> honors</> : null}.
-                      </p>
-                      <p className="mt-3 text-[11px] tracking-wide text-slate-400">
-                        Serial {existing.serial} · Issued {existing.issueDate} · Verify at the portal help desk
-                      </p>
-                      <div className="mt-6 flex items-end justify-between gap-6 px-2 text-left">
-                        <div className="w-32 text-center text-[10px] text-slate-500">
-                          <div className="mb-1 border-t border-slate-300 pt-1.5 font-semibold uppercase tracking-wider">Registrar</div>
-                        </div>
-                        <Award className="h-8 w-8 shrink-0 text-amber-500" aria-hidden="true" />
-                        <div className="w-32 text-center text-[10px] text-slate-500">
-                          <div className="mb-1 border-t border-slate-300 pt-1.5 font-semibold uppercase tracking-wider">Director</div>
-                        </div>
+                  {existing.status === "Valid" ? (
+                    <>
+                      <div id={`certificate-${existing.serial}`} className="overflow-x-auto rounded-xl border border-amber-200/70 bg-white p-2">
+                        <CertificateDocument view={viewOf(existing)} />
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <Button variant="outline" className="w-full" onClick={() => printCert(existing.serial)}><Printer className="mr-1.5 h-4 w-4" /> Print</Button>
-                    <Button variant="outline" className="w-full" onClick={() => downloadCert(existing.id)}><Download className="mr-1.5 h-4 w-4" /> PDF</Button>
-                  </div>
-                  {existing.status !== "Valid" && (
-                    <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700">
-                      This certificate was revoked{existing.revokedAt ? ` on ${existing.revokedAt.slice(0, 10)}` : ""}. {existing.revocationReason || "Contact the registrar for details."}
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <Button variant="outline" className="w-full" onClick={() => printCert(existing.id, existing.serial)}>
+                          <Printer className="mr-1.5 h-4 w-4" /> Print A4
+                        </Button>
+                        <Button variant="outline" className="w-full" disabled={busyId === existing.id} onClick={() => void downloadCert(existing.id)}>
+                          {busyId === existing.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />} PDF
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <p role="status" className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-800">
+                      <strong>Revoked — not a valid credential.</strong> This certificate was revoked{existing.revokedAt ? ` on ${existing.revokedAt.slice(0, 10)}` : ""}. {existing.revocationReason || "Contact the registrar for details."} Printing and certificate downloads are unavailable. Record exports retain the revoked status.
                     </p>
                   )}
                 </div>

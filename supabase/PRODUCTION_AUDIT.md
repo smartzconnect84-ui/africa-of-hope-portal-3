@@ -28,6 +28,13 @@ No database, Auth account, bucket object, production setting or deployed functio
 
 ## Backend and infrastructure release gates
 
-Use RELEASE_CHECKLIST.md for function auth modes, secrets, staging tests and deployment ordering. Applying SQL, deploying functions, setting secrets, enabling scheduling and delivery tests require backend access/owner approval and have not been performed here.
+Use `RELEASE_CHECKLIST.md` for function auth modes, secrets, staging tests and deployment ordering. Applying SQL, deploying functions, setting secrets, enabling scheduling and delivery tests require backend access/owner approval and have not been performed here.
+
+## Edge Function readiness (source fixes in this pass)
+
+- `supabase/config.toml` now states the gateway JWT mode per function and names the server-only secret each handler needs, so a deploy cannot silently expose a worker or lock out a public entry point.
+- Both cron workers (`send-email`, `send-deadline-reminders`) compare `CRON_SECRET` in constant time and report acknowledgement failures (`acknowledged`, `acknowledgementError`) instead of returning a bare success; expired push subscriptions and corrupt endpoints are cleaned up with their own error surfaced.
+- Public entry points stay public at the gateway but validate size, shape and tokens inside the handler: `newsletter` requires a ≥32-character HMAC secret and signed tokens, `verify-certificate` accepts only a bounded serial and returns public fields, `assistant` remains rate limited.
+- `RELEASE_CHECKLIST.md` lists the remaining human gates: secrets, migration order, storage ACLs, realtime publication, and live tests for email, push on physical devices, newsletter, certificates, Groq replies, role-by-role authorization and PWA updates.
 
 Outstanding live verification: deployed RLS/grants/functions, actual storage ACLs, realtime publication membership, SMTP/Resend sender verification, newsletter confirmation/unsubscribe, email worker scheduling/concurrency, push delivery on physical iOS/Android devices, Groq request/reply, backup restoration, provider rate limits, logging/alerts, and browser role-by-role journeys. Do not describe the whole application as production-ready based only on a TypeScript/build check.

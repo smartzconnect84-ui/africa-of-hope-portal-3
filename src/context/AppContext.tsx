@@ -119,7 +119,13 @@ interface AppContextValue {
   submitSubmission: (assignmentId: string, studentId: string, text: string, attachment: string) => Promise<void>;
   addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => void;
   /** Issues (or returns the existing) certificate through the database function; rejects with an actionable message. */
-  issueCertificate: (studentId: string, programId: string, honors: string) => Promise<Certificate>;
+  issueCertificate: (
+    studentId: string,
+    programId: string,
+    honors: string,
+    certificateType?: string,
+    completionDate?: string,
+  ) => Promise<Certificate>;
   /** Administrator-only revocation of an issued certificate, recorded with actor, time and reason. */
   revokeCertificate: (certificateId: string, reason: string) => Promise<Certificate>;
   addAnnouncement: (payload: Omit<Announcement, "id" | "date">) => void;
@@ -675,10 +681,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }),
         );
       },
-      issueCertificate: async (studentId, programId, honors) => {
+      issueCertificate: async (studentId, programId, honors, certificateType, completionDate) => {
         // The database assigns the serial and enforces completion/authorization, so the
         // browser never invents an identifier. A failure is surfaced, never faked locally.
-        const certificate = await certificatesApi.issue(studentId, programId, honors);
+        const certificate = await certificatesApi.issue(studentId, programId, honors, certificateType, completionDate);
         setState((s) => ({
           ...s,
           certificates: s.certificates.some((c) => c.id === certificate.id)

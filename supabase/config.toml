@@ -1,20 +1,49 @@
-# Function gateway modes. Each handler also validates its own request/access.
-# Public functions intentionally accept anonymous callers; never add service keys
-# to browser code. Cron workers use dedicated server-only secrets inside handlers.
+# Edge Function gateway configuration.
+#
+# `verify_jwt` only decides whether the Supabase gateway demands a valid JWT
+# before the handler runs. Every handler still validates its own caller, body
+# size and access rights, so a public entry point is never an open door.
+#
+# Server-only secrets (never exposed to the browser, never prefixed VITE_):
+#   SUPABASE_SERVICE_ROLE_KEY   injected by Supabase, used by workers only
+#   RESEND_API_KEY              email delivery
+#   EMAIL_FROM                  verified sender identity
+#   EMAIL_CRON_SECRET           x-cron-secret for send-email (a staff JWT with
+#                               settings.manage also works)
+#   REMINDER_CRON_SECRET        x-cron-secret for send-deadline-reminders;
+#                               falls back to CRON_SECRET, then the service key
+#   GROQ_API_KEY / GROQ_MODEL   AOH AI assistant
+#   NEWSLETTER_TOKEN_SECRET     newsletter confirm/unsubscribe HMAC (>= 32 chars)
+#   PUBLIC_SITE_URL             absolute site URL used in emailed links
+#   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   push delivery
+#   APP_URL                     public app URL used in account emails
+
+# Admin-only: staff account management. The handler additionally re-checks the
+# caller's role and refuses privilege escalation.
 [functions.admin-users]
 verify_jwt = true
 
+# Anonymous by design: public AOH AI chat, rate limited inside the handler.
 [functions.assistant]
 verify_jwt = false
 
+# Anonymous by design: double opt-in subscribe/confirm/unsubscribe. Tokens are
+# hashed and HMAC-signed, and the honeypot plus per-IP throttle limit abuse.
 [functions.newsletter]
 verify_jwt = false
 
+# Anonymous by design: exact-serial certificate lookup that returns only the
+# fields the public register is allowed to expose.
 [functions.verify-certificate]
 verify_jwt = false
 
+# Anonymous at the gateway because the cron scheduler carries x-cron-secret
+# instead of a user JWT; the handler rejects any request without a valid
+# EMAIL_CRON_SECRET header or a settings.manage user token.
 [functions.send-email]
 verify_jwt = false
 
+# Anonymous at the gateway for the same reason; the handler requires
+# x-cron-secret (REMINDER_CRON_SECRET or CRON_SECRET, else the service key).
 [functions.send-deadline-reminders]
 verify_jwt = false

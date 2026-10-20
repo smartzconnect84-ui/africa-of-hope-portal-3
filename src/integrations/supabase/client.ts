@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { authStorage } from "@/lib/authStorage";
 
 /**
  * Live Supabase project for the Africa of Hope portal.
@@ -61,6 +62,7 @@ export const OPENED_FROM_RECOVERY_LINK =
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
+    storage: authStorage,
     autoRefreshToken: true,
     // Needed so email confirmation and password-reset links start a session.
     detectSessionInUrl: true,

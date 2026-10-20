@@ -12,6 +12,7 @@ import { programImage } from "@/lib/programImages";
 import { durationLabel } from "@/lib/programDelivery";
 import { cn } from "@/lib/utils";
 import { INPUT_CLASS, newPasswordErrors } from "@/lib/forms";
+import { remembersSession, setRememberSession } from "@/lib/authStorage";
 import { VerificationPortal } from "./CertificateVerification";
 import { resolveIcon } from "./home/icons";
 import BrandLockup from "./brand/BrandLockup";
@@ -283,6 +284,13 @@ function Showcase() {
   );
 }
 
+function RememberMe({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  return <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
+    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1 h-4 w-4 accent-emerald-700" />
+    <span><span className="font-medium">Remember me on this device</span><span className="mt-0.5 block text-xs text-slate-500">Keep me signed in after closing the browser. Leave unchecked on shared devices. Your password is never saved by this option.</span></span>
+  </label>;
+}
+
 // ── Sign in ───────────────────────────────────────────────────────────────────
 
 function SignInForm({
@@ -293,6 +301,7 @@ function SignInForm({
   onRegister: () => void;
 }) {
   const { state, login } = useApp();
+  const [remember, setRemember] = useState(remembersSession);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
@@ -313,10 +322,14 @@ function SignInForm({
       return;
     }
     setBusy(true);
-    const error = await login(clean, password);
-    setBusy(false);
-    if (error) setErrors({ form: error });
-    else setPassword("");
+    try {
+      setRememberSession(remember);
+      const error = await login(clean, password);
+      if (error) setErrors({ form: error });
+      else setPassword("");
+    } catch (error) {
+      setErrors({ form: error instanceof Error ? error.message : "Sign-in failed. Please retry." });
+    } finally { setBusy(false); }
   };
 
   return (
@@ -354,6 +367,7 @@ function SignInForm({
           </button>
         }
       />
+      <RememberMe checked={remember} onChange={setRemember} />
       <Button type="submit" disabled={busy} className={cn(PRIMARY, "w-full")}>
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
         {busy ? "Signing in…" : "Sign in to portal"}
@@ -405,6 +419,7 @@ type DoneStatus = NonNullable<SignUpResult["status"]>;
 
 function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) => void }) {
   const { state, signUpStudent } = useApp();
+  const [remember, setRemember] = useState(remembersSession);
   const [step, setStep] = useState(0);
   const [reg, setReg] = useState(emptyReg);
   const [errors, setErrors] = useState<RegErrors>({});
@@ -469,6 +484,11 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
       setErrors({ form: "Self-registration is currently closed." });
       return;
     }
+    try { setRememberSession(remember); }
+    catch (error) {
+      setErrors({ form: error instanceof Error ? error.message : "Could not save sign-in preference." });
+      return;
+    }
     setBusy(true);
     const result = await signUpStudent({
       name: reg.name.trim(),
@@ -502,6 +522,7 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       <Stepper step={step} steps={STEPS} />
+      <RememberMe checked={remember} onChange={setRemember} />
 
       {errors.form && (
         <FormAlert>{errors.form}</FormAlert>

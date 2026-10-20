@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 import ClassworkDialog from "./ClassworkDialog";
+import { academicApi, TRAINING_MATERIAL_ACCEPT, MAX_TRAINING_MATERIAL_BYTES, SUPPORTED_TRAINING_MATERIAL_MIME_TYPES } from "@/lib/academics";
+import { supabase } from "@/integrations/supabase/client";
 
-/** f10: student hand-in (text + link/file reference) and one staff marking inbox. */
+/** Student hand-in (text, reference and private file upload) and staff marking inbox. */
 export default function AssignmentInbox() {
-  const { state, currentUser, addAssignment, gradeSubmission, submitSubmission, refresh } = useApp();
+  const { state, currentUser, addAssignment, gradeSubmission, refresh } = useApp();
   const canManage = usePermission("assignments.manage");
   const [cohortId, setCohortId] = useState("");
   const [title, setTitle] = useState("");
@@ -24,6 +26,8 @@ export default function AssignmentInbox() {
   const [openId, setOpenId] = useState("");
   const [answer, setAnswer] = useState<Record<string, string>>({});
   const [attach, setAttach] = useState<Record<string, string>>({});
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { file: File; path: string }>>({});
   const [marks, setMarks] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
@@ -56,16 +60,45 @@ export default function AssignmentInbox() {
   const handIn = async (assignmentId: string) => {
     if (busy || !currentUser) return;
     const text = (answer[assignmentId] ?? "").trim();
-    const file = (attach[assignmentId] ?? "").trim();
-    if (!text && !file) { toast.error("Write your answer or paste a file link first"); return; }
+    const reference = (attach[assignmentId] ?? "").trim();
+    const file = files[assignmentId];
+    if (!text && !reference && !file) { toast.error("Write your answer, add a reference or attach a file first"); return; }
+    if (file && (file.size > MAX_TRAINING_MATERIAL_BYTES || !SUPPORTED_TRAINING_MATERIAL_MIME_TYPES.has(file.type))) {
+      toast.error("Choose a supported document, image, audio or video file up to 25 MB."); return;
+    }
     setBusy(assignmentId);
     try {
-      await submitSubmission(assignmentId, currentUser.id, text, file);
+      await academicApi.startClasswork(assignmentId);
+      let path: string | null = null;
+      if (file) {
+        const cached = uploadedFiles[assignmentId];
+        path = cached?.file === file ? cached.path : (await academicApi.uploadClassworkAttachment(assignmentId, currentUser.id, file)).path;
+        // Keep the path if submission fails so retry does not upload another copy.
+        setUploadedFiles((items) => ({ ...items, [assignmentId]: { file, path: path! } }));
+      }
+      const response = [text, reference ? `Work reference: ${reference}` : ""].filter(Boolean).join("\n\n");
+      await academicApi.submitClasswork(assignmentId, response, path);
+      await refresh();
       toast.success("Homework handed in");
       setAnswer((s) => ({ ...s, [assignmentId]: "" }));
       setAttach((s) => ({ ...s, [assignmentId]: "" }));
+      setFiles((s) => ({ ...s, [assignmentId]: null }));
+      setUploadedFiles((s) => { const next = { ...s }; delete next[assignmentId]; return next; });
     } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
     finally { setBusy(""); }
+  };
+
+  const openAttachment = async (path: string) => {
+    const popup = window.open("about:blank", "_blank");
+    if (!popup) { toast.error("Allow pop-ups to open homework attachments."); return; }
+    popup.opener = null;
+    try {
+      const { data, error } = await supabase.storage.from("classwork-submissions").createSignedUrl(path, 600, { download: true });
+      if (error || !data) throw new Error(error?.message ?? "Could not open the attachment.");
+      popup.location.replace(data.signedUrl);
+    } catch (error) {
+      popup.close(); toast.error(error instanceof Error ? error.message : "Could not open the attachment.");
+    }
   };
 
   const grade = async (assignmentId: string, studentId: string, maxMarks: number) => {
@@ -143,9 +176,18 @@ export default function AssignmentInbox() {
                     ) : (
                       <>
                         <Label>Your answer</Label>
-                        <Textarea value={answer[a.id] ?? ""} onChange={(e) => setAnswer((s) => ({ ...s, [a.id]: e.target.value }))} rows={3} placeholder="Type your answer or paste your work…" className="mt-1 bg-white" />
-                        <Label className="mt-2 block">Reference link or file name (optional; no upload)</Label>
-                        <Input value={attach[a.id] ?? ""} onChange={(e) => setAttach((s) => ({ ...s, [a.id]: e.target.value }))} placeholder="https://… or my-homework.pdf" className="mt-1 bg-white" />
+                        <Textarea disabled={Boolean(busy)} value={answer[a.id] ?? ""} onChange={(e) => setAnswer((s) => ({ ...s, [a.id]: e.target.value }))} rows={3} placeholder="Type your answer or paste your work…" className="mt-1 bg-white" />
+                        <Label htmlFor={`homework-reference-${a.id}`} className="mt-2 block">Reference link or note (optional)</Label>
+                        <Input id={`homework-reference-${a.id}`} disabled={Boolean(busy)} value={attach[a.id] ?? ""} onChange={(e) => setAttach((s) => ({ ...s, [a.id]: e.target.value }))} placeholder="https://… or a reference note" className="mt-1 bg-white" />
+                        <Label htmlFor={`homework-file-${a.id}`} className="mt-2 block">Upload homework (optional, up to 25 MB)</Label>
+                        <Input key={files[a.id]?.name ?? "empty"} id={`homework-file-${a.id}`} type="file" accept={TRAINING_MATERIAL_ACCEPT} disabled={Boolean(busy)} className="mt-1 bg-white" onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          if (file && (file.size > MAX_TRAINING_MATERIAL_BYTES || !SUPPORTED_TRAINING_MATERIAL_MIME_TYPES.has(file.type))) {
+                            toast.error("Choose a supported file up to 25 MB."); event.target.value = ""; return;
+                          }
+                          setFiles((items) => ({ ...items, [a.id]: file }));
+                        }} />
+                        {files[a.id] && <p className="mt-1 text-xs text-slate-500">Selected: {files[a.id]!.name}. Uploaded privately when you hand in.</p>}
                         <Button onClick={() => handIn(a.id)} disabled={Boolean(busy)} className="mt-2 bg-emerald-700 hover:bg-emerald-800">
                           {busy === a.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-1.5 h-4 w-4" />}
                           Hand in homework
@@ -167,7 +209,7 @@ export default function AssignmentInbox() {
                         <div key={s.id} className="rounded-xl border border-slate-200 p-3">
                           <p className="text-sm font-semibold text-slate-900">{st?.name ?? "Student"}</p>
                           {s.responseText && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{s.responseText}</p>}
-                          {s.attachmentPath && <p className="mt-1 text-xs text-sky-700">File: {s.attachmentPath}</p>}
+                          {s.attachmentPath && <Button variant="outline" size="sm" className="mt-2" onClick={() => void openAttachment(s.attachmentPath!)}>Download homework attachment</Button>}
                           <div className="mt-2 grid gap-2 sm:grid-cols-[120px_1fr_auto]">
                             <Input type="number" min={0} max={a.maxMarks} placeholder={`0–${a.maxMarks}`} value={marks[key] ?? (s.marks ?? "").toString()} onChange={(e) => setMarks((m) => ({ ...m, [key]: e.target.value }))} />
                             <Input placeholder="Feedback for the student…" value={feedback[key] ?? s.feedback ?? ""} onChange={(e) => setFeedback((f) => ({ ...f, [key]: e.target.value }))} />

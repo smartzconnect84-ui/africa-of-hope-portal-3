@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Globe, LayoutTemplate, Star, Quote, HelpCircle, Link2, Building2,
-  Save, RotateCcw, Lock, GripVertical, Eye, EyeOff, LogIn as LogInIcon,
+  Globe, LayoutTemplate, Star, Quote, HelpCircle, Link2, Building2, Award,
+  Save, RotateCcw, Lock, GripVertical, Eye, EyeOff, LogIn as LogInIcon, Plus,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
 import { panelClass } from "./Navigation";
 import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitives";
 import { ICON_NAMES } from "./home/icons";
-import type { HomeSectionKey, WebsiteSettings } from "../types";
+import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
+import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
 
 const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] = [
   { key: "branding", label: "Branding & header", icon: Building2, hint: "Logo, favicon, announcement bar" },
@@ -23,6 +24,7 @@ const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] =
   { key: "faqs", label: "FAQ", icon: HelpCircle, hint: "Questions and answers" },
   { key: "support", label: "Support & staff", icon: Building2, hint: "Support forms and public staff profiles" },
   { key: "editorial", label: "Public copy & newsletter", icon: Globe, hint: "Editorial labels and subscription section" },
+  { key: "certificates", label: "Certificates", icon: Award, hint: "Certificate wording, signatories and verified contact details" },
   { key: "footer", label: "Contact & footer", icon: Link2, hint: "Address, phone, socials, links" },
   { key: "auth", label: "Login & register", icon: LogInIcon, hint: "Showcase, form text" },
 ];
@@ -67,6 +69,12 @@ export default function AdminWebsiteSettings() {
     patch({
       home: { ...draft.home, sections: { ...draft.home.sections, [key]: { ...draft.home.sections[key], ...fields } } },
     });
+  /** Certificate wording, signatories and verified contact lines printed on every certificate. */
+  const cert: CertificateBranding = draft.certificate ?? DEFAULT_CERTIFICATE_BRANDING;
+  const patchCert = (fields: Partial<CertificateBranding>) =>
+    patch({ certificate: { ...cert, ...fields } });
+  const setSignatory = (index: number, fields: Partial<CertificateBranding["signatories"][number]>) =>
+    patchCert({ signatories: cert.signatories.map((s, i) => (i === index ? { ...s, ...fields } : s)) });
   const list = <K extends keyof WebsiteSettings>(key: K) => draft[key] as unknown as WebsiteSettings[K];
   const setList = <K extends keyof WebsiteSettings>(key: K, items: WebsiteSettings[K]) =>
     patch({ [key]: items } as unknown as Partial<WebsiteSettings>);
@@ -196,6 +204,92 @@ export default function AdminWebsiteSettings() {
             <p className="text-xs text-slate-500">Apply and Donate remain outside the navbar. Edit their footer labels in Public copy.</p>
           </div>
           <Field label="AOH AI launcher label" value={draft.assistantLauncherLabel} onChange={(v) => patch({ assistantLauncherLabel: v })} />
+        </div>
+      )}
+
+      {tab === "certificates" && (
+        <div className={`${panelClass} space-y-5 p-5`}>
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Certificate branding and contact details</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              These details are printed on every completion certificate and its PDF. Enter only verified institutional
+              information — any contact field left blank is omitted instead of showing a placeholder. The certificate logo is
+              set under Branding &amp; header → Logos by placement.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Institution name" value={cert.institutionName} onChange={(v) => patchCert({ institutionName: v })} />
+            <Field label="Parent organisation" value={cert.parentName} onChange={(v) => patchCert({ parentName: v })} />
+            <Field label="Header descriptor" value={cert.descriptor} onChange={(v) => patchCert({ descriptor: v })} />
+            <Field label="Motto line" value={cert.motto} onChange={(v) => patchCert({ motto: v })} />
+            <Field label="Footer tagline" value={cert.tagline} onChange={(v) => patchCert({ tagline: v })} />
+            <Field label="Seal caption" value={cert.sealCaption} onChange={(v) => patchCert({ sealCaption: v })} />
+          </div>
+          <div className="grid gap-4 border-t border-slate-100 pt-5">
+            <Field label="Presentation wording" value={cert.presentationLine} onChange={(v) => patchCert({ presentationLine: v })} />
+            <Field label="Completion wording" value={cert.completionLine} onChange={(v) => patchCert({ completionLine: v })} />
+            <Field label="Awarding wording" value={cert.awardingLine} onChange={(v) => patchCert({ awardingLine: v })} />
+          </div>
+          <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+            <Field label="Website" value={cert.websiteUrl} onChange={(v) => patchCert({ websiteUrl: v })} />
+            <Field label="Official email" value={cert.contactEmail} placeholder="Leave blank until verified" onChange={(v) => patchCert({ contactEmail: v })} />
+            <Field label="Telephone / WhatsApp" value={cert.contactPhone} placeholder="Leave blank until verified" onChange={(v) => patchCert({ contactPhone: v })} />
+            <Field label="Physical address" value={cert.contactAddress} placeholder="Leave blank until verified" onChange={(v) => patchCert({ contactAddress: v })} />
+            <div className="sm:col-span-2">
+              <Field
+                label="Public verification address"
+                value={cert.verificationBaseUrl}
+                placeholder="https://africaofhopelr.org/verify"
+                onChange={(v) => patchCert({ verificationBaseUrl: v })}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                The QR code on every certificate opens this address with the certificate ID appended. Leave blank to use this
+                site's own /verify page.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-slate-100 pt-5">
+            <h3 className="text-sm font-semibold text-slate-900">Authorised signatories</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Add only real, authorised names and signature images. Leave a signature image empty to print a blank signature
+              line. The certificate never generates signatures.
+            </p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-3">
+              {cert.signatories.map((signatory, index) => (
+                <div key={signatory.id} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signatory {index + 1}</p>
+                  <Field label="Full name" value={signatory.name} onChange={(v) => setSignatory(index, { name: v })} />
+                  <Field label="Official title" value={signatory.title} onChange={(v) => setSignatory(index, { title: v })} />
+                  <ImageBox
+                    label="Signature image"
+                    folder={`certificate/signature-${index + 1}`}
+                    value={signatory.signatureUrl}
+                    onChange={(v) => setSignatory(index, { signatureUrl: v })}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={cert.signatories.length >= 3}
+                onClick={() => patchCert({ signatories: [...cert.signatories, { id: genId("signatory"), name: "", title: "", signatureUrl: "" }] })}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 enabled:hover:bg-slate-50 disabled:opacity-40"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add signatory (max 3)
+              </button>
+              {cert.signatories.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => patchCert({ signatories: cert.signatories.slice(0, -1) })
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Remove last
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -24,68 +24,16 @@ import {
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navigation";
 import { cn } from "@/lib/utils";
 import {
-  downloadCertificatePdf, downloadCertificateRegisterPdf, downloadCertificatesCsv,
+  downloadCertificateRegisterPdf, downloadCertificatesCsv,
   downloadCertificatesJson, type CertificateLookup,
 } from "@/lib/certificateDownloads";
+import { downloadCertificatePdf, downloadCertificatesPdfBatch, viewFor } from "@/lib/certificatePdf";
+import { formatCertificateDate } from "@/lib/certificateBrand";
+import CertificateDocument, { printCertificateElement } from "@/components/certificate/CertificateDocument";
+import { CERTIFICATE_TYPES } from "@/lib/certificateBrand";
+import { normalizeCertificateSerial, serialFromLocation } from "@/lib/verifyCertificate";
 
 const HONORS = ["Pass", "Merit", "Distinction"];
-
-function CertificateCard({
-  cert, studentName, programTitle, certification,
-}: {
-  cert: Certificate;
-  studentName: string;
-  programTitle: string;
-  certification: string;
-}) {
-  const revoked = cert.status !== "Valid";
-  return (
-    <div className="print-area relative overflow-hidden rounded-2xl border-[6px] border-double border-amber-400 bg-white p-6 text-center sm:p-8">
-      <div className="pointer-events-none absolute inset-3 rounded-xl border border-emerald-900/10" />
-      {revoked && (
-        <p className="pointer-events-none absolute inset-x-0 top-1/3 -rotate-12 text-4xl font-black uppercase tracking-[0.3em] text-rose-500/20 sm:text-6xl">
-          Revoked
-        </p>
-      )}
-      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-800">AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES</p>
-      <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">Institutional Training Academy</p>
-      <h2 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{certification}</h2>
-      <p className="mt-4 text-[10px] uppercase tracking-widest text-slate-400">Awarded to</p>
-      <p className="mt-2 text-2xl font-semibold text-emerald-900 sm:text-3xl">{studentName}</p>
-      <p className="mx-auto mt-3 max-w-md text-sm text-slate-600">
-        for the successful completion of the{" "}
-        <span className="font-medium text-slate-800">{programTitle}</span> programme, having satisfied all academic and practical requirements of the academy.
-      </p>
-      <div className="mt-6 grid grid-cols-3 items-end gap-4">
-        <div className="text-center">
-          <p className="text-sm font-semibold italic text-slate-700">A. Mensah</p>
-          <div className="mt-1 border-t border-slate-300 pt-1 text-[10px] uppercase tracking-widest text-slate-400">Registrar</div>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="grid h-16 w-16 place-items-center rounded-full border-4 border-amber-400 bg-emerald-900 text-[10px] font-bold uppercase text-amber-300">
-            AOH Seal
-          </span>
-          <span className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-amber-600">{cert.honors}</span>
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-semibold italic text-slate-700">E. Okonkwo</p>
-          <div className="mt-1 border-t border-slate-300 pt-1 text-[10px] uppercase tracking-widest text-slate-400">Director</div>
-        </div>
-      </div>
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-slate-200 pt-3 text-[10px] text-slate-400">
-        <span>Certificate ID: {cert.serial}</span>
-        <span>Grade {cert.grade || "-"}</span>
-        <span>Issued: {cert.issueDate}</span>
-      </div>
-      {revoked && (
-        <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-left text-[11px] text-rose-700">
-          <strong>Revoked{cert.revokedAt ? ` ${cert.revokedAt.slice(0, 10)}` : ""}.</strong>{" "}
-          {cert.revocationReason || "This credential is no longer valid and must not be presented as current."}
-        </p>
-      )}
-    </div>
-  );
-}
 
 const statusPill = (status: string) => (
   <span
@@ -106,6 +54,9 @@ export function CertificateStudio() {
   const [studentId, setStudentId] = useState("");
   const [programId, setProgramId] = useState("");
   const [honors, setHonors] = useState("Pass");
+  const [certificateType, setCertificateType] = useState<string>(CERTIFICATE_TYPES[0]);
+  const [completionDate, setCompletionDate] = useState("");
+  const [query, setQuery] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<Certificate | null>(null);
@@ -126,6 +77,14 @@ export function CertificateStudio() {
     academicYear: state.settings.academicYear,
   };
 
+  const viewOf = (cert: Certificate) =>
+    viewFor(
+      cert,
+      state.users.find((u) => u.id === cert.studentId),
+      state.programs.find((p) => p.id === cert.programId),
+      state.websiteSettings,
+    );
+
   const selectedStudent = students.find((s) => s.id === studentId);
   const eligiblePrograms = selectedStudent
     ? state.programs.filter((p) => selectedStudent.programIds.includes(p.id))
@@ -138,10 +97,11 @@ export function CertificateStudio() {
     }
     setIssuing(true);
     try {
-      const cert = await issueCertificate(studentId, programId, honors);
-      toast.success(`Certificate ${cert.serial} issued`);
+      const cert = await issueCertificate(studentId, programId, honors, certificateType, completionDate || undefined);
+      toast.success(`Certificate ${cert.serial} is confirmed by the register`);
       setStudentId("");
       setProgramId("");
+      setCompletionDate("");
       setPreview(cert.id);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
@@ -166,14 +126,49 @@ export function CertificateStudio() {
     }
   };
 
-  const downloadPdf = (cert: Certificate) => {
+  const downloadPdf = async (cert: Certificate) => {
+    if (cert.status !== "Valid") {
+      toast.error("Revoked certificates cannot be downloaded as certificates.");
+      return;
+    }
     try {
-      downloadCertificatePdf(cert, lookup);
+      await downloadCertificatePdf(viewOf(cert));
       toast.success(`PDF certificate ${cert.serial} downloaded.`);
-    } catch {
-      toast.error("The PDF could not be generated. Try printing the certificate instead.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The PDF could not be generated. Try printing the certificate instead.");
     }
   };
+
+  const downloadBatch = async () => {
+    const valid = (canManage ? certs : myCerts).filter((c) => c.status === "Valid");
+    if (!valid.length) {
+      toast.info("There are no valid certificates to download yet.");
+      return;
+    }
+    try {
+      const count = await downloadCertificatesPdfBatch(valid.map(viewOf));
+      toast.success(`${count} certificate${count === 1 ? "" : "s"} downloaded as one PDF.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The batch PDF could not be generated.");
+    }
+  };
+
+  const printCert = (cert: Certificate) => {
+    if (!printCertificateElement(`certificate-${cert.serial}`, `Certificate ${cert.serial}`)) {
+      toast.error("Allow pop-ups to print this certificate.");
+    }
+  };
+
+  const visibleCerts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return certs;
+    return certs.filter((c) => {
+      const holder = state.users.find((u) => u.id === c.studentId);
+      const program = state.programs.find((p) => p.id === c.programId);
+      return [c.serial, c.issueDate, c.status, holder?.name ?? "", program?.title ?? "", program?.courseNumber ?? ""]
+        .some((value) => value.toLowerCase().includes(q));
+    });
+  }, [certs, query, state.users, state.programs]);
 
   const downloadRows = (rows: Certificate[], format: "csv" | "json" | "pdf") => {
     if (!rows.length) {
@@ -237,7 +232,7 @@ export function CertificateStudio() {
       {canManage && (
         <Reveal className={cn(panelClass, "p-5")}>
           <SectionHeader title="Issue a certificate" subtitle="The register assigns the certificate ID; existing records keep theirs" />
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
             <div className="space-y-1.5">
               <Label>Student</Label>
               <Select value={studentId} onValueChange={(v) => { setStudentId(v); setProgramId(""); }}>
@@ -257,6 +252,16 @@ export function CertificateStudio() {
               </Select>
             </div>
             <div className="space-y-1.5">
+              <Label>Certificate type</Label>
+              <Select value={certificateType} onValueChange={setCertificateType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CERTIFICATE_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-slate-500">A diploma needs administrator authority.</p>
+            </div>
+            <div className="space-y-1.5">
               <Label>Award class</Label>
               <Select value={honors} onValueChange={setHonors}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -264,6 +269,17 @@ export function CertificateStudio() {
                   {HONORS.map((h) => (<SelectItem key={h} value={h}>{h}</SelectItem>))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cert-completion-date">Completion date</Label>
+              <Input
+                id="cert-completion-date"
+                type="date"
+                value={completionDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setCompletionDate(e.target.value)}
+              />
+              <p className="text-[11px] text-slate-500">Leave blank to use today.</p>
             </div>
             <div className="flex items-end">
               <Button onClick={issue} disabled={issuing} className="w-full bg-emerald-700 hover:bg-emerald-800">
@@ -273,7 +289,7 @@ export function CertificateStudio() {
             </div>
           </div>
           <p className="mt-3 text-[11px] text-slate-500">
-            Issuing is confirmed by the database register. If the certificate service is not deployed yet, the error explains what is missing — nothing is saved locally as a stand-in.
+            Issuing again for the same holder and programme returns the existing record — that is the authorised reissue path and it never changes a serial. Issuing is confirmed by the database register. If the certificate service is not deployed yet, the error explains what is missing — nothing is saved locally as a stand-in.
           </p>
         </Reveal>
       )}
@@ -282,13 +298,27 @@ export function CertificateStudio() {
         <EmptyState icon={Award} title="No certificates yet" hint={canManage ? "Issue a certificate to populate the register." : "Certificates appear here once your programme is completed."} />
       ) : (
         <div className={cn(panelClass, "overflow-hidden")}>
+          <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-3">
+            <div className="relative min-w-[220px] flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by certificate ID, holder, programme, award or date"
+                aria-label="Search the certificate register"
+                className="pl-9"
+              />
+            </div>
+            <span className="text-xs text-slate-500">{visibleCerts.length} of {certs.length} shown</span>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px]">
+            <table className="w-full min-w-[880px]">
               <thead className="border-b border-slate-100 bg-slate-50/70">
                 <tr>
                   <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Certificate ID</th>
                   <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Holder</th>
                   <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Programme</th>
+                  <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Type</th>
                   <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Issued</th>
                   <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Award</th>
                   <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">Status</th>
@@ -296,11 +326,12 @@ export function CertificateStudio() {
                 </tr>
               </thead>
               <tbody>
-                {certs.map((c) => (
+                {visibleCerts.map((c) => (
                   <tr key={c.id} className="border-b border-slate-50 last:border-0 hover:bg-emerald-50/40">
                     <td className="px-3 py-2 text-xs font-semibold text-emerald-800">{c.serial}</td>
                     <td className="px-3 py-2 text-sm text-slate-700">{state.users.find((u) => u.id === c.studentId)?.name ?? "-"}</td>
                     <td className="px-3 py-2 text-sm text-slate-700">{state.programs.find((p) => p.id === c.programId)?.title ?? "-"}</td>
+                    <td className="px-3 py-2 text-[11px] text-slate-500">{c.certificateType || "Certificate of Completion"}</td>
                     <td className="px-3 py-2 text-sm text-slate-500">{c.issueDate}</td>
                     <td className="px-3 py-2 text-sm">
                       <Badge variant="secondary" className="bg-amber-50 text-amber-800">{c.honors}</Badge>
@@ -346,6 +377,13 @@ export function CertificateStudio() {
                     </td>
                   </tr>
                 ))}
+                {visibleCerts.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-6 text-center text-sm text-slate-500">
+                      No certificate matches “{query}”. Clear the search to see the full register.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -363,12 +401,12 @@ export function CertificateStudio() {
             </DialogDescription>
           </DialogHeader>
           {previewCert && (
-            <CertificateCard
-              cert={previewCert}
-              studentName={previewStudent?.name ?? "Student"}
-              programTitle={previewProgram?.title ?? "Programme"}
-              certification={previewProgram?.certification ?? "Certificate of Completion"}
-            />
+            <div
+              id={`certificate-${previewCert.serial}`}
+              className="max-h-[60vh] overflow-auto rounded-xl border border-amber-200/70 bg-white p-2"
+            >
+              <CertificateDocument view={viewOf(previewCert)} />
+            </div>
           )}
           <DialogFooter className="flex-wrap gap-2">
             <Button variant="outline" onClick={() => setPreview(null)}>Close</Button>
@@ -385,7 +423,10 @@ export function CertificateStudio() {
                 </Button>
               </>
             )}
-            <Button onClick={() => window.print()} className="bg-emerald-700 hover:bg-emerald-800">
+            <Button
+              onClick={() => previewCert && printCert(previewCert)}
+              className="bg-emerald-700 hover:bg-emerald-800"
+            >
               <Printer className="mr-1 h-4 w-4" /> Print certificate
             </Button>
           </DialogFooter>
@@ -436,18 +477,31 @@ export function CertificateStudio() {
 type PublicCertificate = Pick<Certificate, "serial" | "issueDate" | "honors" | "grade" | "status" | "revokedAt"> & {
   holderName: string;
   programTitle: string;
+  certificateType?: string;
+  completionDate?: string | null;
 };
 
-export function VerificationPortal() {
-  const [query, setQuery] = useState("");
+export function VerificationPortal({ initialSerial = "" }: { initialSerial?: string }) {
+  const [query, setQuery] = useState(() => normalizeCertificateSerial(initialSerial));
   const [checkedSerial, setCheckedSerial] = useState("");
   const [result, setResult] = useState<PublicCertificate | "none" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const requestId = useRef(0);
 
-  const verify = async () => {
-    const q = query.trim();
+  // A printed QR code or a shared link opens /verify?serial=… — that serial is looked
+  // up immediately so scanning the certificate always lands on its own record.
+  useEffect(() => {
+    // A prop (public /verify page) wins, then ?serial= in the search string or hash route.
+    const serial = normalizeCertificateSerial(initialSerial) || serialFromLocation();
+    if (!serial) return;
+    setQuery(serial);
+    void verify(serial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const verify = async (supplied?: string) => {
+    const q = (supplied ?? query).trim();
     if (!q || q.length > 80 || busy) return;
     const id = ++requestId.current;
     setResult(null);
@@ -529,7 +583,7 @@ export function VerificationPortal() {
             </div>
             {statusPill(found.status)}
           </div>
-          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-xl bg-slate-50 p-3">
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Holder</dt>
               <dd className="mt-1 text-sm font-medium text-slate-800">{found.holderName}</dd>
@@ -539,12 +593,26 @@ export function VerificationPortal() {
               <dd className="mt-1 text-sm font-medium text-slate-800">{found.programTitle}</dd>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Certificate type</dt>
+              <dd className="mt-1 text-sm font-medium text-slate-800">{found.certificateType || "Certificate of Completion"}</dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3">
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Certificate ID</dt>
+              <dd className="mt-1 font-mono text-sm font-medium text-slate-800">{found.serial}</dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3">
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Award class</dt>
               <dd className="mt-1 text-sm font-medium text-slate-800">{found.honors} (Grade {found.grade || "-"})</dd>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
-              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Issued</dt>
-              <dd className="mt-1 text-sm font-medium text-slate-800">{found.issueDate}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Date of completion</dt>
+              <dd className="mt-1 text-sm font-medium text-slate-800">
+                {found.completionDate ? formatCertificateDate(found.completionDate) : formatCertificateDate(found.issueDate)}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3">
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Date of issue</dt>
+              <dd className="mt-1 text-sm font-medium text-slate-800">{formatCertificateDate(found.issueDate)}</dd>
             </div>
           </dl>
           {found.status !== "Valid" && (
@@ -554,7 +622,7 @@ export function VerificationPortal() {
             </p>
           )}
           <p className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-            <Award className="h-4 w-4 text-amber-500" /> Serial {found.serial} / AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES Institutional Training Academy
+            <Award className="h-4 w-4 text-amber-500" /> Serial {found.serial} · AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES
           </p>
         </Reveal>
       )}

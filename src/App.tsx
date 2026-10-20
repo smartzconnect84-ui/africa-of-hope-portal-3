@@ -55,8 +55,13 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 
   useEffect(() => {
     const resume = () => setView("course-player");
+    const helpdesk = () => setView("helpdesk");
     window.addEventListener("aoh-resume-learning", resume);
-    return () => window.removeEventListener("aoh-resume-learning", resume);
+    window.addEventListener("aoh-open-helpdesk", helpdesk);
+    return () => {
+      window.removeEventListener("aoh-resume-learning", resume);
+      window.removeEventListener("aoh-open-helpdesk", helpdesk);
+    };
   }, []);
 
   if (!currentUser) return <AuthPortal onBackToSite={onExitToPublic} initialTab={initialTab} />;

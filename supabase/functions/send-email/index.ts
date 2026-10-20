@@ -257,6 +257,7 @@ Deno.serve(async (req: Request) => {
     let sentCount = 0;
     let failedCount = 0;
     let requeuedCount = 0;
+    const acknowledgementErrors: string[] = [];
 
     for (const row of due ?? []) {
       // Claim atomically so a second concurrent invocation skips this row.
@@ -325,7 +326,7 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        await admin
+        const { error: sentError } = await admin
           .from("email_outbox")
           .update({
             status: "sent",
@@ -335,6 +336,12 @@ Deno.serve(async (req: Request) => {
             last_error: null,
           })
           .eq("id", claimed.id);
+        if (sentError) {
+          // The provider accepted the message, so retrying the whole batch would
+          // duplicate mail. Report the failed acknowledgement instead.
+          console.error("email_outbox acknowledgement failed", sentError.code);
+          acknowledgementErrors.push(`${claimed.id}: ${sentError.message}`);
+        }
         sentCount++;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -366,6 +373,8 @@ Deno.serve(async (req: Request) => {
       sent: sentCount,
       failed: failedCount,
       requeued: requeuedCount,
+      acknowledged: acknowledgementErrors.length === 0,
+      ...(acknowledgementErrors.length ? { acknowledgementErrors } : {}),
     });
   } catch (error) {
     console.error("send-email failed", error);

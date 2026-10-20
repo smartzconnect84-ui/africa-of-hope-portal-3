@@ -21,6 +21,8 @@ import CookieConsent from "./public/CookieConsent";
 import InstallPrompt from "./pwa/InstallPrompt";
 import BlogListPage from "./public/BlogListPage";
 import BlogPostPage from "./public/BlogPostPage";
+import VerifyPage from "./public/VerifyPage";
+import TransparencyLibrary from "./public/TransparencyLibrary";
 import { ScrollReveal, StaggerGroup } from "./public/motion";
 import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
@@ -64,20 +66,35 @@ type View =
   | { type: "programmes" }
   | { type: "term-dates" }
   | { type: "policies" }
+  | { type: "transparency" }
   | { type: "cookies" }
   | { type: "donate" }
   | { type: "blog" }
   | { type: "about" }
   | { type: "newsletter"; action: "confirm" | "unsubscribe"; params: string }
+  | { type: "verify"; serial: string | null }
   | { type: "blogPost"; slug: string };
 
 function parseHash(hash: string): View {
   const h = hash || "#home";
   const newsletter = h.match(/^#newsletter\/(confirm|unsubscribe)\?(.*)$/i);
   if (newsletter) return { type: "newsletter", action: newsletter[1].toLowerCase() as "confirm" | "unsubscribe", params: newsletter[2] };
+  // Certificate verification: `#/verify?serial=AOH-…` (and the plain `#verify`
+  // nav link) open the public verification page, so a printed QR code always
+  // resolves to a real page instead of silently landing on Home.
+  const verify = h.match(/^#\/?verify(?:\?(.*))?$/i);
+  if (verify) {
+    let serial: string | null = null;
+    if (verify[1]) {
+      const params = new URLSearchParams(verify[1]);
+      serial = params.get("serial") || params.get("id") || params.get("certificate") || null;
+    }
+    return { type: "verify", serial };
+  }
   if (PROGRAMMES_RE.test(h)) return { type: "programmes" };
   if (TERM_DATES_RE.test(h)) return { type: "term-dates" };
   if (POLICIES_RE.test(h)) return { type: "policies" };
+  if (/^#\/?transparency$/i.test(h)) return { type: "transparency" };
   if (COOKIES_RE.test(h)) return { type: "cookies" };
   if (DONATE_RE.test(h)) return { type: "donate" };
   if (BLOG_RE.test(h)) return { type: "blog" };
@@ -95,6 +112,21 @@ function parseHash(hash: string): View {
   if (HOME_RE.test(h)) return { type: "home", anchor: null };
   // Any other anchor (#about, #impact, #verify, #admissions, #contact, #summary…) stays on Home and scrolls there.
   return { type: "home", anchor: h.replace(/^#/, "") };
+}
+
+/**
+ * The app is hash-routed, but a certificate QR code may open the plain path
+ * form `/verify?serial=…` (the brief's example URL). Normalise a path-style
+ * verification link into the hash route so the serial is still looked up.
+ */
+function initialHash(): string {
+  if (typeof window === "undefined") return "#home";
+  if (window.location.hash) return window.location.hash;
+  if (/\/verify\/?$/i.test(window.location.pathname)) {
+    const serial = new URLSearchParams(window.location.search).get("serial");
+    return serial ? `#/verify?serial=${encodeURIComponent(serial)}` : "#/verify";
+  }
+  return "#home";
 }
 
 function formatDate(iso: string | null): string {
@@ -141,6 +173,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-blog", href: "#blog", label: "Blog" }];
     if (!links.some((l) => POLICIES_RE.test(l.href.trim())))
       links = [...links, { id: "nav-policies", href: "#policies", label: "Policies" }];
+    if (!links.some((l) => /^#\/?transparency$/i.test(l.href.trim())))
+      links = [...links, { id: "nav-transparency", href: "#transparency", label: "Transparency" }];
     // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
     return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !ADMISSIONS_RE.test(l.href.trim()));
   }, [saved]);
@@ -154,7 +188,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : "#home"));
+  const [hash, setHash] = useState<string>(initialHash);
   const reduceMotion = useReducedMotion();
   const openApply = () => onEnterPortal("register");
   const openLogin = () => onEnterPortal("signin");
@@ -190,6 +224,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     if (view.type === "programmes") document.title = `Programmes — ${base}`;
     else if (view.type === "term-dates") document.title = `Term dates — ${base}`;
     else if (view.type === "policies") document.title = `School Policies — ${base}`;
+    else if (view.type === "transparency") document.title = `Transparency reports — ${base}`;
     else if (view.type === "cookies") document.title = `Cookies Policy — ${base}`;
     else if (view.type === "donate") document.title = `Donate & Support — ${base}`;
     else if (view.type === "about") document.title = `About AFRICA OF HOPE — ${base}`;
@@ -429,12 +464,14 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
+          {view.type === "transparency" && <TransparencyLibrary />}
           {view.type === "cookies" && <CookiesPage />}
           {view.type === "about" && <AboutPage />}
           {view.type === "newsletter" && <NewsletterAction key={`${view.action}:${view.params}`} action={view.action} params={view.params} />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
           {view.type === "blog" && <BlogListPage />}
           {view.type === "blogPost" && <BlogPostPage slug={view.slug} />}
+          {view.type === "verify" && <VerifyPage serial={view.serial} />}
 
           {view.type === "home" && (
             <>

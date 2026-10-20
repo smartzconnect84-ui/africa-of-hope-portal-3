@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle, Bell, LogOut, Menu, Search, X,
-  RefreshCw, Globe, Megaphone, type LucideIcon,
+  RefreshCw, Globe, Megaphone, HeartHandshake, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
@@ -402,6 +402,9 @@ export default function Navigation({
         );
       })}
       <div className="mt-2 space-y-1 border-t border-slate-100 pt-2">
+        <a href="/#donate" onClick={() => { setDrawer(false); onExitToPublic?.(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-amber-50">
+          <HeartHandshake className="h-4.5 w-4.5 text-amber-600" /> Donate
+        </a>
         {onExitToPublic && (
           <button
             type="button"
@@ -578,7 +581,12 @@ export default function Navigation({
           className="sticky hidden w-64 shrink-0 overflow-hidden border-r border-emerald-900/10 bg-white/70 lg:block print:hidden"
           style={{ top: topOffset, height: `calc(100dvh - ${topOffset}px)` }}
         >
-          {sidebar}
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="shrink-0 border-b border-slate-100 p-3">
+              <BrandLockup logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl} academyName={state.websiteSettings.academyName} size="sm" showTagline={false} nameClassName="hidden" />
+            </div>
+            {sidebar}
+          </div>
         </aside>
         <main className="min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 lg:p-6">
           {view !== "announcements" && <PortalAnnouncementTicker onOpenBoard={() => go("announcements")} />}

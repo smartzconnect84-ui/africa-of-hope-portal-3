@@ -17,6 +17,7 @@ import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings } from ".
 import { CATALOG_2026 } from "./programCatalog2026";
 import { programIsPublished, removeDemoPublicData } from "../lib/publicSiteData";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, type PermissionKey } from "../lib/permissions";
+import { resolveCertificateBranding } from "../lib/certificateBrand";
 
 export type Row = Record<string, unknown>;
 
@@ -183,9 +184,28 @@ export function mergeWebsiteSettings(
   raw: unknown,
 ): WebsiteSettings {
   const merged = mergeObject(defaults as unknown as Record<string, unknown>, raw) as unknown as WebsiteSettings;
-  return removeDemoPublicData({
+  // One-time presentation upgrade for saved settings, not a database rewrite.
+  // Saving the CMS carries this revision forward so future uploads still win.
+  const revision = raw && typeof raw === "object" ? (raw as { brandRevision?: number }).brandRevision : undefined;
+  if (!revision) {
+    const logo = "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+    merged.brandRevision = 1;
+    merged.logoUrl = logo;
+    merged.faviconUrl = logo;
+    merged.logos = { ...merged.logos, header: logo, footer: logo, portal: logo };
+  }
+  // Certificate wording/signatories are saved inside the same settings blob.
+  // Older saved settings have no `certificate` key, so resolve it explicitly
+  // instead of letting the defaults-only merge drop it.
+  const savedCertificate =
+    raw && typeof raw === "object" ? (raw as { certificate?: unknown }).certificate : undefined;
+  const withCertificate = {
     ...merged,
-    home: { ...merged.home, order: normalizeHomeOrder(merged.home.order, defaults.home.order) },
+    certificate: resolveCertificateBranding(savedCertificate),
+  };
+  return removeDemoPublicData({
+    ...withCertificate,
+    home: { ...withCertificate.home, order: normalizeHomeOrder(withCertificate.home.order, defaults.home.order) },
   });
 }
 

@@ -18,6 +18,8 @@ export function mapCertificateRow(row: Row): Certificate {
     issueDate: text(row.issue_date).slice(0, 10),
     honors: text(row.honors, "Pass") || "Pass",
     grade: text(row.grade),
+    certificateType: text(row.certificate_type, "Certificate of Completion") || "Certificate of Completion",
+    completionDate: row.completion_date ? text(row.completion_date).slice(0, 10) : undefined,
     status,
     revokedAt: row.revoked_at ? text(row.revoked_at) : undefined,
     revokedBy: row.revoked_by ? text(row.revoked_by) : undefined,
@@ -41,6 +43,9 @@ export function explainCertificateError(error: { message?: string } | null | und
   if (/only active school admin or super admin/i.test(message)) {
     return "Only an active School Admin or Super Admin can revoke a certificate.";
   }
+  if (/certificate type/i.test(message)) {
+    return "Choose one of the supported certificate types before issuing.";
+  }
   if (/revocation reason/i.test(message)) {
     return "Add a revocation reason between 5 and 1000 characters.";
   }
@@ -59,19 +64,27 @@ export function explainCertificateError(error: { message?: string } | null | und
 
 export interface CertificatesApi {
   /** Issues (or returns the existing) certificate through the checked database function. */
-  issue(studentId: string, programId: string, honors: string): Promise<Certificate>;
+  issue(
+    studentId: string,
+    programId: string,
+    honors: string,
+    certificateType?: string,
+    completionDate?: string,
+  ): Promise<Certificate>;
   /** Administrator-only revocation; the database re-checks the role and requires a reason. */
   revoke(certificateId: string, reason: string): Promise<Certificate>;
 }
 
 export function createCertificatesApi(client: Client): CertificatesApi {
   return {
-    async issue(studentId, programId, honors) {
+    async issue(studentId, programId, honors, certificateType, completionDate) {
       if (!studentId || !programId) throw new Error("Choose a student and a programme first.");
       const { data, error } = await client.rpc("issue_certificate", {
         p_student_id: studentId,
         p_program_id: programId,
         p_honors: honors || "Pass",
+        p_certificate_type: certificateType || "Certificate of Completion",
+        p_completion_date: completionDate || null,
       });
       const message = explainCertificateError(error);
       if (message) throw new Error(message);

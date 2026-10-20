@@ -11,6 +11,14 @@ export type AttendanceStatus = "Present" | "Absent" | "Late";
 export type FeeCategory = "Registration" | "Tuition" | "Exam" | "Certificate";
 export type SubmissionStatus = "In Progress" | "Submitted" | "Graded" | "Missing";
 export type CertificateStatus = "Valid" | "Revoked";
+/** The award actually being issued. Never assume every award is a diploma. */
+export type CertificateType =
+  | "Certificate of Completion"
+  | "Certificate of Achievement"
+  | "Certificate of Participation"
+  | "Professional Training Certificate"
+  | "Certificate of Excellence"
+  | "Diploma Certificate";
 export type AnnouncementCategory = "Urgent" | "Academic" | "Financial";
 
 export interface User {
@@ -127,6 +135,10 @@ export interface Certificate {
   honors: string;
   grade: string;
   status: CertificateStatus;
+  /** Award printed on the certificate; older records fall back to Certificate of Completion. */
+  certificateType?: CertificateType | string;
+  /** Date the programme requirements were met, when recorded separately from the issue date. */
+  completionDate?: string;
   revokedAt?: string;
   revokedBy?: string;
   revocationReason?: string;
@@ -281,9 +293,44 @@ export interface AuthSettings {
 
 export type LogoPlacement = "header" | "footer" | "portal" | "auth" | "certificate" | "brochure";
 
+/** One authorised signature area. Names, titles and signature images come from settings only. */
+export interface CertificateSignatory {
+  id: string;
+  name: string;
+  title: string;
+  signatureUrl: string;
+}
+
+/**
+ * Institutional wording and the verified contact block printed on certificates.
+ * Blank contact fields are omitted rather than filled with invented details.
+ */
+export interface CertificateBranding {
+  institutionName: string;
+  parentName: string;
+  descriptor: string;
+  motto: string;
+  tagline: string;
+  presentationLine: string;
+  completionLine: string;
+  awardingLine: string;
+  websiteUrl: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactAddress: string;
+  /** Base public verification address; blank means the current site's /verify route. */
+  verificationBaseUrl: string;
+  sealCaption: string;
+  signatories: CertificateSignatory[];
+}
+
 export interface WebsiteSettings {
+  /** Records the owner-requested logo replacement; later CMS edits stay independent. */
+  brandRevision?: number;
   /** Placement-specific overrides; blank entries inherit the default logo. */
   logos?: Partial<Record<LogoPlacement, string>>;
+  /** Certificate wording, signatories and verified institutional contact details. */
+  certificate?: CertificateBranding;
   logoUrl: string;
   faviconUrl: string;
   academyName: string;

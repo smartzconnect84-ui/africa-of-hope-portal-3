@@ -38,14 +38,39 @@ function json(body: unknown, status = 200) {
   });
 }
 
+/** Constant-time compare so the cron secret cannot be guessed from timings. */
+function timingSafeEqual(a: string, b: string): boolean {
+  const aBytes = new TextEncoder().encode(a);
+  const bBytes = new TextEncoder().encode(b);
+  const length = Math.max(aBytes.length, bBytes.length, 32);
+  let diff = aBytes.length === bBytes.length ? 0 : 1;
+  for (let i = 0; i < length; i++) {
+    diff |= (i < aBytes.length ? aBytes[i] : 0) ^ (i < bBytes.length ? bBytes[i] : 0);
+  }
+  return diff === 0;
+}
+
+/** Push services only ever speak HTTPS; anything else is a corrupt or forged row. */
+function isPushEndpoint(value: unknown): value is string {
+  try {
+    return new URL(String(value ?? "")).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
 
   // Cron worker is privileged; never let an anonymous visitor trigger bulk sends.
+  // Accept the shared CRON_SECRET (same value as the email worker) or the
+  // reminders-specific override, whichever the operator set.
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const schedulerSecret = Deno.env.get("REMINDER_CRON_SECRET") || serviceKey;
-  if (!schedulerSecret || req.headers.get("Authorization") !== `Bearer ${schedulerSecret}`) {
+  const schedulerSecret =
+    Deno.env.get("REMINDER_CRON_SECRET") || Deno.env.get("CRON_SECRET") || serviceKey;
+  const presented = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!schedulerSecret || !presented || !timingSafeEqual(presented, schedulerSecret)) {
     return json({ error: "Not authorized" }, 401);
   }
   const publicKey = Deno.env.get("VAPID_PUBLIC_KEY");
@@ -119,12 +144,19 @@ Deno.serve(async (req: Request) => {
     .eq("enabled", true);
   if (subsError) return json({ error: subsError.message }, 500);
 
+  const corrupt: string[] = [];
+  const subscriptions = (subs ?? []).filter((sub) => {
+    if (isPushEndpoint(sub.endpoint)) return true;
+    corrupt.push(String(sub.endpoint ?? ""));
+    return false;
+  });
+
   let sent = 0;
   const delivered: string[] = [];
   const expired: string[] = [];
 
   for (const item of due) {
-    const mine = (subs ?? []).filter((sub) => {
+    const mine = subscriptions.filter((sub) => {
       if (sub.user_id !== item.user_id) return false;
       const prefs = sub.preferences ?? {};
       if (prefs.enabled === false) return false;
@@ -149,15 +181,39 @@ Deno.serve(async (req: Request) => {
     if (any) delivered.push(item.id);
   }
 
+  // Deliveries already left the device, so an acknowledgement failure is
+  // reported rather than thrown: a 500 here would make the scheduler repeat a
+  // batch that has genuinely been sent. The next run reclaims the rows.
+  let acknowledged = true;
+  let acknowledgementError: string | null = null;
   if (delivered.length) {
-    await supabase
+    const { error: ackError } = await supabase
       .from("reminder_items")
       .update({ sent_at: new Date().toISOString() })
       .in("id", delivered);
-  }
-  if (expired.length) {
-    await supabase.from("push_subscriptions").delete().in("endpoint", expired);
+    if (ackError) {
+      acknowledged = false;
+      acknowledgementError = ackError.message;
+      console.error("reminder acknowledgement failed", ackError.code);
+    }
   }
 
-  return json({ sent, items: delivered.length, removedSubscriptions: expired.length });
+  const removable = [...expired, ...corrupt].filter(Boolean);
+  let cleanupError: string | null = null;
+  if (removable.length) {
+    const { error } = await supabase.from("push_subscriptions").delete().in("endpoint", removable);
+    if (error) {
+      cleanupError = error.message;
+      console.error("expired push subscription cleanup failed", error.code);
+    }
+  }
+
+  return json({
+    sent,
+    items: delivered.length,
+    removedSubscriptions: cleanupError ? 0 : removable.length,
+    acknowledged,
+    ...(acknowledgementError ? { acknowledgementError } : {}),
+    ...(cleanupError ? { cleanupError } : {}),
+  });
 });

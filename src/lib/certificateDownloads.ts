@@ -66,7 +66,6 @@ export function certificateExportRows(certs: Certificate[], lookup: CertificateL
 }
 
 const stamp = () => new Date().toISOString().slice(0, 10);
-const fileSafe = (value: string) => value.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "certificate";
 
 /** Downloads a CSV of certificate records. Returns the number of rows written (0 when nothing was exported). */
 export function downloadCertificatesCsv(certs: Certificate[], lookup: CertificateLookup, filename?: string): number {
@@ -92,120 +91,11 @@ export function downloadCertificatesJson(certs: Certificate[], lookup: Certifica
   return certs.length;
 }
 
-/** A single certificate as a print-quality landscape A4 PDF, with a clear revoked state. */
-export function downloadCertificatePdf(cert: Certificate, lookup: CertificateLookup): void {
-  const holder = holderOf(cert, lookup);
-  const program = programOf(cert, lookup);
-  const revoked = cert.status !== "Valid";
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  const width = doc.internal.pageSize.getWidth();
-  const height = doc.internal.pageSize.getHeight();
-  const centre = width / 2;
-
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 0, width, height, "F");
-
-  if (revoked) {
-    doc.setTextColor(252, 226, 230);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(88);
-    doc.text("REVOKED", centre, 128, { align: "center" });
-  }
-
-  doc.setDrawColor(212, 175, 55);
-  doc.setLineWidth(2.4);
-  doc.rect(8, 8, width - 16, height - 16);
-  doc.setLineWidth(0.6);
-  doc.rect(12, 12, width - 24, height - 24);
-
-  doc.setFillColor(6, 78, 59);
-  doc.rect(12, 12, width - 24, 27, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text(lookup.academyName.toUpperCase(), centre, 23, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("INSTITUTIONAL TRAINING ACADEMY", centre, 30, { align: "center" });
-  doc.setFontSize(7);
-  doc.setTextColor(212, 175, 55);
-  doc.text(`ACADEMIC YEAR ${lookup.academicYear}`, centre, 35.5, { align: "center" });
-
-  doc.setTextColor(6, 78, 59);
-  doc.setFont("times", "bold");
-  doc.setFontSize(26);
-  doc.text(program?.certification || "Certificate of Completion", centre, 60, { align: "center", maxWidth: 240 });
-
-  doc.setDrawColor(212, 175, 55);
-  doc.setLineWidth(1.1);
-  doc.line(centre - 30, 65, centre + 30, 65);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(130, 140, 150);
-  doc.text("AWARDED TO", centre, 75, { align: "center" });
-
-  doc.setFont("times", "bold");
-  doc.setFontSize(23);
-  doc.setTextColor(6, 78, 59);
-  doc.text(holder?.name ?? "Certificate holder", centre, 86, { align: "center", maxWidth: 230 });
-
-  doc.setFont("times", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(71, 85, 105);
-  doc.text(
-    `for the successful completion of the ${program?.title ?? "programme"} programme, having satisfied all academic and practical requirements of the academy.`,
-    centre,
-    97,
-    { align: "center", maxWidth: 200 },
-  );
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(180, 83, 9);
-  doc.text(
-    `AWARD: ${cert.honors.toUpperCase()}${cert.grade ? `  ·  GRADE ${cert.grade}` : ""}`,
-    centre,
-    112,
-    { align: "center" },
-  );
-
-  doc.setDrawColor(148, 163, 184);
-  doc.setLineWidth(0.4);
-  doc.line(58, 150, 118, 150);
-  doc.line(width - 118, 150, width - 58, 150);
-  doc.setTextColor(71, 85, 105);
-  doc.setFont("times", "italic");
-  doc.setFontSize(10);
-  doc.text("A. Mensah", 88, 146, { align: "center" });
-  doc.text("E. Okonkwo", width - 88, 146, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(148, 163, 184);
-  doc.text("REGISTRAR", 88, 154, { align: "center" });
-  doc.text("DIRECTOR", width - 88, 154, { align: "center" });
-
-  doc.setFont("courier", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(110, 120, 130);
-  doc.text(`SERIAL ${cert.serial}`, 20, height - 17);
-  doc.text(`ISSUED ${cert.issueDate}`, centre, height - 17, { align: "center" });
-  doc.text(`STATUS ${cert.status.toUpperCase()}`, width - 20, height - 17, { align: "right" });
-
-  if (revoked) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(190, 18, 60);
-    doc.text(
-      `This credential was revoked${cert.revokedAt ? ` on ${cert.revokedAt.slice(0, 10)}` : ""}. ${cert.revocationReason ?? ""}`.trim(),
-      centre,
-      height - 24,
-      { align: "center", maxWidth: 240 },
-    );
-  }
-
-  doc.save(`${revoked ? "revoked-" : ""}certificate-${fileSafe(cert.serial)}.pdf`);
-}
+/**
+ * Certificate PDFs are produced from the branded certificate template
+ * (see src/lib/certificatePdf.ts) so print output always matches the preview.
+ * This module only exports register data.
+ */
 
 /** Administrator register export: the same columns, as a PDF table. */
 export function downloadCertificateRegisterPdf(certs: Certificate[], lookup: CertificateLookup): number {

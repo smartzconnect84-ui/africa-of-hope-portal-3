@@ -133,21 +133,18 @@ function parseDocument(folder: string, name: string, size: number, createdAt: st
 
 export async function listDocuments(userId: string): Promise<ProfileDocument[]> {
   const folder = docFolder(userId);
-  const { data, error } = await supabase.storage
-    .from(DOCUMENT_BUCKET)
-    .list(folder, { limit: 100 });
-  if (error) throw new Error(explain(error.message));
-  return (data ?? [])
-    .filter((o) => o.id && o.name !== ".emptyFolderPlaceholder")
-    .map((o) =>
-      parseDocument(
-        folder,
-        o.name,
-        Number((o.metadata as { size?: number } | null)?.size ?? 0),
-        o.created_at ?? new Date().toISOString(),
-      ),
-    )
-    .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  const result: ProfileDocument[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data, error } = await supabase.storage.from(DOCUMENT_BUCKET)
+      .list(folder, { limit: 100, offset, sortBy: { column: "name", order: "asc" } });
+    if (error) throw new Error(explain(error.message));
+    for (const item of data ?? []) {
+      if (item.id && item.name !== ".emptyFolderPlaceholder") result.push(parseDocument(folder, item.name,
+        Number((item.metadata as { size?: number } | null)?.size ?? 0), item.created_at ?? new Date().toISOString()));
+    }
+    if (!data || data.length < 100) break;
+  }
+  return result.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
 }
 
 export async function uploadDocument(
@@ -171,6 +168,17 @@ export async function documentUrl(path: string, download = false): Promise<strin
     .createSignedUrl(path, 60 * 10, download ? { download: name ?? true } : undefined);
   if (error || !data) throw new Error(explain(error?.message ?? "Could not open the file"));
   return data.signedUrl;
+}
+
+export async function editDocument(userId: string, document: ProfileDocument, name: string, category: DocumentCategory): Promise<void> {
+  const folder = docFolder(userId);
+  if (!document.path.startsWith(`${folder}/`) || document.path.slice(folder.length + 1).includes("/")) throw new Error("Only your own documents may be edited.");
+  if (!name.trim() || !DOCUMENT_CATEGORIES.includes(category)) throw new Error("Enter a document name and valid category.");
+  const stamp = document.path.split("/").pop()!.split(SEP)[0];
+  const path = `${folder}/${stamp}${SEP}${safeName(category)}${SEP}${safeName(name.trim())}`;
+  if (path === document.path) return;
+  const { error } = await supabase.storage.from(DOCUMENT_BUCKET).move(document.path, path);
+  if (error) throw new Error(explain(error.message));
 }
 
 export async function deleteDocument(path: string): Promise<void> {

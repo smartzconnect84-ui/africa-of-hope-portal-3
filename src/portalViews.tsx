@@ -70,6 +70,8 @@ import StudyPlanner from "./components/academic/StudyPlanner";
 import AssignmentInbox from "./components/academic/AssignmentInbox";
 import CompletionCertificates from "./components/academic/CompletionCertificates";
 import TeacherInsights from "./components/academic/TeacherInsights";
+import TransparencyLibrary from "./components/public/TransparencyLibrary";
+import Helpdesk from "./components/portal/Helpdesk";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -163,6 +165,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: MessagesSquare,
     visible: () => true,
     render: () => <CourseDiscussions />,
+  },
+  {
+    key: "helpdesk",
+    label: "Student helpdesk",
+    icon: MessagesSquare,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("helpdesk.manage")),
+    render: (ctx) => <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} />,
   },
   {
     key: "study-calendar",
@@ -284,6 +293,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: () => <RecommendedTraining />,
   },
   {
+    key: "transparency",
+    label: "Transparency reports",
+    icon: LibraryBig,
+    visible: (ctx) => ctx.can("cms.manage"),
+    render: (ctx) => <TransparencyLibrary key={ctx.currentUser?.id} management />,
+  },
+  {
     key: "website",
     label: "Website CMS",
     icon: Globe,
@@ -296,6 +312,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Settings,
     visible: (ctx) => ctx.can("settings.manage"),
     render: () => <AdminSystemSettings />,
+  },
+  {
+    key: "my-files",
+    label: "My files",
+    icon: LibraryBig,
+    visible: () => true,
+    render: () => <OperationsHub personalOnly />,
   },
   {
     key: "operations",
