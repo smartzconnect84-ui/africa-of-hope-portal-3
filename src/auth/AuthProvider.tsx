@@ -62,13 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       // The signup trigger normally creates the row; if it did not, create it.
-      const { data: created } = await supabase
+      const { data: created, error: createError } = await supabase
         .from("profiles")
-        .insert({ id: userId, email })
+        .insert({ id: userId, email, role: "Student", status: "Pending Approval" })
         .select()
-        .maybeSingle();
+        .single();
       if (activeUserIdRef.current !== userId) return;
-      setProfile((created as Profile) ?? { id: userId, email, full_name: null });
+      if (createError || !created) {
+        setProfile(null);
+        setError(createError?.message ?? "Your account profile is unavailable. Contact the office.");
+        return;
+      }
+      setProfile(created as Profile);
     },
     []
   );
@@ -88,7 +93,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         activeUserIdRef.current = nextSession?.user?.id ?? null;
         setLoading(false);
         if (nextSession?.user) {
-          void loadProfile(nextSession.user.id, nextSession.user.email ?? null);
+          // Run outside the Auth callback to avoid nested Supabase Auth lock waits.
+          const nextId = nextSession.user.id;
+          const nextEmail = nextSession.user.email ?? null;
+          window.setTimeout(() => {
+            if (activeUserIdRef.current === nextId) void loadProfile(nextId, nextEmail);
+          }, 0);
         } else {
           setProfile(null);
         }
@@ -115,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
 
     return () => {
+      activeUserIdRef.current = null;
       listener.subscription.unsubscribe();
     };
   }, [loadProfile]);
@@ -203,14 +214,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const safeFields: Partial<Profile> = { ...fields };
       delete safeFields.id;
       delete safeFields.created_at;
-      const { error: updateError } = await supabase
+      const { data: saved, error: updateError } = await supabase
         .from("profiles")
         .update(safeFields)
-        .eq("id", session.user.id);
-      if (updateError) {
-        return { error: updateError.message };
+        .eq("id", session.user.id)
+        .select()
+        .single();
+      if (updateError || !saved) {
+        return { error: updateError?.message ?? "The server did not confirm your profile update." };
       }
-      setProfile((prev) => (prev ? { ...prev, ...safeFields } : prev));
+      if (activeUserIdRef.current === session.user.id) setProfile(saved as Profile);
       return { error: null };
     },
     [session]

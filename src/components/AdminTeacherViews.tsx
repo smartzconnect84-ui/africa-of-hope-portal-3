@@ -849,15 +849,17 @@ export function Gradebook() {
 
   const assignment = assignments.find((a) => a.id === assignmentId);
 
-  const saveRow = (sid: string) => {
+  const saveRow = async (sid: string) => {
     const row = draft[sid];
     const marks = Number(row?.marks);
-    if (Number.isNaN(marks) || marks < 0 || marks > (assignment?.maxMarks ?? 100)) {
+    if (!row?.marks.trim() || !Number.isFinite(marks) || marks < 0 || marks > (assignment?.maxMarks ?? 100)) {
       toast.error(`Enter a valid score (0 to ${assignment?.maxMarks ?? 100})`);
       return;
     }
-    gradeSubmission(assignmentId, sid, marks, row?.feedback ?? "");
-    toast.success("Grade recorded");
+    try {
+      await gradeSubmission(assignmentId, sid, marks, row?.feedback ?? "");
+      toast.success("Grade recorded");
+    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
   };
 
   return (

@@ -29,6 +29,8 @@ import type {
 import { CATALOG_2026 } from "../data/programCatalog2026";
 import { defaultSettings, defaultThemeSettings, defaultWebsiteSettings, initialState } from "../data/mockData";
 import { DEFAULT_ROLE_PERMISSIONS, type PermissionKey } from "../lib/permissions";
+import { certificatesApi } from "../lib/certificates";
+import { academicApi } from "../lib/academics";
 
 // v5: the roles & permissions migration tightens RLS considerably, so a
 // previous admin's cached profiles/fees/role grants must never leak into
@@ -112,17 +114,20 @@ interface AppContextValue {
   addProgram: (payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => void;
   addCohort: (payload: Omit<Cohort, "id">) => void;
   markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => void;
-  addAssignment: (payload: Omit<Assignment, "id">) => void;
-  gradeSubmission: (assignmentId: string, studentId: string, marks: number, feedback: string) => void;
-  submitSubmission: (assignmentId: string, studentId: string, text: string, attachment: string) => void;
+  addAssignment: (payload: Omit<Assignment, "id">) => Promise<void>;
+  gradeSubmission: (assignmentId: string, studentId: string, marks: number, feedback: string) => Promise<void>;
+  submitSubmission: (assignmentId: string, studentId: string, text: string, attachment: string) => Promise<void>;
   addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => void;
-  issueCertificate: (studentId: string, programId: string, honors: string) => Certificate;
+  /** Issues (or returns the existing) certificate through the database function; rejects with an actionable message. */
+  issueCertificate: (studentId: string, programId: string, honors: string) => Promise<Certificate>;
+  /** Administrator-only revocation of an issued certificate, recorded with actor, time and reason. */
+  revokeCertificate: (certificateId: string, reason: string) => Promise<Certificate>;
   addAnnouncement: (payload: Omit<Announcement, "id" | "date">) => void;
   updateSystemSettings: (patch: Partial<SystemSettings>) => Promise<string | null>;
   /** Publishes a whole settings object live (the CMS editor's "Publish changes" button). */
   publishWebsiteSettings: (next: WebsiteSettings) => Promise<string | null>;
   publishThemeSettings: (next: PortalThemeSettings) => Promise<string | null>;
-  clearTransactionalData: () => void;
+  clearTransactionalData: () => string;
   importSystemData: (data: Partial<AppState>) => void;
   resetDemoData: () => void;
   /** Thin wrapper around the admin-users edge function; toasts and refreshes. Resolves to an error message, or null on success. */
@@ -153,12 +158,10 @@ function normalize(raw: Partial<AppState> | null): AppState {
 }
 
 function loadCache(): AppState {
+  // Never restore profiles, grants, fees or certificates from browser storage.
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) return normalize(JSON.parse(raw) as Partial<AppState>);
-  } catch {
-    /* ignore unreadable cache */
-  }
+    [CACHE_KEY, "aoh-portal-cache-v5", "aoh-portal-cache-v4", SESSION_KEY].forEach((key) => localStorage.removeItem(key));
+  } catch { /* storage may be blocked */ }
   return initialState;
 }
 
@@ -190,10 +193,10 @@ export const letterGrade = (marks: number | null) => {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadCache);
-  const [activeUserId, setActiveUserId] = useState<string | null>(() =>
-    localStorage.getItem(SESSION_KEY),
-  );
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const identityRef = useRef<string | null>(null);
+  const refreshVersion = useRef(0);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -205,8 +208,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
+    const identity = identityRef.current;
     try {
       const { state: next, failed } = await fetchState(stateRef.current);
+      if (version !== refreshVersion.current || identity !== identityRef.current) return;
+      stateRef.current = next;
       setState(next);
       setLive(true);
       if (failed.length) {
@@ -214,81 +221,88 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.warn(`Some portal data could not be read: ${failed.join(", ")}`);
       }
     } catch (err) {
+      if (version !== refreshVersion.current || identity !== identityRef.current) return;
       setLive(false);
       toast.error(`Live data unavailable: ${err instanceof Error ? err.message : String(err)}`);
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-    } catch {
-      /* storage full or blocked */
-    }
-  }, [state]);
-
-  useEffect(() => {
-    if (activeUserId) localStorage.setItem(SESSION_KEY, activeUserId);
-    else localStorage.removeItem(SESSION_KEY);
-  }, [activeUserId]);
+    if (!authReady) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let running = false;
+    let pending = false;
+    const drain = async () => {
+      if (cancelled) return;
+      if (running) { pending = true; return; }
+      running = true;
+      do {
+        pending = false;
+        await refresh();
+      } while (pending && !cancelled);
+      running = false;
+      if (!cancelled) setLoading(false);
+    };
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void drain(), 250);
+    };
+    setLoading(true);
+    void drain();
+    const channel = supabase.channel(`portal-live-${sessionUserId ?? "public"}`);
+    const tables = sessionUserId ? LIVE_TABLES : ["programs", "program_modules", "announcements", "system_settings"];
+    tables.forEach((table) => {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, schedule);
+    });
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") schedule();
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") console.warn("Realtime unavailable; refreshing on focus/reconnect.");
+    });
+    const onFocus = () => { if (document.visibilityState === "visible") schedule(); };
+    const poll = window.setInterval(schedule, 60_000);
+    window.addEventListener("online", schedule);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      window.clearInterval(poll);
+      window.removeEventListener("online", schedule);
+      document.removeEventListener("visibilitychange", onFocus);
+      void supabase.removeChannel(channel);
+    };
+  }, [authReady, sessionUserId, refresh, reloadKey]);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    void refresh().finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-
-    const channel = supabase.channel("portal-live");
-    LIVE_TABLES.forEach((table) => {
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        () => void refresh(),
-      );
-    });
-    channel.subscribe();
-
-    const refreshWhenOnline = () => void refresh();
-    window.addEventListener("online", refreshWhenOnline);
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("online", refreshWhenOnline);
-      void supabase.removeChannel(channel);
+    let gotEvent = false;
+    const acceptIdentity = (nextId: string | null) => {
+      if (cancelled) return;
+      if (identityRef.current !== nextId) {
+        identityRef.current = nextId;
+        refreshVersion.current += 1;
+        stateRef.current = initialState;
+        setState(initialState);
+        setLoading(true);
+        setLive(false);
+      }
+      setSessionUserId(nextId);
+      setAuthReady(true);
     };
-  }, [refresh, reloadKey]);
-
-  useEffect(() => {
-    void supabase.auth
-      .getSession()
-      .then(({ data }) => setSessionUserId(data.session?.user.id ?? null));
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      const nextId = session?.user.id ?? null;
-      setSessionUserId((prevId) => {
-        // A sign-out, or signing in as a different account, must never let
-        // the previous person's cached profiles/fees/role grants leak into
-        // the next session (tighter RLS now makes that a real risk, not
-        // just stale UI). Skip the very first resolution (prevId is still
-        // "unknown"), which would otherwise flash the sign-in screen on
-        // every page load for an already signed-in visitor.
-        const switchedAccount = prevId !== null && prevId !== nextId;
-        if (event === "SIGNED_OUT" || switchedAccount) {
-          setState(initialState);
-          setReloadKey((k) => k + 1);
-        }
-        return nextId;
-      });
-      if (!session) setActiveUserId(null);
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      gotEvent = true;
+      acceptIdentity(session?.user.id ?? null);
     });
-    return () => data.subscription.unsubscribe();
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (gotEvent || cancelled) return;
+      if (error) console.warn("Session unavailable", error.message);
+      acceptIdentity(data.session?.user.id ?? null);
+    }).catch(() => { if (!gotEvent) acceptIdentity(null); });
+    return () => { cancelled = true; data.subscription.unsubscribe(); };
   }, []);
 
   const value = useMemo<AppContextValue>(() => {
-    const currentUser =
-      state.users.find((u) => u.id === sessionUserId) ??
-      state.users.find((u) => u.id === activeUserId) ??
-      null;
+    const currentUser = state.users.find((u) => u.id === sessionUserId) ?? null;
 
     const publishWebsiteSettings = async (websiteSettings: WebsiteSettings) => {
       // Save only this column so parallel system/appearance saves are preserved.
@@ -316,16 +330,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       reloadKey,
       refresh,
       login: async (emailOrUserId, password) => {
-        const existing = state.users.find((u) => u.id === emailOrUserId);
-        if (!password) {
-          if (existing) {
-            setActiveUserId(existing.id);
-            toast.success(`Signed in as ${existing.name}`);
-            return null;
-          }
-          toast.error("Enter your portal password to sign in.");
-          return "Enter your portal password to sign in.";
-        }
+        if (!password) return "Enter your portal password to sign in.";
         const { data, error } = await supabase.auth.signInWithPassword({
           email: emailOrUserId.trim(),
           password,
@@ -334,52 +339,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
           toast.error(error.message);
           return error.message;
         }
-        setSessionUserId(data.user?.id ?? null);
+        if (!data.user) return "The server did not create a sign-in session. Please retry.";
+        // Auth events establish identity and trigger a fresh, isolated read.
         toast.success("Welcome back to the portal.");
-        void refresh();
         return null;
       },
       logout: () => {
-        setActiveUserId(null);
+        identityRef.current = null;
+        refreshVersion.current += 1;
+        stateRef.current = initialState;
         setSessionUserId(null);
         setState(initialState);
-        void supabase.auth.signOut();
-        toast.success("Signed out.");
+        void supabase.auth.signOut().then(({ error }) => {
+          if (error) toast.error(`Sign-out could not finish: ${error.message}. Retry before leaving this device.`);
+          else toast.success("Signed out.");
+        });
       },
-      registerStudent: (payload) => {
-        const id = uid();
-        const record: User = {
-          id,
-          name: payload.name,
-          email: payload.email,
-          phone: payload.phone,
-          role: "Student",
-          status: "Pending Approval",
-          joinedDate: today(),
-          programIds: payload.programIds,
-          cohortIds: [],
-          note: payload.note,
-          educationLevel: payload.educationLevel,
-          documents: payload.documents ?? "",
-        };
-        setState((s) => ({ ...s, users: [...s.users, record] }));
-        push(
-          "Application",
-          supabase.from("profiles").insert({
-            id,
-            name: record.name,
-            full_name: record.name,
-            email: record.email,
-            phone: record.phone,
-            role: "Student",
-            status: "Pending Approval",
-            joined_date: record.joinedDate,
-            program_ids: record.programIds,
-            note: record.note,
-            education_level: record.educationLevel ?? null,
-            documents: record.documents,
-          }),
-        );
+      registerStudent: () => {
+        // Legacy API retained for compatibility; all real applicants use Auth signup.
+        toast.error("Use Apply now to create a verified account. No local-only profile was created.");
       },
       signUpStudent: async ({ password, ...payload }) => {
         const email = payload.email.trim().toLowerCase();
@@ -412,11 +390,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (data.session && data.user) {
           // Older signup triggers only copy the name; store the remaining details now.
-          await supabase
+          const { data: savedProfile, error: profileError } = await supabase
             .from("profiles")
             .update({ name: payload.name, full_name: payload.name, ...details })
-            .eq("id", data.user.id);
-          setSessionUserId(data.user.id);
+            .eq("id", data.user.id).select("id");
+          if (profileError || !savedProfile?.length) {
+            return { error: "Your account was created, but some application details could not be saved. Sign in and contact admissions; do not register again." };
+          }
           await refresh();
           return { error: null, status: "signed_in" };
         }
@@ -648,97 +628,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
           })(),
         );
       },
-      addAssignment: (payload) => {
+      addAssignment: async (payload) => {
         const id = uid();
-        setState((s) => ({ ...s, assignments: [...s.assignments, { ...payload, id }] }));
-        push(
-          "Assignment",
-          supabase.from("assignments").insert({
-            id,
-            cohort_id: payload.cohortId,
-            title: payload.title,
-            due_date: payload.dueDate,
-            max_marks: payload.maxMarks,
-            description: payload.description,
-          }),
-        );
+        const { data, error } = await supabase.from("assignments").insert({
+          id, cohort_id: payload.cohortId, title: payload.title,
+          due_date: payload.dueDate, max_marks: payload.maxMarks,
+          description: payload.description, time_limit_minutes: payload.timeLimitMinutes ?? null,
+        }).select("id").single();
+        if (error || !data) throw new Error(error?.message ?? "Assignment was not saved.");
+        await refresh();
       },
-      gradeSubmission: (assignmentId, studentId, marks, feedback) => {
-        const existing = state.submissions.find(
-          (s) => s.assignmentId === assignmentId && s.studentId === studentId,
-        );
-        const patch = {
-          marks,
-          feedback,
-          status: "Graded" as const,
-          submittedAt: existing?.submittedAt ?? new Date().toISOString(),
-        };
-        setState((s) => ({
-          ...s,
-          submissions: existing
-            ? s.submissions.map((sub) => (sub.id === existing.id ? { ...sub, ...patch } : sub))
-            : [...s.submissions, { id: uid(), assignmentId, studentId, ...patch }],
-        }));
-        if (existing) {
-          push(
-            "Mark",
-            supabase
-              .from("submissions")
-              .update({ marks, feedback, status: "Graded", submitted_at: patch.submittedAt })
-              .eq("id", existing.id),
-          );
-          return;
+      gradeSubmission: async (assignmentId, studentId, marks, feedback) => {
+        const assignment = state.assignments.find((a) => a.id === assignmentId);
+        if (!assignment || !Number.isFinite(marks) || marks < 0 || marks > assignment.maxMarks) {
+          throw new Error("Enter marks within the assignment's allowed range.");
         }
-        push(
-          "Mark",
-          supabase.from("submissions").insert({
-            id: uid(),
-            assignment_id: assignmentId,
-            student_id: studentId,
-            marks,
-            feedback,
-            status: "Graded",
-            submitted_at: patch.submittedAt,
-          }),
-        );
+        const { data, error } = await supabase.from("submissions")
+          .update({ marks, feedback, status: "Graded" })
+          .eq("assignment_id", assignmentId).eq("student_id", studentId).select("id").single();
+        if (error || !data) throw new Error(error?.message ?? "No submitted work was found to grade.");
+        await refresh();
       },
-      submitSubmission: (assignmentId, studentId, text, attachment) => {
-        const existing = state.submissions.find(
-          (s) => s.assignmentId === assignmentId && s.studentId === studentId,
-        );
-        const submittedAt = new Date().toISOString();
-        const patch = {
-          submittedAt,
-          status: "Submitted" as const,
-          responseText: text,
-          attachmentPath: (attachment || existing?.attachmentPath || null) as string | null,
-        };
-        setState((s) => ({
-          ...s,
-          submissions: existing
-            ? s.submissions.map((sub) => (sub.id === existing.id ? { ...sub, ...patch } : sub))
-            : [...s.submissions, { id: uid(), assignmentId, studentId, marks: null, feedback: "", ...patch }],
-        }));
-        if (existing) {
-          push(
-            "Hand-in",
-            supabase
-              .from("submissions")
-              .update({ status: "Submitted", submitted_at: submittedAt })
-              .eq("id", existing.id),
-          );
-          return;
-        }
-        push(
-          "Hand-in",
-          supabase.from("submissions").insert({
-            id: uid(),
-            assignment_id: assignmentId,
-            student_id: studentId,
-            status: "Submitted",
-            submitted_at: submittedAt,
-          }),
-        );
+      submitSubmission: async (assignmentId, studentId, text, attachment) => {
+        if (!sessionUserId || studentId !== sessionUserId) throw new Error("Sign in with your own account to submit.");
+        const assignment = state.assignments.find((a) => a.id === assignmentId);
+        if (assignment?.timeLimitMinutes) throw new Error("Open the timed classwork dialog to start or resume this assignment.");
+        const response = [text.trim(), attachment.trim() ? `Work reference: ${attachment.trim()}` : ""].filter(Boolean).join("\n\n");
+        if (!response) throw new Error("Add your answer before submitting.");
+        await academicApi.startClasswork(assignmentId);
+        await academicApi.submitClasswork(assignmentId, response, null);
+        await refresh();
       },
       addFeeTransaction: (payload) => {
         const id = uid();
@@ -756,34 +675,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }),
         );
       },
-      issueCertificate: (studentId, programId, honors) => {
-        const certificate: Certificate = {
-          id: uid(),
-          studentId,
-          programId,
-          serial: `${state.settings.studentIdPrefix || "AOH"}-${new Date().getFullYear()}-${Math.random()
-            .toString(36)
-            .slice(2, 7)
-            .toUpperCase()}`,
-          issueDate: today(),
-          honors,
-          grade: "",
-          status: "Valid",
-        };
-        setState((s) => ({ ...s, certificates: [...s.certificates, certificate] }));
-        push(
-          "Certificate",
-          supabase.from("certificates").insert({
-            id: certificate.id,
-            student_id: studentId,
-            program_id: programId,
-            serial: certificate.serial,
-            issue_date: certificate.issueDate,
-            honors,
-            grade: "",
-            status: "Valid",
-          }),
-        );
+      issueCertificate: async (studentId, programId, honors) => {
+        // The database assigns the serial and enforces completion/authorization, so the
+        // browser never invents an identifier. A failure is surfaced, never faked locally.
+        const certificate = await certificatesApi.issue(studentId, programId, honors);
+        setState((s) => ({
+          ...s,
+          certificates: s.certificates.some((c) => c.id === certificate.id)
+            ? s.certificates.map((c) => (c.id === certificate.id ? certificate : c))
+            : [...s.certificates, certificate],
+        }));
+        return certificate;
+      },
+      revokeCertificate: async (certificateId, reason) => {
+        const certificate = await certificatesApi.revoke(certificateId, reason);
+        setState((s) => ({
+          ...s,
+          certificates: s.certificates.map((c) => (c.id === certificate.id ? certificate : c)),
+        }));
         return certificate;
       },
       addAnnouncement: (payload) => {
@@ -814,23 +723,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       publishWebsiteSettings,
       publishThemeSettings,
-      clearTransactionalData: () => {
-        setState((s) => ({ ...s, attendance: [], submissions: [], fees: [], certificates: [] }));
-        ["attendance", "submissions", "fee_transactions", "certificates"].forEach((table) =>
-          push(
-            `Clear ${table}`,
-            supabase.from(table).delete().neq("id", "00000000-0000-0000-0000-000000000000"),
-          ),
-        );
-        toast.success("Transactional records cleared.");
-      },
-      importSystemData: (data) => {
-        setState((s) => normalize({ ...s, ...data }));
-        toast.success("Data imported locally. Review before publishing.");
+      clearTransactionalData: () => "Bulk deletion is disabled to protect real records. No data was deleted.",
+      importSystemData: () => {
+        throw new Error("Browser backup imports are disabled for live records. Use a reviewed, backed-up server restoration instead.");
       },
       resetDemoData: () => {
         setReloadKey((k) => k + 1);
-        toast.success("Portal reloaded from the live database.");
+        toast.info("Refreshing portal data from the live database…");
       },
       adminUsers: async (action, body) => {
         const { data, error } = await supabase.functions.invoke("admin-users", {
@@ -943,7 +842,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
     };
     return value;
-  }, [state, sessionUserId, activeUserId, loading, live, refresh, reloadKey]);
+  }, [state, sessionUserId, loading, live, refresh, reloadKey]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

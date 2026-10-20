@@ -2,13 +2,12 @@ import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } f
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, Eye, EyeOff,
+  AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Eye, EyeOff,
   KeyRound, Loader2, Lock, LogIn, Mail, MailCheck, Phone, Search, ShieldCheck,
   Sparkles, User as UserIcon, UserPlus, type LucideIcon,
 } from "lucide-react";
 import { OPENED_FROM_RECOVERY_LINK, supabase } from "@/integrations/supabase/client";
 import { useApp, type SignUpResult } from "@/context/AppContext";
-import type { Role, User } from "@/types";
 import { programImage } from "@/lib/programImages";
 import { durationLabel } from "@/lib/programDelivery";
 import { cn } from "@/lib/utils";
@@ -298,14 +297,6 @@ function SignInForm({
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
-  const [demoOpen, setDemoOpen] = useState(false);
-
-  const demos = useMemo(() => {
-    const want: Role[] = ["Super Admin", "School Admin", "Teacher", "Student"];
-    return want
-      .map((r) => state.users.find((u) => u.role === r && u.status === "Active"))
-      .filter((u): u is User => Boolean(u));
-  }, [state.users]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -387,33 +378,6 @@ function SignInForm({
         </Button>
       </div>
 
-      {demos.length > 0 && (
-        <div className="rounded-xl border border-dashed border-emerald-900/15 bg-emerald-50/40">
-          <button
-            type="button"
-            onClick={() => setDemoOpen((o) => !o)}
-            className="flex w-full items-center justify-between px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wide text-emerald-800"
-          >
-            Role quick-switch
-            <ChevronDown className={cn("h-4 w-4 transition", demoOpen && "rotate-180")} />
-          </button>
-          {demoOpen && (
-            <div className="grid grid-cols-2 gap-2 px-3 pb-3">
-              {demos.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => void login(u.id)}
-                  className="rounded-lg border border-emerald-900/10 bg-white px-2.5 py-2 text-left transition hover:border-emerald-600"
-                >
-                  <span className="block text-[11px] font-semibold text-emerald-900">{u.role}</span>
-                  <span className="block truncate text-[11px] text-slate-500">{u.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </form>
   );
 }

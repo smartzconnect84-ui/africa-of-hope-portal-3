@@ -163,7 +163,7 @@ export default function AdminSystemSettings() {
     a.download = `africa-of-hope-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("System backup exported");
+    toast.success("Visible records exported. This is not a full server backup.");
   };
 
   const onImportFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -178,9 +178,8 @@ export default function AdminSystemSettings() {
           return;
         }
         importSystemData(parsed);
-        toast.success("Backup imported successfully");
-      } catch {
-        toast.error("Could not read that backup file");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not read that backup file");
       }
     };
     reader.readAsText(file);
@@ -189,8 +188,8 @@ export default function AdminSystemSettings() {
 
   const runConfirm = () => {
     if (confirm === "clear") {
-      clearTransactionalData();
-      toast.success("Transactional data cleared. Accounts and programmes were kept.");
+      const message = clearTransactionalData();
+      if (message) toast.error(message);
     } else if (confirm === "reset") {
       resetDemoData();
     }
@@ -520,14 +519,14 @@ export default function AdminSystemSettings() {
             <div className={`${panelClass} p-5`}>
               <h3 className="text-sm font-semibold text-slate-800">Backup and restore</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Export the full system state as a JSON file, or restore from a previous export.
+                Export records visible to this account as JSON. This is not a complete database, Auth or storage backup. Live restore is disabled to preserve real records.
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Button variant="outline" onClick={exportBackup}>
-                  <Download className="mr-1.5 h-4 w-4" /> Export system backup
+                  <Download className="mr-1.5 h-4 w-4" /> Export visible records
                 </Button>
-                <Button variant="outline" onClick={() => fileRef.current?.click()}>
-                  <Upload className="mr-1.5 h-4 w-4" /> Import data backup
+                <Button variant="outline" disabled title="Live restore requires a reviewed server backup" onClick={() => fileRef.current?.click()}>
+                  <Upload className="mr-1.5 h-4 w-4" /> Live restore disabled
                 </Button>
                 <input
                   ref={fileRef}
@@ -542,18 +541,18 @@ export default function AdminSystemSettings() {
             <div className={`${panelClass} p-5`}>
               <h3 className="text-sm font-semibold text-slate-800">Data maintenance</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Keeps every account and programme definition while clearing operational records.
+                Real operational records are protected. Reloading fetches current data without deleting records.
               </p>
               <div className="mt-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-900/10 bg-white p-3.5">
                   <div>
                     <p className="text-sm font-medium text-slate-800">Clear transactional data</p>
                     <p className="text-[11px] text-slate-500">
-                      Removes attendance, marks, fee payments and certificates. Accounts are kept.
+                      Bulk deletion is disabled. Attendance, marks, payments and certificates are preserved.
                     </p>
                   </div>
-                  <Button variant="outline" onClick={() => setConfirm("clear")}>
-                    <Trash2 className="mr-1.5 h-4 w-4" /> Clear
+                  <Button variant="outline" disabled onClick={() => setConfirm("clear")}>
+                    <Trash2 className="mr-1.5 h-4 w-4" /> Disabled
                   </Button>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-3.5">
@@ -564,7 +563,7 @@ export default function AdminSystemSettings() {
                     </p>
                   </div>
                   <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100" onClick={() => setConfirm("reset")}>
-                    <RefreshCw className="mr-1.5 h-4 w-4" /> Reset
+                    <RefreshCw className="mr-1.5 h-4 w-4" /> Reload
                   </Button>
                 </div>
               </div>
@@ -603,7 +602,7 @@ export default function AdminSystemSettings() {
               {[
                 ["Session storage", "Supabase Auth session, refreshed automatically"],
                 ["Password policy", "Supabase Auth, minimum 8 characters"],
-                ["Audit trail", "System changes are logged to the portal activity feed"],
+                ["Audit trail", "Approval and delivery events are recorded where supported; comprehensive auditing requires verification"],
                 ["Data residency", "Records are stored in the connected Supabase project"],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-2xl border border-emerald-900/10 bg-white p-3.5">
@@ -635,7 +634,7 @@ export default function AdminSystemSettings() {
             <DialogDescription>
               {confirm === "reset"
                 ? "This reloads every record from the connected database. Anything kept only in this browser session will be replaced by the live data."
-                : "Attendance, marks, fee payments and certificates will be permanently removed. Student and staff accounts, programmes and cohorts are kept."}
+                : "Bulk deletion is disabled. No live records will be deleted."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -644,7 +643,7 @@ export default function AdminSystemSettings() {
               className={confirm === "reset" ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-700 hover:bg-emerald-800"}
               onClick={runConfirm}
             >
-              {confirm === "reset" ? "Reset everything" : "Clear records"}
+              {confirm === "reset" ? "Reload records" : "Close"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,0 +1,20 @@
+# Function gateway modes. Each handler also validates its own request/access.
+# Public functions intentionally accept anonymous callers; never add service keys
+# to browser code. Cron workers use dedicated server-only secrets inside handlers.
+[functions.admin-users]
+verify_jwt = true
+
+[functions.assistant]
+verify_jwt = false
+
+[functions.newsletter]
+verify_jwt = false
+
+[functions.verify-certificate]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-deadline-reminders]
+verify_jwt = false

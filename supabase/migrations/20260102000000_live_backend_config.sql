@@ -1,6 +1,8 @@
 -- ── Africa of Hope · live backend configuration ────────────────────────────────
 -- Adds profile/settings columns, super-admin access, RLS, realtime publication
--- and storage buckets. Fully idempotent: nothing is dropped or recreated.
+-- and storage buckets. Historical baseline only; later RLS migrations are required.
+-- Account bootstrap/reset/purge was retired by the production audit. Never store
+-- credentials or create/delete Auth users in schema migrations.
 
 create extension if not exists pgcrypto;
 
@@ -29,8 +31,8 @@ begin
     coalesce(new.raw_user_meta_data->>'full_name', split_part(coalesce(new.email, 'member'), '@', 1)),
     new.raw_user_meta_data->>'full_name',
     new.email,
-    coalesce(new.raw_user_meta_data->>'role', 'Student'),
-    coalesce(new.raw_user_meta_data->>'status', 'Pending Approval')
+    'Student',
+    'Pending Approval'
   )
   on conflict (id) do update
     set email = excluded.email,
@@ -44,66 +46,9 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 3. Super-admin account + purge of every mock/test account ---------------------
-do $$
-declare
-  admin_email text := 'shedrickknungehn@gmail.com';  -- pragma: allowlist secret
-  admin_password text := 'Afrohope@2021';            -- pragma: allowlist secret
-  admin_id uuid;
-begin
-  select id into admin_id from auth.users where lower(email) = admin_email limit 1;
-
-  if admin_id is null then
-    admin_id := gen_random_uuid();
-    insert into auth.users (
-      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-      confirmation_token, email_change, email_change_token_new, recovery_token
-    ) values (
-      '00000000-0000-0000-0000-000000000000', admin_id, 'authenticated', 'authenticated',
-      admin_email, crypt(admin_password, gen_salt('bf')), now(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"full_name":"Shedrick K Nungehn","role":"Super Admin"}'::jsonb,
-      now(), now(), '', '', '', ''
-    );
-  else
-    update auth.users
-      set encrypted_password = crypt(admin_password, gen_salt('bf')),
-          email_confirmed_at = coalesce(email_confirmed_at, now()),
-          updated_at = now()
-      where id = admin_id;
-  end if;
-
-  insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
-  select gen_random_uuid(), admin_id::text, admin_id,
-         jsonb_build_object('sub', admin_id::text, 'email', admin_email, 'email_verified', true),
-         'email', now(), now(), now()
-  where not exists (
-    select 1 from auth.identities i where i.user_id = admin_id and i.provider = 'email'
-  );
-
-  insert into public.profiles (id, name, full_name, email, phone, role, status, title, joined_date)
-  values (admin_id, 'Shedrick K Nungehn', 'Shedrick K Nungehn', admin_email, '', 'Super Admin', 'Active', 'System Owner', current_date)
-  on conflict (id) do update
-    set name = 'Shedrick K Nungehn',
-        full_name = 'Shedrick K Nungehn',
-        email = admin_email,
-        role = 'Super Admin',
-        status = 'Active',
-        title = 'System Owner',
-        updated_at = now();
-
-  -- clear mock accounts / fake data, keeping only the super admin
-  begin
-    delete from auth.users where id <> admin_id;
-  exception when others then null;
-  end;
-
-  begin
-    delete from public.profiles where id <> admin_id;
-  exception when others then null;
-  end;
-end $$;
+-- 3. Retired account bootstrap -------------------------------------------------
+-- Intentionally no account creation, promotion, password reset or purge.
+-- Existing Auth users and profiles must remain unchanged by schema setup.
 
 -- single settings row (id = true)
 insert into public.system_settings (id) values (true) on conflict (id) do nothing;

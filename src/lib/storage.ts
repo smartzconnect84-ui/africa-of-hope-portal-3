@@ -70,10 +70,12 @@ function explain(message: string): string {
 }
 
 async function uploadPublicImage(bucket: string, folder: string, file: File): Promise<string> {
-  const path = `${folder}/${Date.now()}.${extension(file)}`;
+  const invalid = validateFile(file, IMAGE_TYPES, MAX_IMAGE_BYTES);
+  if (invalid) throw new Error(invalid);
+  const path = `${folder}/${crypto.randomUUID()}.${extension(file)}`;
   const { error } = await supabase.storage
     .from(bucket)
-    .upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type });
+    .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
   if (error) throw new Error(explain(error.message));
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
@@ -153,7 +155,9 @@ export async function uploadDocument(
   file: File,
   category: DocumentCategory,
 ): Promise<void> {
-  const path = `${docFolder(userId)}/${Date.now()}${SEP}${safeName(category)}${SEP}${safeName(file.name)}`;
+  const invalid = validateFile(file, DOCUMENT_TYPES, MAX_DOCUMENT_BYTES);
+  if (invalid) throw new Error(invalid);
+  const path = `${docFolder(userId)}/${Date.now()}${SEP}${safeName(category)}${SEP}${crypto.randomUUID()}-${safeName(file.name)}`;
   const { error } = await supabase.storage
     .from(DOCUMENT_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });

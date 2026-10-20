@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Award, Download, Loader2, Printer, BadgeCheck, Lock, FileDown } from "lucide-react";
+import { Award, Download, Loader2, Printer, BadgeCheck, Lock, FileJson, FileSpreadsheet } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type StudentProgressRow } from "@/lib/academics";
-import { downloadBlob, downloadCsv } from "@/lib/dataTools";
+import {
+  downloadCertificatePdf, downloadCertificatesCsv, downloadCertificatesJson,
+  type CertificateLookup,
+} from "@/lib/certificateDownloads";
 import { Button } from "@/components/ui/button";
 import { EmptyState, SectionHeader, StatCard, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
@@ -14,6 +17,7 @@ export default function CompletionCertificates() {
   const [units, setUnits] = useState<LearningUnit[]>([]);
   const [progress, setProgress] = useState<StudentProgressRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
 
   const academyName = state.websiteSettings.academyName || state.settings.academyName || "AFRICA OF HOPE";
   const logoUrl = state.websiteSettings.logos?.certificate || state.websiteSettings.logoUrl;
@@ -49,12 +53,24 @@ export default function CompletionCertificates() {
     });
   }, [state.programs, state.certificates, units, doneIds, currentUser]);
 
-  const claim = (programId: string, title: string) => {
+  const lookup: CertificateLookup = {
+    users: state.users,
+    programs: state.programs,
+    academyName,
+    academicYear,
+  };
+
+  const claim = async (programId: string, title: string) => {
     if (!currentUser) return;
+    setClaimingId(programId);
     try {
-      const cert = issueCertificate(currentUser.id, programId, "Pass");
+      const cert = await issueCertificate(currentUser.id, programId, "Pass");
       toast.success(`Certificate ${cert.serial} issued for ${title}`);
-    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   const certInner = (serial: string) => {
@@ -90,24 +106,24 @@ export default function CompletionCertificates() {
     w.document.write(html); w.document.close(); w.focus(); w.print();
   };
 
-  const downloadCert = (serial: string, programTitle: string) => {
-    const inner = certInner(serial);
-    if (!inner) { toast.error("Certificate is not ready yet."); return; }
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Certificate ${serial} — ${academyName}</title></head><body>${inner}</body></html>`;
-    downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `certificate-${serial}.html`);
-    toast.success(`Certificate for ${programTitle} downloaded.`);
+  const downloadCert = (certId: string) => {
+    const cert = state.certificates.find((c) => c.id === certId);
+    if (!cert) { toast.error("Certificate is not ready yet."); return; }
+    try {
+      downloadCertificatePdf(cert, lookup);
+      toast.success(`Certificate ${cert.serial} downloaded as PDF.`);
+    } catch {
+      toast.error("The PDF could not be generated. Use Print and save as PDF instead.");
+    }
   };
 
-  const exportIssued = () => {
+  const exportIssued = (format: "csv" | "json") => {
     const mine = state.certificates.filter((c) => c.studentId === currentUser?.id);
     if (!mine.length) { toast.info("No certificates to export yet."); return; }
-    downloadCsv(`my-certificates-${new Date().toISOString().slice(0, 10)}.csv`, mine, [
-      { key: "serial", label: "Serial" },
-      { key: "programId", label: "Programme ID" },
-      { key: "issueDate", label: "Issue date" },
-      { key: "honors", label: "Honors" },
-    ]);
-    toast.success(`${mine.length} certificate${mine.length === 1 ? "" : "s"} exported to CSV.`);
+    const count = format === "csv"
+      ? downloadCertificatesCsv(mine, lookup)
+      : downloadCertificatesJson(mine, lookup);
+    toast.success(`${count} certificate${count === 1 ? "" : "s"} exported as ${format.toUpperCase()}.`);
   };
 
   const studentName = currentUser ? currentUser.name : "";
@@ -118,9 +134,14 @@ export default function CompletionCertificates() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <SectionHeader title="My Completion Certificates" subtitle="Finish 100% of a programme to unlock your printable certificate" />
-        <Button type="button" variant="outline" size="sm" onClick={exportIssued}>
-          <FileDown className="mr-1.5 h-4 w-4" /> Export my certificates
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => exportIssued("csv")}>
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" /> Export CSV
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => exportIssued("json")}>
+            <FileJson className="mr-1.5 h-4 w-4" /> Export JSON
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={Award} label="Programmes" value={rows.length} />
@@ -157,12 +178,12 @@ export default function CompletionCertificates() {
                       {logoUrl && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                  src={logoUrl}
-                  alt={`${academyName} logo`}
-                  loading="lazy"
-                  decoding="async"
-                  className="mx-auto mb-2 h-16 w-auto bg-transparent object-contain"
-                />
+                          src={logoUrl}
+                          alt={`${academyName} logo`}
+                          loading="lazy"
+                          decoding="async"
+                          className="mx-auto mb-2 h-16 w-auto bg-transparent object-contain"
+                        />
                       )}
                       <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-amber-600">Certificate of Completion</p>
                       <h4 className="mt-2 font-serif text-2xl text-emerald-950">This certificate is proudly awarded to</h4>
@@ -189,11 +210,23 @@ export default function CompletionCertificates() {
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button variant="outline" className="w-full" onClick={() => printCert(existing.serial)}><Printer className="mr-1.5 h-4 w-4" /> Print</Button>
-                    <Button variant="outline" className="w-full" onClick={() => downloadCert(existing.serial, program.title)}><Download className="mr-1.5 h-4 w-4" /> Download</Button>
+                    <Button variant="outline" className="w-full" onClick={() => downloadCert(existing.id)}><Download className="mr-1.5 h-4 w-4" /> PDF</Button>
                   </div>
+                  {existing.status !== "Valid" && (
+                    <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-[11px] text-rose-700">
+                      This certificate was revoked{existing.revokedAt ? ` on ${existing.revokedAt.slice(0, 10)}` : ""}. {existing.revocationReason || "Contact the registrar for details."}
+                    </p>
+                  )}
                 </div>
               ) : complete ? (
-                <Button className="mt-4 w-full bg-emerald-700 hover:bg-emerald-800" onClick={() => claim(program.id, program.title)}><Award className="mr-1.5 h-4 w-4" /> Claim my certificate</Button>
+                <Button
+                  className="mt-4 w-full bg-emerald-700 hover:bg-emerald-800"
+                  disabled={claimingId === program.id}
+                  onClick={() => void claim(program.id, program.title)}
+                >
+                  {claimingId === program.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Award className="mr-1.5 h-4 w-4" />}
+                  {claimingId === program.id ? "Issuing…" : "Claim my certificate"}
+                </Button>
               ) : (
                 <p className="mt-3 text-xs text-slate-500">Complete {total - done} more lesson{total - done === 1 ? "" : "s"} in My Courses to unlock.</p>
               )}

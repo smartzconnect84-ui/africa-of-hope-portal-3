@@ -10,12 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
+import ClassworkDialog from "./ClassworkDialog";
 
 /** f10: student hand-in (text + link/file reference) and one staff marking inbox. */
 export default function AssignmentInbox() {
-  const { state, currentUser, addAssignment, gradeSubmission, submitSubmission } = useApp() as ReturnType<typeof useApp> & {
-    submitSubmission?: (assignmentId: string, studentId: string, text: string, attachment: string) => void;
-  };
+  const { state, currentUser, addAssignment, gradeSubmission, submitSubmission, refresh } = useApp();
   const canManage = usePermission("assignments.manage");
   const [cohortId, setCohortId] = useState("");
   const [title, setTitle] = useState("");
@@ -28,6 +27,8 @@ export default function AssignmentInbox() {
   const [marks, setMarks] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
+  const [classworkId, setClassworkId] = useState<string | null>(null);
+  const classwork = state.assignments.find((a) => a.id === classworkId);
 
   const myCohorts = useMemo(() => {
     if (!currentUser) return [];
@@ -40,21 +41,26 @@ export default function AssignmentInbox() {
     return state.assignments.filter((a) => ids.has(a.cohortId)).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }, [state.assignments, myCohorts]);
 
-  const create = () => {
+  const create = async () => {
+    if (busy) return;
     if (!cohortId || !title.trim() || !due) { toast.error("Pick a cohort, title and due date"); return; }
-    addAssignment({ cohortId, title: title.trim(), dueDate: due, maxMarks: Math.max(1, Number(max) || 100), description: desc.trim() || "See lesson brief." });
-    toast.success("Assignment published to the cohort");
-    setTitle(""); setDue(""); setDesc(""); setMax("100");
+    setBusy("create");
+    try {
+      await addAssignment({ cohortId, title: title.trim(), dueDate: due, maxMarks: Math.max(1, Number(max) || 100), description: desc.trim() || "See lesson brief." });
+      toast.success("Assignment published to the cohort");
+      setTitle(""); setDue(""); setDesc(""); setMax("100");
+    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
+    finally { setBusy(""); }
   };
 
-  const handIn = (assignmentId: string) => {
+  const handIn = async (assignmentId: string) => {
+    if (busy || !currentUser) return;
     const text = (answer[assignmentId] ?? "").trim();
     const file = (attach[assignmentId] ?? "").trim();
     if (!text && !file) { toast.error("Write your answer or paste a file link first"); return; }
     setBusy(assignmentId);
     try {
-      if (submitSubmission) submitSubmission(assignmentId, currentUser!.id, text, file);
-      else gradeSubmission(assignmentId, currentUser!.id, 0, text);
+      await submitSubmission(assignmentId, currentUser.id, text, file);
       toast.success("Homework handed in");
       setAnswer((s) => ({ ...s, [assignmentId]: "" }));
       setAttach((s) => ({ ...s, [assignmentId]: "" }));
@@ -62,11 +68,19 @@ export default function AssignmentInbox() {
     finally { setBusy(""); }
   };
 
-  const grade = (assignmentId: string, studentId: string, maxMarks: number) => {
-    const m = Number(marks[`${assignmentId}:${studentId}`]);
-    if (!Number.isFinite(m) || m < 0 || m > maxMarks) { toast.error(`Marks must be 0–${maxMarks}`); return; }
-    gradeSubmission(assignmentId, studentId, m, (feedback[`${assignmentId}:${studentId}`] ?? "").trim());
-    toast.success("Grade saved with feedback");
+  const grade = async (assignmentId: string, studentId: string, maxMarks: number) => {
+    if (busy) return;
+    const key = `${assignmentId}:${studentId}`;
+    const saved = state.submissions.find((s) => s.assignmentId === assignmentId && s.studentId === studentId);
+    const raw = marks[key] ?? saved?.marks?.toString() ?? "";
+    const m = Number(raw);
+    if (!raw.trim() || !Number.isFinite(m) || m < 0 || m > maxMarks) { toast.error(`Marks must be 0–${maxMarks}`); return; }
+    setBusy(key);
+    try {
+      await gradeSubmission(assignmentId, studentId, m, (feedback[key] ?? saved?.feedback ?? "").trim());
+      toast.success("Grade saved with feedback");
+    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
+    finally { setBusy(""); }
   };
 
   return (
@@ -92,7 +106,7 @@ export default function AssignmentInbox() {
             <div className="space-y-1.5"><Label>Max marks</Label><Input type="number" min={1} value={max} onChange={(e) => setMax(e.target.value)} /></div>
           </div>
           <div className="mt-3 space-y-1.5"><Label>Brief</Label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="What should students submit?" rows={2} /></div>
-          <Button onClick={create} className="mt-3 bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1.5 h-4 w-4" /> Publish brief</Button>
+          <Button onClick={() => void create()} disabled={Boolean(busy)} className="mt-3 bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1.5 h-4 w-4" /> Publish brief</Button>
         </div>
       )}
 
@@ -122,15 +136,19 @@ export default function AssignmentInbox() {
                   <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                     {mine?.status === "Graded" ? (
                       <p className="text-sm text-slate-700">Graded: <strong>{mine.marks}/{a.maxMarks}</strong>{mine.feedback ? ` — ${mine.feedback}` : ""}</p>
+                    ) : mine?.status === "Submitted" ? (
+                      <p className="text-sm text-slate-700">Submitted {mine.submittedAt ?? ""} — waiting for marking.</p>
+                    ) : a.timeLimitMinutes ? (
+                      <Button onClick={() => setClassworkId(a.id)} className="bg-emerald-700 hover:bg-emerald-800">{mine?.status === "In Progress" ? "Resume timed classwork" : "Start timed classwork"}</Button>
                     ) : (
                       <>
                         <Label>Your answer</Label>
                         <Textarea value={answer[a.id] ?? ""} onChange={(e) => setAnswer((s) => ({ ...s, [a.id]: e.target.value }))} rows={3} placeholder="Type your answer or paste your work…" className="mt-1 bg-white" />
-                        <Label className="mt-2 block">File link or file name (optional)</Label>
+                        <Label className="mt-2 block">Reference link or file name (optional; no upload)</Label>
                         <Input value={attach[a.id] ?? ""} onChange={(e) => setAttach((s) => ({ ...s, [a.id]: e.target.value }))} placeholder="https://… or my-homework.pdf" className="mt-1 bg-white" />
-                        <Button onClick={() => handIn(a.id)} disabled={busy === a.id} className="mt-2 bg-emerald-700 hover:bg-emerald-800">
+                        <Button onClick={() => handIn(a.id)} disabled={Boolean(busy)} className="mt-2 bg-emerald-700 hover:bg-emerald-800">
                           {busy === a.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-1.5 h-4 w-4" />}
-                          {mine ? "Re-submit homework" : "Hand in homework"}
+                          Hand in homework
                         </Button>
                         {mine && <p className="mt-1 text-xs text-slate-500">Last hand-in: {mine.submittedAt ?? "just now"} · waiting for marking</p>}
                       </>
@@ -153,7 +171,7 @@ export default function AssignmentInbox() {
                           <div className="mt-2 grid gap-2 sm:grid-cols-[120px_1fr_auto]">
                             <Input type="number" min={0} max={a.maxMarks} placeholder={`0–${a.maxMarks}`} value={marks[key] ?? (s.marks ?? "").toString()} onChange={(e) => setMarks((m) => ({ ...m, [key]: e.target.value }))} />
                             <Input placeholder="Feedback for the student…" value={feedback[key] ?? s.feedback ?? ""} onChange={(e) => setFeedback((f) => ({ ...f, [key]: e.target.value }))} />
-                            <Button variant="outline" onClick={() => grade(a.id, s.studentId, a.maxMarks)}>Save grade</Button>
+                            <Button variant="outline" disabled={Boolean(busy) || !s.submittedAt} onClick={() => void grade(a.id, s.studentId, a.maxMarks)}>Save grade</Button>
                           </div>
                         </div>
                       );
@@ -168,6 +186,13 @@ export default function AssignmentInbox() {
           })}
         </div>
       )}
+      {classwork && currentUser && <ClassworkDialog
+        assignmentId={classwork.id} studentId={currentUser.id} unitTitle={classwork.title}
+        timeLimitMinutes={classwork.timeLimitMinutes ?? null}
+        resuming={state.submissions.some((s) => s.assignmentId === classwork.id && s.studentId === currentUser.id && s.status === "In Progress")}
+        onOpenChange={(open) => { if (!open) setClassworkId(null); }}
+        onSubmitted={() => { setClassworkId(null); void refresh(); }}
+      />}
     </div>
   );
 }
