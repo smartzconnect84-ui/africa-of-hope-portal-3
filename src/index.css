@@ -48,28 +48,58 @@ img:not([class*="rounded-full"]) { border-radius: inherit; }
 .aoh-public[data-icon-weight="bold"] svg.lucide { stroke-width: 2.75; }
 .aoh-public[data-icon-weight="light"] svg.lucide { stroke-width: 1.25; }
 .aoh-public[data-visual-mode="dark"] { background: #071711; color: #eef5f1; color-scheme: dark; }
-/* Night mode readability: every light card/surface becomes deep green. */
-.aoh-public[data-visual-mode="dark"] :is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-stone-50, .bg-gray-50, .bg-\[\#f6f8f7\], .aoh-glass) { background-color: #10251b; }
-.aoh-public[data-visual-mode="dark"] :is(.bg-emerald-50, .bg-emerald-100\/60, .bg-emerald-50\/60) { background-color: #10251b; }
-.aoh-public[data-visual-mode="dark"] :is(.bg-amber-50, .bg-amber-100\/60) { background-color: #1a2f23; }
+/* Night mode readability: EVERY light card/surface becomes deep green.
+   Covers all Tailwind neutrals + arbitrary light fills + glass + white overlays. */
+.aoh-public[data-visual-mode="dark"] :is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-stone-50, .bg-stone-100, .bg-stone-200, .bg-neutral-50, .bg-neutral-100, .bg-\[\#f6f8f7\], .bg-\[\#fafafa\], .bg-\[\#f8fafc\], .aoh-glass, .aoh-card) { background-color: #10251b !important; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-emerald-50, .bg-emerald-100, .bg-emerald-100\/60, .bg-emerald-50\/60, .bg-emerald-100\/50) { background-color: #10251b !important; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-amber-50, .bg-amber-100, .bg-amber-100\/60, .bg-amber-50\/60) { background-color: #1a2f23 !important; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-sky-50, .bg-sky-100, .bg-rose-50, .bg-rose-100, .bg-red-50, .bg-red-100, .bg-blue-50, .bg-blue-100, .bg-green-50, .bg-green-100) { background-color: #122b1f !important; }
+/* Gradient stops that start light become dark so hero/blog headers stay readable. */
+.aoh-public[data-visual-mode="dark"] :is(.from-white, .from-slate-50, .from-slate-100, .from-emerald-50, .from-amber-50) { --tw-gradient-from: #10251b var(--tw-gradient-from-position); --tw-gradient-to: rgb(16 37 27 / 0) var(--tw-gradient-from-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+.aoh-public[data-visual-mode="dark"] :is(.to-white, .to-slate-50, .to-emerald-50, .to-amber-50) { --tw-gradient-to: #10251b var(--tw-gradient-to-position); }
+.aoh-public[data-visual-mode="dark"] :is(.from-emerald-900, .from-emerald-800, .from-emerald-700) { --tw-gradient-from: #0c2318 var(--tw-gradient-from-position); --tw-gradient-to: rgb(12 35 24 / 0) var(--tw-gradient-from-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+.aoh-public[data-visual-mode="dark"] :is(.to-emerald-950, .to-emerald-900, .to-black) { --tw-gradient-to: #071711 var(--tw-gradient-to-position); }
+/* Dark brand sections soften one step so they read as cards on the night page. */
+.aoh-public[data-visual-mode="dark"] :is(.bg-emerald-950, .bg-emerald-900, .bg-emerald-800) { background-color: #0b241a !important; color: #ffffff; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-black) { background-color: #0a1f16 !important; color: #eef5f1; }
+/* Frosted white overlays get a dark frosted equivalent. */
+.aoh-public[data-visual-mode="dark"] :is(.bg-white\/10, .bg-white\/5, .bg-white\/20) { background-color: rgb(255 255 255 / 0.08) !important; }
 /* "Who we are" eyebrow pill: gold fill with black text at night. */
 .aoh-public[data-visual-mode="dark"] .aoh-eyebrow { background-color: #d4af37; border-color: rgba(212, 175, 55, 0.6); color: #000000; }
 .aoh-public[data-visual-mode="dark"] .aoh-eyebrow svg { color: #000000; }
 /* Headings + strong body copy become near-white. */
-.aoh-public[data-visual-mode="dark"] :is(.text-emerald-950, .text-emerald-900, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-900, .text-gray-800, .text-stone-900) { color: #ecfdf5; }
+.aoh-public[data-visual-mode="dark"] :is(.text-emerald-950, .text-emerald-900, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-950, .text-gray-900, .text-gray-800, .text-gray-700, .text-stone-950, .text-stone-900, .text-stone-800, .text-stone-700, .text-neutral-900, .text-neutral-800, .text-black) { color: #ecfdf5 !important; }
 /* Muted body copy + icon tiles become soft sage for contrast on dark green. */
-.aoh-public[data-visual-mode="dark"] :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-emerald-800, .text-emerald-700, .text-emerald-600, .text-gray-600, .text-gray-500, .text-stone-600) { color: #c4ddd0; }
+.aoh-public[data-visual-mode="dark"] :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-emerald-800, .text-emerald-700, .text-emerald-600, .text-gray-600, .text-gray-500, .text-gray-400, .text-stone-600, .text-stone-500, .text-neutral-600, .text-neutral-500) { color: #c4ddd0 !important; }
+.aoh-public[data-visual-mode="dark"] :is(.text-emerald-100, .text-emerald-200, .text-white, .text-slate-100, .text-slate-200, .text-amber-100) { color: #f2f8f4 !important; }
+/* Prose / rich text inside CMS blocks. */
+.aoh-public[data-visual-mode="dark"] :is(.prose, .aoh-richtext) { color: #dcebe2; }
+.aoh-public[data-visual-mode="dark"] :is(.prose, .aoh-richtext) :is(h1, h2, h3, h4, strong, b) { color: #f2f8f4; }
+.aoh-public[data-visual-mode="dark"] :is(.prose, .aoh-richtext) a { color: #fbbf24; }
 /* Light-on-dark buttons keep dark text on gold; dark-green buttons keep white text. */
 .aoh-public[data-visual-mode="dark"] :is(.bg-amber-400, .bg-amber-300) { color: #06281c; }
 .aoh-public[data-visual-mode="dark"] :is(.bg-emerald-800, .bg-emerald-900, .bg-emerald-950) { color: #ffffff; }
 /* Borders + dividers glow subtly instead of disappearing. */
+.aoh-public[data-visual-mode="dark"] :is(.border, .border-t, .border-b, .border-l, .border-r, [class*="border-slate-"], [class*="border-gray-"], [class*="border-stone-"], [class*="border-neutral-"], [class*="border-emerald-"]) { border-color: rgba(255, 255, 255, 0.14); }
 .aoh-public[data-visual-mode="dark"] :is(.border-slate-100, .border-slate-200, .border-gray-200, .border-stone-200, .border-emerald-100, .border-emerald-900\/10) { border-color: rgba(255, 255, 255, 0.14); }
 .aoh-public[data-visual-mode="dark"] :is(.divide-slate-100, .divide-slate-200, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: rgba(255, 255, 255, 0.12); }
 /* Cards + glass panels: dark surface, light text, visible edge. */
 .aoh-public[data-visual-mode="dark"] :is(.aoh-card, .aoh-glass) { border-color: rgba(255, 255, 255, 0.14); box-shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.7); color: #ecfdf5; }
 /* Form fields stay dark with readable text. */
-.aoh-public[data-visual-mode="dark"] :is(input, select, textarea) { background-color: #0c1f16; border-color: rgba(255, 255, 255, 0.18); color: #ecfdf5; }
+.aoh-public[data-visual-mode="dark"] :is(input, select, textarea) { background-color: #0c1f16 !important; border-color: rgba(255, 255, 255, 0.18) !important; color: #ecfdf5 !important; }
 .aoh-public[data-visual-mode="dark"] :is(input::placeholder, textarea::placeholder) { color: #8fb3a3; }
+.aoh-public[data-visual-mode="dark"] :is(input:focus, select:focus, textarea:focus) { border-color: rgba(251, 191, 36, 0.65) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.22); outline: none; }
+.aoh-public[data-visual-mode="dark"] :is(label) { color: #dcebe2; }
+/* Focus rings stay visible at night. */
+.aoh-public[data-visual-mode="dark"] :is(a:focus-visible, button:focus-visible, [tabindex]:focus-visible) { outline: 2px solid rgba(251, 191, 36, 0.8); outline-offset: 2px; }
+/* Floating layers (toasts, menus, dialogs, lightbox) render outside .aoh-public — mirror night mode while it is on. */
+html:has(.aoh-public[data-visual-mode="dark"]) { color-scheme: dark; }
+html:has(.aoh-public[data-visual-mode="dark"]) :is([data-sonner-toaster] [data-sonner-toast], [role="dialog"], [role="menu"], .aoh-lightbox) { background-color: #10251b !important; color: #ecfdf5 !important; border-color: rgba(255, 255, 255, 0.14) !important; }
+html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"]) :is(.text-slate-900, .text-slate-800, .text-slate-600, .text-gray-900, .text-gray-600, .text-emerald-950, .text-emerald-900) { color: #ecfdf5 !important; }
+/* Portal + auth safety net: any light surface or dark text that missed an explicit dark: variant still flips. */
+.dark :is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-stone-50, .bg-\[\#f6f8f7\]) { background-color: #10251b !important; }
+.dark :is(.text-slate-900, .text-slate-800, .text-gray-900, .text-emerald-950, .text-emerald-900) { color: #ecfdf5 !important; }
+.dark :is(.text-slate-600, .text-slate-500, .text-gray-600, .text-emerald-800, .text-emerald-700) { color: #c4ddd0 !important; }
 /* Icons inherit text color, so they follow the rules above; amber stars stay gold. */
 .aoh-public[data-visual-mode="dark"] svg.lucide { stroke: currentColor; }
 .aoh-public[data-visual-mode="dark"] :is(.text-amber-400, .text-amber-500) { color: #fbbf24; }

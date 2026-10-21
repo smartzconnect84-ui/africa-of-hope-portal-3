@@ -142,8 +142,8 @@ export default function CompletionCertificates() {
             <div key={program.id} className={cn(panelClass, "p-5")}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-semibold text-slate-900">{program.title}</h3>
-                  <p className="text-xs text-slate-500">{done}/{total} lessons · {pct}%</p>
+                  <h3 className="font-semibold text-slate-900 dark:text-white">{program.title}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-300">{done}/{total} lessons · {pct}%</p>
                 </div>
                 {existing
                   ? <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold", existing.status === "Valid" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800")}>{existing.status} · {existing.serial}</span>
@@ -184,7 +184,7 @@ export default function CompletionCertificates() {
                   {claimingId === program.id ? "Issuing…" : "Claim my certificate"}
                 </Button>
               ) : (
-                <p className="mt-3 text-xs text-slate-500">Complete {total - done} more lesson{total - done === 1 ? "" : "s"} in My Courses to unlock.</p>
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-300">Complete {total - done} more lesson{total - done === 1 ? "" : "s"} in My Courses to unlock.</p>
               )}
             </div>
           ))}

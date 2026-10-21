@@ -233,7 +233,7 @@ export default function CoursePlayer() {
               {completedIds.has(active.id) && <Badge className="bg-sky-100 text-sky-800">Completed</Badge>}
             </div>
             <h2 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">{active.title}</h2>
-            {active.summary && <p className="mt-1 text-sm text-slate-600">{active.summary}</p>}
+            {active.summary && <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{active.summary}</p>}
             <Button className="mt-3" variant="outline" size="sm" disabled={!memory.ready} aria-pressed={!!savedPosition?.bookmarked} onClick={() => memory.save(active, { bookmarked: !savedPosition?.bookmarked })}><Bookmark className={cn("mr-1.5 h-4 w-4", savedPosition?.bookmarked && "fill-amber-400 text-amber-700 dark:text-amber-300")} />{savedPosition?.bookmarked ? "Bookmarked" : "Bookmark lesson"}</Button>
             <div className="mt-4 space-y-3">
               {activeMaterials.length === 0 && <EmptyState icon={FileText} title="No resources attached" hint="Your teacher has not attached videos or files to this lesson yet." />}
