@@ -4,6 +4,7 @@ import { CalendarDays, CalendarPlus, Clock3, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
 import { buildTermDates, downloadIcs, googleCalendarUrl, nextUpcoming } from "@/lib/termDates";
+import { PageHeroImage } from "./PageImage";
 
 function useCountdown(target: string | null): { days: number; hours: number; mins: number; secs: number } {
   const [now, setNow] = useState(() => Date.now());
@@ -55,7 +56,7 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
             transition={{ duration: 0.5, delay: 0.16 }}
             className="mt-4 max-w-2xl text-sm leading-6 text-emerald-100/90 sm:text-base"
           >
-            The same live cohort and assignment dates your students see in the portal calendar — published here for applicants.
+            Our school offers both online and onsite training. Online training enrollment is open to any student anytime once they complete the requirements. Onsite training dates are loading and will be updated soon.
           </motion.p>
           {next && (
             <div className="mt-8 max-w-xl rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md" role="timer" aria-label={`Countdown to ${next.label}`}>
@@ -87,8 +88,19 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
           )}
         </div>
       </section>
+      <PageHeroImage src={state.websiteSettings.pageImages?.["term-dates"]} alt="Term dates" />
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+        <div className="mb-6 grid gap-3 rounded-2xl border border-emerald-900/10 bg-white p-5 sm:grid-cols-2">
+          <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-900/10">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Online training — open now</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Enrollment is open to any student anytime once they complete the requirements. Apply online and start your study plan.</p>
+          </div>
+          <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-900/10">
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Onsite training — coming soon</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Onsite training dates are loading and will be updated soon. Check back here or contact us for the next onsite intake.</p>
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {entries.map((e) => (
             <article key={e.id} className="aoh-card aoh-glass flex h-full flex-col rounded-2xl border border-emerald-900/10 p-5 shadow-sm">

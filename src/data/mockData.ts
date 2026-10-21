@@ -69,6 +69,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   logos: { header: '/logo/aoh-logo.png', footer: '/logo/aoh-logo.png', portal: '/logo/aoh-logo.png', auth: '/logo/aoh-logo.png', certificate: '/logo/aoh-logo.png', brochure: '/logo/aoh-logo.png' },
   logoUrl: "/logo/aoh-logo.png",
   faviconUrl: "/favicon.png",
+  pageImages: {},
   academyName: "AFRICA OF HOPE",
   tagline: "",
   announcementText:
@@ -186,7 +187,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
 
   // ── Phase 2 CMS additions ────────────────────────────────────────────────
   header: {
-    loginText: "Portal login",
+    loginText: "School Portal login",
     applyText: "Apply Online",
     showApply: true,
   },

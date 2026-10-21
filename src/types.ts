@@ -387,6 +387,8 @@ export interface WebsiteSettings {
     members: { id: string; name: string; role: string; bio: string; image: string }[];
   };
   newsletter: { enabled: boolean; title: string; description: string; consent: string; button: string };
+  /** CMS-managed header/banner image per public page; blank means no banner. */
+  pageImages?: Record<string, string>;
 }
 
 export type WebsiteListKey =

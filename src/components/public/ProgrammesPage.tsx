@@ -15,6 +15,7 @@ import { buttonMotionProps } from "./motionConstants";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { CurrencyConvertButton } from '../CurrencyConverter';
+import ExpandableImage, { PageHeroImage } from './PageImage';
 import { normalizeCurrencyCode } from '@/lib/currency';
 
 const MODE_ICON: Record<DeliveryMode, typeof Laptop> = {
@@ -191,12 +192,11 @@ export default function ProgrammesPage({
                         className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 shadow-sm transition-shadow duration-200 hover:shadow-lg"
                       >
                         <div className="relative">
-                          <img
+                          <ExpandableImage
                             src={programImage(program)}
                             alt={`${program.title} students at Africa of Hope`}
-                            className="h-44 w-full object-cover"
-                            loading="lazy"
-                            onError={(e) => { e.currentTarget.src = "/programs/default.webp"; }}
+                            className="block"
+                            imgClassName="h-44 w-full object-cover"
                           />
                           <span className="absolute left-3 top-3 rounded-full bg-black px-2.5 py-1 text-[11px] font-bold text-white shadow">REG {cost.registration}</span>
                         </div>

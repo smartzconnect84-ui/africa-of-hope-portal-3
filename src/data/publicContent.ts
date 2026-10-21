@@ -2,7 +2,7 @@
 export const DEFAULT_PUBLIC_COPY: Record<string, string> = {
   "hero.apply": "Apply Online",
   "hero.donate": "Donate",
-  "hero.portal": "Portal Login",
+  "hero.portal": "School Portal Login",
   "hero.verify": "Verify Certificate",
   "hero.badge": "Cohort Celebrations",
   "about.story": "Read our full story",
@@ -18,7 +18,7 @@ export const DEFAULT_PUBLIC_COPY: Record<string, string> = {
   "blog.emptyTitle": "New stories are on the way.",
   "blog.emptyBody": "Check back soon for news from the academy.",
   "footer.apply": "Apply online",
-  "footer.portal": "Student portal",
+  "footer.portal": "School portal",
   "footer.explore": "Explore",
   "footer.programmes": "Programmes",
   "footer.started": "Get started",

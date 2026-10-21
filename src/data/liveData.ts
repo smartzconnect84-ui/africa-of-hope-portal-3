@@ -227,6 +227,13 @@ export function mergeWebsiteSettings(
   };
   return removeDemoPublicData({
     ...withCertificate,
+    pageImages: withCertificate.pageImages ?? {},
+    header: {
+      ...withCertificate.header,
+      loginText: /portal/i.test(withCertificate.header?.loginText || "") && !/school portal/i.test(withCertificate.header?.loginText || "")
+        ? "School Portal login"
+        : (withCertificate.header?.loginText || "School Portal login"),
+    },
     home: { ...withCertificate.home, order: normalizeHomeOrder(withCertificate.home.order, defaults.home.order) },
     // Preserve an older site's chosen ordering when upgrading to the full layout.
     publicLayout: isPlainObject(raw) && Array.isArray(raw.publicLayout) ? merged.publicLayout : (() => {

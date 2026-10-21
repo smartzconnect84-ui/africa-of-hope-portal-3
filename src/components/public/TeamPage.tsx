@@ -3,6 +3,7 @@ import { ArrowRight, Users } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import type { WebsiteSettings } from "@/types";
 import { ScrollReveal } from "./motion";
+import ExpandableImage, { PageHeroImage } from "./PageImage";
 
 type Member = WebsiteSettings["team"]["members"][number];
 
@@ -10,7 +11,7 @@ function TeamPortrait({ member, featured }: { member: Member; featured: boolean 
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [member.image]);
   return <div className={`overflow-hidden ${featured ? "h-80 md:h-full md:min-h-[22rem]" : "h-72"}`}>
-    {member.image && !broken ? <img src={member.image} alt={member.name} loading="lazy" decoding="async" onError={() => setBroken(true)} className="aoh-photo h-full w-full object-cover object-center" /> :
+    {member.image && !broken ? <ExpandableImage src={member.image} alt={member.name} className={featured ? "h-80 md:h-full md:min-h-[22rem]" : "h-72"} imgClassName="aoh-photo h-full w-full object-cover object-center" /> :
       <div role="img" aria-label={`Portrait unavailable for ${member.name}`} className={`flex flex-col items-center justify-center gap-3 bg-emerald-50 p-8 text-emerald-800 ${featured ? "h-80 md:h-full md:min-h-[22rem]" : "h-72"}`}><Users className="h-12 w-12" aria-hidden="true" /><span className="text-sm">Portrait unavailable</span></div>}
   </div>;
 }
@@ -47,6 +48,7 @@ export default function TeamPage() {
         {team.description && <p className="mt-5 max-w-2xl whitespace-pre-line text-base leading-8 text-emerald-100">{team.description}</p>}
       </ScrollReveal>
     </section>
+    <PageHeroImage src={state.websiteSettings.pageImages?.team} alt="Our team" />
     <section aria-label="Public team profiles" className="mx-auto max-w-6xl px-4 pt-4">
       {team.enabled ? <TeamProfiles team={team} /> : <p className="mt-8 rounded-2xl bg-white p-8 text-center text-slate-600">Team profiles are not currently published.</p>}
       <a href="#about" className="mt-10 inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">About AFRICA OF HOPE <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>

@@ -2,6 +2,7 @@ import type { WebsiteSettings } from '@/types';
 import { DEFAULT_ABOUT, DEFAULT_LAYOUT, DEFAULT_PRESENTATION } from '@/data/publicPresentation';
 import type { PublicSettingsErrors } from '@/lib/publicSettingsValidation';
 import { Area, Field, ImageBox, ListEditor, genId } from './CmsPrimitives';
+import { PUBLIC_PAGE_IMAGE_PAGES } from './public/PageImage';
 import { ICON_NAMES } from './home/icons';
 
 function IconPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -22,6 +23,9 @@ export default function PublicContentEditor({ draft, patch, errors = {} }: { dra
       <ol className="space-y-2">{order.map((id, index) => <li key={id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"><span className="text-sm font-semibold capitalize">{index + 1}. {id}</span><span className="flex gap-2"><button type="button" disabled={index === 0} aria-label={`Move ${id} up`} className="min-h-11 rounded-lg border px-3 text-sm disabled:opacity-40" onClick={() => move(index, -1)}>Move up</button><button type="button" disabled={index === order.length - 1} aria-label={`Move ${id} down`} className="min-h-11 rounded-lg border px-3 text-sm disabled:opacity-40" onClick={() => move(index, 1)}>Move down</button></span></li>)}</ol>
       <button type="button" className="mt-3 min-h-11 rounded-lg border px-4 text-sm" onClick={() => patch({ publicLayout: [...DEFAULT_LAYOUT] })}>Use recommended homepage order</button>
     </details>
+    <div className="space-y-4 rounded-2xl border bg-white p-5"><h2 className="font-semibold">Page header images</h2><p className="text-sm text-slate-500">Upload one banner photo per public page. Empty pages simply show no banner. Click Publish changes to make uploads live; every image opens click-to-view on the site.</p>
+      <div className="grid gap-5 sm:grid-cols-2">{PUBLIC_PAGE_IMAGE_PAGES.map(page => <ImageBox key={page.key} label={page.label} folder={`pages/${page.key}`} value={draft.pageImages?.[page.key] || ''} onChange={value => patch({ pageImages: { ...(draft.pageImages || {}), [page.key]: value } })} />)}</div>
+    </div>
     <div className="space-y-4 rounded-2xl border bg-white p-5"><h2 className="font-semibold">About page and shared organization profile</h2><p className="text-sm text-slate-500">Approved copy is the starting content. Edit text, facts, icons, buttons and sections below. Separate paragraphs with a blank line. Move sections with their arrow controls; reading order and jump links follow the same order.</p>
       <Field label="About title" value={about.title} maxLength={240} error={errors['aboutPage.title']} onChange={title => update({ title })} />
       {(['eyebrow', 'tagline', 'intro'] as const).map(key => <Area key={key} label={`About ${key}`} value={about[key]} onChange={value => update({ [key]: value })} rows={2} />)}

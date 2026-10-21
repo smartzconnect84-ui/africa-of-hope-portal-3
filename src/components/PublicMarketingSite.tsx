@@ -396,15 +396,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             />
           </a>
           <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
-          <div className="ml-auto flex shrink-0 items-center gap-0 sm:gap-2 lg:ml-2">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-2 lg:ml-2">
             <button type="button" onClick={toggleVisualMode} aria-label={`Switch to ${visualMode === 'dark' ? 'light' : 'dark'} visual mode`} aria-pressed={visualMode === 'dark'} title="Visual mode" className="grid h-10 w-9 shrink-0 place-items-center rounded-xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 sm:w-10">{visualMode === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
             <motion.button
               type="button"
               onClick={openLogin}
               {...buttonMotionProps}
-              className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-2.5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
+              className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-2 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
             >
-              <LogIn className="mr-1.5 h-4 w-4" /> {w.header.loginText || t("Portal")}
+              <LogIn className="mr-1 h-4 w-4" /> {w.header.loginText || t("School Portal")}
             </motion.button>
             <button
               ref={menuButtonRef}
@@ -414,7 +414,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               aria-haspopup="dialog"
               aria-expanded={menu}
               aria-controls="public-mobile-menu"
-              className="-ml-0.5 grid h-10 w-9 min-h-10 min-w-9 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:w-10 lg:hidden"
+              className="-ml-1 grid h-10 w-9 min-h-10 min-w-9 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:w-10 lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -455,7 +455,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-1">
+              <nav className="-mr-1 mt-6 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
@@ -469,7 +469,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               </nav>
               <div className="mt-4 border-t border-white/10 pt-4">
                 <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
-                  {t("Portal")}
+                  {t("School Portal")}
                 </button>
               </div>
             </motion.div>
