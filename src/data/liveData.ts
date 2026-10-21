@@ -193,9 +193,9 @@ export function mergeWebsiteSettings(
   // One-time presentation upgrade for saved settings, not a database rewrite.
   // Saving the CMS carries this revision forward so future uploads still win.
   const revision = raw && typeof raw === "object" ? (raw as { brandRevision?: number }).brandRevision : undefined;
-  if ((revision ?? 0) < 2) {
+  if ((revision ?? 0) < 3) {
     const logo = "/logo/aoh-logo.png";
-    merged.brandRevision = 2;
+    merged.brandRevision = 3;
     merged.logoUrl = logo;
     merged.faviconUrl = "/favicon.png";
     merged.logos = { header: logo, footer: logo, portal: logo, auth: logo, certificate: logo, brochure: logo };
