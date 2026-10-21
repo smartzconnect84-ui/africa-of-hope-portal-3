@@ -23,6 +23,59 @@
   }
 }
 
+/* Crop-to-fit photo policy: content photos fill their frames (edges cropped)
+   so cards, heroes and portraits never show letterbox bars. Slots define the
+   size; the image fills it. Logos, icons and seals opt out with
+   .aoh-logo / .aoh-icon (contain, never cropped). */
+img {
+  max-width: 100%;
+  min-width: 0;
+}
+img.aoh-photo {
+  object-fit: cover !important;
+  object-position: center !important;
+}
+img.aoh-logo, img.aoh-icon {
+  object-fit: contain !important;
+  object-position: center !important;
+}
+img:not([class*="rounded-full"]) { border-radius: inherit; }
+.aoh-public { overflow-wrap: anywhere; }
+.aoh-public[data-public-font="sans"], .aoh-public[data-public-font="sans"] :is(h1,h2,h3,button,input,textarea) { font-family: "DM Sans", sans-serif; }
+.aoh-public[data-public-font="manrope"], .aoh-public[data-public-font="manrope"] :is(h1,h2,h3,button,input,textarea) { font-family: "Manrope", sans-serif; }
+.aoh-public[data-public-font="serif"], .aoh-public[data-public-font="serif"] :is(h1,h2,h3,button,input,textarea) { font-family: Georgia, serif; }
+.aoh-public[data-public-font="system"], .aoh-public[data-public-font="system"] :is(h1,h2,h3,button,input,textarea) { font-family: system-ui, sans-serif; }
+.aoh-public[data-icon-weight="bold"] svg.lucide { stroke-width: 2.75; }
+.aoh-public[data-icon-weight="light"] svg.lucide { stroke-width: 1.25; }
+.aoh-public[data-visual-mode="dark"] { background: #071711; color: #eef5f1; color-scheme: dark; }
+/* Night mode readability: every light card/surface becomes deep green. */
+.aoh-public[data-visual-mode="dark"] :is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-stone-50, .bg-gray-50, .bg-\[\#f6f8f7\], .aoh-glass) { background-color: #10251b; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-emerald-50, .bg-emerald-100\/60, .bg-emerald-50\/60) { background-color: #10251b; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-amber-50, .bg-amber-100\/60) { background-color: #1a2f23; }
+/* "Who we are" eyebrow pill: gold fill with black text at night. */
+.aoh-public[data-visual-mode="dark"] .aoh-eyebrow { background-color: #d4af37; border-color: rgba(212, 175, 55, 0.6); color: #000000; }
+.aoh-public[data-visual-mode="dark"] .aoh-eyebrow svg { color: #000000; }
+/* Headings + strong body copy become near-white. */
+.aoh-public[data-visual-mode="dark"] :is(.text-emerald-950, .text-emerald-900, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-900, .text-gray-800, .text-stone-900) { color: #ecfdf5; }
+/* Muted body copy + icon tiles become soft sage for contrast on dark green. */
+.aoh-public[data-visual-mode="dark"] :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-emerald-800, .text-emerald-700, .text-emerald-600, .text-gray-600, .text-gray-500, .text-stone-600) { color: #c4ddd0; }
+/* Light-on-dark buttons keep dark text on gold; dark-green buttons keep white text. */
+.aoh-public[data-visual-mode="dark"] :is(.bg-amber-400, .bg-amber-300) { color: #06281c; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-emerald-800, .bg-emerald-900, .bg-emerald-950) { color: #ffffff; }
+/* Borders + dividers glow subtly instead of disappearing. */
+.aoh-public[data-visual-mode="dark"] :is(.border-slate-100, .border-slate-200, .border-gray-200, .border-stone-200, .border-emerald-100, .border-emerald-900\/10) { border-color: rgba(255, 255, 255, 0.14); }
+.aoh-public[data-visual-mode="dark"] :is(.divide-slate-100, .divide-slate-200, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: rgba(255, 255, 255, 0.12); }
+/* Cards + glass panels: dark surface, light text, visible edge. */
+.aoh-public[data-visual-mode="dark"] :is(.aoh-card, .aoh-glass) { border-color: rgba(255, 255, 255, 0.14); box-shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.7); color: #ecfdf5; }
+/* Form fields stay dark with readable text. */
+.aoh-public[data-visual-mode="dark"] :is(input, select, textarea) { background-color: #0c1f16; border-color: rgba(255, 255, 255, 0.18); color: #ecfdf5; }
+.aoh-public[data-visual-mode="dark"] :is(input::placeholder, textarea::placeholder) { color: #8fb3a3; }
+/* Icons inherit text color, so they follow the rules above; amber stars stay gold. */
+.aoh-public[data-visual-mode="dark"] svg.lucide { stroke: currentColor; }
+.aoh-public[data-visual-mode="dark"] :is(.text-amber-400, .text-amber-500) { color: #fbbf24; }
+/* Subtle hover zoom is intentional for marketing cards only. */
+.aoh-no-zoom img, img.aoh-no-zoom { transform: none !important; scale: 1 !important; }
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

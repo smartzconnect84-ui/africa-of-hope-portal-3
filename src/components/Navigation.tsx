@@ -430,7 +430,7 @@ export default function Navigation({
   return (
     <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
       <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-3 sm:px-4">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-1 px-2 sm:gap-3 sm:px-4">
           <button
             ref={menuButtonRef}
             type="button"
@@ -485,7 +485,7 @@ export default function Navigation({
             )}
           </div>
 
-          <div className="ml-auto flex items-center gap-2 md:ml-2">
+          <div className="ml-auto flex items-center gap-0.5 sm:gap-2 md:ml-2">
             <LanguageSwitcher tone="dark" className="flex" />
             {onExitToPublic && (
               <button

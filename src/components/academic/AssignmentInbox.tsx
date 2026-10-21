@@ -125,7 +125,7 @@ export default function AssignmentInbox() {
 
       {canManage && (
         <div className={cn(panelClass, "p-5")}>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900"><Plus className="h-4 w-4 text-emerald-700" /> New assignment brief</h3>
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white"><Plus className="h-4 w-4 text-emerald-700" /> New assignment brief</h3>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Cohort</Label>
@@ -156,43 +156,43 @@ export default function AssignmentInbox() {
               <div key={a.id} className={cn(panelClass, "p-5")}>
                 <button type="button" onClick={() => setOpenId(open ? "" : a.id)} className="flex w-full items-start justify-between gap-3 text-left">
                   <span>
-                    <span className="text-base font-semibold text-slate-900">{a.title}</span>
-                    <span className="mt-0.5 block text-xs text-slate-500">{cohort?.name} · Due {a.dueDate} · {a.maxMarks} marks · {subs.length} hand-in{subs.length === 1 ? "" : "s"}</span>
+                    <span className="text-base font-semibold text-slate-900 dark:text-white">{a.title}</span>
+                    <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-300">{cohort?.name} · Due {a.dueDate} · {a.maxMarks} marks · {subs.length} hand-in{subs.length === 1 ? "" : "s"}</span>
                   </span>
-                  <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", mine?.status === "Graded" ? "bg-emerald-100 text-emerald-800" : mine ? "bg-sky-100 text-sky-800" : "bg-slate-100 text-slate-600")}>
+                  <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", mine?.status === "Graded" ? "bg-emerald-100 text-emerald-800" : mine ? "bg-sky-100 text-sky-800" : "bg-slate-100 text-slate-600 dark:text-slate-300")}>
                     {canManage ? `${subs.length} received` : (mine?.status ?? "Missing")}
                   </span>
                 </button>
-                <p className="mt-2 text-sm text-slate-600">{a.description}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{a.description}</p>
 
                 {!canManage && (
-                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-900/60 p-3">
                     {mine?.status === "Graded" ? (
-                      <p className="text-sm text-slate-700">Graded: <strong>{mine.marks}/{a.maxMarks}</strong>{mine.feedback ? ` — ${mine.feedback}` : ""}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200">Graded: <strong>{mine.marks}/{a.maxMarks}</strong>{mine.feedback ? ` — ${mine.feedback}` : ""}</p>
                     ) : mine?.status === "Submitted" ? (
-                      <p className="text-sm text-slate-700">Submitted {mine.submittedAt ?? ""} — waiting for marking.</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200">Submitted {mine.submittedAt ?? ""} — waiting for marking.</p>
                     ) : a.timeLimitMinutes ? (
                       <Button onClick={() => setClassworkId(a.id)} className="bg-emerald-700 hover:bg-emerald-800">{mine?.status === "In Progress" ? "Resume timed classwork" : "Start timed classwork"}</Button>
                     ) : (
                       <>
                         <Label>Your answer</Label>
-                        <Textarea disabled={Boolean(busy)} value={answer[a.id] ?? ""} onChange={(e) => setAnswer((s) => ({ ...s, [a.id]: e.target.value }))} rows={3} placeholder="Type your answer or paste your work…" className="mt-1 bg-white" />
+                        <Textarea disabled={Boolean(busy)} value={answer[a.id] ?? ""} onChange={(e) => setAnswer((s) => ({ ...s, [a.id]: e.target.value }))} rows={3} placeholder="Type your answer or paste your work…" className="mt-1 bg-white dark:bg-slate-900" />
                         <Label htmlFor={`homework-reference-${a.id}`} className="mt-2 block">Reference link or note (optional)</Label>
-                        <Input id={`homework-reference-${a.id}`} disabled={Boolean(busy)} value={attach[a.id] ?? ""} onChange={(e) => setAttach((s) => ({ ...s, [a.id]: e.target.value }))} placeholder="https://… or a reference note" className="mt-1 bg-white" />
+                        <Input id={`homework-reference-${a.id}`} disabled={Boolean(busy)} value={attach[a.id] ?? ""} onChange={(e) => setAttach((s) => ({ ...s, [a.id]: e.target.value }))} placeholder="https://… or a reference note" className="mt-1 bg-white dark:bg-slate-900" />
                         <Label htmlFor={`homework-file-${a.id}`} className="mt-2 block">Upload homework (optional, up to 25 MB)</Label>
-                        <Input key={files[a.id]?.name ?? "empty"} id={`homework-file-${a.id}`} type="file" accept={TRAINING_MATERIAL_ACCEPT} disabled={Boolean(busy)} className="mt-1 bg-white" onChange={(event) => {
+                        <Input key={files[a.id]?.name ?? "empty"} id={`homework-file-${a.id}`} type="file" accept={TRAINING_MATERIAL_ACCEPT} disabled={Boolean(busy)} className="mt-1 bg-white dark:bg-slate-900" onChange={(event) => {
                           const file = event.target.files?.[0] ?? null;
                           if (file && (file.size > MAX_TRAINING_MATERIAL_BYTES || !SUPPORTED_TRAINING_MATERIAL_MIME_TYPES.has(file.type))) {
                             toast.error("Choose a supported file up to 25 MB."); event.target.value = ""; return;
                           }
                           setFiles((items) => ({ ...items, [a.id]: file }));
                         }} />
-                        {files[a.id] && <p className="mt-1 text-xs text-slate-500">Selected: {files[a.id]!.name}. Uploaded privately when you hand in.</p>}
+                        {files[a.id] && <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">Selected: {files[a.id]!.name}. Uploaded privately when you hand in.</p>}
                         <Button onClick={() => handIn(a.id)} disabled={Boolean(busy)} className="mt-2 bg-emerald-700 hover:bg-emerald-800">
                           {busy === a.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-1.5 h-4 w-4" />}
                           Hand in homework
                         </Button>
-                        {mine && <p className="mt-1 text-xs text-slate-500">Last hand-in: {mine.submittedAt ?? "just now"} · waiting for marking</p>}
+                        {mine && <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">Last hand-in: {mine.submittedAt ?? "just now"} · waiting for marking</p>}
                       </>
                     )}
                   </div>
@@ -200,15 +200,15 @@ export default function AssignmentInbox() {
 
                 {canManage && open && (
                   <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
-                    <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500"><Inbox className="h-3.5 w-3.5" /> Marking inbox</h4>
-                    {subs.length === 0 && <p className="text-sm text-slate-500">No hand-ins yet.</p>}
+                    <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300"><Inbox className="h-3.5 w-3.5" /> Marking inbox</h4>
+                    {subs.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-300">No hand-ins yet.</p>}
                     {subs.map((s) => {
                       const st = state.users.find((u) => u.id === s.studentId);
                       const key = `${a.id}:${s.studentId}`;
                       return (
                         <div key={s.id} className="rounded-xl border border-slate-200 p-3">
-                          <p className="text-sm font-semibold text-slate-900">{st?.name ?? "Student"}</p>
-                          {s.responseText && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{s.responseText}</p>}
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{st?.name ?? "Student"}</p>
+                          {s.responseText && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{s.responseText}</p>}
                           {s.attachmentPath && <Button variant="outline" size="sm" className="mt-2" onClick={() => void openAttachment(s.attachmentPath!)}>Download homework attachment</Button>}
                           <div className="mt-2 grid gap-2 sm:grid-cols-[120px_1fr_auto]">
                             <Input type="number" min={0} max={a.maxMarks} placeholder={`0–${a.maxMarks}`} value={marks[key] ?? (s.marks ?? "").toString()} onChange={(e) => setMarks((m) => ({ ...m, [key]: e.target.value }))} />

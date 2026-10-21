@@ -26,7 +26,22 @@ box as owner/operator work with backend access.
 
 - [ ] Take a full backup plus an inventory of Auth users, row counts, certificate serials and storage objects; prove a restore on a disposable project.
 - [ ] Compare the deployed migration list with `supabase/migrations/`. Never replay the historical baseline, `APPLY_ALL_PENDING_SQL.sql`, duplicate unversioned SQL or catalogue seeds against live data.
-- [ ] Apply only the reviewed missing additive migrations in timestamp order: certificate issuance/revocation → unique identifiers → `20261030000000_production_access_hardening.sql`.
+- [ ] Apply only the reviewed missing additive migrations in timestamp order. Everything from the catalogue alignment onward is still unapplied as written here:
+  1. `20261023000000_programs_title_alignment.sql`
+  2. `20261024000000_admission_officer_support.sql`
+  3. `20261024010000_cohort_discussions.sql`
+  4. `20261024020000_newsletter_templates.sql`
+  5. `20261025000000_account_congratulations.sql`
+  6. `20261026000000_learning_memory.sql` (bookmarks, continue learning)
+  7. `20261028000000_push_reminders.sql`
+  8. `20261029000000_unique_identifiers.sql` (certificate serials)
+  9. `20261029010000_certificate_controls.sql` (revocation and downloads)
+  10. `20261030000000_production_access_hardening.sql`
+  11. `20261105000000_certificate_types_audit.sql`
+  12. `20261106000000_transparency_reports.sql`
+  13. `20261106010000_student_helpdesk.sql`
+  14. `20261106020000_grade_appeals.sql`
+- [ ] Skip any of the above the dashboard already lists as applied; read the file before running it and never re-run the historical baseline or the unversioned duplicate SQL files.
 - [ ] Inspect for duplicate or blank certificate serials and orphaned rows before migrating. Stop for registrar review; never silently renumber or delete records.
 - [ ] Keep existing primary keys and real records. Do not run rollback snippets or contract-test fixtures against production (`supabase/tests/*` create synthetic Auth users).
 
@@ -51,6 +66,8 @@ box as owner/operator work with backend access.
 - [ ] **AOH AI**: send one real prompt through `assistant` and confirm a Groq reply. An implemented handler is not a tested assistant.
 - [ ] **Auth**: sign in as every role (Super Admin, School Admin, Admission Officer, Teacher, Student, Parent) and confirm each sees only permitted screens and data. Confirm no passwordless profile switch remains.
 - [ ] **PWA**: install, go offline, confirm the offline fallback and banner, then deploy a new build and confirm the update prompt activates the new worker.
+- [ ] **Helpdesk and grade appeals**: as a student, raise a ticket and an appeal on a marked quiz attempt and an assignment; as staff, reply, close and reopen the ticket and record both an upheld and an adjusted appeal; confirm the adjusted mark lands on the real grade record.
+- [ ] **Transparency library**: publish one report, download it signed-out, then withdraw it and confirm it disappears from the public shelf.
 
 ## 6. Operations
 

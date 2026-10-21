@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import PublicContentEditor from './PublicContentEditor';
+import PwaSettingsEditor from './PwaSettingsEditor';
+import { validatePublicSettings, type PublicSettingsErrors } from '@/lib/publicSettingsValidation';
+import { DEFAULT_LAYOUT } from '@/data/publicPresentation';
 import { toast } from "sonner";
 import {
   Globe, LayoutTemplate, Star, Quote, HelpCircle, Link2, Building2, Award,
@@ -11,9 +15,13 @@ import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitive
 import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
+import { copySuppliedBrandAssets } from "../lib/brandSetup";
+import { FOUNDER_PROFILE } from "../data/teamContent";
 
 const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] = [
   { key: "branding", label: "Branding & header", icon: Building2, hint: "Logo, favicon, announcement bar" },
+  { key: "presentation", label: "Public design & About page", icon: Globe, hint: "Fonts, icons, complete section order and About content" },
+  { key: "pwa", label: "PWA & favicon", icon: Globe, hint: "Install icons, app name, launch screen and favicon" },
   { key: "hero", label: "Hero slides", icon: LayoutTemplate, hint: "Rotating hero banner" },
   { key: "sections", label: "Homepage sections", icon: Globe, hint: "Order and visibility" },
   { key: "about", label: "About", icon: Star, hint: "Mission pillars" },
@@ -22,7 +30,8 @@ const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] =
   { key: "admissions", label: "Admissions", icon: HelpCircle, hint: "Steps and requirements" },
   { key: "verify", label: "Verify", icon: HelpCircle, hint: "Certificate verification" },
   { key: "faqs", label: "FAQ", icon: HelpCircle, hint: "Questions and answers" },
-  { key: "support", label: "Support & staff", icon: Building2, hint: "Support forms and public staff profiles" },
+  { key: "support", label: "Support", icon: Building2, hint: "Support forms" },
+  { key: "team", label: "Team page", icon: Building2, hint: "Public profiles, photos and ordering" },
   { key: "editorial", label: "Public copy & newsletter", icon: Globe, hint: "Editorial labels and subscription section" },
   { key: "certificates", label: "Certificates", icon: Award, hint: "Certificate wording, signatories and verified contact details" },
   { key: "footer", label: "Contact & footer", icon: Link2, hint: "Address, phone, socials, links" },
@@ -49,6 +58,10 @@ export default function AdminWebsiteSettings() {
   const [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState("branding");
   const [saving, setSaving] = useState(false);
+  const [copyingBrand, setCopyingBrand] = useState(false);
+  const [errors, setErrors] = useState<PublicSettingsErrors>({});
+  const [publishError, setPublishError] = useState('');
+  const revision = useRef(0);
 
   // Pulls in realtime updates (e.g. another admin publishing) as long as this
   // editor has no unsaved local changes, so typing never gets clobbered.
@@ -58,6 +71,8 @@ export default function AdminWebsiteSettings() {
   }, [live]);
 
   const patch = (fields: Partial<WebsiteSettings>) => {
+    revision.current += 1;
+    setErrors({});
     setDraft((d) => ({ ...d, ...fields }));
     setDirty(true);
   };
@@ -79,20 +94,53 @@ export default function AdminWebsiteSettings() {
   const setList = <K extends keyof WebsiteSettings>(key: K, items: WebsiteSettings[K]) =>
     patch({ [key]: items } as unknown as Partial<WebsiteSettings>);
 
+  const copyBrand = async () => {
+    setCopyingBrand(true);
+    try {
+      const { portraitUrl, ...brand } = await copySuppliedBrandAssets();
+      setDraft((d) => {
+        const index = d.team.members.findIndex((member) => member.id === FOUNDER_PROFILE.id || /shedrick.*nungehn/i.test(member.name));
+        const founder = { ...FOUNDER_PROFILE, image: portraitUrl };
+        return { ...d, ...brand, brandRevision: 2, teamRevision: 1, team: { ...d.team, members: index < 0 ? [founder, ...d.team.members] : d.team.members.map((member, i) => i === index ? { ...member, ...founder } : member) } };
+      });
+      revision.current += 1;
+      setDirty(true);
+      toast.success("Assets copied to Supabase. Review the draft, then Publish changes to save these URLs.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not copy brand assets. Nothing has been published.");
+    } finally { setCopyingBrand(false); }
+  };
+
   const publish = async () => {
-    setSaving(true);
-    const err = await publishWebsiteSettings(draft);
-    setSaving(false);
-    if (err) {
-      toast.error(`Could not publish: ${err}`);
+    setPublishError('');
+    const nextErrors = validatePublicSettings(draft);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) {
+      setTab(Object.keys(nextErrors).some(key => key.startsWith('pwa.') || key === 'faviconUrl') ? 'pwa' : 'presentation');
       return;
     }
-    setDirty(false);
-    toast.success("Website updated. Changes are live.");
+    if (draft.team.enabled && draft.team.members.some((member) => !member.name.trim() || !member.role.trim())) {
+      toast.error("Every published team profile needs a name and role.");
+      return;
+    }
+    setSaving(true);
+    const publishingRevision = revision.current;
+    try {
+      const err = await publishWebsiteSettings(draft);
+      if (err) throw new Error(err);
+      setDirty(revision.current !== publishingRevision);
+      toast.success("Website updated. Changes are live.");
+    } catch (error) {
+      const message = 'Publishing could not be confirmed. Your draft is retained. Check the live website and your connection before trying again.';
+      setPublishError(message);
+      toast.error(message);
+    } finally { setSaving(false); }
   };
   const discard = () => {
     setDraft(live);
     setDirty(false);
+    setErrors({});
+    setPublishError('');
     toast("Changes discarded.");
   };
 
@@ -131,7 +179,7 @@ export default function AdminWebsiteSettings() {
           <button
             type="button"
             onClick={discard}
-            disabled={!dirty || saving}
+            disabled={!dirty || saving || copyingBrand}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
           >
             <RotateCcw className="h-3.5 w-3.5" /> Discard changes
@@ -139,7 +187,7 @@ export default function AdminWebsiteSettings() {
           <button
             type="button"
             onClick={publish}
-            disabled={!dirty || saving}
+            disabled={!dirty || saving || copyingBrand}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
           >
             <Save className="h-3.5 w-3.5" /> {saving ? "Publishing…" : "Publish changes"}
@@ -167,8 +215,17 @@ export default function AdminWebsiteSettings() {
         })}
       </div>
 
+      {(publishError || Object.keys(errors).length > 0) && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-semibold">Changes have not been published. Your draft is retained.</p>{publishError && <p className="mt-2">{publishError}</p>}<ul className="mt-2 list-inside list-disc">{Object.entries(errors).map(([key, message]) => <li key={key}>{key}: {message}</li>)}</ul></div>}
+      <fieldset disabled={saving || copyingBrand} className="min-w-0 space-y-5 disabled:opacity-75">
+      {tab === 'presentation' && <PublicContentEditor draft={draft} patch={patch} errors={errors} />}
+      {tab === 'pwa' && <><PwaSettingsEditor draft={draft} patch={patch} errors={errors} /><div className={`${panelClass} p-5`}><ImageBox label="Favicon" folder="favicon" round value={draft.faviconUrl} onChange={faviconUrl => patch({ faviconUrl })} />{errors.faviconUrl && <p role="alert" className="mt-2 text-sm text-rose-800">{errors.faviconUrl}</p>}</div></>}
       {tab === "branding" && (
         <div className={`${panelClass} grid gap-5 p-5`}>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-semibold text-emerald-950">Owner-supplied logo & founder portrait</p>
+            <p className="mt-2 text-sm text-slate-600">Copy the official logo into the default, header, footer, portal, sign-in, certificate, brochure and favicon folders, plus the founder photo into Team storage. Existing files are not deleted. Review the draft before publishing. Install icons and splash use the generated production assets.</p>
+            <button type="button" disabled={copyingBrand || saving} onClick={() => void copyBrand()} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-50">{copyingBrand ? "Copying assets…" : "Copy supplied assets to Supabase"}</button>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Site / Academy Name" value={draft.academyName} onChange={(v) => patch({ academyName: v })} />
             <Field label="Tagline" value={draft.tagline} onChange={(v) => patch({ tagline: v })} />
@@ -320,18 +377,22 @@ export default function AdminWebsiteSettings() {
       {tab === "sections" && (
         <div className={`${panelClass} grid gap-5 p-5`}>
           <p className="text-sm text-slate-500">
-            Drag the order to change where a section appears on the homepage, or hide it entirely. Hero slides
-            always stay first.
+            Use Up and Down to reorder these homepage sections, or hide them. Hero slides always stay first.
+            Arrange all sections, including programmes, team and blog, in Public design & About page.
           </p>
           <div className="grid gap-2">
-            {draft.home.order.map((key, i, arr) => {
+            {[...new Set([...(draft.publicLayout || DEFAULT_LAYOUT).filter(key => draft.home.order.includes(key as HomeSectionKey)), ...draft.home.order])].map((rawKey, i, rawArr) => {
+              const key = rawKey as HomeSectionKey;
+              const arr = rawArr as HomeSectionKey[];
               const hidden = draft.home.hidden.includes(key);
               const move = (dir: -1 | 1) => {
                 const target = i + dir;
                 if (target < 0 || target >= arr.length) return;
                 const order = [...arr];
                 [order[i], order[target]] = [order[target], order[i]];
-                patch({ home: { ...draft.home, order } });
+                let slot = 0;
+                const publicLayout = [...new Set([...(draft.publicLayout || DEFAULT_LAYOUT), ...DEFAULT_LAYOUT])].map(id => arr.includes(id as HomeSectionKey) ? order[slot++] : id);
+                patch({ home: { ...draft.home, order }, publicLayout });
               };
               const toggleHidden = () =>
                 patch({
@@ -369,7 +430,7 @@ export default function AdminWebsiteSettings() {
           <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
             {(Object.keys(SECTION_LABELS) as HomeSectionKey[]).map((key) => {
               const copy = draft.home.sections[key];
-              if (key === "summary") return <div key={key} className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-sm font-semibold text-slate-700">Who we are</p><p className="mt-2 text-xs leading-5 text-slate-500">The homepage shares the approved Who we are profile from the About page. Edit the shared profile in src/data/aboutContent.ts to keep both pages consistent. Programme totals follow published records, and location follows Contact &amp; footer.</p></div>;
+              if (key === "summary") return <div key={key} className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-sm font-semibold text-slate-700">Who we are</p><p className="mt-2 text-xs leading-5 text-slate-500">The homepage shares the approved Who we are profile from the About page. Edit the shared profile in Public design &amp; About page to keep both pages consistent. Programme totals follow published records, and location follows Contact &amp; footer.</p></div>;
               return (
                 <div key={key} className="rounded-2xl border border-slate-200 bg-white p-4">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{SECTION_LABELS[key]}</p>
@@ -574,10 +635,16 @@ export default function AdminWebsiteSettings() {
               {(["label", "blurb", "cta"] as const).map((key) => <Field key={key} label={key} value={card[key]} onChange={(value) => patch({ support: { ...draft.support, cards: draft.support.cards.map((row, j) => i === j ? { ...row, [key]: value } : row) } })} />)}
             </div>)}
           </div>
+        </div>
+      )}
+
+      {tab === "team" && (
+        <div className="space-y-5">
           <div className={`${panelClass} grid gap-4 p-5`}>
-            <Toggle label="Show public staff profiles" hint="Only profiles you add here are published. Private staff accounts are never exposed." checked={draft.team.enabled} onChange={(enabled) => patch({ team: { ...draft.team, enabled } })} />
-            <Field label="Staff section title" value={draft.team.title} onChange={(title) => patch({ team: { ...draft.team, title } })} />
-            <Area label="Staff introduction" value={draft.team.description} onChange={(description) => patch({ team: { ...draft.team, description } })} />
+            <p className="text-sm text-slate-600">Manage the public Team page and homepage profiles together. Add, reorder or remove profiles below, then Publish changes. These are public biographies, not private staff accounts. <a href="/#team" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-800 underline">Open Team page</a></p>
+            <Toggle label="Publish team profiles" hint="Hiding profiles affects both the Team page and homepage. The page link remains available." checked={draft.team.enabled} onChange={(enabled) => patch({ teamRevision: 1, team: { ...draft.team, enabled } })} />
+            <Field label="Team page title" value={draft.team.title} onChange={(title) => patch({ team: { ...draft.team, title } })} />
+            <Area label="Team introduction" value={draft.team.description} onChange={(description) => patch({ team: { ...draft.team, description } })} />
             <ListEditor title="Public staff profile" items={draft.team.members} onChange={(members) => patch({ team: { ...draft.team, members } })} addLabel="Add public staff profile" newItem={() => ({ id: genId("team"), name: "", role: "", bio: "", image: "" })} renderItem={(member: WebsiteSettings["team"]["members"][number], update) => <>
               <Field label="Name" value={member.name} onChange={(name) => update({ name })} />
               <Field label="Role" value={member.role} onChange={(role) => update({ role })} />
@@ -731,6 +798,7 @@ export default function AdminWebsiteSettings() {
           </div>
         </div>
       )}
+      </fieldset>
     </div>
   );
 }

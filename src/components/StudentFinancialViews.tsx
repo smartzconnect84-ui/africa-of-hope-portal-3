@@ -122,7 +122,10 @@ export function StudentPortal() {
           <h2 className="font-semibold text-slate-900">Need a hand?</h2>
           <p className="mt-1 text-sm text-slate-600">Get study, fees or technology support in a private conversation with the school.</p>
         </div>
-        <Button variant="outline" onClick={() => window.dispatchEvent(new Event("aoh-open-helpdesk"))}>Open student helpdesk</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => window.dispatchEvent(new Event("aoh-open-appeals"))}>Appeal a grade</Button>
+          <Button variant="outline" onClick={() => window.dispatchEvent(new Event("aoh-open-helpdesk"))}>Open student helpdesk</Button>
+        </div>
       </div>
       <ReminderSettings key={`reminders-${currentUser.id}`} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">

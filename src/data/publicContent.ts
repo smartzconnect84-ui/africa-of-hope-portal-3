@@ -1,5 +1,17 @@
 /** Editable public editorial copy; stored in system_settings.website_settings. */
 export const DEFAULT_PUBLIC_COPY: Record<string, string> = {
+  "hero.apply": "Apply Online",
+  "hero.donate": "Donate",
+  "hero.portal": "Portal Login",
+  "hero.verify": "Verify Certificate",
+  "hero.badge": "Cohort Celebrations",
+  "about.story": "Read our full story",
+  "summary.link": "Explore our mission and story",
+  "team.link": "Meet the team",
+  "footer.donate": "Donate",
+  "footer.volunteer": "Volunteer or partner",
+  "footer.terms": "Term dates",
+  "footer.verify": "Verify a certificate",
   "blog.eyebrow": "Latest from our blog",
   "blog.title": "Stories, news and updates.",
   "blog.link": "Visit the blog",

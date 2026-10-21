@@ -3,6 +3,8 @@ import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS } from "../lib/permissions";
 import { CATALOG_2026 } from "./programCatalog2026";
 import { DEFAULT_PUBLIC_COPY, DEFAULT_SUPPORT } from "./publicContent";
 import { ABOUT_META } from "./aboutContent";
+import { DEFAULT_TEAM } from "./teamContent";
+import { DEFAULT_ABOUT, DEFAULT_PRESENTATION, DEFAULT_PWA, DEFAULT_LAYOUT } from './publicPresentation';
 
 // Reused across the About and Impact homepage sections and the CTA band so the
 // defaults look like today's live site until an admin uploads replacements.
@@ -48,10 +50,15 @@ export const defaultThemeSettings: PortalThemeSettings = {
 };
 
 export const defaultWebsiteSettings: WebsiteSettings = {
-  brandRevision: 1,
+  aboutPage: DEFAULT_ABOUT,
+  presentation: DEFAULT_PRESENTATION,
+  pwa: DEFAULT_PWA,
+  publicLayout: DEFAULT_LAYOUT,
+  brandRevision: 2,
   publicCopy: DEFAULT_PUBLIC_COPY,
   support: DEFAULT_SUPPORT,
-  team: { enabled: false, title: "Meet our staff", description: "", members: [] },
+  teamRevision: 1,
+  team: DEFAULT_TEAM,
   newsletter: {
     enabled: true,
     title: "Stay in touch",
@@ -59,9 +66,9 @@ export const defaultWebsiteSettings: WebsiteSettings = {
     consent: "I agree to receive email updates. I can unsubscribe at any time.",
     button: "Subscribe",
   },
-  logos: { header: '', footer: '', portal: '', auth: '', certificate: '', brochure: '' },
-  logoUrl: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
-  faviconUrl: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
+  logos: { header: '/logo/aoh-logo.png', footer: '/logo/aoh-logo.png', portal: '/logo/aoh-logo.png', auth: '/logo/aoh-logo.png', certificate: '/logo/aoh-logo.png', brochure: '/logo/aoh-logo.png' },
+  logoUrl: "/logo/aoh-logo.png",
+  faviconUrl: "/favicon.png",
   academyName: "AFRICA OF HOPE",
   tagline: "",
   announcementText:

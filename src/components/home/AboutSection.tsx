@@ -20,7 +20,7 @@ export default function AboutSection({
               <img
                 src={copy.image}
                 alt="Africa of Hope community"
-                className="h-80 w-full rounded-3xl object-cover object-[center_20%] shadow-lg shadow-emerald-900/10 sm:h-[28rem]"
+                className="aoh-photo h-80 w-full rounded-3xl object-cover object-center shadow-lg shadow-emerald-900/10 sm:h-[28rem]"
               />
               {w.partners.length > 0 && <div className="aoh-card aoh-glass absolute -bottom-5 left-5 rounded-2xl p-4">
                 <p className="text-2xl font-semibold text-emerald-800">{w.partners.length}</p>
@@ -61,7 +61,7 @@ export default function AboutSection({
             href="#about"
             className="mt-7 inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900"
           >
-            Read our full story <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            {w.publicCopy['about.story'] || 'Read our full story'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </a>
         </Reveal>
       </div>

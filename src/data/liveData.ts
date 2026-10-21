@@ -91,7 +91,13 @@ function explainSettingsError(message: string): string {
   if (/permission denied|row-level security|42501/i.test(message)) {
     return "You don't have permission to save these settings. Sign in as a Super Admin or School Admin.";
   }
-  return message;
+  if (/PUBLIC_SETTINGS_INVALID/i.test(message)) {
+    return "Review Public design & About page and PWA & favicon: use the displayed text limits, unique section IDs and HTTPS or local image and button URLs.";
+  }
+  if (/fetch|network|connection|timeout/i.test(message)) {
+    return "Publishing could not be confirmed because the connection was interrupted. Your draft is retained. Check the live website before trying again.";
+  }
+  return "Settings could not be saved. Your draft is retained. Check the live website and your account permissions before trying again.";
 }
 
 /**
@@ -187,12 +193,28 @@ export function mergeWebsiteSettings(
   // One-time presentation upgrade for saved settings, not a database rewrite.
   // Saving the CMS carries this revision forward so future uploads still win.
   const revision = raw && typeof raw === "object" ? (raw as { brandRevision?: number }).brandRevision : undefined;
-  if (!revision) {
-    const logo = "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
-    merged.brandRevision = 1;
+  if ((revision ?? 0) < 2) {
+    const logo = "/logo/aoh-logo.png";
+    merged.brandRevision = 2;
     merged.logoUrl = logo;
-    merged.faviconUrl = logo;
-    merged.logos = { ...merged.logos, header: logo, footer: logo, portal: logo };
+    merged.faviconUrl = "/favicon.png";
+    merged.logos = { header: logo, footer: logo, portal: logo, auth: logo, certificate: logo, brochure: logo };
+  }
+  // Seed the owner-approved founder once, preserving other published profiles.
+  // Publishing records the revision so subsequent deletes/visibility edits stick.
+  const teamRevision = raw && typeof raw === "object" ? (raw as { teamRevision?: number }).teamRevision : undefined;
+  if ((teamRevision ?? 0) < 1) {
+    const founder = defaults.team.members[0];
+    const members = Array.isArray(merged.team.members) ? merged.team.members : [];
+    const existing = founder ? members.findIndex((member) => member.id === founder.id || /shedrick.*nungehn/i.test(member.name)) : -1;
+    merged.teamRevision = 1;
+    merged.team = {
+      ...merged.team,
+      enabled: true,
+      title: merged.team.title === "Meet our staff" ? defaults.team.title : merged.team.title,
+      description: merged.team.description || defaults.team.description,
+      members: founder ? (existing < 0 ? [founder, ...members] : members.map((member, index) => index === existing ? { ...member, ...founder } : member)) : members,
+    };
   }
   // Certificate wording/signatories are saved inside the same settings blob.
   // Older saved settings have no `certificate` key, so resolve it explicitly
@@ -206,6 +228,12 @@ export function mergeWebsiteSettings(
   return removeDemoPublicData({
     ...withCertificate,
     home: { ...withCertificate.home, order: normalizeHomeOrder(withCertificate.home.order, defaults.home.order) },
+    // Preserve an older site's chosen ordering when upgrading to the full layout.
+    publicLayout: isPlainObject(raw) && Array.isArray(raw.publicLayout) ? merged.publicLayout : (() => {
+      const previous = normalizeHomeOrder(withCertificate.home.order, defaults.home.order);
+      let index = 0;
+      return (defaults.publicLayout || []).map(key => previous.includes(key as HomeSectionKey) ? previous[index++] : key);
+    })(),
   });
 }
 

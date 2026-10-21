@@ -15,6 +15,7 @@ import OfflineBanner from "./components/pwa/OfflineBanner";
 import UpdatePrompt from "./components/pwa/UpdatePrompt";
 import CurrencyConverter from "./components/CurrencyConverter";
 import { Button } from "@/components/ui/button";
+import { applyPublicBranding } from './lib/publicBranding';
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const { state } = useApp();
@@ -56,11 +57,14 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
   useEffect(() => {
     const resume = () => setView("course-player");
     const helpdesk = () => setView("helpdesk");
+    const appeals = () => setView("grade-appeals");
     window.addEventListener("aoh-resume-learning", resume);
     window.addEventListener("aoh-open-helpdesk", helpdesk);
+    window.addEventListener("aoh-open-appeals", appeals);
     return () => {
       window.removeEventListener("aoh-resume-learning", resume);
       window.removeEventListener("aoh-open-helpdesk", helpdesk);
+      window.removeEventListener("aoh-open-appeals", appeals);
     };
   }, []);
 
@@ -98,24 +102,9 @@ function Shell() {
       const name = w.academyName || state.settings.academyName;
       if (name) document.title = name;
     }
-    if (w.faviconUrl) {
-      let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
-      link.href = w.faviconUrl;
-      // Keep the iOS home-screen icon in step with the CMS favicon.
-      let touch = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
-      if (!touch) {
-        touch = document.createElement("link");
-        touch.rel = "apple-touch-icon";
-        document.head.appendChild(touch);
-      }
-      touch.href = w.faviconUrl;
-    }
   }, [state.websiteSettings, state.settings.academyName, site]);
+
+  useEffect(() => applyPublicBranding(state.websiteSettings), [state.websiteSettings]);
 
   // Applies the Admin > System Settings > Appearance theme as CSS variables
   // and data attributes read by src/index.css, so a saved theme takes effect

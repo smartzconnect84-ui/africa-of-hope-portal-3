@@ -159,10 +159,20 @@ export default function CoursePlayer() {
 
   const openMaterial = async (mat: TrainingMaterial) => {
     try {
-      if (mat.external_url) { window.open(mat.external_url, "_blank", "noopener"); return; }
+      if (mat.external_url) {
+        const win = window.open(mat.external_url, "_blank", "noopener");
+        if (!win) toast.error("Popup was blocked. Please allow popups for this site, then try again.");
+        else win.opener = null;
+        return;
+      }
       if (mat.file_path) {
-        const url = await academicApi.materialUrl(mat.file_path);
-        window.open(url, "_blank", "noopener");
+        const popup = window.open("about:blank", "_blank", "noopener");
+        if (!popup) { toast.error("Allow pop-ups to open lesson files."); return; }
+        popup.opener = null;
+        try {
+          const url = await academicApi.materialUrl(mat.file_path);
+          popup.location.replace(url);
+        } catch (err) { popup.close(); toast.error(err instanceof Error ? err.message : String(err)); }
       }
     } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
   };
@@ -176,7 +186,7 @@ export default function CoursePlayer() {
     <div className="space-y-4">
       <section className={cn(panelClass, "p-5")}>
         <SavedLearningList rows={memory.rows} onResume={resume} />
-        <p className="mt-3 text-xs text-slate-500" role="status">{memory.notice || "Loading saved learning…"}</p>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-300" role="status">{memory.notice || "Loading saved learning…"}</p>
         {memory.notice.includes("only") && <Button variant="link" size="sm" onClick={() => void memory.retry()}>Retry sync</Button>}
       </section>
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -187,7 +197,7 @@ export default function CoursePlayer() {
             <SelectTrigger><SelectValue placeholder="Choose programme" /></SelectTrigger>
             <SelectContent>{state.programs.map((p) => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}</SelectContent>
           </Select>
-          {program && <p className="text-xs text-slate-500">{program.category} · {durationLabel(program)}</p>}
+          {program && <p className="text-xs text-slate-500 dark:text-slate-300">{program.category} · {durationLabel(program)}</p>}
           <div>
             <div className="flex items-center justify-between text-xs font-semibold"><span>{doneCount}/{programUnits.length} {t("Lessons")}</span><span>{percent}%</span></div>
             <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${percent}%` }} /></div>
@@ -195,7 +205,7 @@ export default function CoursePlayer() {
           <Button variant={lowData ? "default" : "outline"} size="sm" className={cn("w-full", lowData && "bg-amber-600 hover:bg-amber-700")} onClick={() => setLowData((v) => !v)}>
             <WifiOff className="mr-1 h-4 w-4" /> {lowData ? `${t("Low-data mode")}: ON` : `${t("Low-data mode")}: OFF`}
           </Button>
-          {lowData && <p className="text-[11px] text-amber-700">Videos are hidden to save data. Open links manually when you have Wi-Fi.</p>}
+          {lowData && <p className="text-[11px] text-amber-700 dark:text-amber-300">Videos are hidden to save data. Open links manually when you have Wi-Fi.</p>}
         </div>
         <div className="mt-4 space-y-1.5">
           {withLocks.length === 0 && <EmptyState icon={ListVideo} title="No lessons yet" hint="Approved lessons for this programme will appear here." />}
@@ -204,9 +214,9 @@ export default function CoursePlayer() {
             const isActive = active?.id === unit.id;
             return (
               <button key={unit.id} disabled={locked} onClick={() => setActiveUnitId(unit.id)}
-                className={cn("flex w-full items-center gap-2 rounded-xl border p-2.5 text-left text-sm transition", isActive ? "border-emerald-300 bg-emerald-50" : "border-slate-100 bg-white hover:border-slate-200", locked && "opacity-60")}>
+                className={cn("flex w-full items-center gap-2 rounded-xl border p-2.5 text-left text-sm transition", isActive ? "border-emerald-300 bg-emerald-50" : "border-slate-100 bg-white dark:bg-slate-900 hover:border-slate-200", locked && "opacity-60")}>
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">{done ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : locked ? <Lock className="h-3.5 w-3.5" /> : index + 1}</span>
-                <span className="min-w-0 flex-1"><span className="block truncate font-medium text-slate-800">{unit.title}</span>{locked ? <span className="text-[11px] text-slate-400">{lockReason}</span> : <span className="text-[11px] uppercase tracking-wide text-slate-400">{unit.unit_type}</span>}</span>
+                <span className="min-w-0 flex-1"><span className="block truncate font-medium text-slate-800 dark:text-slate-100">{unit.title}</span>{locked ? <span className="text-[11px] text-slate-400 dark:text-slate-300">{lockReason}</span> : <span className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-300">{unit.unit_type}</span>}</span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
               </button>
             );
@@ -222,29 +232,29 @@ export default function CoursePlayer() {
               {active.due_at && <Badge variant="outline">Due {new Date(active.due_at).toLocaleDateString()}</Badge>}
               {completedIds.has(active.id) && <Badge className="bg-sky-100 text-sky-800">Completed</Badge>}
             </div>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">{active.title}</h2>
+            <h2 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">{active.title}</h2>
             {active.summary && <p className="mt-1 text-sm text-slate-600">{active.summary}</p>}
-            <Button className="mt-3" variant="outline" size="sm" disabled={!memory.ready} aria-pressed={!!savedPosition?.bookmarked} onClick={() => memory.save(active, { bookmarked: !savedPosition?.bookmarked })}><Bookmark className={cn("mr-1.5 h-4 w-4", savedPosition?.bookmarked && "fill-amber-400 text-amber-700")} />{savedPosition?.bookmarked ? "Bookmarked" : "Bookmark lesson"}</Button>
+            <Button className="mt-3" variant="outline" size="sm" disabled={!memory.ready} aria-pressed={!!savedPosition?.bookmarked} onClick={() => memory.save(active, { bookmarked: !savedPosition?.bookmarked })}><Bookmark className={cn("mr-1.5 h-4 w-4", savedPosition?.bookmarked && "fill-amber-400 text-amber-700 dark:text-amber-300")} />{savedPosition?.bookmarked ? "Bookmarked" : "Bookmark lesson"}</Button>
             <div className="mt-4 space-y-3">
               {activeMaterials.length === 0 && <EmptyState icon={FileText} title="No resources attached" hint="Your teacher has not attached videos or files to this lesson yet." />}
               {activeMaterials.map((mat) => {
                 const video = isVideo(mat);
                 const embed = mat.external_url ? embedUrl(mat.external_url) : null;
                 return (
-                  <div key={mat.id} className={cn("rounded-xl border bg-white p-3", savedPosition?.resource_id === mat.id ? "border-emerald-500" : "border-slate-150")} onFocusCapture={() => { if (savedPosition?.resource_id !== mat.id) memory.save(active, { resource_id: mat.id, position_seconds: 0 }); }}>
+                  <div key={mat.id} className={cn("rounded-xl border bg-white dark:bg-slate-900 p-3", savedPosition?.resource_id === mat.id ? "border-emerald-500" : "border-slate-150")} onFocusCapture={() => { if (savedPosition?.resource_id !== mat.id) memory.save(active, { resource_id: mat.id, position_seconds: 0 }); }}>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                        {video ? <PlayCircle className="h-4 w-4 text-emerald-700" /> : mat.external_url ? <Link2 className="h-4 w-4 text-sky-700" /> : <FileText className="h-4 w-4 text-slate-500" />}
+                      <p className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        {video ? <PlayCircle className="h-4 w-4 text-emerald-700" /> : mat.external_url ? <Link2 className="h-4 w-4 text-sky-700" /> : <FileText className="h-4 w-4 text-slate-500 dark:text-slate-300" />}
                         <span className="line-clamp-1">{mat.title}</span>
                       </p>
                       <Button size="sm" variant="outline" onClick={() => { memory.save(active, { resource_id: mat.id }); void openMaterial(mat); }}>Open</Button>
                     </div>
-                    {mat.description && <p className="mt-1 text-xs text-slate-500">{mat.description}</p>}
+                    {mat.description && <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{mat.description}</p>}
                     {video && !lowData && mat.external_url && /\.(mp4|webm|ogg)(\?|$)/i.test(mat.external_url) && <video key={`${active.id}:${mat.id}`} controls preload="metadata" className="mt-2 w-full bg-black" src={mat.external_url} onLoadedMetadata={(e) => { if (savedPosition?.resource_id === mat.id && savedPosition.position_seconds > 0) e.currentTarget.currentTime = Math.min(savedPosition.position_seconds, e.currentTarget.duration || savedPosition.position_seconds); }} onTimeUpdate={(e) => { if (Date.now() - videoSavedAt.current < 5000) return; videoSavedAt.current = Date.now(); memory.save(active, { resource_id: mat.id, position_seconds: e.currentTarget.currentTime, last_opened_at: new Date().toISOString() }); }} onPause={(e) => memory.save(active, { resource_id: mat.id, position_seconds: e.currentTarget.currentTime })} />}
                     {video && embed && !lowData && (
                       <div className="mt-2 overflow-hidden rounded-lg border"><div className="aspect-video w-full"><iframe src={embed} title={mat.title} className="h-full w-full" allowFullScreen /></div></div>
                     )}
-                    {video && lowData && <p className="mt-2 text-[11px] text-amber-700">Video hidden in low-data mode — tap Open to stream it.</p>}
+                    {video && lowData && <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">Video hidden in low-data mode — tap Open to stream it.</p>}
                   </div>
                 );
               })}

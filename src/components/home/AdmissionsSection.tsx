@@ -26,11 +26,9 @@ export default function AdmissionsSection({
                 {copy.eyebrow}
               </p>
             )}
-            {copy.title && (
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                {copy.title}
-              </h2>
-            )}
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+              {copy.title?.trim() || "Admissions"}
+            </h2>
             {copy.subtitle && <p className="mt-2 text-sm text-slate-600">{copy.subtitle}</p>}
           </div>
         </Reveal>
@@ -61,7 +59,7 @@ export default function AdmissionsSection({
           {w.admissionRequirements.length > 0 && (
             <Reveal delay={0.1}>
               <div className="aoh-card aoh-glass rounded-3xl p-6">
-                <h3 className="text-lg font-semibold text-slate-900">{w.publicCopy["admissions.requirements"]}</h3>
+                <h3 className="text-lg font-semibold text-slate-900">{w.publicCopy["admissions.requirements"]?.trim() || "What you need"}</h3>
                 <ul className="mt-4 space-y-2.5">
                   {w.admissionRequirements.map((r) => (
                     <li key={r.id} className="flex items-start gap-2.5 text-sm text-slate-600">

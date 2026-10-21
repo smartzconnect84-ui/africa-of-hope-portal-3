@@ -9,20 +9,21 @@
  * never touched by this worker, so private student and admin data can never be
  * served from a cache.
  */
-const VERSION = "v5";
+const VERSION = "v8-cms-brand";
+const BRAND_CACHE = 'aoh-public-brand-v1';
 const SHELL_CACHE = `aoh-shell-${VERSION}`;
 const ASSET_CACHE = `aoh-assets-${VERSION}`;
 const IMAGE_CACHE = `aoh-images-${VERSION}`;
-const CURRENT_CACHES = [SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE];
+const CURRENT_CACHES = [SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE, BRAND_CACHE];
 
 const OFFLINE_URL = "/offline.html";
-const SHELL = ["/", "/index.html", OFFLINE_URL, "/manifest.webmanifest"];
+const SHELL = ["/", "/index.html", OFFLINE_URL, "/manifest.webmanifest", "/logo/aoh-logo.png", "/favicon.png", "/icons/apple-touch-icon.png", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/maskable-512.png"];
 const NAV_TIMEOUT = 5000;
 const IMAGE_CACHE_LIMIT = 60;
 
 /* The official brand mark (same transparent logo used by the site header). */
 const BRAND_ICON =
-  "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+  "/icons/icon-192.png";
 
 const IMAGE_EXT = /\.(png|jpe?g|webp|avif|svg|gif|ico)$/i;
 
@@ -74,6 +75,28 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
+  if (event.data?.type === 'PUBLIC_MANIFEST') {
+    // Accept only public, bounded identity metadata from this application's pages.
+    const source = event.source;
+    const manifest = event.data.manifest;
+    const valid = source?.url && new URL(source.url).origin === self.location.origin &&
+      manifest?.id === '/' && manifest.start_url === '/' && manifest.scope === '/' &&
+      typeof manifest.name === 'string' && manifest.name.trim().length > 0 && manifest.name.length <= 120 &&
+      typeof manifest.short_name === 'string' && manifest.short_name.trim().length > 0 && manifest.short_name.length <= 40 &&
+      typeof manifest.description === 'string' && manifest.description.length <= 1000 &&
+      Array.isArray(manifest.icons) && manifest.icons.length === 3 &&
+      manifest.icons.every(icon => { try { const url = new URL(icon.src); return url.protocol === 'https:' || url.origin === self.location.origin; } catch { return false; } });
+    if (!valid) { event.ports[0]?.postMessage({ ok: false }); return; }
+    const identity = {
+      id: '/', name: manifest.name, short_name: manifest.short_name, description: manifest.description,
+      start_url: '/', scope: '/', display: 'standalone', orientation: 'any', lang: 'en',
+      background_color: '#FFFFFF', theme_color: '#16803C',
+      icons: manifest.icons.map((icon, i) => ({ src: icon.src, sizes: i === 0 ? '192x192' : '512x512', type: 'image/png', purpose: i === 2 ? 'maskable' : 'any' })),
+      shortcuts: [['Programmes', 'programmes'], ['Admissions', 'admissions'], ['Get involved', 'support'], ['Blog', 'blog']].map(([name, hash]) => ({ name, url: '/#' + hash })),
+    };
+    event.waitUntil(caches.open(BRAND_CACHE).then(cache => cache.put('/manifest.webmanifest', new Response(JSON.stringify(identity), { headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'no-cache' } }))).then(() => event.ports[0]?.postMessage({ ok: true })).catch(() => event.ports[0]?.postMessage({ ok: false })));
+    return;
+  }
   if (event.data === "SKIP_WAITING" || event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
@@ -100,7 +123,14 @@ self.addEventListener("push", (event) => {
     tag: payload.tag || "aoh-reminder",
     data: { url: payload.url || "/" },
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async () => {
+    try {
+      const cached = await (await caches.open(BRAND_CACHE)).match('/manifest.webmanifest');
+      const identity = cached && await cached.json();
+      if (identity?.icons?.[0]?.src) options.icon = identity.icons[0].src;
+    } catch { /* Static icon remains usable offline. */ }
+    await self.registration.showNotification(title, options);
+  })());
 });
 
 /** Tapping a reminder focuses the open app, or opens the reminder's page. */
@@ -196,6 +226,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  if (url.origin === self.location.origin && url.pathname === '/manifest.webmanifest') {
+    event.respondWith(caches.open(BRAND_CACHE).then(async cache => (await cache.match('/manifest.webmanifest')) || fetch(request)));
+    return;
+  }
 
   if (isPrivateRequest(url)) return; // never cached, never intercepted
 

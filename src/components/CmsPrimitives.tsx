@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Image as ImageIcon, Plus, Trash2, ArrowUp, ArrowDown, Upload, X, Loader2 } from "lucide-react";
 import { uploadSiteAsset } from "@/lib/storage";
@@ -13,12 +13,17 @@ export function Field({
   value,
   onChange,
   placeholder,
+  error,
+  maxLength,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  error?: string;
+  maxLength?: number;
 }) {
+  const errorId = useId();
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -26,10 +31,14 @@ export function Field({
       </span>
       <input
         value={value}
+        maxLength={maxLength}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
       />
+      {error && <span id={errorId} className="mt-1 block text-xs text-rose-800">{error}</span>}
     </label>
   );
 }
@@ -40,13 +49,18 @@ export function Area({
   onChange,
   rows = 3,
   placeholder,
+  error,
+  maxLength,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   rows?: number;
   placeholder?: string;
+  error?: string;
+  maxLength?: number;
 }) {
+  const errorId = useId();
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -55,10 +69,14 @@ export function Area({
       <textarea
         value={value}
         rows={rows}
+        maxLength={maxLength}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
       />
+      {error && <span id={errorId} className="mt-1 block text-xs text-rose-800">{error}</span>}
     </label>
   );
 }
@@ -105,6 +123,7 @@ export function ImageBox({
   onChange,
   round,
   folder = "misc",
+  error,
 }: {
   label: string;
   value: string;
@@ -112,9 +131,19 @@ export function ImageBox({
   round?: boolean;
   /** Storage sub-folder inside the public "site-assets" bucket, e.g. "logo", "hero". */
   folder?: string;
+  error?: string;
 }) {
+  const errorId = useId();
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const folderKey = folder.toLowerCase();
+  const labelKey = label.toLowerCase();
+  // Logos, favicons, PWA icons and splash marks must never be cropped:
+  // their live placements use contain. Photos use crop-to-fill (cover).
+  const preserveFull = folderKey.startsWith("logo") || folderKey.startsWith("favicon") || folderKey.startsWith("pwa") || folderKey === "splash" || labelKey.includes("logo") || labelKey.includes("favicon") || labelKey.includes("icon") || labelKey.includes("splash") || labelKey.includes("seal");
+  const previewFit = preserveFull ? "object-contain" : "object-cover";
+  const previewAlt = preserveFull ? `${label} preview — shown in full, not cropped` : `${label} preview — cropped to fill its frame`;
+  const urlPlaceholder = preserveFull ? "…or paste an image URL (shown in full, not cropped)" : "…or paste an image URL (cropped to fill its frame)";
   const handleFile = async (file?: File) => {
     if (!file) return;
     const err = validateFile(file, IMAGE_TYPES, MAX_IMAGE_BYTES);
@@ -127,10 +156,11 @@ export function ImageBox({
       const url = await uploadSiteAsset(folder, file);
       onChange(url);
       toast.success("Image uploaded. Click Publish changes to make it live.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not upload that image.");
+    } catch {
+      toast.error('Upload could not be confirmed. Check storage access and your connection. Your previous image is unchanged.');
     } finally {
       setBusy(false);
+      if (ref.current) ref.current.value = '';
     }
   };
   return (
@@ -141,13 +171,13 @@ export function ImageBox({
       <div className="flex items-center gap-3">
         <div
           className={`grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-slate-200 bg-slate-50 ${
-            round ? "rounded-full" : "rounded-xl"
+            round ? "rounded-xl p-1" : "rounded-xl"
           }`}
         >
           {busy ? (
             <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
           ) : value ? (
-            <img src={value} alt="" className="h-full w-full object-cover" />
+            <img src={value} alt={previewAlt} className={`h-full w-full object-center ${previewFit} ${preserveFull ? "bg-white p-1" : "aoh-photo"}`} />
           ) : (
             <ImageIcon className="h-6 w-6 text-slate-400" />
           )}
@@ -165,6 +195,7 @@ export function ImageBox({
             <button
               type="button"
               onClick={() => onChange("")}
+              disabled={busy}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
             >
               <X className="h-3.5 w-3.5" /> Remove
@@ -181,10 +212,15 @@ export function ImageBox({
       </div>
       <input
         value={value.startsWith("data:") ? "" : value}
-        placeholder="…or paste an image URL"
+        aria-label={`${label} image URL`}
+        disabled={busy}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        placeholder={urlPlaceholder}
         onChange={(e) => onChange(e.target.value)}
         className="mt-2 h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-emerald-500"
       />
+      {error && <p id={errorId} className="mt-1 text-xs text-rose-800">{error}</p>}
     </div>
   );
 }

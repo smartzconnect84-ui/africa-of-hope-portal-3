@@ -116,7 +116,7 @@ export default function BrandLockup({
         >
           {visibleName}
         </p>
-        {showTagline && tagline && !/practical\s+pathway/i.test(tagline) && (
+        {showTagline && tagline && (
           <p className={cn(TAGLINE_SIZE[size], "truncate", TONE_TAGLINE[tone], taglineClassName)}>{tagline}</p>
         )}
       </div>

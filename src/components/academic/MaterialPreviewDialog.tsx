@@ -62,9 +62,9 @@ export default function MaterialPreviewDialog({
             {mime.startsWith("image/") ? (
               <img src={url} alt={material?.title ?? "Material preview"} className="max-h-[70vh] w-full rounded-lg object-contain" />
             ) : mime.startsWith("audio/") ? (
-              <audio controls src={url} className="w-full">
-                <track kind="captions" />
-              </audio>
+              // No caption track is authored for uploaded training audio, so the
+              // player renders without a <track> rather than an empty one.
+              <audio controls src={url} className="w-full" />
             ) : mime.startsWith("video/") ? (
               // Captions are not authored for teacher-uploaded training clips.
               <video controls src={url} className="max-h-[70vh] w-full rounded-lg bg-black" />

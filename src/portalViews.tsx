@@ -20,6 +20,7 @@ import {
   CalendarRange,
   CalendarDays,
   GraduationCap,
+  Gavel,
   MessagesSquare,
   Newspaper,
   Smartphone,
@@ -72,6 +73,7 @@ import CompletionCertificates from "./components/academic/CompletionCertificates
 import TeacherInsights from "./components/academic/TeacherInsights";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
+import GradeAppeals from "./components/portal/GradeAppeals";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -172,6 +174,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: MessagesSquare,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("helpdesk.manage")),
     render: (ctx) => <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
+    key: "grade-appeals",
+    label: (ctx) => (ctx.role === "Student" ? "Grade appeals" : "Appeal & remark desk"),
+    icon: Gavel,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("grades.review_appeals")),
+    render: (ctx) => <GradeAppeals key={`${ctx.currentUser?.id}:${ctx.role}`} />,
   },
   {
     key: "study-calendar",
