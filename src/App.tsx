@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";
-import { AppProvider, useApp } from "./context/AppContext";
+import { AppProvider, useApp } from "@/context/AppContext";
 import { AssistantVisibilityProvider } from "./context/AssistantVisibility";
 import { AuthProvider } from "@/auth/AuthProvider";
 import type { User } from "./types";
