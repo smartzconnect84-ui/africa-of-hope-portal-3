@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { roleIntro, SYSTEM_PROMPT, UNAVAILABLE_MESSAGE, type AssistantSurface } from "./guide.ts";
+import { ORGANIZATION_PROFILE, roleIntro, SYSTEM_PROMPT, UNAVAILABLE_MESSAGE, type AssistantSurface } from "./guide.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -94,18 +94,120 @@ const HOUR = 3_600;
 
 type Row = Record<string, unknown>;
 
-async function buildPublicContext(admin: ReturnType<typeof createClient>): Promise<string> {
-  const [settingsResult, programsResult] = await Promise.all([
-    admin.from("system_settings").select(
-      "academy_name, motto, contact_email, contact_phone, address, academic_year, semester, intake_status",
-    ).limit(1).maybeSingle(),
-    admin.from("programs").select("title, category, duration_weeks, tuition, certification").order("title").limit(20),
+const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v).trim());
+const num = (v: unknown): number | null => {
+  const n = Number(v);
+  return v === null || v === undefined || v === "" || Number.isNaN(n) ? null : n;
+};
+
+/** Public page anchors the model may cite. Never invent other URLs. */
+const PAGE_LINKS: Record<string, string> = {
+  about: "#about", programmes: "#programmes", admissions: "#admissions", "term dates": "#term-dates", verify: "#verify", contact: "#contact", blog: "#blog", transparency: "#transparency", support: "#donate", team: "#team",
+};
+
+interface KnowledgeDoc { source: string; title: string; url: string; text: string }
+
+function queryTokens(query: string): string[] {
+  return query.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((t) => t.length > 2 && !["the", "and", "for", "with", "what", "how", "does", "are", "you", "your"].includes(t)).slice(0, 24);
+}
+
+/** Keyword relevance ranking over live records (no separate index to go stale). */
+function rankDocs(query: string, docs: KnowledgeDoc[], limit: number): KnowledgeDoc[] {
+  const tokens = queryTokens(query);
+  if (!tokens.length) return docs.slice(0, limit);
+  return docs.map((d) => {
+    const hay = `${d.title} ${d.text}`.toLowerCase();
+    let score = 0;
+    for (const t of tokens) {
+      if (d.title.toLowerCase().includes(t)) score += 3;
+      else if (hay.includes(t)) score += 1;
+    }
+    return { d, score };
+  }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).slice(0, limit).map((r) => r.d);
+}
+
+function classifyQuery(text: string): string {
+  const q = text.toLowerCase();
+  const org = /(africa of hope|aoh\b|afrohope|enrol|admission|apply|course|program|training|fee|tuition|certificate|verify|intake|semester|cohort|contact|office|location|requirement|deadline|accredit)/.test(q);
+  const general = /(explain|what is|how does|define|tutorial|example|principle|write|essay|code|math|physics|chemistry|biology|history|science|ai\b|artificial intelligence|entrepreneur|leadership|marketing|network)/.test(q);
+  if (org && general) return "C";
+  if (org) return "A";
+  if (general) return "B";
+  return "A";
+}
+
+/** Live retrieval across published public records. Unpublished/private rows are excluded here. */
+async function buildPublicContext(admin: ReturnType<typeof createClient>, query: string): Promise<string> {
+  const [settingsResult, programsResult, announcementsResult, blogResult] = await Promise.all([
+    admin.from("system_settings").select("*").limit(1).maybeSingle(),
+    admin.from("programs").select("*").order("title").limit(40),
+    admin.from("announcements").select("*").order("created_at", { ascending: false }).limit(20),
+    admin.from("blog_posts").select("id, slug, title, excerpt, status, published_at").order("published_at", { ascending: false }).limit(15),
   ]);
+  const settings = (settingsResult.error ? null : settingsResult.data) as Row | null;
+  const websiteSettings = (settings?.website_settings as Row | null) ?? null;
+  const faqsRaw = (websiteSettings?.faqs ?? websiteSettings?.faq) as unknown;
+  const faqList = Array.isArray(faqRaw) ? faqRaw : [];
+  const admissionReqs = str(websiteSettings?.admissionRequirements ?? websiteSettings?.admission_requirements);
+  const admissionSteps = str(websiteSettings?.admissionSteps ?? websiteSettings?.admission_steps ?? websiteSettings?.enrollmentProcedures);
+  const contactEmail = str(settings?.contact_email) || str(websiteSettings?.contactEmail);
+  const contactPhone = str(settings?.contact_phone) || str(websiteSettings?.contactPhone);
+  const address = str(settings?.address) || str(websiteSettings?.address);
+
+  const programRows = (programsResult.error ? [] : (programsResult.data as Row[] | null) ?? [])
+    .filter((p) => (p.published as boolean | undefined) !== false);
+  const announcementRows = (announcementsResult.error ? [] : (announcementsResult.data as Row[] | null) ?? [])
+    .filter((a) => {
+      const status = str(a.status).toLowerCase();
+      if (status && !["published", "active", "public"].includes(status)) return false;
+      const audience = str((a as Row).audience ?? (a as Row).visibility).toLowerCase();
+      if (audience && !["public", "all", "everyone", ""].includes(audience)) return false;
+      const expires = (a as Row).expires_at ? Date.parse(str((a as Row).expires_at)) : NaN;
+      if (!Number.isNaN(expires) && expires < Date.now()) return false;
+      return true;
+    });
+  const blogRows = (blogResult.error ? [] : (blogResult.data as Row[] | null) ?? [])
+    .filter((b) => ["published", "scheduled"].includes(str(b.status).toLowerCase() || "published"))
+    .filter((b) => !b.published_at || Date.parse(str(b.published_at)) <= Date.now());
+
+  const docs: KnowledgeDoc[] = [];
+  for (const p of programRows) {
+    const title = str(p.title);
+    if (!title) continue;
+    const parts = [str(p.description), str(p.entry_requirements ?? p.requirements) ? `Entry requirements: ${str(p.entry_requirements ?? p.requirements)}` : "", [num(p.duration_weeks) ? `${num(p.duration_weeks)} weeks` : "", (Array.isArray(p.delivery_modes) ? (p.delivery_modes as unknown[]).map(String).join(", ") : str(p.delivery_modes)) ? `Modes: ${Array.isArray(p.delivery_modes) ? (p.delivery_modes as unknown[]).map(String).join(", ") : str(p.delivery_modes)}` : "", num(p.tuition) !== null ? `Tuition: ${num(p.tuition)}` : "", str(p.certification) ? `Certificate: ${str(p.certification)}` : ""].filter(Boolean).join(" · ")].filter(Boolean).join("\n");
+    docs.push({ source: "programmes", title, url: PAGE_LINKS.programmes, text: parts.slice(0, 600) });
+  }
+  for (const a of announcementRows) {
+    const title = str(a.title) || "Announcement";
+    const body = str(a.body ?? a.message ?? a.content).slice(0, 500);
+    if (!body && !title) continue;
+    docs.push({ source: "announcement", title, url: PAGE_LINKS.blog, text: body });
+  }
+  for (const b of blogRows) {
+    const title = str(b.title);
+    if (!title) continue;
+    docs.push({ source: "news", title, url: str(b.slug) ? `#blog/${str(b.slug)}` : PAGE_LINKS.blog, text: str(b.excerpt).slice(0, 400) });
+  }
+  for (const f of faqList.slice(0, 20)) {
+    const r = f as Row;
+    const q = str(r.question ?? r.q ?? r.title);
+    const a = str(r.answer ?? r.a ?? r.body);
+    if (!q && !a) continue;
+    docs.push({ source: "faq", title: q || "FAQ", url: PAGE_LINKS.contact, text: a.slice(0, 500) });
+  }
+  if (admissionReqs) docs.push({ source: "admissions", title: "Admission requirements", url: PAGE_LINKS.admissions, text: admissionReqs.slice(0, 800) });
+  if (admissionSteps) docs.push({ source: "admissions", title: "Enrolment procedure", url: PAGE_LINKS.admissions, text: admissionSteps.slice(0, 800) });
+
+  const relevant = rankDocs(query, docs, 8);
   return JSON.stringify({
-    academy: settingsResult.error ? null : settingsResult.data ?? null,
-    programmes: programsResult.error ? null : (programsResult.data as Row[] | null) ?? [],
-    source_note: "Live application records. Null means unavailable, not zero or no programmes. Programme results are limited to 20 and may not be exhaustive.",
-    verify_help: "Certificates can be verified on the public Verify Certificate page using the certificate serial number.",
+    organization: ORGANIZATION_PROFILE,
+    academy: { name: str(settings?.academy_name) || "AFRICA OF HOPE", motto: str(settings?.motto), academic_year: str(settings?.academic_year), semester: str(settings?.semester), intake_status: str(settings?.intake_status), banner: str(settings?.marketing_banner) },
+    contact: { email: contactEmail || null, phone: contactPhone || null, address: address || null },
+    programme_count: programRows.length,
+    programmes: programRows.slice(0, 20).map((p) => ({ title: str(p.title), category: str(p.category), duration_weeks: num(p.duration_weeks), tuition: num(p.tuition), certification: str(p.certification) })),
+    relevant_sources: relevant,
+    source_note: "Live published records for this request. Null means unavailable, not zero. Only published public records are included; drafts, unpublished, expired and private records are excluded. Cite relevant_sources titles with their url anchors.",
+    verify_help: "Certificates are verified on the public Verify Certificate page (#verify) using the certificate serial number.",
   });
 }
 
@@ -299,11 +401,19 @@ Deno.serve(async (req: Request) => {
       return json({ error: "AFROHOPE AI is busy right now — please try again later today.", code: "rate_limited" }, 429);
     }
 
-    // ── scoped context ──────────────────────────────────────────────────
+    // ── scoped context: live published records are re-read on EVERY request, ─
+    // so newly published content is searchable immediately, edits replace old
+    // text, and unpublished/deleted rows simply stop appearing. No separate
+    // index exists that could go stale, and private tables are never queried
+    // for public answers.
+    const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const prevUser = [...messages].reverse().filter((m) => m.role === "user")[1]?.content ?? "";
+    const retrievalQuery = `${lastUser} ${prevUser}`.slice(0, 2000);
+    const category = classifyQuery(`${prevUser} ${lastUser}`);
     let publicData = null;
     let personalData = null;
     try {
-      publicData = JSON.parse(await buildPublicContext(admin));
+      publicData = JSON.parse(await buildPublicContext(admin, retrievalQuery));
     } catch {
       /* Missing institutional context must not block general-purpose help. */
     }
@@ -328,7 +438,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const systemContent = `${SYSTEM_PROMPT}\n\n${roleIntro(role, surface)}\n\nDATA: ${dataBlock}`;
+    const systemContent = `${SYSTEM_PROMPT}\n\n${roleIntro(role, surface)}\n\nREQUEST_CATEGORY: ${category} (A = AFRICA OF HOPE facts from KNOWLEDGE/DATA only with page links; B = general knowledge; C = both, clearly labelled; D = say what is unverified and ask for the official detail). The latest user message is the current question; earlier turns resolve follow-ups like "the first one".\n\nKNOWLEDGE: ${dataBlock}`;
 
     const controller = new AbortController();
     // Covers response headers AND the full upstream stream, not headers alone.

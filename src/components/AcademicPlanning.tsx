@@ -139,7 +139,7 @@ function TeacherPlanning({ reloadKey }: { reloadKey: number }) {
           const latest = queue[queue.length - 1];
           if (latest?.body) {
             setAssistantImport(String(latest.body).slice(0, 2000));
-            setMaterial((m) => ({ ...m, title: m.title || String(latest.title ?? "AOH AI resource").slice(0, 120), description: m.description || String(latest.body).slice(0, 2000) }));
+            setMaterial((m) => ({ ...m, title: m.title || String(latest.title ?? "AOH AI resource").slice(0, 120), description: m.description || String(latest.body).slice(0, 2000), cohortId: m.cohortId || (typeof latest.cohortId === "string" && cohorts.some((c) => c.id === latest.cohortId) ? latest.cohortId : m.cohortId) }));
           }
         }
       } catch { /* storage unavailable */ }
