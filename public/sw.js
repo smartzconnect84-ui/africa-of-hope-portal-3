@@ -1,4 +1,15 @@
 /* AFRICA OF HOPE — PWA service worker.
+ * OneSignal coexistence: the official OneSignal worker code is loaded first
+ * (guarded — offline/CDN failure keeps PWA caching fully working), then the
+ * existing AFRICA OF HOPE caches below. /OneSignalSDKWorker.js re-imports
+ * this file, so whichever registration the browser keeps serves BOTH push
+ * and offline. See src/lib/onesignal.ts.
+ */
+try {
+  importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+} catch (e) { /* offline first install: PWA logic below still runs */ }
+
+/* AFRICA OF HOPE — PWA service worker (continued).
  *
  * One worker, three caches:
  *   shell  — the app shell + offline page (network-first navigations)

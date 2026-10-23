@@ -47,3 +47,9 @@ verify_jwt = false
 # x-cron-secret (REMINDER_CRON_SECRET or CRON_SECRET, else the service key).
 [functions.send-deadline-reminders]
 verify_jwt = false
+
+# Authenticated at the gateway (admin JWT required); the handler additionally
+# re-checks the caller role server-side and never accepts the REST key.
+# Server secrets: ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY.
+[functions.onesignal-send]
+verify_jwt = true
