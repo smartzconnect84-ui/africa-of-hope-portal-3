@@ -17,6 +17,10 @@
 const PAGE_SDK_URL = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
 const APP_ID_KEY = "VITE_ONESIGNAL_APP_ID";
 const SAFARI_WEB_ID_KEY = "VITE_ONESIGNAL_SAFARI_WEB_ID";
+// Owner-supplied production OneSignal app (public IDs only — safe for frontend).
+// Env vars override these when set; the REST API key is NEVER placed here.
+const DEFAULT_APP_ID = "1c7444cf-8299-48c3-adf7-0d1b32dbed7b";
+const DEFAULT_SAFARI_WEB_ID = "web.onesignal.auto.3431b9a6-8377-4186-9b23-bf65dbb4a731";
 
 let initPromise: Promise<boolean> | null = null;
 let scriptPromise: Promise<void> | null = null;
@@ -29,7 +33,13 @@ declare global {
 }
 
 export function oneSignalAppId(): string {
-  return ((import.meta as any)?.env?.[APP_ID_KEY] as string | undefined)?.trim() ?? "";
+  const fromEnv = ((import.meta as any)?.env?.[APP_ID_KEY] as string | undefined)?.trim() ?? "";
+  return fromEnv || DEFAULT_APP_ID;
+}
+
+export function oneSignalSafariWebId(): string {
+  const fromEnv = ((import.meta as any)?.env?.[SAFARI_WEB_ID_KEY] as string | undefined)?.trim() ?? "";
+  return fromEnv || DEFAULT_SAFARI_WEB_ID;
 }
 
 export function isOneSignalConfigured(): boolean {
@@ -75,12 +85,13 @@ export function initOneSignal(): Promise<boolean> {
       await loadPageSdk();
       const OS = window.OneSignal;
       if (!OS?.init) return false;
-      const safariWebId = ((import.meta as any)?.env?.[SAFARI_WEB_ID_KEY] as string | undefined)?.trim() || undefined;
+      const safariWebId = oneSignalSafariWebId() || undefined;
       await OS.init({
         appId,
         ...(safariWebId ? { safari_web_id: safariWebId } : {}),
         allowLocalhostAsSecureOrigin: true,
-        // Persist the declined state so we never nag users who said "later".
+        // Custom branded subscription UI (OneSignalPanel) replaces the default bell.
+        notifyButton: { enable: false },
         promptOptions: { slidedown: { enabled: false } },
         welcomeNotification: { disable: true },
       });

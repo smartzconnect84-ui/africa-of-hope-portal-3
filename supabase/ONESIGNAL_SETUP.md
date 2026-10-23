@@ -32,6 +32,15 @@
 verify_jwt = true
 ```
 
+## Credentials wired in this build
+
+- Frontend default App ID: `1c7444cf-8299-48c3-adf7-0d1b32dbed7b` (owner-supplied 2026-10-26).
+  `VITE_ONESIGNAL_APP_ID` still overrides it when set.
+- Frontend default Safari Web ID: `web.onesignal.auto.3431b9a6-8377-4186-9b23-bf65dbb4a731`.
+  `VITE_ONESIGNAL_SAFARI_WEB_ID` still overrides it when set.
+- The App ID is public and frontend-safe. The REST API key was NOT supplied, so
+  server sends still need it (see below) — no key was fabricated.
+
 ## Required OneSignal dashboard settings (owner action)
 
 1. Create a Web Push app at onesignal.com → **App ID** (public, frontend-safe).
