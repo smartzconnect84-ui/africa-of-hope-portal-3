@@ -31,6 +31,7 @@ import PublicNav from "./public/PublicNav";
 import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
 import TermDatesPage from "./public/TermDatesPage";
+import AdmissionsPage from "./public/AdmissionsPage";
 import SupportSection from "./public/SupportSection";
 import NewsletterSignup from "./public/NewsletterSignup";
 import NewsletterAction from "./public/NewsletterAction";
@@ -69,6 +70,7 @@ type View =
   | { type: "home"; anchor: string | null }
   | { type: "programmes" }
   | { type: "term-dates" }
+  | { type: "admissions" }
   | { type: "policies" }
   | { type: "transparency" }
   | { type: "cookies" }
@@ -115,6 +117,7 @@ function parseHash(hash: string): View {
     }
     return { type: "blogPost", slug };
   }
+  if (ADMISSIONS_RE.test(h)) return { type: "admissions" };
   if (HOME_RE.test(h)) return { type: "home", anchor: null };
   // Any other anchor (#about, #impact, #verify, #admissions, #contact, #summary…) stays on Home and scrolls there.
   return { type: "home", anchor: h.replace(/^#/, "") };
@@ -183,8 +186,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-policies", href: "#policies", label: "Policies" }];
     if (!links.some((l) => /^#\/?transparency$/i.test(l.href.trim())))
       links = [...links, { id: "nav-transparency", href: "#transparency", label: "Transparency" }];
+    if (!links.some((l) => ADMISSIONS_RE.test(l.href.trim())))
+      links = [...links, { id: "nav-admissions", href: "#admissions", label: "Admissions" }];
     // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
-    return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !ADMISSIONS_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
+    // Admissions stays visible in the menu bar as its own page.
+    return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
   }, [saved]);
   const displayName = useMemo(() => {
     const full = (w.academyName || settings.academyName || "").trim();
@@ -239,6 +245,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   useEffect(() => {
     const base = displayName || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
     if (view.type === "programmes") document.title = `Programmes — ${base}`;
+    else if (view.type === "admissions") document.title = `Admissions — ${base}`;
     else if (view.type === "term-dates") document.title = `Term dates — ${base}`;
     else if (view.type === "policies") document.title = `School Policies — ${base}`;
     else if (view.type === "transparency") document.title = `Transparency reports — ${base}`;
@@ -383,7 +390,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md"
         data-aoh-sticky-header=""
       >
-        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-2 px-3 py-2 sm:gap-4 sm:px-5 md:gap-5">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-1 px-2 py-2 sm:gap-2 sm:px-5 lg:gap-1.5">
           <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
@@ -396,7 +403,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             />
           </a>
           <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:ml-2">
+          <div className="ml-auto flex shrink-0 items-center gap-0 lg:ml-1">
             <button type="button" onClick={toggleVisualMode} aria-label={`Switch to ${visualMode === 'dark' ? 'light' : 'dark'} visual mode`} aria-pressed={visualMode === 'dark'} title="Visual mode" className="grid h-10 w-8 shrink-0 place-items-center rounded-xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 sm:w-10">{visualMode === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
             <motion.button
               type="button"
@@ -455,19 +462,19 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-6 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain pr-1">
+              <nav className="-mr-1 mt-1 flex min-h-0 flex-none flex-col gap-0 overflow-y-auto overscroll-contain pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
                     href={l.href}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="min-h-10 rounded-xl px-3 py-3 text-sm font-medium text-emerald-100 transition hover:bg-white/10"
+                    className="min-h-9 rounded-lg px-3 py-2 text-sm font-medium text-emerald-100 transition hover:bg-white/10"
                   >
                     {t(l.label)}
                   </a>
                 ))}
               </nav>
-              <div className="mt-4 border-t border-white/10 pt-4">
+              <div className="mt-2 border-t border-white/10 pt-3">
                 <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
                   {t("School Portal")}
                 </button>
@@ -480,6 +487,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       <AnimatePresence mode="wait">
         <motion.main key={hash} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
+          {view.type === "admissions" && <AdmissionsPage onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
           {view.type === "transparency" && <TransparencyLibrary />}

@@ -236,7 +236,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.h1
               custom={1}
               variants={textStagger}
-              className="mt-6 text-3xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
+              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
             >
               {slide.title}
               <br />
@@ -247,7 +247,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.p
               custom={2}
               variants={textStagger}
-              className="mt-5 max-w-[65ch] text-base text-emerald-100/90 sm:text-lg"
+              className="mt-3 max-w-[65ch] text-base text-emerald-100/90 sm:text-lg"
             >
               {slide.description}
             </motion.p>

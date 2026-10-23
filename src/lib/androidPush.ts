@@ -10,32 +10,107 @@
  *
  * Server rules still apply: recipient eligibility and role/course targeting
  * are resolved server-side; tags set from the browser are hints only.
+ *
+ * Single canonical implementation (production cleanup):
+ * - Platform detection lives in isAndroidWrapper / isInstalledPwa /
+ *   getDisplayMode / detectAndroidPlatform. detectPushPlatform and
+ *   pushPlatformTag are thin aliases over the same logic.
+ * - Pending-destination storage lives in storePendingDestination /
+ *   consumePendingDestination. storePendingPushView / consumePendingPushView
+ *   are aliases for the login-resume flow.
+ * - Cold-start parsing lives in handlePushColdStart (handles both
+ *   ?push_view= and legacy ?push_target=). takeLaunchPushTarget delegates
+ *   to it so there is exactly one parser.
  */
 
 export type PushPlatform = "installed-pwa" | "android-wrapper" | "mobile-browser" | "desktop-browser";
 
-export function detectPushPlatform(): PushPlatform {
-  if (typeof window === "undefined" || typeof navigator === "undefined") return "desktop-browser";
-  const ua = navigator.userAgent || "";
-  const isAndroid = /Android/i.test(ua);
-  // WebView / TWA / Capacitor shell hints. Chrome TWA sends the full Chrome
-  // UA with no WebView token, so an android-app:// referrer is the tell.
-  const isWebView = /; wv\)|Version\/.*Chrome\/.*Mobile/i.test(ua) && /wv/i.test(ua);
-  const fromAndroidApp = typeof document !== "undefined" && document.referrer.startsWith("android-app://");
-  const capacitor = typeof (window as any).Capacitor !== "undefined";
-  let standalone = false;
+/** Detect how the app is running: browser tab, installed PWA, or APK wrapper. */
+export function getDisplayMode(): string {
   try {
-    standalone =
-      window.matchMedia?.("(display-mode: standalone)").matches ||
-      (navigator as any).standalone === true;
-  } catch { standalone = false; }
-  if (capacitor || fromAndroidApp || (isAndroid && (isWebView || (window as any).AOH_APK === true))) {
-    return "android-wrapper";
-  }
-  if (standalone) return "installed-pwa";
-  return isAndroid ? "mobile-browser" : "desktop-browser";
+    if (typeof window === "undefined" || !window.matchMedia) return "browser";
+    if (window.matchMedia("(display-mode: standalone)").matches) return "standalone";
+    if (window.matchMedia("(display-mode: fullscreen)").matches) return "fullscreen";
+    if (window.matchMedia("(display-mode: minimal-ui)").matches) return "minimal-ui";
+    if (window.matchMedia("(display-mode: picture-in-picture)").matches) return "picture-in-picture";
+    return "browser";
+  } catch { return "browser"; }
 }
 
+export function isAndroidWrapper(): boolean {
+  try {
+    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const w = window as any;
+    // Capacitor bridge, Cordova, explicit APK flag, or a TWA/Custom-Tab wrapper intent.
+    if (w.Capacitor?.isNativePlatform?.()) return true;
+    if (typeof w?.Capacitor !== "undefined" && w?.Capacitor?.getPlatform?.() === "android") return true;
+    if (w.cordova || w.AOH_APK === true) return true;
+    if (/;\s*wv\)/.test(ua)) return true; // Android System WebView token
+    if (typeof document !== "undefined" && document.referrer) {
+      try {
+        if (new URL(document.referrer).protocol === "android-app:") return true;
+      } catch { /* ignore */ }
+    }
+    // Chrome TWA sends a full Chrome UA with no WebView token, so only the
+    // android-app:// referrer above identifies it — never guess from UA alone.
+    return false;
+  } catch { return false; }
+}
+
+export function isInstalledPwa(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    const w = window as any;
+    if (w.matchMedia?.("(display-mode: standalone)").matches) return true;
+    if (w.matchMedia?.("(display-mode: fullscreen)").matches) return true;
+    if ((navigator as any)?.standalone === true) return true; // iOS
+    return false;
+  } catch { return false; }
+}
+
+/** Short tag used for OneSignal data-tags + diagnostics (never an identity). */
+export function androidPlatformTag(): string {
+  try {
+    if (isAndroidWrapper()) return "apk";
+    if (isInstalledPwa()) return "pwa";
+    return getDisplayMode() === "browser" ? "web" : getDisplayMode();
+  } catch { return "web"; }
+}
+
+/** Canonical platform detection (heuristic and honest — see isAndroidWrapper). */
+export interface AndroidPlatform {
+  wrapper: boolean;
+  installed: boolean;
+  standalone: boolean;
+  twa: boolean;
+  platformTag: string;
+  displayMode: string;
+}
+
+export function detectAndroidPlatform(): AndroidPlatform {
+  const wrapper = isAndroidWrapper();
+  const installed = isInstalledPwa();
+  const displayMode = getDisplayMode();
+  const standalone = displayMode === "standalone" || displayMode === "fullscreen";
+  let twa = false;
+  try {
+    twa = wrapper && typeof document !== "undefined" && !!document.referrer
+      ? new URL(document.referrer).protocol === "android-app:"
+      : false;
+  } catch { twa = false; }
+  return { wrapper, installed, standalone, twa, platformTag: androidPlatformTag(), displayMode };
+}
+
+/** Alias kept for existing callers: 4-value platform over the same detectors. */
+export function detectPushPlatform(): PushPlatform {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return "desktop-browser";
+  if (isAndroidWrapper()) return "android-wrapper";
+  if (isInstalledPwa()) return "installed-pwa";
+  return /Android/i.test(navigator.userAgent || "") ? "mobile-browser" : "desktop-browser";
+}
+
+/** Alias kept for existing callers: same platform, OneSignal tag shape. */
 export function pushPlatformTag(): Record<string, string> {
   const platform = detectPushPlatform();
   return { platform, pwa_installed: platform === "installed-pwa" ? "1" : "0" };
@@ -127,7 +202,7 @@ export function dispatchPushNavigate(url: string): void {
 /**
  * Handle a cold start from a notification tap (?push_view= / ?push_target=).
  * Keeps only same-origin targets, stores them for post-login resume, and
- * strips the query so the URL stays shareable.
+ * strips the query so the URL stays shareable. Single parser for both keys.
  */
 export function handlePushColdStart(): string | null {
   try {
@@ -144,99 +219,22 @@ export function handlePushColdStart(): string | null {
   } catch { return null; }
 }
 
-/** Legacy cold-start query (?push_target=view) consumed once at startup. */
+/** Legacy cold-start query (?push_target=view) consumed once at startup — delegates to the single parser. */
 export function takeLaunchPushTarget(): { view: string } | null {
+  const url = handlePushColdStart();
+  if (!url) return null;
   try {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get("push_target");
-    if (!view || !PORTAL_VIEWS.has(view)) return null;
-    storePendingDestination(`/?push_view=${view}`);
-    params.delete("push_target");
-    const clean = window.location.pathname + (params.toString() ? `?${params}` : "") + window.location.hash;
-    window.history.replaceState(null, "", clean);
-    return { view };
+    const view = new URL(url, window.location.origin).searchParams.get("push_view");
+    return view && PORTAL_VIEWS.has(view) ? { view } : null;
   } catch { return null; }
 }
 
-/** Detect how the app is running: browser tab, installed PWA, or APK wrapper.
- *
- * Detection is heuristic and honest: a TWA/Capacitor wrapper reports itself
- * via display-mode, user-agent and bridge objects. Nothing here invents an
- * APK identity — the package name only matters for assetlinks/FCM setup.
- */
-export interface AndroidPlatform {
-  wrapper: boolean;
-  installed: boolean;
-  standalone: boolean;
-  twa: boolean;
-  platformTag: string;
-  displayMode: string;
-}
-
-export function getDisplayMode(): string {
-  try {
-    if (typeof window === "undefined" || !window.matchMedia) return "browser";
-    if (window.matchMedia("(display-mode: standalone)").matches) return "standalone";
-    if (window.matchMedia("(display-mode: fullscreen)").matches) return "fullscreen";
-    if (window.matchMedia("(display-mode: minimal-ui)").matches) return "minimal-ui";
-    if (window.matchMedia("(display-mode: picture-in-picture)").matches) return "picture-in-picture";
-    return "browser";
-  } catch { return "browser"; }
-}
-
-export function isAndroidWrapper(): boolean {
-  try {
-    const ua = navigator.userAgent || "";
-    const w = window as any;
-    // Capacitor bridge, Cordova, or a TWA/Custom-Tab wrapper intent.
-    if (w.Capacitor?.isNativePlatform?.() || w.cordova) return true;
-    if (/;\s*wv\)/.test(ua)) return true; // Android System WebView token
-    if (/Version\/4.+Chrome/.test(ua) && /Mobile/.test(ua) && !/wv/.test(ua)) return false;
-    if (document.referrer) {
-      try {
-        if (new URL(document.referrer).protocol === "android-app:") return true;
-      } catch { /* ignore */ }
-    }
-    return false;
-  } catch { return false; }
-}
-
-export function isInstalledPwa(): boolean {
-  try {
-    const w = window as any;
-    if (w.matchMedia && w.matchMedia("(display-mode: standalone)").matches) return true;
-    if (w.matchMedia && w.matchMedia("(display-mode: fullscreen)").matches) return true;
-    if ((navigator as any).standalone === true) return true; // iOS
-    return false;
-  } catch { return false; }
-}
-
-/** Short tag used for OneSignal data-tags + diagnostics (never an identity). */
-export function androidPlatformTag(): string {
-  try {
-    if (isAndroidWrapper()) return "apk";
-    if (isInstalledPwa()) return "pwa";
-    return getDisplayMode() === "browser" ? "web" : getDisplayMode();
-  } catch { return "web"; }
-}
-
-export function detectAndroidPlatform(): AndroidPlatform {
-  const wrapper = isAndroidWrapper();
-  const installed = isInstalledPwa();
-  const displayMode = getDisplayMode();
-  const standalone = displayMode === "standalone" || displayMode === "fullscreen";
-  let twa = false;
-  try { twa = wrapper && document.referrer ? new URL(document.referrer).protocol === "android-app:" : false; }
-  catch { twa = false; }
-  return { wrapper, installed, standalone, twa, platformTag: androidPlatformTag(), displayMode };
-}
-
-/** Remember a portal view across the login flow (tab-scoped, then device). */
+/** Remember a portal view across the login flow (alias over the single store). */
 export function storePendingPushView(view: string): void {
   storePendingDestination(`/?push_view=${view}`);
 }
 
-/** Read + clear the pending portal view stored by a notification tap. */
+/** Read + clear the pending portal view (alias over the single store). */
 export function consumePendingPushView(): string | null {
   const dest = consumePendingDestination();
   if (!dest) return null;

@@ -272,7 +272,38 @@ eyebrow: "Our work",
       body: "Partner employers across Liberia review top performers for internships and junior roles.",
     },
   ],
-  partners: [],
+  partners: [
+    {
+      id: 'partner-eagles-nest',
+      name: "Eagles' Nest Academy",
+      logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png',
+      description: 'Day-care, elementary and junior high school partner in Boys Town Community — every child a potential leader.',
+    },
+    {
+      id: 'partner-dmg',
+      name: 'Deesire Moore Grace Foundation',
+      logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/cd6mq1yuax/file_0000000009d471fdb2483f23fe455e95.png',
+      description: 'Transforming and empowering lives through hope, change and inspiration.',
+    },
+    {
+      id: 'partner-games-james',
+      name: 'Games James',
+      logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/mo35wdme29/file_000000009acc81f4a3b11508f1c06aa7.png',
+      description: 'Youth sports and community games partner building teamwork and healthy living.',
+    },
+    {
+      id: 'partner-love-lamp',
+      name: 'Love and Lamp Children Mission',
+      logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/jdo1hlptc9/file_0000000009d471fdb2483f23fe455e95.png',
+      description: 'Faith-rooted children mission caring for vulnerable children — Matthew 25:35.',
+    },
+    {
+      id: 'partner-global-hope',
+      name: 'Global Hope Foundation Charity',
+      logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/8gnc2n2zi0/file_0000000009d471fdb2483f23fe455e95.png',
+      description: 'Global charity partner supporting hope, care and community relief.',
+    },
+  ],
   partnerShowcase: { title: "Industry & partnerships", description: "Working together to expand opportunity and strengthen communities.", autoRotate: true },
   admissionSteps: [
     {

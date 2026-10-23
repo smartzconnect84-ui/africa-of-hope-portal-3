@@ -210,7 +210,7 @@ export default function CourseDiscussions() {
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Input maxLength={10000} disabled={saving} placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addReply(thread.id); }} />
+                    <Input maxLength={10000} disabled={saving} placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addReply(thread.id); } }} />
                     <Button size="sm" disabled={saving} aria-label="Send reply" onClick={() => void addReply(thread.id)} className="bg-emerald-700 hover:bg-emerald-800"><Send className="h-4 w-4" /></Button>
                   </div>
                 </div>

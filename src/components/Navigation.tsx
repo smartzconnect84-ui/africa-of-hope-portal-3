@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle, Bell, LogOut, Menu, Search, X,
-  RefreshCw, Globe, Megaphone, HeartHandshake, type LucideIcon,
+  RefreshCw, Globe, Megaphone, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
@@ -407,9 +407,6 @@ export default function Navigation({
         );
       })}
       <div className="mt-2 space-y-1 border-t border-slate-100 pt-2 dark:border-white/10">
-        <button type="button" onClick={() => go("donate")} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-amber-200 dark:hover:bg-white/10">
-          <HeartHandshake className="h-4.5 w-4.5 text-amber-600 dark:text-amber-300" /> Donate
-        </button>
         {onExitToPublic && (
           <button
             type="button"

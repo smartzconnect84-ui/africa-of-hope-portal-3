@@ -50,8 +50,16 @@ function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void 
 
 function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; initialTab: AuthTab }) {
   const { currentUser, logout } = useApp();
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => {
+    try { return localStorage.getItem("aoh-portal-view") || "dashboard"; }
+    catch { return "dashboard"; }
+  });
   const { ctx, views } = useVisiblePortalViews();
+
+  // f123 — remember the last portal page across refresh.
+  useEffect(() => {
+    try { localStorage.setItem("aoh-portal-view", view); } catch { /* optional preference */ }
+  }, [view]);
 
   // Resume a push-tap destination after sign-in (works for PWA + APK wrapper).
   useEffect(() => {
@@ -116,8 +124,15 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 
 function Shell() {
   const { state } = useApp();
-  const [site, setSite] = useState<"public" | "portal">("public");
+  const [site, setSite] = useState<"public" | "portal">(() => {
+    try { return localStorage.getItem("aoh-site") === "portal" ? "portal" : "public"; }
+    catch { return "public"; }
+  });
   const [authTab, setAuthTab] = useState<AuthTab>("signin");
+
+  useEffect(() => {
+    try { localStorage.setItem("aoh-site", site); } catch { /* optional preference */ }
+  }, [site]);
 
   // Apply the CMS-configured academy name / favicon at runtime so a change
   // published from the CMS shows up without a rebuild. Only drives

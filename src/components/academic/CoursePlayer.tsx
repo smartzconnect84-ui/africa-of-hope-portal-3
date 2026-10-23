@@ -49,7 +49,7 @@ export default function CoursePlayer() {
   const [lowData, setLowData] = useState(() => localStorage.getItem(LOW_DATA_KEY) === "1");
   const [busy, setBusy] = useState("");
   const memory = useLearningMemory(currentUser?.id);
-  const restored = useRef(false);
+  const restoredUser = useRef<string | null>(null);
   const videoSavedAt = useRef(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const resume = (row: LearningMemory) => {
@@ -59,8 +59,9 @@ export default function CoursePlayer() {
   };
 
   useEffect(() => {
-    if (!memory.ready || loading || restored.current) return;
-    restored.current = true;
+    const userKey = currentUser?.id ?? "anon";
+    if (!memory.ready || loading || restoredUser.current === userKey) return;
+    restoredUser.current = userKey;
     let requested = "";
     try {
       const entry = JSON.parse(sessionStorage.getItem("aoh-resume-lesson") || "null");
@@ -69,9 +70,9 @@ export default function CoursePlayer() {
     } catch { /* unavailable browser storage */ }
     const row = requested ? memory.rows.find((r) => r.unit_id === requested) : [...memory.rows].filter((r) => r.last_opened_at && units.some((u) => u.id === r.unit_id)).sort((a, b) => (b.last_opened_at || "").localeCompare(a.last_opened_at || ""))[0];
     if (row) resume(row);
-    // Restore once, not after each autosave.
+    // Restore once per signed-in account, not after each autosave.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memory.ready, loading]);
+  }, [memory.ready, loading, currentUser?.id]);
 
   useEffect(() => { localStorage.setItem(LOW_DATA_KEY, lowData ? "1" : "0"); }, [lowData]);
 
@@ -124,7 +125,7 @@ export default function CoursePlayer() {
   const savedPosition = memory.rows.find((r) => r.unit_id === active?.id);
 
   useEffect(() => {
-    if (!active || !memory.ready || !restored.current) return;
+    if (!active || !memory.ready || !restoredUser.current) return;
     const previous = memory.rows.find((r) => r.unit_id === active.id);
     memory.save(active, { last_opened_at: new Date().toISOString() });
     let restoring = true;
