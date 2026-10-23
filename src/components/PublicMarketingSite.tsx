@@ -448,7 +448,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="aoh-drawer absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
+              className="aoh-drawer !h-auto absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
