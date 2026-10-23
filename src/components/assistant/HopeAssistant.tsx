@@ -39,6 +39,7 @@ export default function HopeAssistant() {
   const [bubbles, setBubbles] = useState<ChatBubble[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -64,6 +65,21 @@ export default function HopeAssistant() {
     ? "AOH AI"
     : configuredLabel;
   const surface: "public" | "portal" = currentUser ? "portal" : "public";
+  const canSaveMaterial = currentUser && ["Teacher", "School Admin", "Super Admin"].includes(currentUser.role);
+
+  function saveToMaterials(bubbleId: string, content: string) {
+    const text = content.trim();
+    if (!text) return;
+    try {
+      const key = "aoh-assistant-material-queue";
+      const existing = JSON.parse(localStorage.getItem(key) ?? "[]");
+      const queue = Array.isArray(existing) ? existing : [];
+      queue.push({ id: crypto.randomUUID(), title: text.split("\n")[0].slice(0, 80) || "AOH AI resource", body: text, savedAt: new Date().toISOString(), savedBy: currentUser?.id ?? null });
+      localStorage.setItem(key, JSON.stringify(queue.slice(-20)));
+      window.dispatchEvent(new CustomEvent("aoh:assistant-material", { detail: { count: queue.length } }));
+      setSavedIds((prev) => (prev.includes(bubbleId) ? prev : [...prev, bubbleId]));
+    } catch { /* storage unavailable — guidance below still shows */ }
+  }
 
   async function send(text: string) {
     const content = text.trim();
@@ -208,8 +224,16 @@ export default function HopeAssistant() {
                     )}
                   >
                     {b.content ? (
+                      <div>
                       <div className="prose-sm [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-4">
                         <ReactMarkdown>{b.content}</ReactMarkdown>
+                      </div>
+                      {b.role === "assistant" && b.complete && canSaveMaterial && (
+                        <button type="button" disabled={savedIds.includes(b.id)} onClick={() => saveToMaterials(b.id, b.content)} className="mt-1.5 inline-flex min-h-8 items-center gap-1 rounded-full border border-emerald-600/30 bg-white px-2.5 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-60">{savedIds.includes(b.id) ? "Saved to training materials ✓" : "Save to training materials"}</button>
+                      )}
+                      {b.role === "assistant" && b.complete && canSaveMaterial && savedIds.includes(b.id) && (
+                        <p className="mt-1 text-[11px] text-emerald-700">Saved. Open Academic Planning → Materials to attach it to a course for students.</p>
+                      )}
                       </div>
                     ) : sending ? (
                       <span className="inline-flex items-center gap-1 py-1" aria-label="Waiting for a reply">

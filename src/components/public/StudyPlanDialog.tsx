@@ -21,6 +21,8 @@ const EDUCATION_LEVELS = [
   "Diploma", "Bachelor's Degree", "Postgraduate", "Other",
 ];
 
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 /** Applicant picks the study plan (duration + delivery + cost) before applying. */
 export default function StudyPlanDialog({
   program,
@@ -41,6 +43,7 @@ export default function StudyPlanDialog({
   const [phone, setPhone] = useState("");
   const [level, setLevel] = useState("");
   const [notes, setNotes] = useState("");
+  const [trainingDays, setTrainingDays] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +59,10 @@ export default function StudyPlanDialog({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("Enter a valid email address.");
     if (phone.replace(/\D/g, "").length < 7) return setError("Enter a valid phone number.");
     if (!level) return setError("Select your level of education.");
+    if (mode === "online" && trainingDays.length !== 3) return setError("Strictly online students select exactly 3 training days.");
     setBusy(true);
+    const daysSuffix = mode === "online" ? ` · Class days: ${trainingDays.join(", ")}` : "";
+    const prefix = mode === "online" ? `Strictly online — class days ${trainingDays.join(", ")}. I will attend within my selected days and complete the course within the duration to be certificated. ` : "";
     const result = await submitStudyPlan({
       name: name.trim(),
       email: email.trim(),
@@ -64,11 +70,11 @@ export default function StudyPlanDialog({
       programId: program.id,
       programTitle: program.title,
       mode,
-      duration: `${durationLabel(program)} · ${scheduleLabel(mode)}`,
+      duration: `${durationLabel(program)} · ${scheduleLabel(mode)}${daysSuffix}`,
       registrationFee: cost.registration,
       educationLevel: level,
       intake,
-      notes: notes.trim(),
+      notes: `${prefix}${notes.trim()}`.trim(),
     });
     setBusy(false);
     setDone(true);
@@ -93,7 +99,7 @@ export default function StudyPlanDialog({
             <div className="flex items-start gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                {program.title} · {DELIVERY_META[mode].label} · {scheduleLabel(mode)} · {durationLabel(program)} · Registration {cost.registration} (tuition-free).
+                {program.title} · {DELIVERY_META[mode].label} · {scheduleLabel(mode)} · {durationLabel(program)}{mode === "online" ? ` · ${trainingDays.join(", ")}` : ""} · Registration {cost.registration} (tuition-free).
               </span>
             </div>
             <Button onClick={() => { onOpenChange(false); setDone(false); onApply(); }} className="h-11 w-full rounded-xl bg-emerald-700 text-white hover:bg-emerald-800">
@@ -131,6 +137,23 @@ export default function StudyPlanDialog({
               </div>
             </div>
 
+            {mode === "online" && (
+              <div className="space-y-2 rounded-xl border border-emerald-900/15 bg-emerald-50/60 p-3">
+                <p className="text-sm font-medium text-emerald-950">Strictly online — select 3 training days</p>
+                <p className="text-xs leading-5 text-slate-600">Online enrolment is open anytime once you complete the requirements — no waiting for the general school opening. You must attend within your selected days and complete the course within {durationLabel(program)} to be certificated. Your certificate is issued upon completion.</p>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Select 3 training days">
+                  {WEEKDAYS.map((day) => {
+                    const active = trainingDays.includes(day);
+                    return <button key={day} type="button" aria-pressed={active} onClick={() => setTrainingDays((prev) => active ? prev.filter((d) => d !== day) : prev.length >= 3 ? prev : [...prev, day])} className={cn("min-h-10 rounded-full border px-3 text-xs font-semibold transition", active ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-emerald-400")}>{day.slice(0, 3)}</button>;
+                  })}
+                </div>
+                <p className="text-[11px] font-medium text-emerald-800">{trainingDays.length}/3 selected{trainingDays.length > 0 ? `: ${trainingDays.join(", ")}` : ""}</p>
+              </div>
+            )}
+            {mode !== "online" && (
+              <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 ring-1 ring-amber-900/10">Onsite and blended cohorts follow the published term dates. Strictly online students may enrol anytime and are certificated upon completion within the course duration.</p>
+            )}
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div><Label htmlFor="plan-name">Full name</Label><Input id="plan-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1" placeholder="Amina Diallo" autoComplete="name" /></div>
               <div><Label htmlFor="plan-phone">Phone / WhatsApp</Label><Input id="plan-phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1" placeholder="+231 77 000 0000" autoComplete="tel" /></div>
@@ -148,7 +171,7 @@ export default function StudyPlanDialog({
                 {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
-            <div><Label htmlFor="plan-notes">Anything we should know? (optional)</Label><Textarea id="plan-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" placeholder="Preferred class days, work schedule…" /></div>
+            <div><Label htmlFor="plan-notes">Anything we should know? (optional)</Label><Textarea id="plan-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1" placeholder="Work schedule, support needs…" /></div>
 
             {error && <p role="alert" className="rounded-lg bg-rose-50 p-2.5 text-xs font-medium text-rose-700">{error}</p>}
 

@@ -839,3 +839,11 @@ html[data-portal-icons="filled"] .portal-icon {
   }
   .aoh-public :is(a, button, [role="button"], [role="tab"]):hover svg { scale: 1; rotate: 0deg; }
 }
+
+/* All-mode public readability: inputs, placeholders and low-contrast ambers stay legible. */
+.aoh-public input::placeholder, .aoh-public textarea::placeholder { opacity: 0.75; }
+.aoh-public[data-visual-mode="dark"] :is(input, textarea, select) { background-color: #0f271d !important; border-color: rgb(255 255 255 / 0.18) !important; color: #f2f8f4 !important; }
+.aoh-public[data-visual-mode="dark"] input::placeholder, .aoh-public[data-visual-mode="dark"] textarea::placeholder { color: #9db8ab !important; }
+.aoh-public[data-visual-mode="dark"] :is(.text-amber-900, .text-amber-800, .text-yellow-900) { color: #fde68a !important; }
+.aoh-public[data-visual-mode="dark"] :is(.border-emerald-900\/20, .border-slate-200, .border-slate-300) { border-color: rgb(255 255 255 / 0.16) !important; }
+.aoh-public[data-visual-mode="dark"] :is(.ring-amber-900\/10, .shadow-lg, .shadow-emerald-900\/10) { box-shadow: 0 8px 24px rgb(0 0 0 / 0.35) !important; }

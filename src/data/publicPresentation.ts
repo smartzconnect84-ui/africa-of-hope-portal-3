@@ -26,9 +26,10 @@ export const DEFAULT_ABOUT: AboutContent = {
     { id: 'contact', label: 'Contact us', href: '#contact', icon: 'Mail' },
   ],
   sections: [
+    prose(approved.ABOUT_SUMMARY),
     prose(approved.ABOUT_WHO),
     cards('about-mission', 'What drives us', 'Mission, vision and purpose', approved.ABOUT_MISSION),
-    prose(approved.ABOUT_SUMMARY), prose(approved.ABOUT_STORY),
+    prose(approved.ABOUT_STORY),
     cards('about-impact', 'Our areas of impact', 'Interconnected areas of service, empowerment and development', approved.ABOUT_IMPACT),
     cards('about-values', 'Our core values', 'Values that guide every decision', approved.ABOUT_VALUES),
     { ...cards('about-approach', approved.ABOUT_APPROACH_INTRO.eyebrow || '', approved.ABOUT_APPROACH_INTRO.title, approved.ABOUT_APPROACH), body: approved.ABOUT_APPROACH_INTRO.paragraphs.join('\n\n') },

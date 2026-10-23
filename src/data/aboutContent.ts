@@ -60,11 +60,10 @@ export const ABOUT_SUMMARY: AboutProse = {
   id: 'about-summary',
   eyebrow: 'Organization at a glance',
   title: 'Turning hope into the capacity to thrive.',
-  subtitle: 'A people-centered vision. A connected approach. A commitment to lasting change.',
+  subtitle: 'Nonprofit · Est. 2021 · Education, training and community empowerment.',
   paragraphs: [
-    'Established in 2021, AFRICA OF HOPE is a nonprofit parent organization with a vision of expanding opportunity, protecting human dignity and strengthening communities across Africa and beyond. Its central conviction is that people need more than temporary assistance: they need access to knowledge, practical skills, essential support and the confidence to shape their own futures.',
-    'The organization brings eight interconnected areas of work under one purpose: education and professional training; healthcare and medical initiatives; rehabilitation and reintegration; agriculture and sustainable livelihoods; media and entertainment; advocacy and community development; humanitarian outreach and social support; and orphanage and child welfare development. Together, these areas form a holistic response to the barriers that can limit well-being, independence and participation in society.',
-    'AFRICA OF HOPE’s approach places people first, builds opportunity through empowerment, advances progress through partnership and pursues sustainable impact. Compassion, integrity, empowerment, inclusion, innovation, sustainability and collaboration guide its decisions. Through responsible planning, community participation and shared action, it seeks to turn hope into practical pathways toward self-reliance, resilience and a more inclusive future—not simply support people through today’s challenges, but help them build the capacity to thrive beyond them.',
+    'AFRICA OF HOPE (est. 2021) is a nonprofit that turns hope into practical opportunity: professional training, education and community support that build self-reliance across Africa and beyond.',
+    'Relevance order: (1) School of Professional Studies — strictly online (enrol anytime, attend your 3 selected days, complete within the duration to be certificated) and onsite cohorts; (2) eight connected impact areas from health to child welfare; (3) people-first, partnership-driven approach guided by compassion, integrity and inclusion.',
   ],
 };
 

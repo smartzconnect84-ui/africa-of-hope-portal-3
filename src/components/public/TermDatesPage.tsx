@@ -94,7 +94,7 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
         <div className="mb-6 grid gap-3 rounded-2xl border border-emerald-900/10 bg-white p-5 sm:grid-cols-2">
           <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-900/10">
             <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Online training — open now</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Enrollment is open to any student anytime once they complete the requirements. Apply online and start your study plan.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Strictly online students can enrol in their selected course anytime — no waiting for the general school opening. Attend within your selected training days, complete the course within its duration, and your certificate is issued upon completion.</p>
           </div>
           <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-900/10">
             <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Onsite training — coming soon</p>
