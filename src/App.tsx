@@ -58,13 +58,16 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
     const resume = () => setView("course-player");
     const helpdesk = () => setView("helpdesk");
     const appeals = () => setView("grade-appeals");
+    const donate = () => setView("donate");
     window.addEventListener("aoh-resume-learning", resume);
     window.addEventListener("aoh-open-helpdesk", helpdesk);
     window.addEventListener("aoh-open-appeals", appeals);
+    window.addEventListener("aoh-open-donate", donate);
     return () => {
       window.removeEventListener("aoh-resume-learning", resume);
       window.removeEventListener("aoh-open-helpdesk", helpdesk);
       window.removeEventListener("aoh-open-appeals", appeals);
+      window.removeEventListener("aoh-open-donate", donate);
     };
   }, []);
 

@@ -145,7 +145,7 @@ function HelpdeskWorkspace({ student, manage }: { student: boolean; manage: bool
     finally { setBusy(false); }
   };
   return <div className="space-y-5">
-    <SectionHeader title={manage ? 'Student helpdesk' : 'My helpdesk tickets'} subtitle={manage ? 'One queue for study, fees and technology support. Only authorized helpdesk staff can access the queue.' : 'Ask the school for help and keep your replies together in a private conversation.'} action={student && <Button onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" />New ticket</Button>} />
+    <SectionHeader title={manage ? 'Student helpdesk' : 'My helpdesk tickets'} subtitle={manage ? 'One queue for study, fees, technology, reports and complaints. Only authorized helpdesk staff can access the queue.' : 'Ask the school for help, file a report or send a complaint to Admin — replies stay together in a private conversation.'} action={student && <Button onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" />New ticket</Button>} />
     <div className={cn(panelClass, 'grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-[1fr_150px_170px_auto]')}>
       <Input aria-label="Search tickets" placeholder={manage ? 'Subject, student name or full ticket ID…' : 'Subject or full ticket ID…'} value={search} onChange={e => setSearch(e.target.value)} />
       <select aria-label="Filter ticket status" className={selectClass} value={status} onChange={e => { setStatus(e.target.value); setPage(0); }}><option value="all">All statuses</option><option value="open">Open</option><option value="closed">Closed</option></select>

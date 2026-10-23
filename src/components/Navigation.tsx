@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
 
 export const panelClass =
-  "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5";
+  "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5 dark:border-white/10 dark:bg-slate-900 dark:shadow-none";
 
 const toneMap = {
   emerald: "from-emerald-600 to-emerald-800 text-emerald-50",
@@ -58,8 +58,8 @@ export function SectionHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-300">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -83,10 +83,10 @@ export function StatCard({
     <div className={cn(panelClass, "p-4")}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{value}</p>
         </div>
         <span
           className={cn(
@@ -97,7 +97,7 @@ export function StatCard({
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      {hint && <p className="mt-3 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-3 text-xs text-slate-500 dark:text-slate-300">{hint}</p>}
     </div>
   );
 }
@@ -112,10 +112,10 @@ export function EmptyState({
   icon?: LucideIcon;
 }) {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-emerald-900/15 bg-white/60 px-4 py-12 text-center">
-      {Icon && <Icon className="mb-3 h-8 w-8 text-emerald-700/60" />}
-      <p className="text-sm font-medium text-slate-700">{title}</p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    <div className="grid place-items-center rounded-2xl border border-dashed border-emerald-900/15 bg-white/60 px-4 py-12 text-center dark:border-white/15 dark:bg-slate-900/60">
+      {Icon && <Icon className="mb-3 h-8 w-8 text-emerald-700/60 dark:text-emerald-300/80" />}
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-100">{title}</p>
+      {hint && <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{hint}</p>}
     </div>
   );
 }
@@ -430,7 +430,7 @@ export default function Navigation({
   return (
     <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
       <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-1 px-2 sm:gap-3 sm:px-4">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-1.5 px-2.5 sm:gap-4 sm:px-5">
           <button
             ref={menuButtonRef}
             type="button"
@@ -485,7 +485,7 @@ export default function Navigation({
             )}
           </div>
 
-          <div className="ml-auto flex items-center gap-0.5 sm:gap-2 md:ml-2">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2.5 md:ml-2">
             <LanguageSwitcher tone="dark" className="flex" />
             {onExitToPublic && (
               <button
@@ -498,9 +498,13 @@ export default function Navigation({
             )}
             <Pop
               trigger={
-                <span className="relative grid h-10 w-10 place-items-center rounded-xl text-slate-600 hover:bg-slate-100">
+                <span className="relative grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10" role="img" aria-label={state.announcements.length > 0 ? `Bulletin board, ${state.announcements.length} notices` : "Bulletin board"}>
                   <Bell className="h-5 w-5" />
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+                  {state.announcements.length > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[11px] font-bold text-emerald-950 ring-2 ring-white">
+                      {state.announcements.length > 9 ? "9+" : state.announcements.length}
+                    </span>
+                  )}
                 </span>
               }
             >
@@ -535,8 +539,8 @@ export default function Navigation({
               title="My profile"
               aria-label="Open my profile"
               className={cn(
-                "hidden items-center gap-2 rounded-xl border-l border-slate-200 py-1 pl-2 pr-2 text-left transition hover:bg-emerald-50 sm:flex",
-                view === "profile" && "bg-emerald-50",
+                "hidden items-center gap-2 rounded-xl border-l border-white/15 py-1 pl-2 pr-2 text-left transition hover:bg-white/10 sm:flex",
+                view === "profile" && "bg-white/10",
               )}
             >
               {currentUser ? (
@@ -545,10 +549,10 @@ export default function Navigation({
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">AO</span>
               )}
               <span className="hidden leading-tight lg:block">
-                <span className="block max-w-[140px] truncate text-sm font-medium text-slate-800">
+                <span className="block max-w-[140px] truncate text-sm font-medium text-white">
                   {currentUser?.name}
                 </span>
-                <span className="block max-w-[140px] truncate text-[11px] text-slate-500">{currentUser?.title ?? currentUser?.email}</span>
+                <span className="block max-w-[140px] truncate text-[11px] text-white/70">{currentUser?.title ?? currentUser?.email}</span>
               </span>
             </button>
 

@@ -125,6 +125,8 @@ export function StudentPortal() {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => window.dispatchEvent(new Event("aoh-open-appeals"))}>Appeal a grade</Button>
           <Button variant="outline" onClick={() => window.dispatchEvent(new Event("aoh-open-helpdesk"))}>Open student helpdesk</Button>
+          <Button variant="outline" onClick={() => window.dispatchEvent(new CustomEvent("aoh-open-helpdesk", { detail: "Report" }))}>Report / Complain to Admin</Button>
+          <Button className="bg-amber-400 text-emerald-950 hover:bg-amber-300" onClick={() => window.dispatchEvent(new Event("aoh-open-donate"))}>Donate</Button>
         </div>
       </div>
       <ReminderSettings key={`reminders-${currentUser.id}`} />
