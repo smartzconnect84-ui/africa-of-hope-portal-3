@@ -383,7 +383,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md"
         data-aoh-sticky-header=""
       >
-        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-1 px-2 py-2 sm:gap-3 sm:px-4">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-0 px-1.5 py-2 sm:gap-3 sm:px-4">
           <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}

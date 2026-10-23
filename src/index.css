@@ -70,7 +70,7 @@ img:not([class*="rounded-full"]) { border-radius: inherit; }
 /* Headings + strong body copy become near-white. */
 .aoh-public[data-visual-mode="dark"] :is(.text-emerald-950, .text-emerald-900, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-950, .text-gray-900, .text-gray-800, .text-gray-700, .text-stone-950, .text-stone-900, .text-stone-800, .text-stone-700, .text-neutral-900, .text-neutral-800, .text-black) { color: #ecfdf5 !important; }
 /* Muted body copy + icon tiles become soft sage for contrast on dark green. */
-.aoh-public[data-visual-mode="dark"] :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-emerald-800, .text-emerald-700, .text-emerald-600, .text-gray-600, .text-gray-500, .text-gray-400, .text-stone-600, .text-stone-500, .text-neutral-600, .text-neutral-500) { color: #c4ddd0 !important; }
+.aoh-public[data-visual-mode="dark"] :is(.text-slate-600, .text-slate-500, .text-slate-400, .text-emerald-800, .text-emerald-700, .text-emerald-600, .text-gray-600, .text-gray-500, .text-gray-400, .text-stone-600, .text-stone-500, .text-neutral-600, .text-neutral-500, .text-amber-900, .text-amber-800, .text-amber-700) { color: #c4ddd0 !important; }
 .aoh-public[data-visual-mode="dark"] :is(.text-emerald-100, .text-emerald-200, .text-white, .text-slate-100, .text-slate-200, .text-amber-100) { color: #f2f8f4 !important; }
 /* Prose / rich text inside CMS blocks. */
 .aoh-public[data-visual-mode="dark"] :is(.prose, .aoh-richtext) { color: #dcebe2; }

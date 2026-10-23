@@ -140,7 +140,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
       };
 
   const linkCls =
-    "aoh-nav-link rounded-xl px-3 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white";
+    "aoh-nav-link rounded-xl px-2 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white";
 
   const renderOverflow = () => {
     if (overflow.length === 0) return null;

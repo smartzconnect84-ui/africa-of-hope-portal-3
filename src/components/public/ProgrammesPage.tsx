@@ -109,6 +109,9 @@ export default function ProgrammesPage({
             {programs.length} courses in two-week, one-month, three-month and six-month tracks. Fully online is 1 hour a day, 3 days a week;
             fully on-site is 2 hours daily, 2 days a week. Tuition-free: you only pay the registration package.
           </motion.p>
+          <p className="mt-3 max-w-2xl rounded-xl bg-white/10 px-3 py-2 text-xs leading-5 text-amber-200 ring-1 ring-white/15">
+            Strictly online students can enrol anytime — no waiting for the general school opening. Pick your 3 training days, attend within them, complete within the duration and receive your certificate on completion.
+          </p>
           <div className="mt-6 flex flex-wrap gap-2 text-[11px] font-semibold">
             {tracks.filter((c) => c !== "All").map((c) => (
               <button key={c} type="button" onClick={() => setTrack(c)} className={`rounded-full px-3 py-1.5 ring-1 transition ${track === c ? "bg-amber-400 text-black ring-amber-300" : "bg-white/10 text-white ring-white/20 hover:bg-white/20"}`}>
