@@ -16,6 +16,8 @@ import UpdatePrompt from "./components/pwa/UpdatePrompt";
 import CurrencyConverter from "./components/CurrencyConverter";
 import { Button } from "@/components/ui/button";
 import { applyPublicBranding } from './lib/publicBranding';
+import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
+import { initOneSignalClickRouting } from '@/lib/onesignal';
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const { state } = useApp();
@@ -50,12 +52,24 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
   const [view, setView] = useState("dashboard");
   const { ctx, views } = useVisiblePortalViews();
 
+  // Resume a push-tap destination after sign-in (works for PWA + APK wrapper).
   useEffect(() => {
-    setView("dashboard");
+    try {
+      const pending = consumePendingPushView();
+      if (!pending) return;
+      const dest = resolvePushDestination(`/?push_view=${pending}`);
+      if (dest.site === "portal" && dest.view) setView(dest.view);
+    } catch { /* best-effort */ }
   }, [currentUser?.id]);
 
   useEffect(() => {
     const resume = () => setView("course-player");
+    const pushNav = (e: Event) => {
+      try {
+        const dest = resolvePushDestination(String((e as CustomEvent<string>).detail ?? "/"));
+        if (dest.site === "portal" && dest.view) setView(dest.view);
+      } catch { /* ignore malformed push targets */ }
+    };
     const helpdesk = (e: Event) => {
       // Direct "Report / Complain to Admin" link stores the requested category
       // so the helpdesk opens with Report preselected (see HelpdeskWorkspace).
@@ -69,11 +83,13 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
     const appeals = () => setView("grade-appeals");
     const donate = () => setView("donate");
     window.addEventListener("aoh-resume-learning", resume);
+    window.addEventListener("aoh-push-navigate", pushNav);
     window.addEventListener("aoh-open-helpdesk", helpdesk);
     window.addEventListener("aoh-open-appeals", appeals);
     window.addEventListener("aoh-open-donate", donate);
     return () => {
       window.removeEventListener("aoh-resume-learning", resume);
+      window.removeEventListener("aoh-push-navigate", pushNav);
       window.removeEventListener("aoh-open-helpdesk", helpdesk);
       window.removeEventListener("aoh-open-appeals", appeals);
       window.removeEventListener("aoh-open-donate", donate);
@@ -116,7 +132,21 @@ function Shell() {
     }
   }, [state.websiteSettings, state.settings.academyName, site]);
 
-  useEffect(() => applyPublicBranding(state.websiteSettings), [state.websiteSettings]);
+  // Launch deep-link (?push_view=) from a lock-screen tap + foreground click
+  // routing registration. Shared by installed PWA and APK wrapper (TWA/WebView
+  // open the same URL, so both land here identically).
+  useEffect(() => {
+    initOneSignalClickRouting();
+    try {
+      const target = takeLaunchPushTarget();
+      if (!target) return;
+      const dest = resolvePushDestination(`/?push_view=${target.view}`);
+      if (dest.site === "portal" && dest.view) {
+        try { sessionStorage.setItem("aoh-push-pending", JSON.stringify({ url: target, at: Date.now() })); } catch { /* ignore */ }
+        setSite("portal");
+      }
+    } catch { /* best-effort */ }
+  }, []);
 
   // Applies the Admin > System Settings > Appearance theme as CSS variables
   // and data attributes read by src/index.css, so a saved theme takes effect

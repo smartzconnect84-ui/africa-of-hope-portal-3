@@ -14,6 +14,8 @@
  * - Never auto-prompts users who already decided (granted/denied).
  */
 
+import { dispatchPushNavigate, pushPlatformTag } from "./androidPush";
+
 const PAGE_SDK_URL = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
 const APP_ID_KEY = "VITE_ONESIGNAL_APP_ID";
 const SAFARI_WEB_ID_KEY = "VITE_ONESIGNAL_SAFARI_WEB_ID";
@@ -143,6 +145,15 @@ export async function oneSignalLogin(userId: string, tags?: Record<string, strin
   try {
     await OS.login(userId);
   } catch { /* identity sync is best-effort; in-app records remain authoritative */ }
+  // Platform hint for PWA-vs-APK audience splits. Server re-validates
+  // role/course eligibility; tags are never trusted for authorization.
+  try {
+    await OS.User?.addTags?.({
+      ...pushPlatformTag(),
+      ...(tags ?? {}),
+    });
+    return;
+  } catch { /* non-fatal */ }
   if (tags && Object.keys(tags).length) {
     try { await OS.User?.addTags?.(tags); } catch { /* non-fatal */ }
   }
@@ -189,6 +200,35 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
 export async function oneSignalOptOut(): Promise<void> {
   if (!window.OneSignal) return;
   try { await window.OneSignal.User?.PushSubscription?.optOut?.(); } catch { /* best-effort */ }
+}
+
+/** Foreground click routing: OneSignal notification tap inside the running app.
+ *  Register once after init; handles PWA + APK WebView/TWA identically.
+ *  Background/locked taps arrive via the service worker (?push_view=) instead. */
+export async function initOneSignalClickRouting(): Promise<void> {
+  try {
+    const ready = await initOneSignal();
+    if (!ready || !window.OneSignal) return;
+    const OS = window.OneSignal;
+    const handler = (event: any) => {
+      try {
+        const url = event?.notification?.additionalData?.target_url
+          || event?.notification?.url
+          || event?.notification?.launchURL
+          || "/";
+        if (typeof url !== "string") return;
+        // Same-origin only; cross-origin targets open via the worker path.
+        const parsed = new URL(url, window.location.origin);
+        if (parsed.origin !== window.location.origin) return;
+        dispatchPushNavigate(parsed.pathname + parsed.search + parsed.hash);
+      } catch { /* routing is best-effort */ }
+    };
+    try {
+      OS?.Notifications?.addEventListener?.("click", handler);
+    } catch {
+      try { OS?.Notifications?.clicked?.subscribe?.(handler); } catch { /* older SDK shape */ }
+    }
+  } catch { /* never break the app for click routing */ }
 }
 
 /** Click-through routing is handled in /sw.js + OneSignalSDKWorker.js notificationclick. */

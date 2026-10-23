@@ -2,6 +2,11 @@
 
 > Code is implemented. Push DELIVERY is not verified here (no production
 > domain access, no OneSignal account, no physical device in this environment).
+>
+> Android APK: this repo is web-only (no Capacitor/native/TWA wrapper checked
+> in). The shared backend + navigation already serve both installs — see
+> `supabase/ANDROID_APK_PUSH_SETUP.md` for the Firebase/OneSignal dashboard
+> steps, Digital Asset Links and the device test matrix.
 
 ## What was built (code)
 
