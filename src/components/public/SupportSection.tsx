@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, HandHeart, Handshake, HeartHandshake, Loader2, Smartphone, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -17,12 +17,19 @@ import { normalizeCurrencyCode } from '@/lib/currency';
 const ICONS = { donation: HandHeart, volunteer: Users, partner: Handshake, staff: Users };
 const isKind = (id: string): id is SupportKind => id in ICONS;
 
+/** Footer and card links use #support-donation, #support-volunteer, #support-partner or #support-staff. */
+const kindFromHash = (): SupportKind | null => {
+  if (typeof window === "undefined") return null;
+  const match = window.location.hash.match(/^#support-(donation|volunteer|partner|staff)$/i);
+  return match ? (match[1].toLowerCase() as SupportKind) : null;
+};
+
 const AMOUNTS = [2000, 5000, 10000, 25000, 50000];
 const METHODS = ["MTN MoMo", "Orange Money", "Wave", "Bank / Card"];
 
 export default function SupportSection({ onApply }: { onApply: () => void }) {
   const { state } = useApp();
-  const [kind, setKind] = useState<SupportKind>("donation");
+  const [kind, setKind] = useState<SupportKind>(() => kindFromHash() ?? "donation");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -34,6 +41,15 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<SupportKind | null>(null);
   const [localOnly, setLocalOnly] = useState(false);
+
+  useEffect(() => {
+    const onHash = () => {
+      const next = kindFromHash();
+      if (next) { setKind(next); setDone(null); setError(null); }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const copy = state.websiteSettings.support;
   const tabs = copy.cards.filter((card) => isKind(card.id)).map((card) => ({ ...card, key: card.id as SupportKind, icon: ICONS[card.id as SupportKind] }));
 

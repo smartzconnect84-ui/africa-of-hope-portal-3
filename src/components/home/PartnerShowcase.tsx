@@ -97,6 +97,12 @@ export default function PartnerShowcase({ w }: { w: WebsiteSettings }) {
           <p className="mt-2 text-xs leading-5 text-emerald-100/60">
             Live shelf — scrolling continuously. Hover to pause, hover or focus a card to flip it.
           </p>
+          <a
+            href="#support-partner"
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-amber-400/60 px-4 text-sm font-semibold text-amber-200 transition hover:-translate-y-0.5 hover:bg-amber-400 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300"
+          >
+            Start a partnership <span aria-hidden="true">→</span>
+          </a>
         </div>
         <button
           type="button"

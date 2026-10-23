@@ -118,6 +118,8 @@ function parseHash(hash: string): View {
     return { type: "blogPost", slug };
   }
   if (ADMISSIONS_RE.test(h)) return { type: "admissions" };
+  // Donate / Volunteer / Partner / Join our staff links open the support form on that tab.
+  if (/^#support-(donation|volunteer|partner|staff)$/i.test(h)) return { type: "home", anchor: "support" };
   if (HOME_RE.test(h)) return { type: "home", anchor: null };
   // Any other anchor (#about, #impact, #verify, #admissions, #contact, #summary…) stays on Home and scrolls there.
   return { type: "home", anchor: h.replace(/^#/, "") };
@@ -403,7 +405,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             />
           </a>
           <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
-          <div className="ml-auto flex shrink-0 items-center gap-0 lg:ml-1">
+          <div className="ml-auto flex shrink-0 items-center gap-[0.15rem] lg:ml-1 lg:gap-0">
             <button type="button" onClick={toggleVisualMode} aria-label={`Switch to ${visualMode === 'dark' ? 'light' : 'dark'} visual mode`} aria-pressed={visualMode === 'dark'} title="Visual mode" className="grid h-10 w-8 shrink-0 place-items-center rounded-xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 sm:w-10">{visualMode === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
             <motion.button
               type="button"
@@ -654,8 +656,10 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <ul className="mt-4 space-y-2.5 text-sm text-white/75">
               <li><button type="button" onClick={() => openApply()} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</button></li>
               <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
-              <li><a href="#support" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
-              <li><a href="#support" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
+              <li><a href="#support-donation" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
+              <li><a href="#support-volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
+              <li><a href="#support-partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
+              <li><a href="#support-staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
               <li><a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
               <li><a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
               {!w.footerLinks.some(l => /#\/?transparency$/i.test(l.href)) && <li><a href="#transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
