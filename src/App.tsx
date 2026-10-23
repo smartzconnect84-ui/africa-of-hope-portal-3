@@ -56,7 +56,16 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 
   useEffect(() => {
     const resume = () => setView("course-player");
-    const helpdesk = () => setView("helpdesk");
+    const helpdesk = (e: Event) => {
+      // Direct "Report / Complain to Admin" link stores the requested category
+      // so the helpdesk opens with Report preselected (see HelpdeskWorkspace).
+      const detail = (e as CustomEvent<string>).detail;
+      try {
+        if (typeof detail === "string" && detail) sessionStorage.setItem("aoh-helpdesk-initial-category", detail);
+        else sessionStorage.removeItem("aoh-helpdesk-initial-category");
+      } catch { /* sessionStorage may be unavailable */ }
+      setView("helpdesk");
+    };
     const appeals = () => setView("grade-appeals");
     const donate = () => setView("donate");
     window.addEventListener("aoh-resume-learning", resume);

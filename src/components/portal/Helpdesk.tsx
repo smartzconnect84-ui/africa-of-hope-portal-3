@@ -125,7 +125,15 @@ function HelpdeskWorkspace({ student, manage }: { student: boolean; manage: bool
   const [selected, setSelected] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [subject, setSubject] = useState('');
-  const [ticketCategory, setTicketCategory] = useState<TicketCategory>('Study');
+  const [ticketCategory, setTicketCategory] = useState<TicketCategory>(() => {
+    // Direct "Report / Complain to Admin" links preselect the Report category.
+    try {
+      const initial = sessionStorage.getItem('aoh-helpdesk-initial-category');
+      sessionStorage.removeItem('aoh-helpdesk-initial-category');
+      if (initial && (TICKET_CATEGORIES as readonly string[]).includes(initial)) return initial as TicketCategory;
+    } catch { /* sessionStorage may be unavailable */ }
+    return 'Study';
+  });
   const [body, setBody] = useState('');
   const ticketId = useRef(crypto.randomUUID());
   const [busy, setBusy] = useState(false);

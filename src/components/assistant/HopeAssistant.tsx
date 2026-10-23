@@ -67,8 +67,9 @@ export default function HopeAssistant() {
     : configuredLabel;
   const surface: "public" | "portal" = currentUser ? "portal" : "public";
   // Only Teachers, Staff and Admin accounts may save research into the Resource Center.
-  // Every staff role qualifies; Students never see the save control.
-  const canSaveMaterial = !!currentUser && currentUser.role !== "Student";
+  // Explicit staff allowlist: every non-student staff role qualifies; Students never see the save control.
+  const STAFF_SAVE_ROLES = ["Teacher", "Registrar", "Admission Officer", "Finance Officer", "School Admin", "Super Admin"] as const;
+  const canSaveMaterial = !!currentUser && (STAFF_SAVE_ROLES as readonly string[]).includes(currentUser.role);
   const materialCohorts = (state.cohorts ?? []).filter((c) => !currentUser || currentUser.role !== "Teacher" || c.teacherId === currentUser.id).slice(0, 50);
 
   function saveToMaterials(bubbleId: string, content: string) {
