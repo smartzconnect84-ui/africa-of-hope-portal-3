@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { applyPublicBranding } from './lib/publicBranding';
 import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
 import { initOneSignalClickRouting } from '@/lib/onesignal';
+import { initNativeOneSignal } from '@/lib/nativeOneSignal';
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const { state } = useApp();
@@ -136,6 +137,9 @@ function Shell() {
   // routing registration. Shared by installed PWA and APK wrapper (TWA/WebView
   // open the same URL, so both land here identically).
   useEffect(() => {
+    // Native APK wrapper (Capacitor/Cordova shell): the Android SDK owns push.
+    // Browser PWA: the Web SDK owns push. The two never double-init.
+    try { void initNativeOneSignal().catch(() => undefined); } catch { /* best-effort */ }
     initOneSignalClickRouting();
     try {
       const target = takeLaunchPushTarget();

@@ -102,8 +102,16 @@ dashboard as Android; [ ] foreground banner; [ ] background tray;
 
 - Framework detected: **none in repo — web-only PWA** (no Capacitor, no
   native project, no TWA config, no Firebase). APK is built externally.
-- OneSignal Android SDK: NOT installed in this repo (correct — a native
-  SDK belongs in the Android wrapper project, not the web bundle).
+- OneSignal Android SDK (ai-prompt v5 flow): integrated via the supported
+  hybrid path — `onesignal-cordova-plugin` + `@capacitor/core` in this repo
+  (lazy, native-only; never bundled into the web build), native v5 SDK
+  (`com.onesignal:OneSignal:5.2.6` + Gradle plugin + `initWithContext`) in
+  the external APK project via `src/android/onesignalAndroidTemplate.ts`
+  (gradle, MainApplication, manifest, `aoh_school` HIGH channel, deep-link
+  intent). No incompatible native SDK in the web bundle; no duplicate
+  handlers — native owns push in the wrapper, web SDK self-skips there.
+  JS bridge: `src/lib/nativeOneSignal.ts` (init/login/logout/tags/permission),
+  wired into `src/App.tsx` startup and `OneSignalPanel` identity lifecycle.
 - FCM: NOT configured — needs owner Firebase + OneSignal dashboard steps.
 - Package name / fingerprints / keys: NOT invented — placeholders only.
 - APK build + lock-screen test: PENDING physical device + owner build lane.

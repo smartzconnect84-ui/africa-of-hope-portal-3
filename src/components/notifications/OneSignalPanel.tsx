@@ -3,8 +3,12 @@ import { BellRing, BellOff, Loader2, ShieldCheck, Smartphone } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import {
   initOneSignal, isOneSignalConfigured, oneSignalOptIn, oneSignalOptOut,
-  oneSignalLogin, oneSignalSetTags, oneSignalStatus, oneSignalHowLockScreenWorks,
+  oneSignalLogin, oneSignalLogout, oneSignalSetTags, oneSignalStatus, oneSignalHowLockScreenWorks,
 } from "@/lib/onesignal";
+import {
+  initNativeOneSignal, nativeLogin, nativeLogout, nativeOptIn, nativeOptOut,
+  nativeRequestPermission, nativeStatus, isNativeWrapper,
+} from "@/lib/nativeOneSignal";
 import { useApp } from "@/context/AppContext";
 
 function safeMsg(e: unknown) { return e instanceof Error ? e.message : "Request failed"; }
@@ -23,18 +27,29 @@ export default function OneSignalPanel({ compact = false }: { compact?: boolean 
 
   const refresh = async () => {
     try {
+      if (isNativeWrapper()) {
+        const s = await nativeStatus();
+        setStatus({ subscribed: s.subscribed, permission: s.permission });
+        return;
+      }
       const s = await oneSignalStatus();
       setStatus({ subscribed: s.subscribed, permission: String(s.permission) });
     } catch { /* best-effort */ }
   };
 
   useEffect(() => {
+    void initNativeOneSignal().then(() => void refresh()).catch(() => undefined);
     void initOneSignal().then(() => void refresh());
     // Link identity once per sign-in with trusted role + course tags.
+    // Both calls are safe on either platform (each no-ops off its platform).
     if (currentUser?.id) {
       const tags: Record<string, string> = { role: roleTag(currentUser.role) };
       for (const pid of (currentUser.programIds ?? []).slice(0, 8)) tags[`course_${pid}`] = "enrolled";
       void oneSignalLogin(currentUser.id, tags).then(() => void oneSignalSetTags(tags)).catch(() => undefined);
+      void nativeLogin(currentUser.id, tags).catch(() => undefined);
+    } else {
+      void nativeLogout().catch(() => undefined);
+      void oneSignalLogout().catch(() => undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
@@ -42,8 +57,18 @@ export default function OneSignalPanel({ compact = false }: { compact?: boolean 
   const enable = async () => {
     setBusy(true); setNotice("");
     try {
-      const r = await oneSignalOptIn();
-      setNotice(r.message);
+      // Inside the APK wrapper the native OneSignal SDK owns permission +
+      // subscription (Android 13 POST_NOTIFICATIONS included). On the web
+      // the Web SDK owns it. Each helper no-ops off its own platform.
+      if (isNativeWrapper()) {
+        const p = await nativeRequestPermission();
+        if (!p) { setNotice("Notifications are blocked for this app. Allow them in Android Settings → Apps → AFRICA OF HOPE → Notifications, then retry."); return; }
+        const r = await nativeOptIn();
+        setNotice(r.message);
+      } else {
+        const r = await oneSignalOptIn();
+        setNotice(r.message);
+      }
       await refresh();
     } catch (e) { setNotice(safeMsg(e)); }
     finally { setBusy(false); }
@@ -51,8 +76,13 @@ export default function OneSignalPanel({ compact = false }: { compact?: boolean 
   const disable = async () => {
     setBusy(true); setNotice("");
     try {
-      await oneSignalOptOut();
-      setNotice("Push disabled on this device. Portal messages and in-app history still work.");
+      if (isNativeWrapper()) {
+        await nativeOptOut();
+        setNotice("Push disabled in the APK. Portal messages and in-app history still work.");
+      } else {
+        await oneSignalOptOut();
+        setNotice("Push disabled on this device. Portal messages and in-app history still work.");
+      }
       await refresh();
     } catch (e) { setNotice(safeMsg(e)); }
     finally { setBusy(false); }

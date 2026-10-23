@@ -15,6 +15,7 @@
  */
 
 import { dispatchPushNavigate, pushPlatformTag } from "./androidPush";
+import { isNativeWrapper } from "./nativeOneSignal";
 
 const PAGE_SDK_URL = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
 const APP_ID_KEY = "VITE_ONESIGNAL_APP_ID";
@@ -76,10 +77,15 @@ function loadPageSdk(): Promise<void> {
   return scriptPromise;
 }
 
-/** Initialize once; safe to call from multiple components (StrictMode-proof). */
+/** Initialize once; safe to call from multiple components (StrictMode-proof).
+ *  Skips the Web SDK inside the Capacitor APK wrapper — the native SDK
+ *  (src/lib/nativeOneSignal.ts) owns push there, so we never double-init. */
 export function initOneSignal(): Promise<boolean> {
   if (initPromise) return initPromise;
   initPromise = (async () => {
+    try {
+      if (isNativeWrapper()) return false;
+    } catch { /* fall through to web path */ }
     const appId = oneSignalAppId();
     if (!appId || typeof window === "undefined") return false;
     if (!pushSupported()) return false;

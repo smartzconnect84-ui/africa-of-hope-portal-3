@@ -21,6 +21,7 @@
   },
   "packageManager": "bun@1.2.22",
   "dependencies": {
+    "@capacitor/core": "^8.5.3",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -69,6 +70,7 @@
     "jspdf-autotable": "^5.0.9",
     "lucide-react": "^0.544.0",
     "next-themes": "^0.4.6",
+    "onesignal-cordova-plugin": "^5.6.1",
     "qrcode": "^1.5.4",
     "react": "^19.1.2",
     "react-day-picker": "^9.11.1",
