@@ -10,6 +10,7 @@ create table if not exists public.assistant_research_resources (
 );
 
 alter table public.assistant_research_resources enable row level security;
+revoke all on public.assistant_research_resources from anon;
 grant select, insert, update, delete on public.assistant_research_resources to authenticated;
 drop policy if exists assistant_research_owner_read on public.assistant_research_resources;
 drop policy if exists assistant_research_owner_insert on public.assistant_research_resources;

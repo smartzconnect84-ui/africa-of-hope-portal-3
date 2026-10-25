@@ -32,7 +32,7 @@ export default function CertificateDocument({
   className?: string;
 }) {
   const qr = useCertificateQr(view.verificationUrl);
-  return <CertificateTemplate view={view} qrDataUrl={qr} className={className} />;
+  return <div id={`certificate-${view.serial}`}><CertificateTemplate view={view} qrDataUrl={qr} className={className} /></div>;
 }
 
 /**
