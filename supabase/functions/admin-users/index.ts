@@ -65,8 +65,12 @@ Deno.serve(async (req: Request) => {
         : await admin.auth.admin.inviteUserByEmail(email, { data: { full_name: name, phone } });
       if (created.error || !created.data?.user) return json({ error: created.error?.message ?? "Could not create the account" }, 400);
       const userId = created.data.user.id;
+      // The Auth trigger may be absent or may have failed on older accounts, so
+      // provision the profile explicitly and make retries safe.
       const { data: saved, error: profileError } = await admin.from("profiles")
-        .update({ name, full_name: name, email, phone, role, status: "Active", title }).eq("id", userId).select("id").single();
+        .upsert({ id: userId, name, full_name: name, email, phone, role, status: "Active", title }, { onConflict: "id" })
+        .select("id")
+        .single();
       if (profileError || !saved) {
         // Never delete an Auth account to compensate for a failed profile write.
         return json({ user_id: userId, error: "Auth account created, but the school profile was not activated. Review this account before retrying." }, 409);
