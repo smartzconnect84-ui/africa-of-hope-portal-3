@@ -7,6 +7,7 @@ import { streamAssistant, AssistantError, type AssistantMessage } from "../../li
 import { answerLocally } from "../../lib/assistantOffline";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { saveResearchResource } from "@/lib/researchResources";
 
 interface ChatBubble {
   id: string;
@@ -64,6 +65,14 @@ export default function HopeAssistant() {
     ? "AOH AI"
     : configuredLabel;
   const surface: "public" | "portal" = currentUser ? "portal" : "public";
+
+  async function saveResponse(content: string) {
+    if (!currentUser || !content.trim()) return;
+    try {
+      await saveResearchResource({ title: content.trim().split("\\n")[0].slice(0, 180) || "AOH AI research note", content: content.trim(), source_url: null, visibility: currentUser.role === "Student" ? "private" : "staff" });
+      setBubbles((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: "Saved to Resource Center.", complete: true }]);
+    } catch { setBubbles((prev) => [...prev, { id: crypto.randomUUID(), role: "error", content: "I could not save that research note. Please try again." }]); }
+  }
 
   async function send(text: string) {
     const content = text.trim();
@@ -210,6 +219,9 @@ export default function HopeAssistant() {
                     {b.content ? (
                       <div className="prose-sm [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-4">
                         <ReactMarkdown>{b.content}</ReactMarkdown>
+                        {currentUser && b.role === "assistant" && b.complete && b.content !== "Saved to Resource Center." ? (
+                          <button type="button" onClick={() => void saveResponse(b.content)} className="mt-2 text-[11px] font-semibold text-emerald-700 underline">Save to Resource Center</button>
+                        ) : null}
                       </div>
                     ) : sending ? (
                       <span className="inline-flex items-center gap-1 py-1" aria-label="Waiting for a reply">

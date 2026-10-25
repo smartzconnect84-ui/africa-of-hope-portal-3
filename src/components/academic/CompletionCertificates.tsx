@@ -4,7 +4,7 @@ import { Award, Download, Loader2, Printer, BadgeCheck, Lock, FileJson, FileSpre
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type StudentProgressRow } from "@/lib/academics";
 import {
-  downloadCertificatesCsv, downloadCertificatesJson,
+  downloadCertificatesCsv, downloadCertificatesJson, downloadCertificateImage,
 } from "@/lib/certificateDownloads";
 import { downloadCertificatePdf, viewFor } from "@/lib/certificatePdf";
 import CertificateDocument, { printCertificateElement } from "@/components/certificate/CertificateDocument";
@@ -90,6 +90,17 @@ export default function CompletionCertificates() {
     }
   };
 
+  const downloadImage = async (certId: string, format: "png" | "jpg") => {
+    const cert = state.certificates.find((c) => c.id === certId && c.studentId === currentUser?.id);
+    if (!cert || cert.status !== "Valid") { toast.error("Only valid certificates can be downloaded."); return; }
+    const element = document.getElementById(`certificate-${cert.serial}`);
+    if (!element) { toast.error("Certificate preview is not ready yet."); return; }
+    setBusyId(`${cert.id}-${format}`);
+    try { await downloadCertificateImage(element, cert.serial, format); toast.success(`Certificate ${cert.serial} downloaded as ${format.toUpperCase()}.`); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "The image could not be generated."); }
+    finally { setBusyId(null); }
+  };
+
   const downloadCert = async (certId: string) => {
     const cert = state.certificates.find((c) => c.id === certId);
     if (!cert || cert.studentId !== currentUser?.id) { toast.error("Certificate is not ready yet."); return; }
@@ -165,6 +176,12 @@ export default function CompletionCertificates() {
                         </Button>
                         <Button variant="outline" className="w-full" disabled={busyId === existing.id} onClick={() => void downloadCert(existing.id)}>
                           {busyId === existing.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />} PDF
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => void downloadImage(existing.id, "png")}>
+                          <Download className="mr-1.5 h-4 w-4" /> PNG
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => void downloadImage(existing.id, "jpg")}>
+                          <Download className="mr-1.5 h-4 w-4" /> JPG
                         </Button>
                       </div>
                     </>

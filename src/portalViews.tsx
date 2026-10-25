@@ -58,6 +58,7 @@ import AnnouncementManager from "./components/AnnouncementManager";
 import BlogManager from "./components/portal/BlogManager";
 import SchoolPolicies from "./components/policies/SchoolPolicies";
 import RecommendedTraining from "./components/portal/RecommendedTraining";
+import ResourceCenter from "./components/portal/ResourceCenter";
 import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
@@ -287,8 +288,15 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "training-library",
-    label: "Training Library",
+    label: "Resource Center",
     icon: LibraryBig,
+    visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
+    render: () => <ResourceCenter />,
+  },
+  {
+    key: "recommended-training",
+    label: "Recommended Training",
+    icon: GraduationCap,
     visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
     render: () => <RecommendedTraining />,
   },

@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { toJpeg, toPng } from "html-to-image";
 import type { Certificate, Program, User } from "@/types";
 import { accountId, courseId } from "./identifiers";
 import { downloadBlob, downloadCsv, toCsv } from "./dataTools";
@@ -91,10 +92,19 @@ export function downloadCertificatesJson(certs: Certificate[], lookup: Certifica
   return certs.length;
 }
 
+/** Download a rendered certificate preview as PNG or JPG. */
+export async function downloadCertificateImage(element: HTMLElement, serial: string, format: "png" | "jpg"): Promise<void> {
+  const options = { pixelRatio: 2, cacheBust: true, backgroundColor: "#ffffff" };
+  const dataUrl = format === "png" ? await toPng(element, options) : await toJpeg(element, { ...options, quality: 0.95 });
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  downloadBlob(blob, `certificate-${serial}.${format}`);
+}
+
 /**
  * Certificate PDFs are produced from the branded certificate template
  * (see src/lib/certificatePdf.ts) so print output always matches the preview.
- * This module only exports register data.
+ * This module also supports image downloads from the same rendered template.
  */
 
 /** Administrator register export: the same columns, as a PDF table. */
