@@ -17,6 +17,17 @@ create table if not exists public.school_policies (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public._touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create table if not exists public.policy_acceptances (
   id uuid primary key default gen_random_uuid(),
   policy_id uuid not null references public.school_policies(id) on delete cascade,

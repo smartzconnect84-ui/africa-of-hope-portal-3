@@ -50,8 +50,8 @@ create trigger on_auth_user_created
 -- Intentionally no account creation, promotion, password reset or purge.
 -- Existing Auth users and profiles must remain unchanged by schema setup.
 
--- single settings row (id = true)
-insert into public.system_settings (id) values (true) on conflict (id) do nothing;
+-- system_settings uses a UUID primary key and is provisioned by its owning
+-- migration; do not seed it here with the legacy boolean sentinel.
 
 -- 4. Row level security ---------------------------------------------------------
 do $$

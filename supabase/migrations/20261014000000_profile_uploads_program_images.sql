@@ -114,6 +114,7 @@ create policy program_images_public_read on storage.objects for select
   using (bucket_id = 'program-images');
 
 drop policy if exists program_images_admin_all on storage.objects;
+drop policy if exists program_images_manage_all on storage.objects;
 create policy program_images_admin_all on storage.objects for all to authenticated
   using (bucket_id = 'program-images' and public.is_portal_admin())
   with check (bucket_id = 'program-images' and public.is_portal_admin());

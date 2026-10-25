@@ -12,6 +12,13 @@ create table if not exists public.transparency_reports (
   check (file_path = id::text || '.pdf')
 );
 alter table public.transparency_reports enable row level security;
+drop policy if exists transparency_read on public.transparency_reports;
+drop policy if exists transparency_insert on public.transparency_reports;
+drop policy if exists transparency_update on public.transparency_reports;
+drop policy if exists transparency_file_read on storage.objects;
+drop policy if exists transparency_file_upload on storage.objects;
+drop policy if exists transparency_orphan_cleanup on storage.objects;
+drop trigger if exists transparency_file_guard on public.transparency_reports;
 create policy transparency_read on public.transparency_reports for select to anon, authenticated
   using (published or public.has_permission('cms.manage'));
 create policy transparency_insert on public.transparency_reports for insert to authenticated

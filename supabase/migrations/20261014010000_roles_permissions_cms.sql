@@ -611,8 +611,9 @@ create policy site_assets_manage_all on storage.objects
   with check (bucket_id = 'site-assets' and (select public.has_permission('cms.manage')));
 
 -- program-images: public read is unchanged; writes need programs.manage.
-drop policy if exists program_images_admin_all on storage.objects;
-create policy program_images_manage_all on storage.objects
+  drop policy if exists program_images_admin_all on storage.objects;
+  drop policy if exists program_images_manage_all on storage.objects;
+  create policy program_images_manage_all on storage.objects
   for all
   using (bucket_id = 'program-images' and (select public.has_permission('programs.manage')))
   with check (bucket_id = 'program-images' and (select public.has_permission('programs.manage')));
@@ -621,6 +622,8 @@ create policy program_images_manage_all on storage.objects
 -- Replace documents_admin_all (which also covered the certificates bucket)
 -- with read for people.view and full access for students.manage/staff.manage.
 drop policy if exists documents_admin_all on storage.objects;
+drop policy if exists documents_admin_read on storage.objects;
+drop policy if exists documents_admin_write on storage.objects;
 
 create policy documents_admin_read on storage.objects
   for select using (

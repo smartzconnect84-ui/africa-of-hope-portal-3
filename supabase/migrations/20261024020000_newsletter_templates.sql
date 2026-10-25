@@ -40,7 +40,11 @@ alter table public.email_templates enable row level security;
 alter table public.newsletter_subscribers enable row level security;
 alter table public.newsletter_campaigns enable row level security;
 alter table public.newsletter_signup_limits enable row level security;
-create policy "email templates managers" on public.email_templates for all to authenticated
+  drop policy if exists "email templates managers" on public.email_templates;
+  drop policy if exists "newsletter subscribers managers read" on public.newsletter_subscribers;
+  drop policy if exists "newsletter campaigns managers read" on public.newsletter_campaigns;
+  drop policy if exists "newsletter signup limits managers" on public.newsletter_signup_limits;
+  create policy "email templates managers" on public.email_templates for all to authenticated
   using (public.has_permission('settings.manage')) with check (public.has_permission('settings.manage'));
 create policy "newsletter subscribers managers read" on public.newsletter_subscribers for select to authenticated
   using (public.has_permission('settings.manage'));

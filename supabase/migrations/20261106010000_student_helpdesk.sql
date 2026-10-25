@@ -39,6 +39,8 @@ create index if not exists helpdesk_status_updated on public.helpdesk_tickets(st
 create index if not exists helpdesk_thread on public.helpdesk_messages(ticket_id, created_at);
 alter table public.helpdesk_tickets enable row level security;
 alter table public.helpdesk_messages enable row level security;
+drop policy if exists helpdesk_ticket_read on public.helpdesk_tickets;
+drop policy if exists helpdesk_message_read on public.helpdesk_messages;
 create policy helpdesk_ticket_read on public.helpdesk_tickets for select to authenticated using (
   public.can_manage_helpdesk() or (student_id = auth.uid() and exists (
     select 1 from public.profiles where id = auth.uid() and status = 'Active' and role = 'Student'

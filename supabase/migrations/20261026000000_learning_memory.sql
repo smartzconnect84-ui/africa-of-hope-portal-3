@@ -14,6 +14,10 @@ create table if not exists public.learning_memory (
 );
 alter table public.learning_memory enable row level security;
 grant select, insert, update, delete on public.learning_memory to authenticated;
+drop policy if exists learning_memory_read on public.learning_memory;
+drop policy if exists learning_memory_insert on public.learning_memory;
+drop policy if exists learning_memory_update on public.learning_memory;
+drop policy if exists learning_memory_delete on public.learning_memory;
 create policy learning_memory_read on public.learning_memory for select to authenticated
   using (user_id = auth.uid() and exists (select 1 from public.learning_units u where u.id = unit_id));
 create policy learning_memory_insert on public.learning_memory for insert to authenticated
