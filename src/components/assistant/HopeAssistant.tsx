@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { X, Send, Sparkles, Bot } from "lucide-react";
+import { X, Send, Sparkles, Bot, RotateCcw } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useAssistantVisibility } from "../../context/AssistantVisibility";
 import { streamAssistant, AssistantError, type AssistantMessage } from "../../lib/assistant";
@@ -167,36 +167,52 @@ export default function HopeAssistant() {
 
       {open && (
         <div className="fixed bottom-4 right-3 z-40 flex h-[min(420px,calc(100dvh-2rem))] w-[min(320px,calc(100vw-1.5rem))] max-w-[92vw] flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl sm:bottom-5 sm:right-5 sm:h-[420px] sm:w-[266px]">
-          <div className="flex items-center gap-2 bg-gradient-to-br from-emerald-900 to-[#022c22] p-[11px] text-white">
-            <span className="relative grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl bg-amber-400 text-[#022c22]">
-              <Bot className="h-[14px] w-[14px]" />
-              <span className="absolute -right-0.5 -bottom-0.5 h-[7px] w-[7px] rounded-full bg-emerald-400 ring-1 ring-[#022c22]" />
+          <div className="flex items-center gap-2.5 bg-gradient-to-br from-emerald-950 via-emerald-900 to-[#022c22] px-3 py-3 text-white">
+            <span className="relative grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-amber-400 text-[#022c22] shadow-lg shadow-emerald-950/30">
+              <Bot className="h-4 w-4" />
+              <span className="absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full bg-emerald-300 ring-2 ring-emerald-950" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold">AOH AI</p>
-              <p className="truncate text-xs text-emerald-200">AFRICA OF HOPE</p>
+              <p className="truncate text-sm font-bold tracking-tight">AOH Assistant</p>
+              <p className="truncate text-[10px] font-medium uppercase tracking-[0.16em] text-emerald-200">Africa of Hope · Online</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close assistant"
-              className="grid h-6 w-6 place-items-center rounded-lg text-emerald-100 hover:bg-white/10"
-            >
-              <X className="h-[11px] w-[11px]" />
-            </button>
+            <div className="flex items-center gap-1">
+              {bubbles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { abortRef.current?.abort(); setBubbles([]); setSending(false); }}
+                  aria-label="Start a new conversation"
+                  className="grid h-7 w-7 place-items-center rounded-lg text-emerald-100 transition hover:bg-white/10"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close assistant"
+                className="grid h-7 w-7 place-items-center rounded-lg text-emerald-100 transition hover:bg-white/10"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           </div>
 
-          <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-[11px]">
+          <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 p-3.5">
             {bubbles.length === 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-600">
-                  Hi{currentUser ? ` ${currentUser.name.split(" ")[0]}` : ""}! I'm AOH AI, your intelligent assistant from AFRICA OF HOPE. How can I help you today?
+              <div className="rounded-2xl border border-emerald-100 bg-white p-3.5 shadow-sm">
+                <div className="mb-2 flex items-center gap-2 text-emerald-900">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <p className="text-xs font-bold uppercase tracking-[0.14em]">How can I help?</p>
+                </div>
+                <p className="text-xs leading-5 text-slate-600">
+                  Hi{currentUser ? ` ${currentUser.name.split(" ")[0]}` : ""}. Ask about programmes, school services, learning, or your portal.
                 </p>
-                <div className="ml-1 flex flex-wrap gap-1">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {suggestionsFor(currentUser?.role ?? null).map((s) => (
                     <button
                       key={s} type="button" onClick={() => send(s)}
-                      className="rounded-full border border-emerald-600/25 bg-white px-2 py-1 text-left text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+                      className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-2.5 py-1.5 text-left text-xs font-semibold leading-4 text-emerald-900 transition hover:border-emerald-300 hover:bg-emerald-100"
                     >
                       {s}
                     </button>
@@ -206,18 +222,22 @@ export default function HopeAssistant() {
             )}
 
             {bubbles.map((b) => (
-              <div key={b.id} className={cn("flex", b.role === "user" ? "justify-end" : "justify-start")}>
+              <div key={b.id} className={cn("flex w-full gap-2", b.role === "user" ? "justify-end" : "justify-start")}>
                 {b.role === "error" ? (
-                  <p className="max-w-[85%] rounded-xl bg-rose-50 px-[10px] py-[7px] text-xs text-rose-700">{b.content}</p>
+                  <p className="max-w-[88%] rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-xs leading-5 text-rose-700 shadow-sm">{b.content}</p>
                 ) : (
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-xl px-[10px] py-[7px] text-xs leading-relaxed",
-                      b.role === "user" ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-800",
-                    )}
-                  >
+                  <div className={cn("flex max-w-[90%] items-end gap-2", b.role === "user" && "flex-row-reverse")}>
+                    <span className={cn("mb-1 grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg", b.role === "user" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-700")} aria-hidden="true">
+                      {b.role === "user" ? <span className="text-[10px] font-bold">YOU</span> : <Sparkles className="h-3 w-3" />}
+                    </span>
+                    <div
+                      className={cn(
+                        "rounded-2xl px-3 py-2.5 text-xs leading-5 shadow-sm",
+                        b.role === "user" ? "rounded-br-md bg-emerald-800 text-white" : "rounded-bl-md border border-slate-200 bg-white text-slate-800",
+                      )}
+                    >
                     {b.content ? (
-                      <div className="prose-sm [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-4">
+                      <div className="prose-sm max-w-none [&_p]:my-0 [&_p+_p]:mt-3 [&_ul]:my-2 [&_ul]:space-y-1 [&_ul]:pl-4 [&_ol]:my-2 [&_ol]:space-y-1 [&_ol]:pl-4 [&_li]:pl-0.5 [&_strong]:font-semibold">
                         <ReactMarkdown>{b.content}</ReactMarkdown>
                         {currentUser && b.role === "assistant" && b.complete && b.content !== "Saved to Resource Center." ? (
                           <button type="button" onClick={() => void saveResponse(b.content)} className="mt-2 text-[11px] font-semibold text-emerald-700 underline">Save to Resource Center</button>
@@ -232,6 +252,7 @@ export default function HopeAssistant() {
                     ) : (
                       <span className="text-slate-500">No reply came back. Please try again.</span>
                     )}
+                    </div>
                   </div>
                 )}
               </div>
