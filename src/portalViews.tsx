@@ -71,6 +71,7 @@ import StudyPlanner from "./components/academic/StudyPlanner";
 import AssignmentInbox from "./components/academic/AssignmentInbox";
 import CompletionCertificates from "./components/academic/CompletionCertificates";
 import TeacherInsights from "./components/academic/TeacherInsights";
+import SelfAssessmentHub from "./components/academic/SelfAssessmentHub";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
 
@@ -187,6 +188,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: CalendarRange,
     visible: (ctx) => ctx.role === "Student",
     render: () => <StudyPlanner />,
+  },
+  {
+    key: "self-assessment",
+    label: (ctx) => (ctx.role === "Student" ? "Self-Assessment" : "Learner Support Hub"),
+    icon: TrendingUp,
+    visible: (ctx) => ctx.role === "Student" || ctx.role === "Teacher" || ctx.role === "School Admin" || ctx.role === "Super Admin",
+    render: () => <SelfAssessmentHub />,
   },
   {
     key: "quizzes",
