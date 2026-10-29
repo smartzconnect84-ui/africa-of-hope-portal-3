@@ -3,7 +3,9 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { dismissSplash, registerServiceWorker } from "./lib/pwa";
+import { restorePublicLaunch } from './lib/publicBranding';
 
+restorePublicLaunch();
 registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(

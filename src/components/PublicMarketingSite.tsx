@@ -1,9 +1,9 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   LogIn, Menu, X, Mail, Phone,
   MapPin, Sparkles, Globe, ChevronRight, ArrowRight,
-  BookOpen, CalendarDays,
+  BookOpen, CalendarDays, Moon, Sun,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { AuthTab } from "./AuthPortal";
@@ -17,6 +17,7 @@ import PoliciesPage from "./public/PoliciesPage";
 import DonatePage from "./public/DonatePage";
 import CookiesPage from "./public/CookiesPage";
 import AboutPage from "./public/AboutPage";
+import TeamPage, { TeamProfiles } from "./public/TeamPage";
 import CookieConsent from "./public/CookieConsent";
 import InstallPrompt from "./pwa/InstallPrompt";
 import BlogListPage from "./public/BlogListPage";
@@ -30,15 +31,19 @@ import PublicNav from "./public/PublicNav";
 import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
 import TermDatesPage from "./public/TermDatesPage";
+import AdmissionsPage from "./public/AdmissionsPage";
 import SupportSection from "./public/SupportSection";
 import NewsletterSignup from "./public/NewsletterSignup";
 import NewsletterAction from "./public/NewsletterAction";
-import { LanguageSwitcher, useLocale } from "@/lib/locale";
+import OrderedSections from './public/OrderedSections';
+import { DEFAULT_PRESENTATION } from '@/data/publicPresentation';
+import { useLocale } from "@/lib/locale";
 import { format } from "date-fns";
 
 const NAV_LINKS: [string, string][] = [
   ["#home", "Home"],
   ["#about", "About"],
+  ["#team", "Team"],
   ["#programmes", "Programmes"],
   ["#term-dates", "Term dates"],
   ["#blog", "Blog"],
@@ -65,12 +70,14 @@ type View =
   | { type: "home"; anchor: string | null }
   | { type: "programmes" }
   | { type: "term-dates" }
+  | { type: "admissions" }
   | { type: "policies" }
   | { type: "transparency" }
   | { type: "cookies" }
   | { type: "donate" }
   | { type: "blog" }
   | { type: "about" }
+  | { type: "team" }
   | { type: "newsletter"; action: "confirm" | "unsubscribe"; params: string }
   | { type: "verify"; serial: string | null }
   | { type: "blogPost"; slug: string };
@@ -99,6 +106,7 @@ function parseHash(hash: string): View {
   if (DONATE_RE.test(h)) return { type: "donate" };
   if (BLOG_RE.test(h)) return { type: "blog" };
   if (ABOUT_RE.test(h)) return { type: "about" };
+  if (/^#\/?(team|our-team)$/i.test(h)) return { type: "team" };
   if (/^#blog\//i.test(h)) {
     const raw = h.replace(/^#blog\//i, "");
     let slug = raw;
@@ -109,6 +117,9 @@ function parseHash(hash: string): View {
     }
     return { type: "blogPost", slug };
   }
+  if (ADMISSIONS_RE.test(h)) return { type: "admissions" };
+  // Donate / Volunteer / Partner / Join our staff links open the support form on that tab.
+  if (/^#support-(donation|volunteer|partner|staff)$/i.test(h)) return { type: "home", anchor: "support" };
   if (HOME_RE.test(h)) return { type: "home", anchor: null };
   // Any other anchor (#about, #impact, #verify, #admissions, #contact, #summary…) stays on Home and scrolls there.
   return { type: "home", anchor: h.replace(/^#/, "") };
@@ -171,12 +182,17 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-termdates", href: "#term-dates", label: "Term dates" }];
     if (!links.some((l) => BLOG_RE.test(l.href.trim())))
       links = [...links, { id: "nav-blog", href: "#blog", label: "Blog" }];
+    if (!links.some((l) => /^#\/?(team|our-team)$/i.test(l.href.trim())))
+      links = [...links, { id: "nav-team", href: "#team", label: "Team" }];
     if (!links.some((l) => POLICIES_RE.test(l.href.trim())))
       links = [...links, { id: "nav-policies", href: "#policies", label: "Policies" }];
     if (!links.some((l) => /^#\/?transparency$/i.test(l.href.trim())))
       links = [...links, { id: "nav-transparency", href: "#transparency", label: "Transparency" }];
+    if (!links.some((l) => ADMISSIONS_RE.test(l.href.trim())))
+      links = [...links, { id: "nav-admissions", href: "#admissions", label: "Admissions" }];
     // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
-    return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !ADMISSIONS_RE.test(l.href.trim()));
+    // Admissions stays visible in the menu bar as its own page.
+    return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
   }, [saved]);
   const displayName = useMemo(() => {
     const full = (w.academyName || settings.academyName || "").trim();
@@ -184,6 +200,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     if (/africa\s+of\s+hope/i.test(full)) return "AFRICA OF HOPE";
     return full || "AFRICA OF HOPE";
   }, [w.academyName, settings.academyName]);
+  const [visualMode, setVisualMode] = useState<'light' | 'dark'>(() => {
+    try { const saved = localStorage.getItem('aoh-public-visual-mode'); return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; } catch { return 'light'; }
+  });
+  const toggleVisualMode = () => setVisualMode(previous => {
+    const next = previous === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('aoh-public-visual-mode', next); } catch { /* optional preference */ }
+    return next;
+  });
+  const presentation = w.presentation || DEFAULT_PRESENTATION;
   const [menu, setMenu] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -222,12 +247,14 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   useEffect(() => {
     const base = displayName || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
     if (view.type === "programmes") document.title = `Programmes — ${base}`;
+    else if (view.type === "admissions") document.title = `Admissions — ${base}`;
     else if (view.type === "term-dates") document.title = `Term dates — ${base}`;
     else if (view.type === "policies") document.title = `School Policies — ${base}`;
     else if (view.type === "transparency") document.title = `Transparency reports — ${base}`;
     else if (view.type === "cookies") document.title = `Cookies Policy — ${base}`;
     else if (view.type === "donate") document.title = `Donate & Support — ${base}`;
     else if (view.type === "about") document.title = `About AFRICA OF HOPE — ${base}`;
+    else if (view.type === "team") document.title = `Our Team — ${base}`;
     else if (view.type === "blog" || view.type === "blogPost") document.title = `Blog — ${base}`;
     else document.title = base;
   }, [view, displayName]);
@@ -335,7 +362,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
   return (
     <MotionConfig reducedMotion="user">
-    <div id="top" className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
+    <div id="top" data-visual-mode={visualMode} data-public-font={presentation.font} data-icon-weight={presentation.iconWeight} className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
       {w.announcementEnabled && bannerItems.length > 0 && (
         <div className="overflow-hidden bg-amber-400 text-emerald-950" role="region" aria-label="Announcements">
           <div className="sr-only" aria-live="polite">
@@ -365,7 +392,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md"
         data-aoh-sticky-header=""
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-1 px-2 py-2 sm:gap-2 sm:px-5 lg:gap-1.5">
           <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
@@ -378,15 +405,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             />
           </a>
           <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
-          <div className="ml-auto flex items-center gap-2 lg:ml-2">
-            <LanguageSwitcher tone="dark" className="flex" />
+          <div className="ml-auto flex shrink-0 items-center gap-[0.15rem] lg:ml-1 lg:gap-0">
+            <button type="button" onClick={toggleVisualMode} aria-label={`Switch to ${visualMode === 'dark' ? 'light' : 'dark'} visual mode`} aria-pressed={visualMode === 'dark'} title="Visual mode" className="grid h-10 w-8 shrink-0 place-items-center rounded-xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 sm:w-10">{visualMode === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
             <motion.button
               type="button"
               onClick={openLogin}
               {...buttonMotionProps}
-              className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)]"
+              className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-1.5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
             >
-              <LogIn className="mr-1.5 h-4 w-4" /> {t("Portal")}
+              <LogIn className="mr-1 h-4 w-4" /> {w.header.loginText || t("School Portal")}
             </motion.button>
             <button
               ref={menuButtonRef}
@@ -396,7 +423,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               aria-haspopup="dialog"
               aria-expanded={menu}
               aria-controls="public-mobile-menu"
-              className="grid h-10 w-10 min-h-10 min-w-10 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 lg:hidden"
+              className="-ml-1 grid h-10 w-8 min-h-10 min-w-8 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:w-10 lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -423,7 +450,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="aoh-drawer absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
+              className="aoh-drawer !h-auto absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -437,21 +464,21 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-1">
+              <nav className="-mr-1 mt-1 flex min-h-0 flex-none flex-col gap-0 overflow-y-auto overscroll-contain pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
                     href={l.href}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="min-h-10 rounded-xl px-3 py-3 text-sm font-medium text-emerald-100 transition hover:bg-white/10"
+                    className="min-h-9 rounded-lg px-3 py-2 text-sm font-medium text-emerald-100 transition hover:bg-white/10"
                   >
                     {t(l.label)}
                   </a>
                 ))}
               </nav>
-              <div className="mt-4 border-t border-white/10 pt-4">
+              <div className="mt-2 border-t border-white/10 pt-3">
                 <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
-                  {t("Portal")}
+                  {t("School Portal")}
                 </button>
               </div>
             </motion.div>
@@ -462,11 +489,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       <AnimatePresence mode="wait">
         <motion.main key={hash} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
+          {view.type === "admissions" && <AdmissionsPage onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
           {view.type === "transparency" && <TransparencyLibrary />}
           {view.type === "cookies" && <CookiesPage />}
           {view.type === "about" && <AboutPage />}
+          {view.type === "team" && <TeamPage />}
           {view.type === "newsletter" && <NewsletterAction key={`${view.action}:${view.params}`} action={view.action} params={view.params} />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
           {view.type === "blog" && <BlogListPage />}
@@ -477,11 +506,12 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <>
               <HomeAnchorScroll anchor={view.anchor} reduceMotion={!!reduceMotion} />
               <HeroSlider onOpenApply={openApply} onEnterPortal={openLogin} />
+              <OrderedSections order={w.publicLayout}>
 
               {visibleSections.map((key) => {
                 const Section = HOME_SECTION_REGISTRY[key];
                 return (
-                  <Fragment key={key}>
+                  <div key={key}>
                     <Section
                       copy={w.home.sections[key] ?? {}}
                       w={w}
@@ -490,36 +520,28 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                       onLogin={openLogin}
                       programsCount={publicPrograms.length}
                     />
-                    {key === visibleSections[0] && (
-                      <ProgrammesCarousel programs={publicPrograms} onApply={openApply} />
-                    )}
-                  </Fragment>
+                  </div>
                 );
               })}
 
-              <SupportSection onApply={openApply} />
+              <ProgrammesCarousel key="programmes" programs={publicPrograms} onApply={openApply} />
+              <SupportSection key="support" onApply={openApply} />
               {/* Consent-based newsletter signup; hidden unless enabled in Website Settings. */}
-              <div className="bg-black">
+              <div key="newsletter" className="bg-black">
                 <NewsletterSignup />
               </div>
               {w.team.enabled && (
-                <section id="staff" className="scroll-mt-24 py-16">
+                <section key="team" id="staff" className="scroll-mt-24 py-16">
                   <div className="mx-auto max-w-6xl px-4">
                     <h2 className="text-3xl font-bold text-emerald-950">{w.team.title}</h2>
                     <p className="mt-3 text-slate-600">{w.team.description}</p>
-                    <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                      {w.team.members.map((member) => <article key={member.id} className="aoh-card rounded-2xl bg-white p-6">
-                        {member.image && <img src={member.image} alt={member.name} loading="lazy" decoding="async" className="mb-4 h-48 w-full rounded-xl object-cover" />}
-                        <h3 className="text-lg font-semibold">{member.name}</h3>
-                        <p className="text-sm font-semibold text-emerald-700">{member.role}</p>
-                        <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{member.bio}</p>
-                      </article>)}
-                    </div>
+                    <TeamProfiles team={w.team} />
+                    <a href="#team" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-800 hover:underline">{w.publicCopy['team.link']} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
                   </div>
                 </section>
               )}
 
-              <section id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-16 sm:py-20">
+              <section key="blog" id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-16 sm:py-20">
                 <div className="mx-auto max-w-6xl px-4">
                   <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
                     <div>
@@ -566,6 +588,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   )}
                 </div>
               </section>
+              </OrderedSections>
             </>
           )}
         </motion.main>
@@ -633,10 +656,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <ul className="mt-4 space-y-2.5 text-sm text-white/75">
               <li><button type="button" onClick={() => openApply()} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</button></li>
               <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
-              <li><a href="#support" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Donate</a></li>
-              <li><a href="#support" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Volunteer or partner</a></li>
-              <li><a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Term dates 2026/2027</a></li>
-              <li><a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Verify a certificate</a></li>
+              <li><a href="#support-donation" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
+              <li><a href="#support-volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
+              <li><a href="#support-partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
+              <li><a href="#support-staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
+              <li><a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
+              <li><a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
+              {!w.footerLinks.some(l => /#\/?transparency$/i.test(l.href)) && <li><a href="#transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
               {w.footerLinks.map((l) => (
                 <li key={l.id}><a href={l.href || "#"} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {l.label}</a></li>
               ))}

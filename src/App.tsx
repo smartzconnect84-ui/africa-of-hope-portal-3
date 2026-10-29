@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";
-import { AppProvider, useApp } from "./context/AppContext";
+import { AppProvider, useApp } from "@/context/AppContext";
 import { AssistantVisibilityProvider } from "./context/AssistantVisibility";
 import { AuthProvider } from "@/auth/AuthProvider";
 import type { User } from "./types";
@@ -15,6 +15,10 @@ import OfflineBanner from "./components/pwa/OfflineBanner";
 import UpdatePrompt from "./components/pwa/UpdatePrompt";
 import CurrencyConverter from "./components/CurrencyConverter";
 import { Button } from "@/components/ui/button";
+import { applyPublicBranding } from './lib/publicBranding';
+import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
+import { initOneSignalClickRouting } from '@/lib/onesignal';
+import { initNativeOneSignal } from '@/lib/nativeOneSignal';
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const { state } = useApp();
@@ -46,21 +50,58 @@ function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void 
 
 function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; initialTab: AuthTab }) {
   const { currentUser, logout } = useApp();
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => {
+    try { return localStorage.getItem("aoh-portal-view") || "dashboard"; }
+    catch { return "dashboard"; }
+  });
   const { ctx, views } = useVisiblePortalViews();
 
+  // f123 — remember the last portal page across refresh.
   useEffect(() => {
-    setView("dashboard");
+    try { localStorage.setItem("aoh-portal-view", view); } catch { /* optional preference */ }
+  }, [view]);
+
+  // Resume a push-tap destination after sign-in (works for PWA + APK wrapper).
+  useEffect(() => {
+    try {
+      const pending = consumePendingPushView();
+      if (!pending) return;
+      const dest = resolvePushDestination(`/?push_view=${pending}`);
+      if (dest.site === "portal" && dest.view) setView(dest.view);
+    } catch { /* best-effort */ }
   }, [currentUser?.id]);
 
   useEffect(() => {
     const resume = () => setView("course-player");
-    const helpdesk = () => setView("helpdesk");
+    const pushNav = (e: Event) => {
+      try {
+        const dest = resolvePushDestination(String((e as CustomEvent<string>).detail ?? "/"));
+        if (dest.site === "portal" && dest.view) setView(dest.view);
+      } catch { /* ignore malformed push targets */ }
+    };
+    const helpdesk = (e: Event) => {
+      // Direct "Report / Complain to Admin" link stores the requested category
+      // so the helpdesk opens with Report preselected (see HelpdeskWorkspace).
+      const detail = (e as CustomEvent<string>).detail;
+      try {
+        if (typeof detail === "string" && detail) sessionStorage.setItem("aoh-helpdesk-initial-category", detail);
+        else sessionStorage.removeItem("aoh-helpdesk-initial-category");
+      } catch { /* sessionStorage may be unavailable */ }
+      setView("helpdesk");
+    };
+    const appeals = () => setView("grade-appeals");
+    const donate = () => setView("donate");
     window.addEventListener("aoh-resume-learning", resume);
+    window.addEventListener("aoh-push-navigate", pushNav);
     window.addEventListener("aoh-open-helpdesk", helpdesk);
+    window.addEventListener("aoh-open-appeals", appeals);
+    window.addEventListener("aoh-open-donate", donate);
     return () => {
       window.removeEventListener("aoh-resume-learning", resume);
+      window.removeEventListener("aoh-push-navigate", pushNav);
       window.removeEventListener("aoh-open-helpdesk", helpdesk);
+      window.removeEventListener("aoh-open-appeals", appeals);
+      window.removeEventListener("aoh-open-donate", donate);
     };
   }, []);
 
@@ -83,8 +124,15 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 
 function Shell() {
   const { state } = useApp();
-  const [site, setSite] = useState<"public" | "portal">("public");
+  const [site, setSite] = useState<"public" | "portal">(() => {
+    try { return localStorage.getItem("aoh-site") === "portal" ? "portal" : "public"; }
+    catch { return "public"; }
+  });
   const [authTab, setAuthTab] = useState<AuthTab>("signin");
+
+  useEffect(() => {
+    try { localStorage.setItem("aoh-site", site); } catch { /* optional preference */ }
+  }, [site]);
 
   // Apply the CMS-configured academy name / favicon at runtime so a change
   // published from the CMS shows up without a rebuild. Only drives
@@ -98,24 +146,26 @@ function Shell() {
       const name = w.academyName || state.settings.academyName;
       if (name) document.title = name;
     }
-    if (w.faviconUrl) {
-      let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
-      link.href = w.faviconUrl;
-      // Keep the iOS home-screen icon in step with the CMS favicon.
-      let touch = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
-      if (!touch) {
-        touch = document.createElement("link");
-        touch.rel = "apple-touch-icon";
-        document.head.appendChild(touch);
-      }
-      touch.href = w.faviconUrl;
-    }
   }, [state.websiteSettings, state.settings.academyName, site]);
+
+  // Launch deep-link (?push_view=) from a lock-screen tap + foreground click
+  // routing registration. Shared by installed PWA and APK wrapper (TWA/WebView
+  // open the same URL, so both land here identically).
+  useEffect(() => {
+    // Native APK wrapper (Capacitor/Cordova shell): the Android SDK owns push.
+    // Browser PWA: the Web SDK owns push. The two never double-init.
+    try { void initNativeOneSignal().catch(() => undefined); } catch { /* best-effort */ }
+    initOneSignalClickRouting();
+    try {
+      const target = takeLaunchPushTarget();
+      if (!target) return;
+      const dest = resolvePushDestination(`/?push_view=${target.view}`);
+      if (dest.site === "portal" && dest.view) {
+        try { sessionStorage.setItem("aoh-push-pending", JSON.stringify({ url: target, at: Date.now() })); } catch { /* ignore */ }
+        setSite("portal");
+      }
+    } catch { /* best-effort */ }
+  }, []);
 
   // Applies the Admin > System Settings > Appearance theme as CSS variables
   // and data attributes read by src/index.css, so a saved theme takes effect

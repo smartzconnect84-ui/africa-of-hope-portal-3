@@ -183,34 +183,34 @@ export default function CourseDiscussions() {
           const open = openThread === thread.id;
           const answer = thread.replies.find((r) => r.isAnswer);
           return (
-            <div key={thread.id} className="rounded-xl border border-slate-150 bg-white p-4">
+            <div key={thread.id} className="rounded-xl border border-slate-150 bg-white dark:bg-slate-900 p-4">
               <button className="w-full text-left" onClick={() => setOpenThread(open ? "" : thread.id)}>
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold">{unitName(thread.unitId)}</span>
                   <span>{thread.authorName} · {thread.role}</span>
                   <span>{new Date(thread.createdAt).toLocaleString()}</span>
                   {answer && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800"><BadgeCheck className="h-3 w-3" /> Answered</span>}
                   <span className="ml-auto inline-flex items-center gap-1"><Reply className="h-3 w-3" /> {thread.replies.length}</span>
                 </div>
-                <p className="mt-1 font-semibold text-slate-900">{thread.title}</p>
-                <p className="mt-0.5 line-clamp-2 text-sm text-slate-600">{thread.body}</p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-white">{thread.title}</p>
+                <p className="mt-0.5 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{thread.body}</p>
               </button>
               {open && (
                 <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                  {thread.replies.length === 0 && <p className="text-xs text-slate-400">No replies yet — help your classmate or wait for your teacher.</p>}
+                  {thread.replies.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-300">No replies yet — help your classmate or wait for your teacher.</p>}
                   {thread.replies.map((reply) => (
-                    <div key={reply.id} className={cn("rounded-lg border p-2.5 text-sm", reply.isAnswer ? "border-emerald-300 bg-emerald-50" : "border-slate-100 bg-slate-50/60")}>
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                        <span className="font-semibold text-slate-700">{reply.authorName} · {reply.role}</span>
+                    <div key={reply.id} className={cn("rounded-lg border p-2.5 text-sm", reply.isAnswer ? "border-emerald-300 bg-emerald-50" : "border-slate-100 bg-slate-50/60 dark:bg-slate-900/60")}>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
+                        <span className="font-semibold text-slate-700 dark:text-slate-200">{reply.authorName} · {reply.role}</span>
                         <span>{new Date(reply.createdAt).toLocaleString()}</span>
                         {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Teacher answer</span>}
                         {isStaff && <button disabled={saving || pending > 0} className="ml-auto font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
                       </div>
-                      <p className="mt-1 text-slate-700">{reply.body}</p>
+                      <p className="mt-1 text-slate-700 dark:text-slate-200">{reply.body}</p>
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Input maxLength={10000} disabled={saving} placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") addReply(thread.id); }} />
+                    <Input maxLength={10000} disabled={saving} placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addReply(thread.id); } }} />
                     <Button size="sm" disabled={saving} aria-label="Send reply" onClick={() => void addReply(thread.id)} className="bg-emerald-700 hover:bg-emerald-800"><Send className="h-4 w-4" /></Button>
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function CourseDiscussions() {
             </div>
           );
         })}
-        {loadingUnits && <p className="flex items-center gap-1 text-xs text-slate-400"><Loader2 className="h-3 w-3 animate-spin" /> Loading lessons…</p>}
+        {loadingUnits && <p className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-300"><Loader2 className="h-3 w-3 animate-spin" /> Loading lessons…</p>}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import checker from "vite-plugin-checker";
+import brandAssets from "./src/build/brandAssets";
 // @ts-expect-error - No type declarations for custom plugin
 import clearLogPlugin from "./dala-internal-vite-clear-log-plugin.js";
 
@@ -14,6 +15,7 @@ dns.setDefaultResultOrder("verbatim");
 export default defineConfig({ server: { host: true, allowedHosts: true, hmr: { clientPort: 443, protocol: 'wss' }, headers: { 'Cross-Origin-Embedder-Policy': 'credentialless', 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Resource-Policy': 'cross-origin' } },
   plugins: [
     clearLogPlugin(),
+    brandAssets(),
     react(),
     tailwindcss(),
     checker({

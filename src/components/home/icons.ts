@@ -1,4 +1,5 @@
 import {
+  Heart, Mail, Baby, Film, GraduationCap, HeartHandshake, HeartPulse, Leaf, LifeBuoy, Lightbulb, Megaphone, Sprout, TrendingUp, Zap,
   Award, BadgeCheck, BookOpen, CalendarCheck, FileText, Handshake, Search,
   ShieldCheck, Sparkles, Target, UserPlus, Users, Wallet,
   type LucideIcon,
@@ -10,6 +11,7 @@ import {
  * editor to the actual lucide component, falling back to a generic badge.
  */
 const ICONS: Record<string, LucideIcon> = {
+  Heart, Mail, Baby, Film, GraduationCap, HeartHandshake, HeartPulse, Leaf, LifeBuoy, Lightbulb, Megaphone, Sprout, TrendingUp, Zap,
   Award, BadgeCheck, BookOpen, CalendarCheck, FileText, Handshake, Search,
   ShieldCheck, Sparkles, Target, UserPlus, Users, Wallet,
 };

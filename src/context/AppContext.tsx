@@ -356,6 +356,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         stateRef.current = initialState;
         setSessionUserId(null);
         setState(initialState);
+        // f123 — the saved portal page is per-account; never reopen it for the next user.
+        try { localStorage.removeItem("aoh-portal-view"); } catch { /* optional preference */ }
         void supabase.auth.signOut().then(({ error }) => {
           if (error) toast.error(`Sign-out could not finish: ${error.message}. Retry before leaving this device.`);
           else toast.success("Signed out.");

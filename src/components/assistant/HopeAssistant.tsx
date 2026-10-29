@@ -40,6 +40,8 @@ export default function HopeAssistant() {
   const [bubbles, setBubbles] = useState<ChatBubble[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [materialCohortId, setMaterialCohortId] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -65,6 +67,27 @@ export default function HopeAssistant() {
     ? "AOH AI"
     : configuredLabel;
   const surface: "public" | "portal" = currentUser ? "portal" : "public";
+  // Only Teachers, Staff and Admin accounts may save research into the Resource Center.
+  // Explicit staff allowlist: every non-student staff role qualifies; Students never see the save control.
+  const STAFF_SAVE_ROLES = ["Teacher", "Registrar", "Admission Officer", "Finance Officer", "School Admin", "Super Admin"] as const;
+  const canSaveMaterial = !!currentUser && (STAFF_SAVE_ROLES as readonly string[]).includes(currentUser.role);
+  const materialCohorts = (state.cohorts ?? []).filter((c) => !currentUser || currentUser.role !== "Teacher" || c.teacherId === currentUser.id).slice(0, 50);
+
+  function saveToMaterials(bubbleId: string, content: string) {
+    const text = content.trim();
+    if (!text) return;
+    const cohort = (state.cohorts ?? []).find((c) => c.id === (materialCohortId || materialCohorts[0]?.id)) ?? null;
+    const program = (state.programs ?? []).find((p) => p.id === cohort?.programId) ?? null;
+    try {
+      const key = "aoh-assistant-material-queue";
+      const existing = JSON.parse(localStorage.getItem(key) ?? "[]");
+      const queue = Array.isArray(existing) ? existing : [];
+      queue.push({ id: crypto.randomUUID(), title: text.split("\n")[0].slice(0, 80) || "AOH AI resource", body: text, savedAt: new Date().toISOString(), savedBy: currentUser?.id ?? null, programId: program?.id ?? null, cohortId: cohort?.id ?? null, programTitle: program?.title ?? null, cohortName: cohort?.name ?? null });
+      localStorage.setItem(key, JSON.stringify(queue.slice(-20)));
+      window.dispatchEvent(new CustomEvent("aoh:assistant-material", { detail: { count: queue.length, programId: program?.id ?? null, cohortId: cohort?.id ?? null } }));
+      setSavedIds((prev) => (prev.includes(bubbleId) ? prev : [...prev, bubbleId]));
+    } catch { /* storage unavailable — guidance below still shows */ }
+  }
 
   async function saveResponse(content: string) {
     if (!currentUser || !content.trim()) return;
@@ -242,6 +265,24 @@ export default function HopeAssistant() {
                         {currentUser && b.role === "assistant" && b.complete && b.content !== "Saved to Resource Center." ? (
                           <button type="button" onClick={() => void saveResponse(b.content)} className="mt-2 text-[11px] font-semibold text-emerald-700 underline">Save to Resource Center</button>
                         ) : null}
+                      </div>
+                      {b.role === "assistant" && b.complete && canSaveMaterial && (
+                        <div className="mt-1.5 space-y-1">
+                          {materialCohorts.length > 0 && (
+                            <label className="flex items-center gap-1 text-[11px] text-emerald-800">Course:
+                              <select value={materialCohortId || materialCohorts[0].id} onChange={(e) => setMaterialCohortId(e.target.value)} className="max-w-[150px] rounded-full border border-emerald-600/30 bg-white px-1.5 py-0.5 text-[11px]" aria-label="Course for training material">
+                                {materialCohorts.map((c) => (
+                                  <option key={c.id} value={c.id}>{(state.programs ?? []).find((p) => p.id === c.programId)?.title ?? "Course"} · {c.name}</option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
+                          <button type="button" disabled={savedIds.includes(b.id)} onClick={() => saveToMaterials(b.id, b.content)} className="inline-flex min-h-8 items-center gap-1 rounded-full border border-emerald-600/30 bg-white px-2.5 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-60">{savedIds.includes(b.id) ? "Saved to training materials ✓" : "Save to training materials"}</button>
+                        </div>
+                      )}
+                      {b.role === "assistant" && b.complete && canSaveMaterial && savedIds.includes(b.id) && (
+                        <p className="mt-1 text-[11px] text-emerald-700">Saved with course context. Open Academic Planning → Materials to review and submit it to the shared training materials.</p>
+                      )}
                       </div>
                     ) : sending ? (
                       <span className="inline-flex items-center gap-1 py-1" aria-label="Waiting for a reply">

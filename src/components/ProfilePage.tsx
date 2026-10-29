@@ -18,6 +18,7 @@ import { AuthField } from "./AuthPortal";
 import { INPUT_CLASS, newPasswordErrors } from "@/lib/forms";
 import UserAvatar from "./UserAvatar";
 import ReminderSettings from "./academic/ReminderSettings";
+import OneSignalPanel from "./notifications/OneSignalPanel";
 import { accountId } from "@/lib/identifiers";
 import { useServiceWorkerUpdate } from "@/lib/pwa";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ function DeviceSettings() {
       {update.error && <p role="alert" className="mt-2 text-xs text-rose-700">{update.error}</p>}
     </section>
     <ReminderSettings />
+    <OneSignalPanel />
   </div>;
 }
 

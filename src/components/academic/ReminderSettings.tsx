@@ -3,6 +3,7 @@ import { Bell, BellOff, CalendarClock, Loader2, Smartphone, Wallet, Megaphone, S
 import { useApp, formatCurrency } from "@/context/AppContext";
 import { academicApi } from "@/lib/academics";
 import { useReminderNotifications, type ReminderItem } from "@/lib/pushReminders";
+import OneSignalPanel from "@/components/notifications/OneSignalPanel";
 import { Button } from "@/components/ui/button";
 import { panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
@@ -211,6 +212,9 @@ export default function ReminderSettings() {
           {reminders.notice}
         </p>
       )}
+      <div className="mt-4">
+        <OneSignalPanel />
+      </div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export const TICKET_CATEGORIES = ['Study', 'Fees', 'Technology', 'Other'] as const;
+export const TICKET_CATEGORIES = ['Study', 'Fees', 'Technology', 'Report', 'Complaint', 'Other'] as const;
 export type TicketCategory = typeof TICKET_CATEGORIES[number];
 export interface HelpdeskTicket {
   id: string;

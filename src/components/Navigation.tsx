@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle, Bell, LogOut, Menu, Search, X,
-  RefreshCw, Globe, Megaphone, HeartHandshake, type LucideIcon,
+  RefreshCw, Globe, Megaphone, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
 
 export const panelClass =
-  "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5";
+  "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5 dark:border-white/10 dark:bg-slate-900 dark:shadow-none";
 
 const toneMap = {
   emerald: "from-emerald-600 to-emerald-800 text-emerald-50",
@@ -58,8 +58,8 @@ export function SectionHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-300">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -83,10 +83,10 @@ export function StatCard({
     <div className={cn(panelClass, "p-4")}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{value}</p>
         </div>
         <span
           className={cn(
@@ -97,7 +97,7 @@ export function StatCard({
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      {hint && <p className="mt-3 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-3 text-xs text-slate-500 dark:text-slate-300">{hint}</p>}
     </div>
   );
 }
@@ -112,29 +112,29 @@ export function EmptyState({
   icon?: LucideIcon;
 }) {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-emerald-900/15 bg-white/60 px-4 py-12 text-center">
-      {Icon && <Icon className="mb-3 h-8 w-8 text-emerald-700/60" />}
-      <p className="text-sm font-medium text-slate-700">{title}</p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    <div className="grid place-items-center rounded-2xl border border-dashed border-emerald-900/15 bg-white/60 px-4 py-12 text-center dark:border-white/15 dark:bg-slate-900/60">
+      {Icon && <Icon className="mb-3 h-8 w-8 text-emerald-700/60 dark:text-emerald-300/80" />}
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-100">{title}</p>
+      {hint && <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{hint}</p>}
     </div>
   );
 }
 
 const statusTone: Record<string, string> = {
-  approved: "bg-emerald-100 text-emerald-800",
-  active: "bg-emerald-100 text-emerald-800",
-  completed: "bg-sky-100 text-sky-800",
-  pending: "bg-amber-100 text-amber-800",
-  submitted: "bg-amber-100 text-amber-800",
-  draft: "bg-slate-100 text-slate-700",
-  revision_requested: "bg-violet-100 text-violet-800",
-  rejected: "bg-rose-100 text-rose-700",
-  cancelled: "bg-rose-100 text-rose-700",
+  approved: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-100",
+  active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-100",
+  completed: "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-100",
+  pending: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-100",
+  submitted: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-100",
+  draft: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-100",
+  revision_requested: "bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-100",
+  rejected: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-100",
+  cancelled: "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-100",
 };
 
 /** Capitalised status chip reused across academic planning, the learning path and progress views. */
 export function Status({ value }: { value: string }) {
-  return <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize", statusTone[value] ?? "bg-slate-100 text-slate-700")}>{value.replaceAll("_", " ")}</span>;
+  return <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize", statusTone[value] ?? "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-100")}>{value.replaceAll("_", " ")}</span>;
 }
 
 /** Shared "the backend migration isn't applied yet" / fetch-failed panel with a retry action. */
@@ -353,6 +353,11 @@ export default function Navigation({
     if (bannerRef.current) observer.observe(bannerRef.current);
     return () => observer.disconnect();
   }, [bannerVisible]);
+  const bellCount = useMemo(() => {
+    const now = Date.now();
+    const role = currentUser?.role ?? "Student";
+    return state.announcements.filter((item) => isAnnouncementLiveFor(item, role, now)).length;
+  }, [state.announcements, currentUser?.role]);
   const { ctx, views } = useVisiblePortalViews();
   const { t } = useLocale();
 
@@ -376,7 +381,7 @@ export default function Navigation({
       className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
-      <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-800/60">
+      <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-900/75 dark:text-emerald-100/80">
         {sidebarGroupLabel(ctx.role)}
       </p>
       {views.map((v) => {
@@ -390,10 +395,10 @@ export default function Navigation({
             onClick={() => go(v.key)}
             data-component-id={`nav-${v.key}`}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
               active
                 ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
-                : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900",
+                : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
             )}
           >
             <Icon className={cn("h-4.5 w-4.5", active ? "text-amber-400" : "text-emerald-700/70")} />
@@ -401,10 +406,7 @@ export default function Navigation({
           </button>
         );
       })}
-      <div className="mt-2 space-y-1 border-t border-slate-100 pt-2">
-        <a href="/#donate" onClick={() => { setDrawer(false); onExitToPublic?.(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-amber-50">
-          <HeartHandshake className="h-4.5 w-4.5 text-amber-600" /> Donate
-        </a>
+      <div className="mt-2 space-y-1 border-t border-slate-100 pt-2 dark:border-white/10">
         {onExitToPublic && (
           <button
             type="button"
@@ -430,7 +432,7 @@ export default function Navigation({
   return (
     <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
       <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-3 sm:px-4">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-3 sm:gap-[1.15rem] sm:px-5">
           <button
             ref={menuButtonRef}
             type="button"
@@ -485,7 +487,7 @@ export default function Navigation({
             )}
           </div>
 
-          <div className="ml-auto flex items-center gap-2 md:ml-2">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-3 md:ml-2">
             <LanguageSwitcher tone="dark" className="flex" />
             {onExitToPublic && (
               <button
@@ -498,9 +500,13 @@ export default function Navigation({
             )}
             <Pop
               trigger={
-                <span className="relative grid h-10 w-10 place-items-center rounded-xl text-slate-600 hover:bg-slate-100">
+                <span className="relative grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10" role="img" aria-label={bellCount > 0 ? `Bulletin board, ${bellCount} new notices` : "Bulletin board"}>
                   <Bell className="h-5 w-5" />
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+                  {bellCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[11px] font-bold text-emerald-950 ring-2 ring-white">
+                      {bellCount > 9 ? "9+" : bellCount}
+                    </span>
+                  )}
                 </span>
               }
             >
@@ -535,8 +541,8 @@ export default function Navigation({
               title="My profile"
               aria-label="Open my profile"
               className={cn(
-                "hidden items-center gap-2 rounded-xl border-l border-slate-200 py-1 pl-2 pr-2 text-left transition hover:bg-emerald-50 sm:flex",
-                view === "profile" && "bg-emerald-50",
+                "hidden items-center gap-2 rounded-xl border-l border-white/15 py-1 pl-2 pr-2 text-left transition hover:bg-white/10 sm:flex",
+                view === "profile" && "bg-white/10",
               )}
             >
               {currentUser ? (
@@ -545,17 +551,17 @@ export default function Navigation({
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">AO</span>
               )}
               <span className="hidden leading-tight lg:block">
-                <span className="block max-w-[140px] truncate text-sm font-medium text-slate-800">
+                <span className="block max-w-[140px] truncate text-sm font-medium text-white">
                   {currentUser?.name}
                 </span>
-                <span className="block max-w-[140px] truncate text-[11px] text-slate-500">{currentUser?.title ?? currentUser?.email}</span>
+                <span className="block max-w-[140px] truncate text-[11px] text-white/70">{currentUser?.title ?? currentUser?.email}</span>
               </span>
             </button>
 
             <button
               type="button"
               onClick={logout}
-              className="grid h-10 w-10 place-items-center rounded-xl text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
+              className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
               aria-label="Sign out"
             >
               <LogOut className="h-4.5 w-4.5" />

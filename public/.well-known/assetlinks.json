@@ -1,0 +1,11 @@
+[
+  {
+    "comment": "AFRICA OF HOPE — Android App Links / TWA verification template. Fill in asset_statements ONLY when the real APK exists: the Play-Console / keystore SHA-256 fingerprint and the production package name. Do NOT invent values — an incorrect fingerprint silently breaks app-link verification. See supabase/ANDROID_APK_PUSH_SETUP.md.",
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "REPLACE_WITH_REAL_PACKAGE_NAME",
+      "sha256_cert_fingerprints": ["REPLACE_WITH_REAL_SHA256_FINGERPRINT"]
+    }
+  }
+]

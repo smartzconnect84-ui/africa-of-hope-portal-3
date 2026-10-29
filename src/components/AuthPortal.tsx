@@ -285,9 +285,9 @@ function Showcase() {
 }
 
 function RememberMe({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
-  return <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
-    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1 h-4 w-4 accent-emerald-700" />
-    <span><span className="font-medium">Remember me on this device</span><span className="mt-0.5 block text-xs text-slate-500">Keep me signed in after closing the browser. Leave unchecked on shared devices. Your password is never saved by this option.</span></span>
+  return <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
+    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-emerald-700" />
+    <span className="font-medium">Remember me</span>
   </label>;
 }
 

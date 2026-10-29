@@ -81,7 +81,7 @@ body{margin:0;font-family:'Helvetica Neue',Arial,sans-serif;color:#0f2019;backgr
 .pill{display:inline-block;background:#fbbf24;color:#052e22;font:700 10.5px/1 Arial;padding:7px 11px;border-radius:999px;letter-spacing:.1em;text-transform:uppercase}
 h1{font-size:33px;line-height:1.12;margin:22px 0 10px;letter-spacing:-.01em}
 .desc{margin:0;font-size:13.5px;line-height:1.75;color:#d7e5dd;max-width:660px}
-.photo{width:100%;height:250px;object-fit:cover;display:block}
+.photo{width:100%;height:250px;object-fit:cover;object-position:center;display:block;background:#052e22}
 .body{padding:28px 44px 40px}
 .grid{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 6px}
 .fact{flex:1 1 150px;border:1px solid #d6e2dc;border-radius:12px;padding:11px 13px;background:#f6f8f7}

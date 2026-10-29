@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { authStorage } from "@/lib/authStorage";
+import { authStorage } from "../../lib/authStorage.ts";
 
 /**
  * Live Supabase project for the Africa of Hope portal.

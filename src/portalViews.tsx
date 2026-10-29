@@ -20,12 +20,14 @@ import {
   CalendarRange,
   CalendarDays,
   GraduationCap,
+  Gavel,
   MessagesSquare,
   Newspaper,
   Smartphone,
   Mail,
   Activity,
   TrendingUp,
+  HeartHandshake,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -74,6 +76,8 @@ import TeacherInsights from "./components/academic/TeacherInsights";
 import SelfAssessmentHub from "./components/academic/SelfAssessmentHub";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
+import GradeAppeals from "./components/portal/GradeAppeals";
+import DonatePage from "./components/public/DonatePage";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -176,6 +180,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: (ctx) => <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} />,
   },
   {
+    key: "grade-appeals",
+    label: (ctx) => (ctx.role === "Student" ? "Grade appeals" : "Appeal & remark desk"),
+    icon: Gavel,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("grades.review_appeals")),
+    render: (ctx) => <GradeAppeals key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
     key: "study-calendar",
     label: "Study Calendar",
     icon: CalendarDays,
@@ -258,6 +269,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: ClipboardCheck,
     visible: (ctx) => ctx.can("payments.confirm"),
     render: () => <PaymentsReview />,
+  },
+  {
+    key: "donate",
+    label: "Donate",
+    icon: HeartHandshake,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <DonatePage onLogin={() => window.dispatchEvent(new Event("aoh-open-donate"))} />,
   },
   {
     key: "certificates",

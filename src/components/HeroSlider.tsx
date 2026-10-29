@@ -142,7 +142,8 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
     else if (info.offset.x > 80) prev();
   };
 
-  const slide = slides[current];
+  const slide = slides[current % slides.length];
+  const copy = state.websiteSettings.publicCopy;
 
   const variants = {
     enter: (dir: number) => ({
@@ -156,15 +157,8 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
     }),
   };
 
-  // Slow alternating Ken Burns: even slides breathe in, odd slides breathe out.
-  const zoomOut = current % 2 === 1;
-  const kenBurns = prefersReducedMotion
-    ? { initial: { scale: 1 }, animate: { scale: 1 }, transition: { duration: 0 } }
-    : {
-        initial: { scale: zoomOut ? 1.16 : 1.04, y: zoomOut ? "-1.5%" : "0%" },
-        animate: { scale: zoomOut ? 1.04 : 1.16, y: zoomOut ? "0%" : "-1.5%" },
-        transition: { duration: (AUTOPLAY_MS + 1200) / 1000, ease: "linear" as const },
-      };
+  // Fade/slide animations remain, but never zoom beyond the uploaded frame.
+  const kenBurns = { initial: { scale: 1 }, animate: { scale: 1 }, transition: { duration: 0 } };
 
   const textStagger = {
     hidden: { opacity: 0, y: 20 },
@@ -208,7 +202,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               src={slide.image}
               alt={slide.title}
               loading={current === 0 ? "eager" : "lazy"}
-              className="h-full w-full object-cover object-[center_40%] sm:object-[center_34%] md:object-[center_30%] lg:object-[center_28%]"
+              className="aoh-photo h-full w-full object-cover object-center"
             />
           </motion.div>
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-950/75 to-emerald-950/30" />
@@ -234,7 +228,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1.5 text-[11px] font-semibold text-amber-300 ring-1 ring-amber-400/30 backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                Cohort Celebrations
+                {copy['hero.badge']}
               </span>
             </motion.div>
 
@@ -242,7 +236,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.h1
               custom={1}
               variants={textStagger}
-              className="mt-6 text-3xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
+              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
             >
               {slide.title}
               <br />
@@ -253,7 +247,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.p
               custom={2}
               variants={textStagger}
-              className="mt-5 max-w-[65ch] text-base text-emerald-100/90 sm:text-lg"
+              className="mt-3 max-w-[65ch] text-base text-emerald-100/90 sm:text-lg"
             >
               {slide.description}
             </motion.p>
@@ -269,27 +263,27 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 onClick={onOpenApply}
                 className="inline-flex h-11 items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300 active:scale-[0.98]"
               >
-                Apply Online <ArrowRight className="h-4 w-4" />
+                {copy['hero.apply']} <ArrowRight className="h-4 w-4" />
               </button>
               <a
                 href="#donate"
                 aria-label="Donate to AFRICA OF HOPE"
                 className="group inline-flex h-11 items-center gap-2 rounded-xl border-2 border-amber-300/80 bg-emerald-950/70 px-5 text-sm font-semibold text-white ring-1 ring-amber-300/20 transition hover:border-amber-200 hover:bg-emerald-900 hover:text-amber-100 active:scale-[0.98]"
               >
-                <HeartHandshake className="h-4 w-4 text-amber-300 transition group-hover:scale-110" aria-hidden="true" /> Donate
+                <HeartHandshake className="h-4 w-4 text-amber-300 transition group-hover:scale-110" aria-hidden="true" /> {copy['hero.donate']}
               </a>
               <button
                 type="button"
                 onClick={onEnterPortal}
                 className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 active:scale-[0.98]"
               >
-                <LogIn className="h-4 w-4" /> Portal Login
+                <LogIn className="h-4 w-4" /> {copy['hero.portal']}
               </button>
               <a
                 href="#verify"
                 className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-emerald-100 underline-offset-4 transition hover:text-white hover:underline"
               >
-                <ShieldCheck className="h-4 w-4" /> Verify Certificate
+                <ShieldCheck className="h-4 w-4" /> {copy['hero.verify']}
               </a>
             </motion.div>
           </motion.div>
@@ -332,14 +326,14 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
           </span>
 
           {/* Thumbnail pills */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
             {slides.map((s, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => goTo(i)}
                 aria-label={`Go to slide ${i + 1}: ${s.title}`}
-                className={`group relative h-8 w-12 overflow-hidden rounded-lg ring-1 transition-all sm:h-10 sm:w-16 ${
+                className={`group relative h-8 w-12 shrink-0 overflow-hidden rounded-lg ring-1 transition-all sm:h-10 sm:w-16 ${
                   i === current
                     ? "ring-amber-400 ring-2 scale-105"
                     : "ring-white/20 opacity-60 hover:opacity-100 hover:ring-white/40"

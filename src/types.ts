@@ -325,8 +325,14 @@ export interface CertificateBranding {
 }
 
 export interface WebsiteSettings {
+  aboutPage?: import('./data/publicPresentation').AboutContent;
+  presentation?: { font: string; iconWeight: string };
+  pwa?: typeof import('./data/publicPresentation').DEFAULT_PWA;
+  publicLayout?: string[];
   /** Records the owner-requested logo replacement; later CMS edits stay independent. */
   brandRevision?: number;
+  /** One-time owner-supplied Team seed; later CMS edits/removals remain authoritative. */
+  teamRevision?: number;
   /** Placement-specific overrides; blank entries inherit the default logo. */
   logos?: Partial<Record<LogoPlacement, string>>;
   /** Certificate wording, signatories and verified institutional contact details. */
@@ -381,6 +387,8 @@ export interface WebsiteSettings {
     members: { id: string; name: string; role: string; bio: string; image: string }[];
   };
   newsletter: { enabled: boolean; title: string; description: string; consent: string; button: string };
+  /** CMS-managed header/banner image per public page; blank means no banner. */
+  pageImages?: Record<string, string>;
 }
 
 export type WebsiteListKey =

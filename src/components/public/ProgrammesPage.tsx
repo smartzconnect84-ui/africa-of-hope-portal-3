@@ -15,6 +15,7 @@ import { buttonMotionProps } from "./motionConstants";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { CurrencyConvertButton } from '../CurrencyConverter';
+import ExpandableImage, { PageHeroImage } from './PageImage';
 import { normalizeCurrencyCode } from '@/lib/currency';
 
 const MODE_ICON: Record<DeliveryMode, typeof Laptop> = {
@@ -108,6 +109,9 @@ export default function ProgrammesPage({
             {programs.length} courses in two-week, one-month, three-month and six-month tracks. Fully online is 1 hour a day, 3 days a week;
             fully on-site is 2 hours daily, 2 days a week. Tuition-free: you only pay the registration package.
           </motion.p>
+          <p className="mt-3 max-w-2xl rounded-xl bg-white/10 px-3 py-2 text-xs leading-5 text-amber-200 ring-1 ring-white/15">
+            Strictly online students can enrol anytime — no waiting for the general school opening. Pick your 3 training days, attend within them, complete within the duration and receive your certificate on completion.
+          </p>
           <div className="mt-6 flex flex-wrap gap-2 text-[11px] font-semibold">
             {tracks.filter((c) => c !== "All").map((c) => (
               <button key={c} type="button" onClick={() => setTrack(c)} className={`rounded-full px-3 py-1.5 ring-1 transition ${track === c ? "bg-amber-400 text-black ring-amber-300" : "bg-white/10 text-white ring-white/20 hover:bg-white/20"}`}>
@@ -191,12 +195,11 @@ export default function ProgrammesPage({
                         className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 shadow-sm transition-shadow duration-200 hover:shadow-lg"
                       >
                         <div className="relative">
-                          <img
+                          <ExpandableImage
                             src={programImage(program)}
                             alt={`${program.title} students at Africa of Hope`}
-                            className="h-44 w-full object-cover"
-                            loading="lazy"
-                            onError={(e) => { e.currentTarget.src = "/programs/default.webp"; }}
+                            className="block"
+                            imgClassName="h-44 w-full object-cover"
                           />
                           <span className="absolute left-3 top-3 rounded-full bg-black px-2.5 py-1 text-[11px] font-bold text-white shadow">REG {cost.registration}</span>
                         </div>

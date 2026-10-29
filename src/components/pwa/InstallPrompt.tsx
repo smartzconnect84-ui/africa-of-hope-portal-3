@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Download, Share, Smartphone, X } from "lucide-react";
+import { useApp } from "../../context/AppContext";
+import { resolvedPwa } from "@/lib/publicSettingsValidation";
+import { DEFAULT_PWA } from "@/data/publicPresentation";
+
 import { usePwaInstall } from "@/lib/pwa";
 
-const BRAND_ICON =
-  "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+const FALLBACK_ICON = "/icons/icon-192.png";
 
 /**
  * Branded install prompt.
@@ -14,6 +17,10 @@ const BRAND_ICON =
  */
 export default function InstallPrompt() {
   const { canInstall, isIos, installed, dismissed, install, dismiss } = usePwaInstall();
+  const { state } = useApp();
+  const pwa = state?.websiteSettings ? resolvedPwa(state.websiteSettings) : DEFAULT_PWA;
+  const icon = pwa.icon192 || FALLBACK_ICON;
+  const appName = pwa.shortName || pwa.name || DEFAULT_PWA.shortName;
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -36,20 +43,20 @@ export default function InstallPrompt() {
         exit={{ opacity: 0, y: 24, scale: 0.97 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         role="dialog"
-        aria-label="Install the AFRICA OF HOPE app"
+        aria-label={`Install the ${appName} app`}
         className="fixed inset-x-3 bottom-3 z-[70] mx-auto max-w-md rounded-2xl border-4 border-[#D4AF37] bg-black p-4 text-white shadow-2xl sm:inset-x-auto sm:bottom-6 sm:left-auto sm:right-6 sm:w-[382px]"
         style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#D4AF37]/60 bg-white">
             {canInstall || showIos ? (
-              <img src={BRAND_ICON} alt="" className="h-9 w-9 object-contain" />
+              <img src={icon} alt="" className="h-9 w-9 object-contain" />
             ) : (
               <Smartphone className="h-5 w-5 text-[#16803C]" aria-hidden="true" />
             )}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Install the AFRICA OF HOPE app</p>
+            <p className="text-sm font-semibold">Install the {appName} app</p>
             <p className="mt-0.5 text-xs leading-5 text-white/75">
               {canInstall
                 ? "One-tap access from your home screen, full screen, with pages you visited still available offline."
