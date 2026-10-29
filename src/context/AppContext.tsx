@@ -54,6 +54,8 @@ const LIVE_TABLES = [
   "role_permissions",
 ];
 
+export type ApplicantType = "Volunteer" | "Staff" | "Student";
+
 export interface RegistrationPayload {
   name: string;
   email: string;
@@ -62,6 +64,7 @@ export interface RegistrationPayload {
   note: string;
   /** Highest completed level of schooling (replaces the old ID/Documents box). */
   educationLevel: string;
+  applicantType: ApplicantType;
   /** Legacy field kept for older records; no longer collected. */
   documents?: string;
 }
@@ -374,6 +377,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           program_ids: payload.programIds,
           note: payload.note,
           education_level: payload.educationLevel ?? null,
+          applicant_type: payload.applicantType,
           documents: payload.documents ?? "",
         };
         const { data, error } = await supabase.auth.signUp({

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, BookOpen, CalendarDays, Clock3, Link2, Share2, User } from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarDays, Clock3, Link2, Share2, User, ArrowRight } from "lucide-react";
 import { getPublishedPost, listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
 import { ScrollReveal } from "./motion";
 import { motion } from "framer-motion";
@@ -157,6 +157,12 @@ export default function BlogPostPage({ slug }: { slug: string }) {
         <ScrollReveal className="mt-8" delay={0.05}>
           <BodyParagraphs body={post.body} />
         </ScrollReveal>
+
+        {post.category.toLowerCase().replace(/[^a-z]/g, "") === "blogprogram" && (
+          <a href="#programmes" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+            Apply for this programme <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
+        )}
 
         {post.tags.length > 0 && (
           <div className="mt-8 flex flex-wrap gap-2">
