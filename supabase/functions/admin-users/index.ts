@@ -125,8 +125,10 @@ Deno.serve(async (req: Request) => {
       const { error } = await caller.auth.resetPasswordForEmail(target.email);
       return error ? json({ error: error.message }, 400) : json({ ok: true });
     }
-    // Keep real school records. Auth deletion can cascade through school tables.
-    return json({ error: "Permanent deletion is disabled to preserve school records. Suspend this account instead." }, 409);
+    if (id === user.id) return json({ error: "You cannot delete your own account" }, 400);
+    const { error: deleteError } = await admin.auth.admin.deleteUser(id);
+    if (deleteError) return json({ error: deleteError.message }, 400);
+    return json({ ok: true });
   } catch (err) {
     console.error("admin-users failed", err);
     return json({ error: "The account action failed. Reload and review the account before retrying." }, 500);
