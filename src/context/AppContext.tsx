@@ -261,7 +261,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setLoading(true);
     void drain();
-    const channel = supabase.channel(`portal-live-${sessionUserId ?? "public"}`);
+    // StrictMode and fast refresh can briefly overlap cleanup with the next effect run.
+    // A unique channel prevents Supabase from reusing a channel that has already subscribed.
+    const channelName = `portal-live-${sessionUserId ?? "public"}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const channel = supabase.channel(channelName);
     const tables = sessionUserId ? LIVE_TABLES : ["programs", "program_modules", "announcements", "system_settings"];
     tables.forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, schedule);
