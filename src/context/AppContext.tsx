@@ -115,6 +115,8 @@ interface AppContextValue {
   rejectApplicant: (id: string) => void;
   toggleStudentStatus: (id: string) => void;
   addProgram: (payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => void;
+  updateProgram: (id: string, payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => Promise<string | null>;
+  deleteProgram: (id: string) => Promise<string | null>;
   addCohort: (payload: Omit<Cohort, "id">) => void;
   markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => void;
   addAssignment: (payload: Omit<Assignment, "id">) => Promise<void>;
@@ -259,7 +261,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setLoading(true);
     void drain();
-    const channel = supabase.channel(`portal-live-${sessionUserId ?? "public"}`);
+    // StrictMode and fast refresh can briefly overlap cleanup with the next effect run.
+    // A unique channel prevents Supabase from reusing a channel that has already subscribed.
+    const channelName = `portal-live-${sessionUserId ?? "public"}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const channel = supabase.channel(channelName);
     const tables = sessionUserId ? LIVE_TABLES : ["programs", "program_modules", "announcements", "system_settings"];
     tables.forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, schedule);
@@ -575,6 +580,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ),
           );
         }
+      },
+      updateProgram: async (id, payload) => {
+        const { modulesRaw, ...rest } = payload;
+        const modules = modulesRaw
+          .split(String.fromCharCode(10)).map((line) => line.trim()).filter(Boolean)
+          .map((line) => {
+            const [title, weeks, ...summary] = line.split("|").map((part) => part.trim());
+            return { id: uid(), title: title || "Module", weeks: Number.parseInt(weeks ?? "2", 10) || 2, summary: summary.join(" | ") };
+          });
+        const program: Program = { ...rest, id, modules };
+        setState((s) => ({ ...s, programs: s.programs.map((item) => item.id === id ? program : item) }));
+        const { error } = await supabase.from("programs").update({
+          title: program.title, category: program.category, duration_weeks: program.durationWeeks,
+          tuition: program.tuition, certification: program.certification, description: program.description,
+          entry_requirements: program.entryRequirements,
+        }).eq("id", id);
+        if (error) return error.message;
+        const { error: deleteError } = await supabase.from("program_modules").delete().eq("program_id", id);
+        if (deleteError) return deleteError.message;
+        if (modules.length) {
+          const { error: insertError } = await supabase.from("program_modules").insert(modules.map((m, index) => ({
+            id: m.id, program_id: id, title: m.title, weeks: m.weeks, summary: m.summary, position: index,
+          })));
+          if (insertError) return insertError.message;
+        }
+        return null;
+      },
+      deleteProgram: async (id) => {
+        const { error } = await supabase.from("programs").delete().eq("id", id);
+        if (error) return error.message;
+        setState((s) => ({ ...s, programs: s.programs.filter((item) => item.id !== id) }));
+        return null;
       },
       addCohort: (payload) => {
         const id = uid();

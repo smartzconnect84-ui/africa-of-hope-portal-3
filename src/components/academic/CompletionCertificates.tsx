@@ -6,6 +6,7 @@ import { academicApi, type LearningUnit, type StudentProgressRow } from "@/lib/a
 import {
   downloadCertificatesCsv, downloadCertificatesJson,
 } from "@/lib/certificateDownloads";
+import { downloadCertificateImage } from "@/lib/certificateImage";
 import { downloadCertificatePdf, viewFor } from "@/lib/certificatePdf";
 import CertificateDocument, { printCertificateElement } from "@/components/certificate/CertificateDocument";
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,18 @@ export default function CompletionCertificates() {
     }
   };
 
+  const downloadImage = async (cert: (typeof state.certificates)[number]) => {
+    setBusyId(cert.id);
+    try {
+      await downloadCertificateImage(`certificate-${cert.serial}`, `certificate-${cert.serial}`);
+      toast.success(`Certificate ${cert.serial} downloaded as PNG.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The image could not be generated.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const exportIssued = (format: "csv" | "json") => {
     const mine = state.certificates.filter((c) => c.studentId === currentUser?.id);
     if (!mine.length) { toast.info("No certificates to export yet."); return; }
@@ -165,6 +178,9 @@ export default function CompletionCertificates() {
                         </Button>
                         <Button variant="outline" className="w-full" disabled={busyId === existing.id} onClick={() => void downloadCert(existing.id)}>
                           {busyId === existing.id ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />} PDF
+                        </Button>
+                        <Button variant="outline" className="w-full" disabled={busyId === existing.id} onClick={() => void downloadImage(existing)}>
+                          <Download className="mr-1.5 h-4 w-4" /> PNG image
                         </Button>
                       </div>
                     </>

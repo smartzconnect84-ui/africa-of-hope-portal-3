@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
+import { AppProvider } from "./context/AppContext";
 import { dismissSplash, registerServiceWorker } from "./lib/pwa";
 import { restorePublicLaunch } from './lib/publicBranding';
 
@@ -10,7 +11,9 @@ registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <AppProvider>
+      <App />
+    </AppProvider>
   </StrictMode>,
 );
 

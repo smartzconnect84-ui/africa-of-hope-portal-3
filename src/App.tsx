@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "./context/AppContext";
 import { AssistantVisibilityProvider } from "./context/AssistantVisibility";
 import { AuthProvider } from "@/auth/AuthProvider";
 import type { User } from "./types";
@@ -219,14 +219,12 @@ function Shell() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppProvider>
-        <LanguageProvider>
-          <Toaster position="top-right" richColors closeButton />
-          <AssistantVisibilityProvider>
-            <Shell />
-          </AssistantVisibilityProvider>
-        </LanguageProvider>
-      </AppProvider>
+      <LanguageProvider>
+        <Toaster position="top-right" richColors closeButton />
+        <AssistantVisibilityProvider>
+          <Shell />
+        </AssistantVisibilityProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

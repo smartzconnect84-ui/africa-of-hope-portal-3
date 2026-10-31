@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 
-const CATEGORY_OPTIONS = ["News", "Event", "Programme", "Press", "Community"];
+const CATEGORY_OPTIONS = ["News", "Event", "Programme", "Blog-Program", "Press", "Community"];
 const STATUS_FILTERS: Array<{ value: BlogStatus | "all"; label: string }> = [
   { value: "all", label: "All" },
   { value: "draft", label: "Draft" },
