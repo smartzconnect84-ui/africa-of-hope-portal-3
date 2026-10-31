@@ -8,7 +8,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { academicApi, type MyCourseStatus } from "@/lib/academics";
+import { academicApi, type CourseEnrollment, type LearningArrangement, type MyCourseStatus } from "@/lib/academics";
 import { EmptyState, SetupError, Status, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,7 @@ export default function StudentProgress({ reloadKey }: { reloadKey: number }) {
   const { currentUser } = useApp();
   const userId = currentUser?.id;
   const [rows, setRows] = useState<MyCourseStatus[]>([]);
+  const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
@@ -36,7 +37,14 @@ export default function StudentProgress({ reloadKey }: { reloadKey: number }) {
   const load = useCallback(async () => {
     if (!userId) return;
     setLoading(true); setError("");
-    try { setRows(await academicApi.myCourseStatus()); }
+    try {
+      const [statusRows, enrollmentRows] = await Promise.all([
+        academicApi.myCourseStatus(),
+        academicApi.enrollments(userId),
+      ]);
+      setRows(statusRows);
+      setEnrollments(enrollmentRows);
+    }
     catch (err) { setError(err instanceof Error ? err.message : String(err)); }
     finally { setLoading(false); setFirstLoadDone(true); }
   }, [userId]);
@@ -48,13 +56,18 @@ export default function StudentProgress({ reloadKey }: { reloadKey: number }) {
 
   return (
     <div className="space-y-4">
-      {rows.map((status) => (
+      {rows.map((status) => {
+        const arrangement = (enrollments.find((item) => item.cohort_id === status.cohort_id)?.learning_arrangement ?? "blended") as LearningArrangement;
+        const selfPaced = arrangement === "self_paced";
+        const arrangementLabel = arrangement === "full_onsite" ? "Full onsite" : selfPaced ? "Self-paced" : "Blended";
+        return (
         <div key={status.cohort_id} className={cn(panelClass, "p-5")}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{status.program_title}</p>
               <h3 className="mt-1 font-semibold text-slate-900">{status.cohort_name}</h3>
               <p className="mt-1 text-xs text-slate-500">{windowLabel(status)}</p>
+              <span className="mt-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">{arrangementLabel}</span>
             </div>
             <Status value={status.completion_status} />
           </div>
@@ -72,15 +85,15 @@ export default function StudentProgress({ reloadKey }: { reloadKey: number }) {
             <div>
               <div className="flex items-center justify-between text-xs font-medium text-slate-500">
                 <span>Attendance</span>
-                <span>{status.attendance_percent === null ? "No classes held yet" : `${Math.round(status.attendance_percent)}% (needs ${status.required_attendance_percent}%)`}</span>
+                <span>{selfPaced ? "Not required" : status.attendance_percent === null ? "No classes held yet" : `${Math.round(status.attendance_percent)}% (needs ${status.required_attendance_percent}%)`}</span>
               </div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
-                <div className={cn("h-full rounded-full", status.attendance_ok ? "bg-emerald-600" : "bg-rose-500")} style={{ width: `${Math.min(100, status.attendance_percent ?? 0)}%` }} />
+                <div className={cn("h-full rounded-full", selfPaced || status.attendance_ok ? "bg-emerald-600" : "bg-rose-500")} style={{ width: `${selfPaced ? 100 : Math.min(100, status.attendance_percent ?? 0)}%` }} />
               </div>
             </div>
           </div>
 
-          {!status.attendance_ok && status.sessions_held > 0 && (
+          {!selfPaced && !status.attendance_ok && status.sessions_held > 0 && (
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>Attendance is below the {status.required_attendance_percent}% required for this course. You have missed {status.sessions_missed} of {status.sessions_held} classes held so far.</p>
@@ -151,7 +164,8 @@ export default function StudentProgress({ reloadKey }: { reloadKey: number }) {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
