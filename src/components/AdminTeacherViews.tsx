@@ -7,7 +7,7 @@ import {
 import {
   Users, Award, Banknote, Search, Plus, Check, X, BookOpen,
   Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, GraduationCap,
-  Percent, Mail, Phone, BadgeAlert, RefreshCw,
+  Percent, Mail, Phone, BadgeAlert, RefreshCw, Pencil, Trash2,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
 import { DELIVERY_META, durationLabel, programModes, scheduleLabel } from "@/lib/programDelivery";
@@ -362,9 +362,10 @@ const emptyProgram = {
 };
 
 export function ProgramBuilder() {
-  const { state, addProgram, seedCatalogue } = useApp();
+  const { state, addProgram, updateProgram, deleteProgram, seedCatalogue } = useApp();
   const [open, setOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyProgram);
 
   const seed = async () => {
@@ -374,24 +375,36 @@ export function ProgramBuilder() {
     if (error) toast.error(error);
   };
 
-  const submit = () => {
+  const startEdit = (program: (typeof state.programs)[number]) => {
+    setEditingId(program.id);
+    setForm({
+      title: program.title, category: program.category, durationWeeks: String(program.durationWeeks),
+      tuition: String(program.tuition), certification: program.certification, description: program.description,
+      entryRequirements: program.entryRequirements, modulesRaw: program.modules.map((m) => `${m.title} | ${m.weeks} | ${m.summary}`).join("\n"),
+    });
+    setOpen(true);
+  };
+
+  const submit = async () => {
     if (!form.title.trim() || !form.category.trim()) {
       toast.error("Program title and category are required");
       return;
     }
-    addProgram({
-      title: form.title.trim(),
-      category: form.category.trim(),
-      durationWeeks: Number(form.durationWeeks) || 26,
-      tuition: Number(form.tuition) || 0,
-      certification: form.certification,
-      description: form.description,
-      entryRequirements: form.entryRequirements,
-      modulesRaw: form.modulesRaw,
-    });
-    toast.success("Program published to the catalogue");
-    setForm(emptyProgram);
-    setOpen(false);
+    const payload = {
+      title: form.title.trim(), category: form.category.trim(), durationWeeks: Number(form.durationWeeks) || 26,
+      tuition: Number(form.tuition) || 0, certification: form.certification, description: form.description,
+      entryRequirements: form.entryRequirements, modulesRaw: form.modulesRaw,
+    };
+    const error = editingId ? await updateProgram(editingId, payload) : (addProgram(payload), null);
+    if (error) { toast.error(error); return; }
+    toast.success(editingId ? "Program updated" : "Program published to the catalogue");
+    setForm(emptyProgram); setEditingId(null); setOpen(false);
+  };
+
+  const remove = async (id: string, title: string) => {
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    const error = await deleteProgram(id);
+    if (error) toast.error(error); else toast.success("Program deleted");
   };
 
   return (
@@ -438,6 +451,10 @@ export function ProgramBuilder() {
                 </div>
               </div>
               <p className="mt-3 text-sm text-slate-600">{p.description}</p>
+              <div className="mt-4 flex gap-2 border-t border-slate-100 pt-3">
+                <Button size="sm" variant="outline" onClick={() => startEdit(p)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
+                <Button size="sm" variant="outline" className="text-rose-700" onClick={() => void remove(p.id, p.title)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+              </div>
               <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
                 {p.modules.map((m) => (
                   <div key={m.id} className="flex items-start gap-3 text-sm">
@@ -462,7 +479,7 @@ export function ProgramBuilder() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Publish a new program</DialogTitle>
+            <DialogTitle>{editingId ? "Edit programme" : "Publish a new programme"}</DialogTitle>
             <DialogDescription>
             Define the track, duration, registration fee and module outline. Class times follow the study mode:
             fully online 1 hour a day, 3 days a week; fully on-site 2 hours daily, 2 days a week.
@@ -505,8 +522,8 @@ export function ProgramBuilder() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} className="bg-emerald-700 hover:bg-emerald-800">Publish program</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancel</Button>
+            <Button onClick={() => void submit()} className="bg-emerald-700 hover:bg-emerald-800">{editingId ? "Save changes" : "Publish programme"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
