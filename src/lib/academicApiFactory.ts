@@ -10,6 +10,14 @@ export const LEARNING_ARRANGEMENTS: Array<{ value: LearningArrangement; label: s
   { value: "full_onsite", label: "Full onsite", description: "Follow the complete programme timetable at the centre." },
 ];
 
+export function arrangementsForDeliveryModes(deliveryModes: string[] | null | undefined) {
+  const modes = new Set(deliveryModes ?? []);
+  if (!modes.size || (modes.has("online") && modes.has("blended") && modes.has("onsite"))) return LEARNING_ARRANGEMENTS;
+  return LEARNING_ARRANGEMENTS.filter(({ value }) =>
+    value === "self_paced" ? modes.has("online") : value === "blended" ? modes.has("blended") : modes.has("onsite"),
+  );
+}
+
 export interface ScheduleSlot {
   day_of_week: number;
   starts_at: string;
