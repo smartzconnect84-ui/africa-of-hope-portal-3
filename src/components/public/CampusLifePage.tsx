@@ -2,12 +2,13 @@ import { useMemo, useState } from "react";
 import {
   Images, CalendarDays, Briefcase, ClipboardList, GraduationCap,
   FileText, Star, LibraryBig, Wallet, Bell, CheckCircle2, Download, MapPin,
+  Building2, Store,
 } from "lucide-react";
 import ExpandableImage from "./PageImage";
 import { ScrollReveal } from "./motion";
 import { SUPPLIED_PHOTOS, SUPPLIED_DOCS, SUPPLIED_ARTWORK } from "@/data/suppliedMedia";
 
-type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees";
+type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses";
 
 const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "gallery", label: "Gallery", icon: Images },
@@ -19,6 +20,8 @@ const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "feedback", label: "Feedback", icon: Star },
   { id: "library", label: "Library", icon: LibraryBig },
   { id: "fees", label: "Fees & Pay", icon: Wallet },
+  { id: "vacancies", label: "Vacancies", icon: Building2 },
+  { id: "businesses", label: "Businesses", icon: Store },
 ];
 
 function useLocal<T>(key: string, initial: T): [T, (v: T) => void] {
@@ -606,10 +609,163 @@ function Fees() {
   );
 }
 
+/* ---------------- Vacancies (f142) ---------------- */
+const SEED_VACANCIES = [
+  { id: "vac-tutor", title: "ICT Tutor (part-time)", dept: "Teaching", location: "Monrovia + online", closing: "2027-02-15", desc: "Teach practical computer studies two evenings a week.", req: "Diploma in ICT or related field plus 1 year hands-on experience." },
+  { id: "vac-nurse", title: "Nursing Assistant Instructor", dept: "Teaching", location: "Main campus", closing: "2027-02-28", desc: "Lead lab demos and supervise internship logbooks.", req: "Licensed practitioner with teaching or mentoring experience." },
+  { id: "vac-registrar", title: "Admissions & Records Officer", dept: "Support", location: "Monrovia", closing: "2027-03-10", desc: "Handle applications, records and certificate queues.", req: "Strong admin skills; spreadsheet and record-keeping experience." },
+];
+
+function Vacancies() {
+  const [apps, setApps] = useLocal<{ id: string; name: string; role: string; date: string }[]>("aoh-vacancy-apps", []);
+  const [f, setF] = useState({ name: "", contact: "", role: "ICT Tutor (part-time)", note: "" });
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState<string | null>(null);
+  const apply = () => {
+    if (f.name.trim().length < 2) return setErr("Enter your full name.");
+    if (!/^[+\d][\d\s-]{6,}$/.test(f.contact.trim()) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.contact.trim()))
+      return setErr("Enter a valid phone number or email, e.g. +231 770 000 000.");
+    if (f.note.trim().length < 20) return setErr("Add a short cover note (at least 20 characters) so we know you fit the role.");
+    setErr("");
+    const ref = `AOH-JOB-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    setApps([{ id: ref, name: f.name.trim(), role: f.role, date: new Date().toLocaleDateString() }, ...apps].slice(0, 20));
+    setF({ name: "", contact: "", role: f.role, note: "" });
+    setOk(ref);
+    window.setTimeout(() => setOk(null), 5000);
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-3">
+        {SEED_VACANCIES.map((v) => (
+          <article key={v.id} className={cardCls}>
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+              <Building2 className="h-3.5 w-3.5" aria-hidden="true" /> {v.dept} · closes {v.closing}
+            </p>
+            <h3 className="mt-3 font-bold text-emerald-950">{v.title}</h3>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600"><MapPin className="h-4 w-4" aria-hidden="true" /> {v.location}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{v.desc}</p>
+            <p className="mt-1 text-xs text-slate-500">Needs: {v.req}</p>
+          </article>
+        ))}
+      </div>
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">Apply for a role</h3>
+        <p className="mt-1 text-sm text-slate-600">Simple candidate form — shortlisted applicants are contacted within 7 days.</p>
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className={labelCls} htmlFor="vac-role">Role</label>
+            <select id="vac-role" className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>
+              {SEED_VACANCIES.map((v) => <option key={v.id}>{v.title}</option>)}
+            </select>
+          </div>
+          <div><label className={labelCls} htmlFor="vac-name">Full name</label><input id="vac-name" className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoComplete="name" /></div>
+          <div><label className={labelCls} htmlFor="vac-contact">Phone or email</label><input id="vac-contact" className={inputCls} value={f.contact} onChange={(e) => setF({ ...f, contact: e.target.value })} placeholder="+231 ... or you@mail.com" aria-invalid={!!err} /></div>
+          <div>
+            <label className={labelCls} htmlFor="vac-note">Cover note</label>
+            <textarea id="vac-note" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Your experience in 2–3 sentences" />
+            <FieldError msg={err} />
+          </div>
+          <button type="button" onClick={apply} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Submit application</button>
+          {ok && <p role="status" className="text-sm font-medium text-emerald-700">Received — your reference is {ok}. Keep it for follow-up.</p>}
+          {apps.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-slate-600">
+              {apps.slice(0, 5).map((a) => <li key={a.id}>{a.id} · {a.role} · {a.name} · {a.date}</li>)}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Alumni business directory (f143) ---------------- */
+const SEED_BIZ = [
+  { id: "biz-1", name: "Hope Tech Repair", owner: "Alumni '24", cat: "ICT services", loc: "Monrovia", contact: "+231 770 111 222", blurb: "Phone & laptop repair with student discount." },
+  { id: "biz-2", name: "Massa Catering", owner: "Alumni '23", cat: "Food", loc: "Paynesville", contact: "+231 775 333 444", blurb: "Events catering for graduations and open days." },
+  { id: "biz-3", name: "Bright Stitches", owner: "Alumni '25", cat: "Fashion", loc: "Congo Town", contact: "+231 777 555 666", blurb: "Uniforms and graduation gowns made to order." },
+];
+const BIZ_CATS = ["All", "ICT services", "Food", "Fashion", "Health", "Other"];
+
+function Businesses() {
+  const [items, setItems] = useLocal<{ id: string; name: string; owner: string; cat: string; loc: string; contact: string; blurb: string }[]>("aoh-biz-dir", SEED_BIZ);
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("All");
+  const [f, setF] = useState({ name: "", owner: "", cat: "ICT services", loc: "", contact: "", blurb: "" });
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState(false);
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return items.filter((b) => (cat === "All" || b.cat === cat) && (!needle || `${b.name} ${b.owner} ${b.loc} ${b.blurb}`.toLowerCase().includes(needle)));
+  }, [items, q, cat]);
+  const add = () => {
+    if (f.name.trim().length < 2) return setErr("Enter the business name.");
+    if (f.owner.trim().length < 2) return setErr("Enter the owner name so customers know who runs it.");
+    if (!f.loc.trim()) return setErr("Enter the location, e.g. Monrovia.");
+    if (!/^[+\d][\d\s-]{6,}$/.test(f.contact.trim())) return setErr("Enter a valid phone number, e.g. +231 770 000 000.");
+    if (f.blurb.trim().length < 10) return setErr("Describe the business (at least 10 characters).");
+    setErr("");
+    setItems([{ id: `biz-${Date.now()}`, name: f.name.trim(), owner: f.owner.trim(), cat: f.cat, loc: f.loc.trim(), contact: f.contact.trim(), blurb: f.blurb.trim() }, ...items].slice(0, 40));
+    setF({ name: "", owner: "", cat: "ICT services", loc: "", contact: "", blurb: "" });
+    setOk(true);
+    window.setTimeout(() => setOk(false), 4000);
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      <div>
+        <div className="flex flex-wrap gap-2">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search businesses" aria-label="Search businesses" className={`${inputCls} max-w-xs`} />
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
+            {BIZ_CATS.map((c) => (
+              <button key={c} type="button" onClick={() => setCat(c)} aria-pressed={cat === c} className={`h-10 rounded-xl px-3 text-xs font-bold ${cat === c ? "bg-emerald-800 text-white" : "bg-white text-emerald-900 ring-1 ring-emerald-900/15 hover:bg-emerald-50"}`}>{c}</button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {list.length === 0 && <p className="col-span-full rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No businesses match. Try another search or add yours below.</p>}
+          {list.map((b) => (
+            <article key={b.id} className={cardCls}>
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900"><Store className="h-3.5 w-3.5" aria-hidden="true" /> {b.cat}</p>
+              <h3 className="mt-2 font-bold text-emerald-950">{b.name}</h3>
+              <p className="mt-1 text-xs font-semibold text-emerald-700">{b.owner} · {b.loc}</p>
+              <p className="mt-2 text-sm text-slate-600">{b.blurb}</p>
+              <p className="mt-2 text-xs text-slate-500">Contact: {b.contact}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">List your business</h3>
+        <p className="mt-1 text-sm text-slate-600">Alumni-owned ventures — customers find and support you here.</p>
+        <div className="mt-4 space-y-3">
+          <div><label className={labelCls} htmlFor="biz-name">Business name</label><input id="biz-name" className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div><label className={labelCls} htmlFor="biz-owner">Owner name</label><input id="biz-owner" className={inputCls} value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls} htmlFor="biz-cat">Category</label>
+              <select id="biz-cat" className={inputCls} value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })}>
+                {BIZ_CATS.slice(1).map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div><label className={labelCls} htmlFor="biz-loc">Location</label><input id="biz-loc" className={inputCls} value={f.loc} onChange={(e) => setF({ ...f, loc: e.target.value })} placeholder="e.g. Monrovia" /></div>
+          </div>
+          <div><label className={labelCls} htmlFor="biz-contact">Phone / WhatsApp</label><input id="biz-contact" className={inputCls} value={f.contact} onChange={(e) => setF({ ...f, contact: e.target.value })} inputMode="tel" aria-invalid={!!err} /></div>
+          <div>
+            <label className={labelCls} htmlFor="biz-blurb">What do you offer?</label>
+            <textarea id="biz-blurb" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.blurb} onChange={(e) => setF({ ...f, blurb: e.target.value })} />
+            <FieldError msg={err} />
+          </div>
+          <button type="button" onClick={add} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Add business</button>
+          {ok && <p role="status" className="text-sm font-medium text-emerald-700">Listed — it is live in this directory on this device.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Page ---------------- */
 export default function CampusLifePage() {
   const [tab, setTab] = useState<Tab>("gallery");
-  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees }[tab];
+  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses }[tab];
   return (
     <div className="bg-[#f6f8f7] pb-16 sm:pb-24">
       <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">

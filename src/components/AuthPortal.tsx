@@ -416,6 +416,41 @@ const emptyReg = {
 };
 type RegErrors = Partial<Record<keyof typeof emptyReg | "form", string>>;
 
+const APPLICATION_DRAFT_KEY = "aoh-application-draft-v1";
+type ApplicationDraft = {
+  name: string;
+  email: string;
+  phone: string;
+  programIds: string[];
+  educationLevel: string;
+  note: string;
+  agree: boolean;
+  step: number;
+  savedAt: string;
+};
+function readApplicationDraft(): ApplicationDraft | null {
+  try {
+    const raw = localStorage.getItem(APPLICATION_DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Partial<ApplicationDraft>;
+    if (!d || typeof d !== "object") return null;
+    if (!d.name && !d.email && !d.phone && !(d.programIds?.length) && !d.note && !d.educationLevel) return null;
+    return {
+      name: typeof d.name === "string" ? d.name : "",
+      email: typeof d.email === "string" ? d.email : "",
+      phone: typeof d.phone === "string" ? d.phone : "",
+      programIds: Array.isArray(d.programIds) ? d.programIds.filter((x): x is string => typeof x === "string") : [],
+      educationLevel: typeof d.educationLevel === "string" ? d.educationLevel : "",
+      note: typeof d.note === "string" ? d.note : "",
+      agree: d.agree === true,
+      step: d.step === 1 || d.step === 2 ? d.step : 0,
+      savedAt: typeof d.savedAt === "string" ? d.savedAt : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
 type DoneStatus = NonNullable<SignUpResult["status"]>;
 
 function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) => void }) {
@@ -428,6 +463,65 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
   const [busy, setBusy] = useState(false);
   // Blog Programme Apply deep-link: preselect the tapped programme once the catalogue loads.
   const [pendingApplied, setPendingApplied] = useState(false);
+  // f141 Application draft autosave: unfinished admission form persists on this device (no passwords).
+  const [hydrated, setHydrated] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  useEffect(() => {
+    const d = readApplicationDraft();
+    if (d) {
+      setReg((r) => ({
+        ...r,
+        name: d.name || r.name,
+        email: d.email || r.email,
+        phone: d.phone || r.phone,
+        programIds: d.programIds.length ? d.programIds : r.programIds,
+        educationLevel: d.educationLevel || r.educationLevel,
+        note: d.note || r.note,
+        agree: d.agree || r.agree,
+      }));
+      setStep(d.step);
+      setDraftSavedAt(d.savedAt || null);
+      setDraftRestored(true);
+    }
+    setHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (!hydrated) return;
+    const hasContent =
+      reg.name.trim() || reg.email.trim() || reg.phone.trim() || reg.programIds.length > 0 || reg.note.trim() || reg.educationLevel;
+    if (!hasContent && step === 0) return;
+    try {
+      const payload: ApplicationDraft = {
+        name: reg.name,
+        email: reg.email,
+        phone: reg.phone,
+        programIds: reg.programIds,
+        educationLevel: reg.educationLevel,
+        note: reg.note,
+        agree: reg.agree,
+        step,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(APPLICATION_DRAFT_KEY, JSON.stringify(payload));
+      setDraftSavedAt(payload.savedAt);
+    } catch {
+      /* storage optional */
+    }
+  }, [hydrated, reg.name, reg.email, reg.phone, reg.programIds, reg.educationLevel, reg.note, reg.agree, step]);
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(APPLICATION_DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    setReg(emptyReg);
+    setStep(0);
+    setErrors({});
+    setDraftSavedAt(null);
+    setDraftRestored(false);
+    toast.info("Saved application draft discarded.");
+  };
   useEffect(() => {
     if (pendingApplied || state.programs.length === 0) return;
     const pending = consumePendingProgramApply();
@@ -520,6 +614,9 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
       return;
     }
     toast.success("Application submitted. The registrar will review it shortly.");
+    try { localStorage.removeItem(APPLICATION_DRAFT_KEY); } catch { /* ignore */ }
+    setDraftSavedAt(null);
+    setDraftRestored(false);
     onDone(reg.email.trim(), result.status ?? "confirm_email");
     setReg(emptyReg);
     setStep(0);
@@ -536,6 +633,16 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
       <Stepper step={step} steps={STEPS} />
+      <div role="status" aria-live="polite" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-900/10 bg-emerald-50/70 px-3 py-2 text-xs text-emerald-900">
+        <span>
+          {draftRestored ? "Unfinished application restored from this device. " : "Your progress autosaves on this device as you type. "}
+          {draftSavedAt ? `Last saved ${new Date(draftSavedAt).toLocaleString()}. ` : ""}
+          Passwords are never saved.
+        </span>
+        <button type="button" onClick={discardDraft} className="rounded-lg border border-emerald-900/20 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100">
+          Discard draft
+        </button>
+      </div>
       <RememberMe checked={remember} onChange={setRemember} />
 
       {errors.form && (
