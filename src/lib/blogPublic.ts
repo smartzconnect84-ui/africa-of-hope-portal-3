@@ -17,6 +17,10 @@ export interface BlogPost {
   coverImagePath: string | null;
   category: string;
   tags: string[];
+  /** Linked catalogue programme (nullable `program_id` column, post-migration). */
+  programId: string | null;
+  /** Linked programme title (nullable `program_title` column, post-migration). */
+  programTitle: string | null;
   authorId: string | null;
   authorName: string;
   status: BlogStatus;
@@ -46,6 +50,8 @@ export function mapBlogRow(r: BlogRow): BlogPost {
     coverImagePath: orNull(r.cover_image_path),
     category: txt(r.category, "News"),
     tags: Array.isArray(r.tags) ? r.tags.map((t) => String(t)) : [],
+    programId: orNull(r.program_id),
+    programTitle: orNull(r.program_title),
     authorId: orNull(r.author_id),
     authorName: txt(r.author_name),
     status: isBlogStatus(r.status) ? r.status : "draft",

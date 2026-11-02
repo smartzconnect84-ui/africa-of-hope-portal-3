@@ -15,6 +15,10 @@ export interface BlogDraftInput {
   featured?: boolean;
   authorId?: string | null;
   authorName?: string;
+  /** Linked catalogue programme id (nullable `program_id` column, post-migration). */
+  programId?: string | null;
+  /** Linked programme title (nullable `program_title` column, post-migration). */
+  programTitle?: string | null;
   /** Manual slug override; auto-generated from the title when omitted. */
   slug?: string;
 }
@@ -133,6 +137,8 @@ export function createBlogApi(client: BlogApiClient, now: () => number = Date.no
     if (draft.body !== undefined) row.body = draft.body;
     if (draft.category !== undefined) row.category = draft.category;
     if (draft.tags !== undefined) row.tags = draft.tags;
+    if (draft.programId !== undefined) row.program_id = draft.programId;
+    if (draft.programTitle !== undefined) row.program_title = draft.programTitle;
     if (draft.coverImageUrl !== undefined) row.cover_image_url = draft.coverImageUrl;
     if (draft.coverImagePath !== undefined) row.cover_image_path = draft.coverImagePath;
     if (draft.featured !== undefined) row.featured = draft.featured;
@@ -189,6 +195,13 @@ export function createBlogApi(client: BlogApiClient, now: () => number = Date.no
         ...statusPatch(action, scheduledAt, now),
       };
       const { data, error } = await client.from("blog_posts").insert(row).select().single();
+      if (error && isMissingLinkColumn(error)) {
+        // Table predates 20261106030000 — retry with the tag-only link.
+        const retry = await client.from("blog_posts").insert(withoutProgramLink(row)).select().single();
+        const retryMessage = explainBlogError(retry.error);
+        if (retryMessage) throw new Error(retryMessage);
+        return mapBlogRow(retry.data as BlogRow);
+      }
       const message = explainBlogError(error);
       if (message) throw new Error(message);
       return mapBlogRow(data as BlogRow);
@@ -217,6 +230,14 @@ export function createBlogApi(client: BlogApiClient, now: () => number = Date.no
       }
       Object.assign(changes, statusPatch(action, scheduledAt, now, previousStatus));
       const { data, error } = await client.from("blog_posts").update(changes).eq("id", id).select().single();
+      if (error && isMissingLinkColumn(error)) {
+        // Table predates 20261106030000 — retry with the tag-only link.
+        const retry = await client.from("blog_posts").update(withoutProgramLink(changes)).eq("id", id).select().single();
+        const retryMessage = explainBlogError(retry.error);
+        if (retryMessage) throw new Error(retryMessage);
+        await removeCoverBestEffort(oldCoverPathToDelete);
+        return mapBlogRow(retry.data as BlogRow);
+      }
       const message = explainBlogError(error);
       if (message) throw new Error(message);
       await removeCoverBestEffort(oldCoverPathToDelete);
@@ -244,6 +265,17 @@ export function createBlogApi(client: BlogApiClient, now: () => number = Date.no
       return { url: data.publicUrl, path };
     },
   };
+}
+
+/** True when the backend rejects the write because the programme-link columns do not exist yet. */
+function isMissingLinkColumn(error: { message: string }): boolean {
+  return /program_id|program_title/i.test(error.message);
+}
+
+/** Strips the post-migration link columns so the write works on older table shapes. */
+function withoutProgramLink(row: Record<string, unknown>): Record<string, unknown> {
+  const { program_id: _pid, program_title: _ptitle, ...rest } = row;
+  return rest;
 }
 
 export const blogApi = createBlogApi(supabase);

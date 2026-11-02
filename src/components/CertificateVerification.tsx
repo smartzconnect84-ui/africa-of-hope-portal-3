@@ -28,7 +28,6 @@ import {
   downloadCertificatesJson, type CertificateLookup,
 } from "@/lib/certificateDownloads";
 import { downloadCertificatePdf, downloadCertificatesPdfBatch, viewFor } from "@/lib/certificatePdf";
-import { downloadCertificateImage } from "@/lib/certificateImage";
 import { formatCertificateDate } from "@/lib/certificateBrand";
 import CertificateDocument, { printCertificateElement } from "@/components/certificate/CertificateDocument";
 import { CERTIFICATE_TYPES } from "@/lib/certificateBrand";
@@ -185,19 +184,6 @@ export function CertificateStudio() {
       toast.success(`${count} certificate record${count === 1 ? "" : "s"} exported as ${format.toUpperCase()}.`);
     } catch {
       toast.error(`The ${format.toUpperCase()} export failed. Try again or use another format.`);
-    }
-  };
-
-  const downloadJpg = async (cert: Certificate) => {
-    if (cert.status !== "Valid") {
-      toast.error("Revoked certificates cannot be downloaded as certificates.");
-      return;
-    }
-    try {
-      await downloadCertificateImage(`certificate-${cert.serial}`, `certificate-${cert.serial}`, "jpg");
-      toast.success(`JPG certificate ${cert.serial} downloaded.`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "The JPG could not be generated.");
     }
   };
 
@@ -435,11 +421,6 @@ export function CertificateStudio() {
                 <Button variant="outline" onClick={() => downloadPdf(previewCert)}>
                   <Download className="mr-1 h-4 w-4" /> PDF
                 </Button>
-                {previewCert.status === "Valid" && (
-                  <Button variant="outline" onClick={() => void downloadJpg(previewCert)}>
-                    <Download className="mr-1 h-4 w-4" /> JPG image
-                  </Button>
-                )}
               </>
             )}
             <Button

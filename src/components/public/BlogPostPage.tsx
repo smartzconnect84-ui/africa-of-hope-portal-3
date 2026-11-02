@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ArrowLeft, BookOpen, CalendarDays, Clock3, Link2, Share2, User, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Clock3, GraduationCap, Link2, Share2, User } from "lucide-react";
 import { getPublishedPost, listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
+import { isProgrammePost, resolveBlogProgram } from "@/lib/programApply";
+import { useApp } from "@/context/AppContext";
 import { ScrollReveal } from "./motion";
 import { motion } from "framer-motion";
 
@@ -50,9 +52,11 @@ async function share(title: string) {
   await copyLink();
 }
 
-export default function BlogPostPage({ slug }: { slug: string }) {
+export default function BlogPostPage({ slug, onApply }: { slug: string; onApply?: (programId?: string) => void }) {
+  const { state } = useApp();
   const [post, setPost] = useState<BlogPost | null | "loading">("loading");
   const [more, setMore] = useState<BlogPost[]>([]);
+  const program = post && post !== "loading" ? resolveBlogProgram(post, state.programs) : null;
 
   useEffect(() => {
     let active = true;
@@ -148,21 +152,36 @@ export default function BlogPostPage({ slug }: { slug: string }) {
           </div>
         </motion.div>
 
+        {isProgrammePost(post.category) && (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-900/10 bg-white p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-800/10">
+                <GraduationCap className="h-5 w-5 text-emerald-800" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-700">Programme announcement</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-950">Admissions open for {program ? program.title : "this programme"}.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onApply?.(program?.id)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+            >
+              Apply for this programme <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {post.coverImageUrl && (
           <ScrollReveal className="mt-6 overflow-hidden rounded-2xl">
-            <img src={post.coverImageUrl} alt="" className="h-64 w-full object-cover sm:h-96" />
+            <img src={post.coverImageUrl} alt="" loading="lazy" decoding="async" className="h-64 w-full object-cover sm:h-96" />
           </ScrollReveal>
         )}
 
         <ScrollReveal className="mt-8" delay={0.05}>
           <BodyParagraphs body={post.body} />
         </ScrollReveal>
-
-        {post.category.toLowerCase().replace(/[^a-z]/g, "") === "blogprogram" && (
-          <a href="#programmes" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
-            Apply for this programme <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </a>
-        )}
 
         {post.tags.length > 0 && (
           <div className="mt-8 flex flex-wrap gap-2">

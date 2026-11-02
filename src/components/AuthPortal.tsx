@@ -13,6 +13,7 @@ import { durationLabel } from "@/lib/programDelivery";
 import { cn } from "@/lib/utils";
 import { INPUT_CLASS, newPasswordErrors } from "@/lib/forms";
 import { remembersSession, setRememberSession } from "@/lib/authStorage";
+import { consumePendingProgramApply } from "@/lib/programApply";
 import { VerificationPortal } from "./CertificateVerification";
 import { resolveIcon } from "./home/icons";
 import BrandLockup from "./brand/BrandLockup";
@@ -411,7 +412,7 @@ const EDUCATION_LEVELS = [
 ];
 const emptyReg = {
   name: "", email: "", phone: "", password: "", confirm: "",
-  programIds: [] as string[], educationLevel: "", applicantType: "Student" as const, note: "", agree: false,
+  programIds: [] as string[], educationLevel: "", note: "", agree: false,
 };
 type RegErrors = Partial<Record<keyof typeof emptyReg | "form", string>>;
 
@@ -425,6 +426,16 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
   const [errors, setErrors] = useState<RegErrors>({});
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  // Blog Programme Apply deep-link: preselect the tapped programme once the catalogue loads.
+  const [pendingApplied, setPendingApplied] = useState(false);
+  useEffect(() => {
+    if (pendingApplied || state.programs.length === 0) return;
+    const pending = consumePendingProgramApply();
+    setPendingApplied(true);
+    if (pending && state.programs.some((p) => p.id === pending)) {
+      setReg((r) => (r.programIds.includes(pending) ? r : { ...r, programIds: [...r.programIds, pending] }));
+    }
+  }, [pendingApplied, state.programs]);
   const set = <K extends keyof typeof emptyReg>(key: K, v: (typeof emptyReg)[K]) => {
     setReg((r) => ({ ...r, [key]: v }));
     // Clear this field's stale error (and any password-mismatch error it affects) as the
@@ -498,7 +509,6 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
       programIds: reg.programIds,
       note: reg.note.trim(),
       educationLevel: reg.educationLevel,
-      applicantType: reg.applicantType,
     });
     setBusy(false);
     if (result.error) {
@@ -643,19 +653,6 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
                   </div>
                 </div>
               )}
-              <div className="space-y-1.5">
-                <label htmlFor="reg-applicant-type" className="text-sm font-medium text-slate-700">Apply as <span className="text-rose-500">*</span></label>
-                <select
-                  id="reg-applicant-type"
-                  value={reg.applicantType}
-                  onChange={(e) => set("applicantType", e.target.value as typeof reg.applicantType)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15"
-                >
-                  <option value="Student">Student</option>
-                  <option value="Volunteer">Volunteer</option>
-                  <option value="Staff">Staff</option>
-                </select>
-              </div>
               <div className="space-y-1.5">
                 <label htmlFor="reg-education" className="text-sm font-medium text-slate-700">Level of Education <span className="text-rose-500">*</span></label>
                 <select

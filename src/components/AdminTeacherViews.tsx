@@ -5,13 +5,13 @@ import {
   Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  Users, Award, Banknote, Search, Plus, Check, X, BookOpen,
+  Users, Award, Banknote, Search, Plus, Check, X, BookOpen, Pencil, Trash2,
   Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, GraduationCap,
-  Percent, Mail, Phone, BadgeAlert, RefreshCw, Pencil, Trash2,
+  Percent, Mail, Phone, BadgeAlert, RefreshCw,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
 import { DELIVERY_META, durationLabel, programModes, scheduleLabel } from "@/lib/programDelivery";
-import type { AttendanceStatus, User } from "../types";
+import type { AttendanceStatus, DeliveryMode, User } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -359,14 +359,27 @@ const emptyProgram = {
   description: "",
   entryRequirements: "",
   modulesRaw: "",
+  deliveryModes: [] as string[],
+  studyPlan: "",
+  imageUrl: "",
+  published: true,
 };
+
+const BUILDER_STEPS = ["Basics", "Schedule & modes", "Modules", "Media & publish", "Review"] as const;
+const BUILDER_MODE_OPTIONS: { value: DeliveryMode; hint: string }[] = [
+  { value: "online", hint: "Online live + recordings" },
+  { value: "blended", hint: "Online + 1 campus day" },
+  { value: "onsite", hint: "On campus, in person" },
+];
 
 export function ProgramBuilder() {
   const { state, addProgram, updateProgram, deleteProgram, seedCatalogue } = useApp();
   const [open, setOpen] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
   const [form, setForm] = useState(emptyProgram);
+  const [step, setStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const seed = async () => {
     setSeeding(true);
@@ -375,36 +388,126 @@ export function ProgramBuilder() {
     if (error) toast.error(error);
   };
 
-  const startEdit = (program: (typeof state.programs)[number]) => {
-    setEditingId(program.id);
-    setForm({
-      title: program.title, category: program.category, durationWeeks: String(program.durationWeeks),
-      tuition: String(program.tuition), certification: program.certification, description: program.description,
-      entryRequirements: program.entryRequirements, modulesRaw: program.modules.map((m) => `${m.title} | ${m.weeks} | ${m.summary}`).join("\n"),
-    });
+  const openWizard = () => {
+    setForm(emptyProgram);
+    setEditingId(null);
+    setStep(0);
+    setError(null);
     setOpen(true);
   };
 
-  const submit = async () => {
-    if (!form.title.trim() || !form.category.trim()) {
-      toast.error("Program title and category are required");
-      return;
-    }
-    const payload = {
-      title: form.title.trim(), category: form.category.trim(), durationWeeks: Number(form.durationWeeks) || 26,
-      tuition: Number(form.tuition) || 0, certification: form.certification, description: form.description,
-      entryRequirements: form.entryRequirements, modulesRaw: form.modulesRaw,
-    };
-    const error = editingId ? await updateProgram(editingId, payload) : (addProgram(payload), null);
-    if (error) { toast.error(error); return; }
-    toast.success(editingId ? "Program updated" : "Program published to the catalogue");
-    setForm(emptyProgram); setEditingId(null); setOpen(false);
+  const openEdit = (id: string) => {
+    const p = state.programs.find((x) => x.id === id);
+    if (!p) return;
+    setEditingId(id);
+    setForm({
+      title: p.title,
+      category: p.category,
+      certification: p.certification,
+      description: p.description,
+      entryRequirements: p.entryRequirements,
+      durationWeeks: String(p.durationWeeks ?? ""),
+      tuition: String(p.tuition ?? ""),
+      modulesRaw: p.modules.map((m) => `${m.title} | ${m.weeks} | ${m.summary}`).join("\n"),
+      deliveryModes: [...(p.deliveryModes ?? [])] as string[],
+      studyPlan: p.studyPlan ?? "",
+      imageUrl: p.imageUrl ?? "",
+      published: p.published ?? true,
+    });
+    setStep(0);
+    setError(null);
+    setOpen(true);
   };
 
-  const remove = async (id: string, title: string) => {
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
-    const error = await deleteProgram(id);
-    if (error) toast.error(error); else toast.success("Program deleted");
+  const removeProgram = (id: string) => {
+    const p = state.programs.find((x) => x.id === id);
+    if (!window.confirm(`Delete "${p?.title ?? "this program"}"? Learners will no longer see it in the catalogue.`)) return;
+    deleteProgram(id);
+    toast.success("Program deleted");
+  };
+
+  const togglePublish = (id: string) => {
+    const p = state.programs.find((x) => x.id === id);
+    if (!p) return;
+    const next = !(p.published ?? true);
+    updateProgram(id, { published: next });
+    toast.success(next ? "Program published to the catalogue" : "Program hidden as a draft");
+  };
+
+  const toggleMode = (m: string) =>
+    setForm((f) => ({
+      ...f,
+      deliveryModes: f.deliveryModes.includes(m)
+        ? f.deliveryModes.filter((x) => x !== m)
+        : [...f.deliveryModes, m],
+    }));
+
+  const moduleLines = form.modulesRaw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const moduleWeeks = moduleLines.reduce(
+    (sum, line) => sum + (Number.parseInt(line.split("|")[1]?.trim() ?? "2", 10) || 2),
+    0,
+  );
+
+  const validateStep = (s: number): string | null => {
+    if (s === 0) {
+      if (!form.title.trim()) return "Program title is required.";
+      if (!form.category.trim()) return "Category is required.";
+    }
+    if (s === 1) {
+      const weeks = Number(form.durationWeeks);
+      if (!form.durationWeeks.trim() || !Number.isFinite(weeks) || weeks <= 0)
+        return "Enter a valid duration in weeks (e.g. 26 for 6 months).";
+      const fee = Number(form.tuition);
+      if (form.tuition.trim() === "" || !Number.isFinite(fee) || fee < 0)
+        return "Enter a valid registration fee in USD (0 if free).";
+      if (form.deliveryModes.length === 0) return "Select at least one study mode.";
+    }
+    if (s === 2 && moduleLines.length === 0)
+      return "Add at least one module (one per line: Title | Weeks | Summary).";
+    return null;
+  };
+
+  const next = () => {
+    const err = validateStep(step);
+    setError(err);
+    if (!err) setStep((s) => Math.min(s + 1, BUILDER_STEPS.length - 1));
+  };
+
+  const submit = () => {
+    for (let s = 0; s < BUILDER_STEPS.length - 1; s++) {
+      const err = validateStep(s);
+      if (err) {
+        setStep(s);
+        setError(err);
+        return;
+      }
+    }
+    const payload = {
+      title: form.title.trim(),
+      category: form.category.trim(),
+      durationWeeks: Number(form.durationWeeks) || 26,
+      tuition: Number(form.tuition) || 0,
+      certification: form.certification.trim() || "Certificate of Completion",
+      description: form.description.trim(),
+      entryRequirements: form.entryRequirements.trim(),
+      modulesRaw: form.modulesRaw,
+      deliveryModes: form.deliveryModes as DeliveryMode[],
+      studyPlan: form.studyPlan.trim(),
+      imageUrl: form.imageUrl.trim(),
+      published: form.published,
+    };
+    if (editingId) {
+      updateProgram(editingId, payload);
+      toast.success(form.published ? "Program updated and published" : "Program updated and kept as draft");
+    } else {
+      addProgram(payload);
+      toast.success(form.published ? "Program published to the catalogue" : "Program saved as draft");
+    }
+    setEditingId(null);
+    setForm(emptyProgram);
+    setStep(0);
+    setError(null);
+    setOpen(false);
   };
 
   return (
@@ -418,7 +521,7 @@ export function ProgramBuilder() {
               <RefreshCw className={cn("mr-1 h-4 w-4", seeding && "animate-spin")} />
               {seeding ? "Importing…" : "Import 2026 catalogue"}
             </Button>
-            <Button onClick={() => setOpen(true)} className="bg-emerald-700 hover:bg-emerald-800">
+            <Button onClick={openWizard} className="bg-emerald-700 hover:bg-emerald-800">
               <Plus className="mr-1 h-4 w-4" /> New program
             </Button>
           </div>
@@ -451,10 +554,6 @@ export function ProgramBuilder() {
                 </div>
               </div>
               <p className="mt-3 text-sm text-slate-600">{p.description}</p>
-              <div className="mt-4 flex gap-2 border-t border-slate-100 pt-3">
-                <Button size="sm" variant="outline" onClick={() => startEdit(p)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
-                <Button size="sm" variant="outline" className="text-rose-700" onClick={() => void remove(p.id, p.title)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
-              </div>
               <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
                 {p.modules.map((m) => (
                   <div key={m.id} className="flex items-start gap-3 text-sm">
@@ -471,59 +570,193 @@ export function ProgramBuilder() {
               <p className="mt-4 flex items-center gap-2 text-xs text-slate-500">
                 <GraduationCap className="h-4 w-4 text-amber-500" /> {p.certification}
               </p>
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                <Button size="sm" variant="outline" onClick={() => openEdit(p.id)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit full setup</Button>
+                <Button size="sm" variant="outline" onClick={() => togglePublish(p.id)}>{(p.published ?? true) ? "Hide" : "Publish"}</Button>
+                <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700" onClick={() => removeProgram(p.id)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                {(p.published ?? true) ? null : <Badge variant="secondary">Draft</Badge>}
+              </div>
             </div>
           </Reveal>
         ))}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit programme" : "Publish a new programme"}</DialogTitle>
+            <DialogTitle>{editingId ? "Edit program setup" : "New program setup"}</DialogTitle>
             <DialogDescription>
-            Define the track, duration, registration fee and module outline. Class times follow the study mode:
-            fully online 1 hour a day, 3 days a week; fully on-site 2 hours daily, 2 days a week.
-          </DialogDescription>
+              Step {step + 1} of {BUILDER_STEPS.length}: {BUILDER_STEPS[step]}. Saving adds the program to the live catalogue.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label>Program title</Label>
-              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Data Analytics with Python" />
+          <ol className="flex flex-wrap gap-1.5" aria-label="Setup progress">
+            {BUILDER_STEPS.map((label, i) => (
+              <li
+                key={label}
+                aria-current={i === step ? "step" : undefined}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                  i === step
+                    ? "bg-emerald-700 text-white"
+                    : i < step
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-slate-100 text-slate-500",
+                )}
+              >
+                {i + 1}. {label}
+              </li>
+            ))}
+          </ol>
+          {step === 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 space-y-1.5">
+                <Label>Program title</Label>
+                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Data Analytics with Python" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Software & Technology" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Certification</Label>
+                <Input value={form.certification} onChange={(e) => setForm({ ...form, certification: e.target.value })} />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>Description</Label>
+                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="What graduates will be able to do" />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>Entry requirements</Label>
+                <Input value={form.entryRequirements} onChange={(e) => setForm({ ...form, entryRequirements: e.target.value })} placeholder="Secondary certificate, aptitude interview" />
+              </div>
             </div>
+          )}
+          {step === 1 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Duration (weeks)</Label>
+                  <Input type="number" min={1} value={form.durationWeeks} onChange={(e) => setForm({ ...form, durationWeeks: e.target.value })} placeholder="26" />
+                  <p className="text-[11px] text-slate-500">26 = 6 months · 13 = 3 months · 4 = 1 month · 2 = 2 weeks</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Registration fee (USD)</Label>
+                  <Input type="number" min={0} value={form.tuition} onChange={(e) => setForm({ ...form, tuition: e.target.value })} placeholder="45" />
+                  <p className="text-[11px] text-slate-500">45 = 6 months · 30 = 3 months · 10 = 1 month · 5 = 2 weeks</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Study modes (select at least one)</Label>
+                <div className="grid gap-2">
+                  {BUILDER_MODE_OPTIONS.map((m) => {
+                    const on = form.deliveryModes.includes(m.value);
+                    return (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => toggleMode(m.value)}
+                        aria-pressed={on}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl border p-3 text-left transition",
+                          on ? "border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600" : "border-slate-200 hover:border-emerald-300",
+                        )}
+                      >
+                        <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-md border", on ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-300 text-transparent")}>
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                        <span>
+                          <span className="block text-sm font-medium text-slate-800">{DELIVERY_META[m.value].label}</span>
+                          <span className="block text-xs text-slate-500">{DELIVERY_META[m.value].schedule} · {m.hint}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Study plan note (optional)</Label>
+                <Textarea value={form.studyPlan} onChange={(e) => setForm({ ...form, studyPlan: e.target.value })} rows={2} placeholder="e.g. Evening cohort, Mon/Wed/Fri online" />
+              </div>
+            </div>
+          )}
+          {step === 2 && (
             <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Software & Technology" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Certification</Label>
-              <Input value={form.certification} onChange={(e) => setForm({ ...form, certification: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Duration (weeks)</Label>
-              <Input type="number" value={form.durationWeeks} onChange={(e) => setForm({ ...form, durationWeeks: e.target.value })} placeholder="26" />
-              <p className="text-[11px] text-slate-500">26 = 6 months · 13 = 3 months · 4 = 1 month · 2 = 2 weeks</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Registration fee (USD)</Label>
-              <Input type="number" value={form.tuition} onChange={(e) => setForm({ ...form, tuition: e.target.value })} placeholder="45" />
-              <p className="text-[11px] text-slate-500">45 = 6 months · 30 = 3 months · 10 = 1 month · 5 = 2 weeks</p>
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="What graduates will be able to do" />
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label>Entry requirements</Label>
-              <Input value={form.entryRequirements} onChange={(e) => setForm({ ...form, entryRequirements: e.target.value })} placeholder="Secondary certificate, aptitude interview" />
-            </div>
-            <div className="col-span-2 space-y-1.5">
               <Label>Modules (one per line: Title | Weeks | Summary)</Label>
-              <Textarea value={form.modulesRaw} onChange={(e) => setForm({ ...form, modulesRaw: e.target.value })} rows={3} placeholder="Foundations | 4 | Core concepts and tooling" />
+              <Textarea value={form.modulesRaw} onChange={(e) => setForm({ ...form, modulesRaw: e.target.value })} rows={6} placeholder="Foundations | 4 | Core concepts and tooling" />
+              <p className="text-[11px] text-slate-500">
+                {moduleLines.length} {moduleLines.length === 1 ? "module" : "modules"} defined · {moduleWeeks} weeks of content vs {form.durationWeeks || "?"} planned weeks.
+              </p>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancel</Button>
-            <Button onClick={() => void submit()} className="bg-emerald-700 hover:bg-emerald-800">{editingId ? "Save changes" : "Publish programme"}</Button>
+          )}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Cover image URL (optional)</Label>
+                <Input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://…/cover.jpg" inputMode="url" />
+                {form.imageUrl.trim() ? (
+                  <img
+                    src={form.imageUrl.trim()}
+                    alt="Program cover preview"
+                    className="h-36 w-full rounded-xl border border-slate-200 object-cover"
+                    loading="lazy"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <p className="text-[11px] text-slate-500">Leave blank to use the catalogue default artwork.</p>
+                )}
+              </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3">
+                <Checkbox checked={form.published} onCheckedChange={(v) => setForm({ ...form, published: v === true })} />
+                <span>
+                  <span className="block text-sm font-medium text-slate-800">Publish immediately</span>
+                  <span className="block text-xs text-slate-500">Off saves it as a draft hidden from the public catalogue until you publish.</span>
+                </span>
+              </label>
+            </div>
+          )}
+          {step === 4 && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="font-semibold text-slate-900">{form.title.trim() || "Untitled program"}</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {form.category.trim() || "No category"} · {form.durationWeeks || "?"} weeks · USD {form.tuition || "0"} registration
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {form.deliveryModes.map((m) => DELIVERY_META[m as DeliveryMode].label).join(" · ") || "No study mode"}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Modules ({moduleLines.length})</p>
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[13px] text-slate-700">
+                  {moduleLines.slice(0, 8).map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+                {moduleLines.length > 8 && (
+                  <p className="mt-1 text-xs text-slate-500">+ {moduleLines.length - 8} more</p>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                {form.published
+                  ? "This program will appear in the public catalogue immediately."
+                  : "This program will be saved as a draft and hidden from the public catalogue."}
+              </p>
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => { setError(null); if (step === 0) setOpen(false); else setStep((s) => s - 1); }}>
+              {step === 0 ? "Cancel" : "Back"}
+            </Button>
+            {step < BUILDER_STEPS.length - 1 ? (
+              <Button onClick={next} className="bg-emerald-700 hover:bg-emerald-800">Continue</Button>
+            ) : (
+              <Button onClick={submit} className="bg-emerald-700 hover:bg-emerald-800">
+                {form.published ? "Publish program" : "Save draft"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

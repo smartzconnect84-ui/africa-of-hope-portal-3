@@ -27,6 +27,7 @@ import TransparencyLibrary from "./public/TransparencyLibrary";
 import { ScrollReveal, StaggerGroup } from "./public/motion";
 import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
+import { setPendingProgramApply } from "@/lib/programApply";
 import PublicNav from "./public/PublicNav";
 import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
@@ -215,7 +216,10 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const [scrolled, setScrolled] = useState(false);
   const [hash, setHash] = useState<string>(initialHash);
   const reduceMotion = useReducedMotion();
-  const openApply = () => onEnterPortal("register");
+  const openApply = (programId?: string) => {
+    if (programId) setPendingProgramApply(programId);
+    onEnterPortal("register");
+  };
   const openLogin = () => onEnterPortal("signin");
 
   const view = useMemo(() => parseHash(hash), [hash]);
@@ -498,8 +502,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           {view.type === "team" && <TeamPage />}
           {view.type === "newsletter" && <NewsletterAction key={`${view.action}:${view.params}`} action={view.action} params={view.params} />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
-          {view.type === "blog" && <BlogListPage />}
-          {view.type === "blogPost" && <BlogPostPage slug={view.slug} />}
+          {view.type === "blog" && <BlogListPage onApply={openApply} />}
+          {view.type === "blogPost" && <BlogPostPage slug={view.slug} onApply={openApply} />}
           {view.type === "verify" && <VerifyPage serial={view.serial} />}
 
           {view.type === "home" && (

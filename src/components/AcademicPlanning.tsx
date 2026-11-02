@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
-import { academicApi, arrangementsForDeliveryModes, TRAINING_MATERIAL_ACCEPT, type ApprovalItem, type ClassSession, type CourseEnrollment, type CoursePlan, type EnrollmentPreview, type LearningArrangement, type LearningUnit, type PortalNotification, type TrainingMaterial } from "@/lib/academics";
+import { academicApi, TRAINING_MATERIAL_ACCEPT, type ApprovalItem, type ClassSession, type CourseEnrollment, type CoursePlan, type EnrollmentPreview, type LearningUnit, type PortalNotification, type TrainingMaterial } from "@/lib/academics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +56,6 @@ function StudentPlanning({ reloadKey }: { reloadKey: number }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [preview, setPreview] = useState<{ cohortId: string; data: EnrollmentPreview } | null>(null);
-  const [selectedArrangement, setSelectedArrangement] = useState<LearningArrangement>("blended");
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
@@ -78,10 +77,6 @@ function StudentPlanning({ reloadKey }: { reloadKey: number }) {
   const enrollmentByCohort = useMemo(() => new Map(enrollments.map((row) => [row.cohort_id, row])), [enrollments]);
   const eligibleCohorts = state.cohorts.filter((cohort) => !currentUser?.programIds.length || currentUser.programIds.includes(cohort.programId));
   const openPreview = async (cohortId: string) => {
-    const program = state.programs.find((item) => item.id === state.cohorts.find((cohort) => cohort.id === cohortId)?.programId);
-    const offered = program?.deliveryModes ?? [];
-    const availableArrangements = arrangementsForDeliveryModes(offered);
-    setSelectedArrangement(availableArrangements[0]?.value ?? "blended");
     setBusy(cohortId);
     try { setPreview({ cohortId, data: await academicApi.previewEnrollment(cohortId) }); }
     catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
@@ -91,7 +86,7 @@ function StudentPlanning({ reloadKey }: { reloadKey: number }) {
     if (!preview) return;
     setBusy(preview.cohortId);
     try {
-      const result = await academicApi.submitEnrollment(preview.cohortId, selectedArrangement);
+      const result = await academicApi.submitEnrollment(preview.cohortId);
       if (!result.allowed) { toast.error(result.conflicts.join(" ") || "This course conflicts with your approved timetable."); return; }
       toast.success("Course plan submitted for administrator approval."); setPreview(null); await load();
     } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
@@ -119,7 +114,7 @@ function StudentPlanning({ reloadKey }: { reloadKey: number }) {
         <TabsContent value="lessons" className="space-y-4"><StudentLearningPath reloadKey={reloadKey} units={units} materials={materials} /></TabsContent>
         <TabsContent value="progress" className="space-y-3"><StudentProgress reloadKey={reloadKey} /></TabsContent>
       </Tabs>
-      <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}><DialogContent><DialogHeader><DialogTitle>Review course plan</DialogTitle><DialogDescription>The system checks your approved timetable and weekly workload before submission.</DialogDescription></DialogHeader>{preview && <div className="space-y-3"><div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><Label htmlFor="learning-arrangement">Learning arrangement</Label><Select value={selectedArrangement} onValueChange={(value) => setSelectedArrangement(value as LearningArrangement)}><SelectTrigger id="learning-arrangement" className="mt-2"><SelectValue /></SelectTrigger><SelectContent>{arrangementsForDeliveryModes(state.programs.find((item) => item.id === state.cohorts.find((cohort) => cohort.id === preview.cohortId)?.programId)?.deliveryModes).map((option) => <SelectItem key={option.value} value={option.value}><span className="font-medium">{option.label}</span><span className="ml-2 text-xs text-slate-500">{option.description}</span></SelectItem>)}</SelectContent></Select></div><div className={cn("rounded-xl border p-4", preview.data.conflicts.length ? "border-rose-200 bg-rose-50" : "border-emerald-200 bg-emerald-50")}><p className="font-semibold">{preview.data.conflicts.length ? "Scheduling conflict detected" : "No timetable conflict detected"}</p><p className="mt-1 text-sm">Planned weekly workload: {preview.data.weekly_hours} hours.</p></div>{preview.data.conflicts.map((item, index) => <p key={`${index}-${item}`} className="text-sm text-rose-700">• {item}</p>)}{preview.data.warnings.map((item, index) => <p key={`${index}-${item}`} className="text-sm text-amber-700">• {item}</p>)}</div>}<DialogFooter><Button variant="outline" onClick={() => setPreview(null)}>Cancel</Button><Button disabled={!preview?.data.allowed || !!preview?.data.conflicts.length || busy === preview?.cohortId} onClick={() => void enroll()} className="bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1 h-4 w-4" /> Submit for approval</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}><DialogContent><DialogHeader><DialogTitle>Review course plan</DialogTitle><DialogDescription>The system checks your approved timetable and weekly workload before submission.</DialogDescription></DialogHeader>{preview && <div className="space-y-3"><div className={cn("rounded-xl border p-4", preview.data.conflicts.length ? "border-rose-200 bg-rose-50" : "border-emerald-200 bg-emerald-50")}><p className="font-semibold">{preview.data.conflicts.length ? "Scheduling conflict detected" : "No timetable conflict detected"}</p><p className="mt-1 text-sm">Planned weekly workload: {preview.data.weekly_hours} hours.</p></div>{preview.data.conflicts.map((item, index) => <p key={`${index}-${item}`} className="text-sm text-rose-700">• {item}</p>)}{preview.data.warnings.map((item, index) => <p key={`${index}-${item}`} className="text-sm text-amber-700">• {item}</p>)}</div>}<DialogFooter><Button variant="outline" onClick={() => setPreview(null)}>Cancel</Button><Button disabled={!preview?.data.allowed || !!preview?.data.conflicts.length || busy === preview?.cohortId} onClick={() => void enroll()} className="bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1 h-4 w-4" /> Submit for approval</Button></DialogFooter></DialogContent></Dialog>
     </div>
   );
 }

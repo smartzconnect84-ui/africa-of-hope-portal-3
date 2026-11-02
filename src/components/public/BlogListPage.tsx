@@ -3,6 +3,8 @@ import { ArrowRight, BookOpen, CalendarDays, Clock3, Sparkles } from "lucide-rea
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
+import { isProgrammePost, resolveBlogProgram } from "@/lib/programApply";
+import { useApp } from "@/context/AppContext";
 import { MotionCard, ScrollReveal, StaggerGroup } from "./motion";
 import { motion } from "framer-motion";
 
@@ -38,9 +40,11 @@ function CoverImage({ post, className }: { post: BlogPost; className?: string })
   );
 }
 
-export default function BlogListPage() {
+export default function BlogListPage({ onApply }: { onApply?: (programId?: string) => void }) {
+  const { state } = useApp();
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
   const [category, setCategory] = useState("All");
+  const programFor = (post: BlogPost) => resolveBlogProgram(post, state.programs);
 
   useEffect(() => {
     let active = true;
@@ -132,9 +136,10 @@ export default function BlogListPage() {
 
         {featured && (
           <ScrollReveal className="mt-8">
+            <div className="aoh-card aoh-glass overflow-hidden rounded-3xl shadow-sm transition hover:shadow-xl">
             <a
               href={`#blog/${featured.slug}`}
-              className="aoh-card aoh-glass group grid overflow-hidden rounded-3xl shadow-sm transition hover:shadow-xl lg:grid-cols-2"
+              className="group grid lg:grid-cols-2"
             >
               <div className="h-56 overflow-hidden lg:h-full">
                 <CoverImage post={featured} className="transition duration-500 group-hover:scale-105" />
@@ -162,6 +167,25 @@ export default function BlogListPage() {
                 </span>
               </div>
             </a>
+            {(() => {
+              const fp = programFor(featured);
+              if (!isProgrammePost(featured.category)) return null;
+              return (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-emerald-900/10 bg-emerald-50/70 px-6 py-4 sm:px-8">
+                  <p className="text-sm text-emerald-950">
+                    <span className="font-semibold">Admissions open:</span> {fp ? fp.title : "this programme"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onApply?.(fp?.id)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                  >
+                    Apply for this programme <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })()}
+            </div>
           </ScrollReveal>
         )}
 
@@ -172,7 +196,7 @@ export default function BlogListPage() {
                 key={post.id}
                 className="aoh-card aoh-glass flex h-full flex-col overflow-hidden rounded-2xl shadow-sm transition-shadow duration-200 hover:shadow-lg"
               >
-                <a href={`#blog/${post.slug}`} className="flex h-full flex-col">
+                <a href={`#blog/${post.slug}`} className="flex flex-1 flex-col">
                   <div className="h-40 overflow-hidden">
                     <CoverImage post={post} />
                   </div>
@@ -194,6 +218,21 @@ export default function BlogListPage() {
                     </div>
                   </div>
                 </a>
+                {(() => {
+                  const cp = programFor(post);
+                  if (!isProgrammePost(post.category)) return null;
+                  return (
+                    <div className="border-t border-emerald-900/10 bg-emerald-50/70 px-5 py-3">
+                      <button
+                        type="button"
+                        onClick={() => onApply?.(cp?.id)}
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      >
+                        Apply for this programme <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })()}
               </MotionCard>
             ))}
           </StaggerGroup>

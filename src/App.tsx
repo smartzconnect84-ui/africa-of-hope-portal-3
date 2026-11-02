@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";
-import { useApp } from "./context/AppContext";
+import { AppProvider, useApp } from "@/context/AppContext";
 import { AssistantVisibilityProvider } from "./context/AssistantVisibility";
 import { AuthProvider } from "@/auth/AuthProvider";
 import type { User } from "./types";
@@ -10,10 +10,12 @@ import { LanguageProvider } from "./lib/locale";
 import { useVisiblePortalViews, getPortalView } from "./portalViews";
 import PublicMarketingSite from "./components/PublicMarketingSite";
 import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/AuthPortal";
-import HopeAssistant from "./components/assistant/HopeAssistant";
 import OfflineBanner from "./components/pwa/OfflineBanner";
-import UpdatePrompt from "./components/pwa/UpdatePrompt";
-import CurrencyConverter from "./components/CurrencyConverter";
+// Production perf: below-the-fold extras load lazily so first paint on
+// low-end Android pays only for the requested site (public or portal).
+const HopeAssistant = lazy(() => import("./components/assistant/HopeAssistant"));
+const UpdatePrompt = lazy(() => import("./components/pwa/UpdatePrompt"));
+const CurrencyConverter = lazy(() => import("./components/CurrencyConverter"));
 import { Button } from "@/components/ui/button";
 import { applyPublicBranding } from './lib/publicBranding';
 import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
@@ -207,11 +209,17 @@ function Shell() {
       ) : (
         <Portal onExitToPublic={() => setSite("public")} initialTab={authTab} />
       )}
-      <CurrencyConverter />
+      <Suspense fallback={null}>
+        <CurrencyConverter />
+      </Suspense>
       <PasswordRecoveryDialog />
-      <HopeAssistant />
+      <Suspense fallback={null}>
+        <HopeAssistant />
+      </Suspense>
       <OfflineBanner />
-      <UpdatePrompt />
+      <Suspense fallback={null}>
+        <UpdatePrompt />
+      </Suspense>
     </>
   );
 }
@@ -219,12 +227,14 @@ function Shell() {
 export default function App() {
   return (
     <AuthProvider>
-      <LanguageProvider>
-        <Toaster position="top-right" richColors closeButton />
-        <AssistantVisibilityProvider>
-          <Shell />
-        </AssistantVisibilityProvider>
-      </LanguageProvider>
+      <AppProvider>
+        <LanguageProvider>
+          <Toaster position="top-right" richColors closeButton />
+          <AssistantVisibilityProvider>
+            <Shell />
+          </AssistantVisibilityProvider>
+        </LanguageProvider>
+      </AppProvider>
     </AuthProvider>
   );
 }

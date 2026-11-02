@@ -68,6 +68,8 @@ export interface Program {
   entryRequirements: string;
   modules: Module[];
   imageUrl?: string;
+  /** Full-setup study plan line, e.g. delivery + schedule summary chosen in Program Builder. */
+  studyPlan?: string;
   /** Explicit backend publication state; legacy records without a flag remain public. */
   published?: boolean;
 }

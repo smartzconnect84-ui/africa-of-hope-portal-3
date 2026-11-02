@@ -321,6 +321,10 @@ export interface FetchResult {
  * Throws only when no table could be read at all.
  */
 export async function fetchState(previous: AppState): Promise<FetchResult> {
+  // Production perf: cap the fast-growing tables so one enrolment surge
+  // cannot turn every boot into a multi-MB `select *`. Catalogues stay
+  // uncapped (tens of rows); transactional slices keep the most recent
+  // 1000 rows and preserve the previous slice when a read fails.
   const [
     profiles,
     programs,
@@ -337,17 +341,17 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     permissionsRows,
     rolePermissionRows,
   ] = await Promise.all([
-    supabase.from("profiles").select("*"),
+    supabase.from("profiles").select("*").limit(2000),
     supabase.from("programs").select("*").order("created_at", { ascending: true }),
     supabase.from("program_modules").select("*"),
     supabase.from("cohorts").select("*").order("created_at", { ascending: true }),
-    supabase.from("cohort_students").select("*"),
-    supabase.from("attendance").select("*"),
-    supabase.from("assignments").select("*"),
-    supabase.from("submissions").select("*"),
-    supabase.from("fee_transactions").select("*"),
-    supabase.from("certificates").select("*"),
-    supabase.from("announcements").select("*").order("published_date", { ascending: false }),
+    supabase.from("cohort_students").select("*").limit(5000),
+    supabase.from("attendance").select("*").order("attendance_date", { ascending: false }).limit(1000),
+    supabase.from("assignments").select("*").limit(1000),
+    supabase.from("submissions").select("*").order("submitted_at", { ascending: false }).limit(1000),
+    supabase.from("fee_transactions").select("*").order("transaction_date", { ascending: false }).limit(1000),
+    supabase.from("certificates").select("*").limit(2000),
+    supabase.from("announcements").select("*").order("published_date", { ascending: false }).limit(200),
     supabase.from("system_settings").select("*").limit(1).maybeSingle(),
     supabase.from("permissions").select("*"),
     supabase.from("role_permissions").select("*"),
@@ -399,6 +403,7 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     description: txt(p.description),
     entryRequirements: txt(p.entry_requirements),
     imageUrl: p.image_url ? txt(p.image_url) : undefined,
+    studyPlan: p.study_plan ? txt(p.study_plan) : undefined,
     deliveryModes: (Array.isArray(p.delivery_modes)
       ? (p.delivery_modes as string[])
       : typeof p.delivery_mode === "string"

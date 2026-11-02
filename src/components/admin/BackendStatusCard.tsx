@@ -32,6 +32,7 @@ export default function BackendStatusCard() {
   const [result, setResult] = useState<HealthResult | null>(null);
   const [checking, setChecking] = useState(true);
   const [copied, setCopied] = useState<"env" | "sql" | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   const run = useCallback(async () => {
     setChecking(true);
@@ -50,12 +51,43 @@ export default function BackendStatusCard() {
   const healthyBuckets = result?.buckets.filter((b) => b.ok).length ?? 0;
 
   const copyText = async (kind: "env" | "sql", text: string) => {
+    setCopyError(null);
+    const fallbackCopy = (): boolean => {
+      try {
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(area);
+        return ok;
+      } catch {
+        return false;
+      }
+    };
     try {
-      await navigator.clipboard.writeText(text);
+      if (navigator.clipboard && window.isSecureContext !== false) {
+        await navigator.clipboard.writeText(text);
+      } else if (!fallbackCopy()) {
+        throw new Error("copy unavailable");
+      }
       setCopied(kind);
       setTimeout(() => setCopied(null), 2000);
     } catch {
+      if (fallbackCopy()) {
+        setCopied(kind);
+        setTimeout(() => setCopied(null), 2000);
+        return;
+      }
       setCopied(null);
+      setCopyError(
+        kind === "sql"
+          ? "Copy failed — select the SQL manually and press Ctrl+C."
+          : "Copy failed — select the snippet manually and press Ctrl+C.",
+      );
     }
   };
 
@@ -189,6 +221,11 @@ export default function BackendStatusCard() {
                   <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-amber-900">
                     {STORAGE_BUCKET_SQL}
                   </pre>
+                  {copyError && (
+                    <p role="alert" className="mt-2 rounded-lg bg-rose-50 px-2.5 py-1.5 text-[11px] font-medium text-rose-700 ring-1 ring-rose-200">
+                      {copyError}
+                    </p>
+                  )}
                 </div>
               )}
               <div className="rounded-2xl bg-slate-900 p-4 text-slate-100">

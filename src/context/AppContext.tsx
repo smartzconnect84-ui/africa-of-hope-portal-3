@@ -54,8 +54,6 @@ const LIVE_TABLES = [
   "role_permissions",
 ];
 
-export type ApplicantType = "Volunteer" | "Staff" | "Student";
-
 export interface RegistrationPayload {
   name: string;
   email: string;
@@ -64,7 +62,6 @@ export interface RegistrationPayload {
   note: string;
   /** Highest completed level of schooling (replaces the old ID/Documents box). */
   educationLevel: string;
-  applicantType: ApplicantType;
   /** Legacy field kept for older records; no longer collected. */
   documents?: string;
 }
@@ -115,8 +112,8 @@ interface AppContextValue {
   rejectApplicant: (id: string) => void;
   toggleStudentStatus: (id: string) => void;
   addProgram: (payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => void;
-  updateProgram: (id: string, payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => Promise<string | null>;
-  deleteProgram: (id: string) => Promise<string | null>;
+  updateProgram: (id: string, patch: Partial<Program> & { modulesRaw?: string }) => void;
+  deleteProgram: (id: string) => void;
   addCohort: (payload: Omit<Cohort, "id">) => void;
   markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => void;
   addAssignment: (payload: Omit<Assignment, "id">) => Promise<void>;
@@ -261,10 +258,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setLoading(true);
     void drain();
-    // StrictMode and fast refresh can briefly overlap cleanup with the next effect run.
-    // A unique channel prevents Supabase from reusing a channel that has already subscribed.
-    const channelName = `portal-live-${sessionUserId ?? "public"}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const channel = supabase.channel(channelName);
+    const channel = supabase.channel(`portal-live-${sessionUserId ?? "public"}`);
     const tables = sessionUserId ? LIVE_TABLES : ["programs", "program_modules", "announcements", "system_settings"];
     tables.forEach((table) => {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, schedule);
@@ -382,7 +376,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           program_ids: payload.programIds,
           note: payload.note,
           education_level: payload.educationLevel ?? null,
-          applicant_type: payload.applicantType,
           documents: payload.documents ?? "",
         };
         const { data, error } = await supabase.auth.signUp({
@@ -554,16 +547,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, programs: [...s.programs, program] }));
         push(
           "Programme",
-          supabase.from("programs").insert({
-            id,
-            title: program.title,
-            category: program.category,
-            duration_weeks: program.durationWeeks,
-            tuition: program.tuition,
-            certification: program.certification,
-            description: program.description,
-            entry_requirements: program.entryRequirements,
-          }),
+          (async () => {
+            // Full-setup columns (delivery_modes, study_plan, image_url,
+            // published) ride along when the table has them; older table
+            // shapes fall back to the base columns, same as seedCatalogue.
+            const full = {
+              id,
+              title: program.title,
+              category: program.category,
+              duration_weeks: program.durationWeeks,
+              tuition: program.tuition,
+              certification: program.certification,
+              description: program.description,
+              entry_requirements: program.entryRequirements,
+              delivery_modes: program.deliveryModes?.length ? program.deliveryModes : null,
+              study_plan: program.studyPlan || null,
+              image_url: program.imageUrl || null,
+              published: program.published ?? true,
+            };
+            const first = await supabase.from("programs").insert(full);
+            if (first.error && /delivery_modes|study_plan|image_url|published/i.test(first.error.message)) {
+              const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = full;
+              return supabase.from("programs").insert(base);
+            }
+            return first;
+          })(),
         );
         if (modules.length) {
           push(
@@ -581,37 +589,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
           );
         }
       },
-      updateProgram: async (id, payload) => {
-        const { modulesRaw, ...rest } = payload;
-        const modules = modulesRaw
-          .split(String.fromCharCode(10)).map((line) => line.trim()).filter(Boolean)
-          .map((line) => {
-            const [title, weeks, ...summary] = line.split("|").map((part) => part.trim());
-            return { id: uid(), title: title || "Module", weeks: Number.parseInt(weeks ?? "2", 10) || 2, summary: summary.join(" | ") };
-          });
-        const program: Program = { ...rest, id, modules };
-        setState((s) => ({ ...s, programs: s.programs.map((item) => item.id === id ? program : item) }));
-        const { error } = await supabase.from("programs").update({
-          title: program.title, category: program.category, duration_weeks: program.durationWeeks,
-          tuition: program.tuition, certification: program.certification, description: program.description,
-          entry_requirements: program.entryRequirements,
-        }).eq("id", id);
-        if (error) return error.message;
-        const { error: deleteError } = await supabase.from("program_modules").delete().eq("program_id", id);
-        if (deleteError) return deleteError.message;
-        if (modules.length) {
-          const { error: insertError } = await supabase.from("program_modules").insert(modules.map((m, index) => ({
-            id: m.id, program_id: id, title: m.title, weeks: m.weeks, summary: m.summary, position: index,
-          })));
-          if (insertError) return insertError.message;
-        }
-        return null;
+      updateProgram: (id, patch) => {
+        const { modulesRaw, ...rest } = patch;
+        const nextModules = modulesRaw === undefined
+          ? undefined
+          : modulesRaw
+              .split(String.fromCharCode(10))
+              .map((line) => line.trim())
+              .filter(Boolean)
+              .map((line) => {
+                const [title, weeks, ...summary] = line.split("|").map((part) => part.trim());
+                return { id: uid(), title: title || "Module", weeks: Number.parseInt(weeks ?? "2", 10) || 2, summary: summary.join(" | ") };
+              });
+        setState((s) => ({
+          ...s,
+          programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(nextModules ? { modules: nextModules } : null) } : p)),
+        }));
+        push(
+          "Programme update",
+          (async () => {
+            const row: Record<string, unknown> = {};
+            if (rest.title !== undefined) row.title = rest.title;
+            if (rest.category !== undefined) row.category = rest.category;
+            if (rest.durationWeeks !== undefined) row.duration_weeks = rest.durationWeeks;
+            if (rest.tuition !== undefined) row.tuition = rest.tuition;
+            if (rest.certification !== undefined) row.certification = rest.certification;
+            if (rest.description !== undefined) row.description = rest.description;
+            if (rest.entryRequirements !== undefined) row.entry_requirements = rest.entryRequirements;
+            if (rest.deliveryModes !== undefined) row.delivery_modes = rest.deliveryModes?.length ? rest.deliveryModes : null;
+            if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
+            if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
+            if (rest.published !== undefined) row.published = rest.published;
+            if (!Object.keys(row).length && !nextModules) return { error: null };
+            if (Object.keys(row).length) {
+              const first = await supabase.from("programs").update(row).eq("id", id);
+              if (first.error && /delivery_modes|study_plan|image_url|published/i.test(first.error.message)) {
+                const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = row;
+                if (Object.keys(base).length) return supabase.from("programs").update(base).eq("id", id);
+              } else if (first.error) return first;
+            }
+            if (nextModules) {
+              await supabase.from("program_modules").delete().eq("program_id", id);
+              return supabase.from("program_modules").insert(nextModules.map((m, index) => ({ id: m.id, program_id: id, title: m.title, weeks: m.weeks, summary: m.summary, position: index })));
+            }
+            return { error: null };
+          })(),
+        );
       },
-      deleteProgram: async (id) => {
-        const { error } = await supabase.from("programs").delete().eq("id", id);
-        if (error) return error.message;
-        setState((s) => ({ ...s, programs: s.programs.filter((item) => item.id !== id) }));
-        return null;
+      deleteProgram: (id) => {
+        setState((s) => ({ ...s, programs: s.programs.filter((p) => p.id !== id) }));
+        push("Programme delete", supabase.from("programs").delete().eq("id", id));
       },
       addCohort: (payload) => {
         const id = uid();

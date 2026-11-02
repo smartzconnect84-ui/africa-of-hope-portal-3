@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
-  arrangementsForDeliveryModes,
   MAX_TRAINING_MATERIAL_BYTES,
   SUPPORTED_TRAINING_MATERIAL_MIME_TYPES,
   createAcademicApi,
@@ -75,12 +74,6 @@ test("translates academic database errors into actionable messages", () => {
     "Overlap Heavy workload",
   );
   assert.equal(explainAcademicError({ message: "enrollment_not_allowed", details: "not-json" }), "This course cannot be added to your plan.");
-});
-
-test("maps programme delivery modes to offered learning arrangements", () => {
-  assert.deepEqual(arrangementsForDeliveryModes(["online"]).map((item) => item.value), ["self_paced"]);
-  assert.deepEqual(arrangementsForDeliveryModes(["onsite"]).map((item) => item.value), ["full_onsite"]);
-  assert.deepEqual(arrangementsForDeliveryModes(["blended"]).map((item) => item.value), ["blended"]);
 });
 
 test("uses the exact enrollment RPC contracts and null preview fallback", async () => {

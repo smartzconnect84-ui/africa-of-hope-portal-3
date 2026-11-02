@@ -9,6 +9,7 @@ import {
   blogApi, slugify,
   type BlogDraftInput, type BlogPost, type BlogSaveAction, type BlogStatus,
 } from "@/lib/blog";
+import { isProgrammePost, linkedProgramId, programTag } from "@/lib/programApply";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 
-const CATEGORY_OPTIONS = ["News", "Event", "Programme", "Blog-Program", "Press", "Community"];
+const CATEGORY_OPTIONS = ["News", "Event", "Programme", "Press", "Community"];
 const STATUS_FILTERS: Array<{ value: BlogStatus | "all"; label: string }> = [
   { value: "all", label: "All" },
   { value: "draft", label: "Draft" },
@@ -43,6 +44,8 @@ interface FormState {
   excerpt: string;
   category: string;
   tags: string;
+  /** Catalogue programme id linked when the category is Programme. */
+  programId: string;
   body: string;
   featured: boolean;
   coverImageUrl: string | null;
@@ -51,7 +54,7 @@ interface FormState {
 
 const emptyForm: FormState = {
   title: "", slug: "", slugTouched: false, excerpt: "", category: "News", tags: "",
-  body: "", featured: false, coverImageUrl: null, coverImagePath: null,
+  programId: "", body: "", featured: false, coverImageUrl: null, coverImagePath: null,
 };
 
 /**
@@ -81,7 +84,7 @@ function BodyPreview({ body }: { body: string }) {
 }
 
 export default function BlogManager() {
-  const { currentUser, reloadKey } = useApp();
+  const { currentUser, reloadKey, state } = useApp();
   const canManage = usePermission("blog.manage");
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +147,7 @@ export default function BlogManager() {
     setEditing(post);
     setForm({
       title: post.title, slug: post.slug, slugTouched: true, excerpt: post.excerpt, category: post.category,
-      tags: post.tags.join(", "), body: post.body, featured: post.featured,
+      tags: post.tags.join(", "), programId: linkedProgramId(post) ?? "", body: post.body, featured: post.featured,
       coverImageUrl: post.coverImageUrl, coverImagePath: post.coverImagePath,
     });
     setAction(post.status === "archived" ? "draft" : post.status === "scheduled" ? "schedule" : post.status === "published" ? "publish" : "draft");
@@ -211,6 +214,20 @@ export default function BlogManager() {
         coverImageUrl: form.coverImageUrl,
         coverImagePath: form.coverImagePath,
       };
+      // Programme link: explicit columns (post-migration) plus a
+      // `program:<id>` tag fallback so Apply works before the migration runs.
+      const linkId = form.programId.trim();
+      const linked = linkId ? state.programs.find((p) => p.id === linkId) ?? null : null;
+      const untagged = (draft.tags ?? []).filter((t) => !/^program:/i.test(t));
+      if (isProgrammePost(form.category) && linked) {
+        draft.programId = linked.id;
+        draft.programTitle = linked.title;
+        draft.tags = [...untagged, programTag(linked.id)];
+      } else {
+        draft.programId = null;
+        draft.programTitle = null;
+        draft.tags = untagged;
+      }
       // Author fields are set once at creation only — editing a post must
       // never reassign it to whoever happens to be editing it.
       if (!editing) {
@@ -366,6 +383,24 @@ export default function BlogManager() {
                 <Input id="blog-tags" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} placeholder="community, event" />
               </div>
             </div>
+
+            {isProgrammePost(form.category) && (
+              <div className="space-y-1.5 rounded-xl border border-emerald-900/10 bg-emerald-50/60 p-3">
+                <Label htmlFor="blog-program">Linked programme (powers the Apply button)</Label>
+                <Select value={form.programId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, programId: v === "none" ? "" : v }))}>
+                  <SelectTrigger id="blog-program" className="bg-white"><SelectValue placeholder="Select a programme from the catalogue" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No linked programme</SelectItem>
+                    {state.programs.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  Programme posts with a linked programme show an Apply button that opens registration with it preselected.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="blog-cover">Cover image</Label>

@@ -2,21 +2,6 @@ export type AcademicApiClient = typeof import("../integrations/supabase/client.t
 type AcademicRowsQuery = ReturnType<ReturnType<AcademicApiClient["from"]>["select"]>;
 
 export type ApprovalStatus = "draft" | "pending" | "submitted" | "approved" | "rejected" | "revision_requested";
-export type LearningArrangement = "self_paced" | "blended" | "full_onsite";
-
-export const LEARNING_ARRANGEMENTS: Array<{ value: LearningArrangement; label: string; description: string }> = [
-  { value: "self_paced", label: "Self-paced", description: "Study independently with no required live attendance." },
-  { value: "blended", label: "Blended", description: "Combine online lessons with scheduled in-person sessions." },
-  { value: "full_onsite", label: "Full onsite", description: "Follow the complete programme timetable at the centre." },
-];
-
-export function arrangementsForDeliveryModes(deliveryModes: string[] | null | undefined) {
-  const modes = new Set(deliveryModes ?? []);
-  if (!modes.size || (modes.has("online") && modes.has("blended") && modes.has("onsite"))) return LEARNING_ARRANGEMENTS;
-  return LEARNING_ARRANGEMENTS.filter(({ value }) =>
-    value === "self_paced" ? modes.has("online") : value === "blended" ? modes.has("blended") : modes.has("onsite"),
-  );
-}
 
 export interface ScheduleSlot {
   day_of_week: number;
@@ -42,9 +27,6 @@ export interface CourseEnrollment {
   progress_percent: number;
   completion_status: string;
   workload_warnings: string[];
-  learning_arrangement: LearningArrangement;
-  arrangement_config: { attendance_required?: boolean };
-  arrangement_changed_at?: string | null;
   revision_note?: string | null;
   cohort?: { id: string; name: string; start_date: string; end_date: string; room: string; program_id: string };
 }
@@ -406,10 +388,8 @@ export function createAcademicApi(client: AcademicApiClient, now: () => number =
     if (message) throw new Error(message);
     return (data ?? { allowed: false, conflicts: [], warnings: [], weekly_hours: 0 }) as EnrollmentPreview;
   },
-  async submitEnrollment(cohortId: string, arrangement?: LearningArrangement): Promise<EnrollmentPreview & { enrollment_id?: string; learning_arrangement?: LearningArrangement }> {
-    const { data, error } = arrangement
-      ? await client.rpc("submit_course_enrollment_with_arrangement", { p_cohort_id: cohortId, p_arrangement: arrangement })
-      : await client.rpc("submit_course_enrollment", { p_cohort_id: cohortId });
+  async submitEnrollment(cohortId: string): Promise<EnrollmentPreview & { enrollment_id?: string }> {
+    const { data, error } = await client.rpc("submit_course_enrollment", { p_cohort_id: cohortId });
     const message = explainAcademicError(error);
     if (message) throw new Error(message);
     return data as EnrollmentPreview & { enrollment_id?: string };
