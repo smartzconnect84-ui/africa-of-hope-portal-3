@@ -391,6 +391,8 @@ export interface WebsiteSettings {
   newsletter: { enabled: boolean; title: string; description: string; consent: string; button: string };
   /** CMS-managed header/banner image per public page; blank means no banner. */
   pageImages?: Record<string, string>;
+  /** Per-page CMS overrides: visibility (delete = hide), copy and banner image. */
+  pages?: Record<string, import('./lib/publicPages').PublicPageSetting>;
 }
 
 export type WebsiteListKey =

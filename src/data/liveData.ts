@@ -18,6 +18,7 @@ import { CATALOG_2026 } from "./programCatalog2026";
 import { programIsPublished, removeDemoPublicData } from "../lib/publicSiteData";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, type PermissionKey } from "../lib/permissions";
 import { resolveCertificateBranding } from "../lib/certificateBrand";
+import { normalizePublicPages } from "../lib/publicPages";
 
 export type Row = Record<string, unknown>;
 
@@ -228,6 +229,10 @@ export function mergeWebsiteSettings(
   return removeDemoPublicData({
     ...withCertificate,
     pageImages: withCertificate.pageImages ?? {},
+    pages: normalizePublicPages(
+      (withCertificate as unknown as Record<string, unknown>).pages,
+      (withCertificate.pageImages ?? {}) as Record<string, string>,
+    ),
     header: {
       ...withCertificate.header,
       loginText: /portal/i.test(withCertificate.header?.loginText || "") && !/school portal/i.test(withCertificate.header?.loginText || "")

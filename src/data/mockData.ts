@@ -5,6 +5,7 @@ import { DEFAULT_PUBLIC_COPY, DEFAULT_SUPPORT } from "./publicContent";
 import { ABOUT_META } from "./aboutContent";
 import { DEFAULT_TEAM } from "./teamContent";
 import { DEFAULT_ABOUT, DEFAULT_PRESENTATION, DEFAULT_PWA, DEFAULT_LAYOUT } from './publicPresentation';
+import { DEFAULT_PUBLIC_PAGES } from '../lib/publicPages';
 
 // Reused across the About and Impact homepage sections and the CTA band so the
 // defaults look like today's live site until an admin uploads replacements.
@@ -70,6 +71,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   logoUrl: "/logo/aoh-logo.png",
   faviconUrl: "/favicon.png",
   pageImages: {},
+  pages: DEFAULT_PUBLIC_PAGES,
   academyName: "AFRICA OF HOPE",
   tagline: "",
   announcementText:

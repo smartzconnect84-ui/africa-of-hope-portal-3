@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import PublicContentEditor from './PublicContentEditor';
+import PublicPagesEditor from './PublicPagesEditor';
 import PwaSettingsEditor from './PwaSettingsEditor';
 import { validatePublicSettings, type PublicSettingsErrors } from '@/lib/publicSettingsValidation';
 import { DEFAULT_LAYOUT } from '@/data/publicPresentation';
