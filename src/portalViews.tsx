@@ -75,7 +75,6 @@ import AssignmentInbox from "./components/academic/AssignmentInbox";
 import CompletionCertificates from "./components/academic/CompletionCertificates";
 import TeacherInsights from "./components/academic/TeacherInsights";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
-import AdminOpportunities from "./components/AdminOpportunities";
 import Helpdesk from "./components/portal/Helpdesk";
 import GradeAppeals from "./components/portal/GradeAppeals";
 import DonatePage from "./components/public/DonatePage";

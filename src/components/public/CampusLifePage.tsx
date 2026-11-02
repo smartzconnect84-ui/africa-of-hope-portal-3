@@ -723,7 +723,7 @@ const SEED_BIZ = [
 const BIZ_CATS = ["All", "ICT services", "Food", "Fashion", "Health", "Other"];
 
 function Businesses() {
-  const [local, setLocal] = useLocal<{ id: string; name: string; owner: string; cat: string; loc: string; contact: string; blurb: string }[]>("aoh-biz-dir", SEED_BIZ);
+  const [local, setLocal] = useLocal<{ id: string; name: string; owner: string; cat: string; loc: string; contact: string; blurb: string; logo?: string | null }[]>("aoh-biz-dir", SEED_BIZ);
   const [remote, setRemote] = useState<AlumniBusiness[]>([]);
   const [backendLive, setBackendLive] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -760,7 +760,7 @@ function Businesses() {
       if (res.backend) {
         setOk("Received — staff will review and publish it to this directory.");
       } else {
-        setLocal([{ id: `biz-${Date.now()}`, name: f.name.trim(), owner: f.owner.trim(), cat: f.cat, loc: f.loc.trim(), contact: f.contact.trim(), blurb: f.blurb.trim() }, ...local].slice(0, 40));
+        setLocal([{ id: `biz-${Date.now()}`, name: f.name.trim(), owner: f.owner.trim(), cat: f.cat, loc: f.loc.trim(), contact: f.contact.trim(), blurb: f.blurb.trim(), logo: logo_url }, ...local].slice(0, 40));
         setOk("Listed — it is live in this directory on this device.");
       }
       setF({ name: "", owner: "", cat: "ICT services", loc: "", contact: "", blurb: "" });
