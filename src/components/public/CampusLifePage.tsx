@@ -612,7 +612,8 @@ function Fees() {
 }
 
 /* ---------------- Vacancies (f142) ---------------- */
-const SEED_VACANCIES = [
+type VacancyCard = { id: string; title: string; dept: string; location: string; closing: string; desc: string; req: string; image_url?: string | null };
+const SEED_VACANCIES: VacancyCard[] = [
   { id: "vac-tutor", title: "ICT Tutor (part-time)", dept: "Teaching", location: "Monrovia + online", closing: "2027-02-15", desc: "Teach practical computer studies two evenings a week.", req: "Diploma in ICT or related field plus 1 year hands-on experience." },
   { id: "vac-nurse", title: "Nursing Assistant Instructor", dept: "Teaching", location: "Main campus", closing: "2027-02-28", desc: "Lead lab demos and supervise internship logbooks.", req: "Licensed practitioner with teaching or mentoring experience." },
   { id: "vac-registrar", title: "Admissions & Records Officer", dept: "Support", location: "Monrovia", closing: "2027-03-10", desc: "Handle applications, records and certificate queues.", req: "Strong admin skills; spreadsheet and record-keeping experience." },
@@ -674,7 +675,7 @@ function Vacancies() {
         )}
         {vacancies.map((v) => (
           <article key={v.id} className={cardCls}>
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+            {v.image_url ? <img src={v.image_url} alt="" loading="lazy" className="mb-3 h-36 w-full rounded-xl object-cover" /> : null}<p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
               <Building2 className="h-3.5 w-3.5" aria-hidden="true" /> {v.dept} · closes {v.closing}
             </p>
             <h3 className="mt-3 font-bold text-emerald-950">{v.title}</h3>
