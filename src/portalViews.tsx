@@ -28,6 +28,7 @@ import {
   Activity,
   TrendingUp,
   HeartHandshake,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -48,6 +49,7 @@ import {
   FeeRegister,
 } from "./components/StudentFinancialViews";
 import { CertificateStudio, VerificationPortal } from "./components/CertificateVerification";
+import AdminOpportunities from "./components/AdminOpportunities";
 import AdminSystemSettings from "./components/AdminSystemSettings";
 import AdminWebsiteSettings from "./components/AdminWebsiteSettings";
 import ProfilePage from "./components/ProfilePage";
@@ -73,6 +75,7 @@ import AssignmentInbox from "./components/academic/AssignmentInbox";
 import CompletionCertificates from "./components/academic/CompletionCertificates";
 import TeacherInsights from "./components/academic/TeacherInsights";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
+import AdminOpportunities from "./components/AdminOpportunities";
 import Helpdesk from "./components/portal/Helpdesk";
 import GradeAppeals from "./components/portal/GradeAppeals";
 import DonatePage from "./components/public/DonatePage";
@@ -316,6 +319,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: LibraryBig,
     visible: (ctx) => ctx.can("cms.manage"),
     render: (ctx) => <TransparencyLibrary key={ctx.currentUser?.id} management />,
+  },
+  {
+    key: "opportunities",
+    label: "Vacancies & Businesses",
+    icon: Briefcase,
+    visible: (ctx) => ctx.can("cms.manage"),
+    render: () => <AdminOpportunities />,
   },
   {
     key: "website",

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Images, CalendarDays, Briefcase, ClipboardList, GraduationCap,
   FileText, Star, LibraryBig, Wallet, Bell, CheckCircle2, Download, MapPin,
@@ -7,6 +7,8 @@ import {
 import ExpandableImage from "./PageImage";
 import { ScrollReveal } from "./motion";
 import { SUPPLIED_PHOTOS, SUPPLIED_DOCS, SUPPLIED_ARTWORK } from "@/data/suppliedMedia";
+import { loadVacancies, loadBusinesses, submitVacancyApplication, submitBusiness, uploadBoardImage } from "@/lib/opportunityBoard";
+import type { AlumniBusiness } from "@/lib/opportunityBoard";
 
 type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses";
 
@@ -618,25 +620,59 @@ const SEED_VACANCIES = [
 
 function Vacancies() {
   const [apps, setApps] = useLocal<{ id: string; name: string; role: string; date: string }[]>("aoh-vacancy-apps", []);
+  const [remote, setRemote] = useState<{ id: string; title: string; dept: string; location: string; closing: string; desc: string; req: string; image_url?: string | null }[] | null>(null);
+  const [backendLive, setBackendLive] = useState(false);
   const [f, setF] = useState({ name: "", contact: "", role: "ICT Tutor (part-time)", note: "" });
   const [err, setErr] = useState("");
   const [ok, setOk] = useState<string | null>(null);
-  const apply = () => {
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    loadVacancies().then(({ rows, backend }) => {
+      if (!live) return;
+      setBackendLive(backend);
+      if (backend && rows.length) {
+        setRemote(rows.map((r) => ({ id: r.id, title: r.title, dept: r.dept, location: r.location, closing: r.closing_date ?? "Open", desc: r.description, req: r.requirements, image_url: r.image_url })));
+        setF((p) => ({ ...p, role: rows[0].title }));
+      }
+    }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+  const vacancies = remote ?? SEED_VACANCIES;
+  const apply = async () => {
     if (f.name.trim().length < 2) return setErr("Enter your full name.");
     if (!/^[+\d][\d\s-]{6,}$/.test(f.contact.trim()) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.contact.trim()))
       return setErr("Enter a valid phone number or email, e.g. +231 770 000 000.");
     if (f.note.trim().length < 20) return setErr("Add a short cover note (at least 20 characters) so we know you fit the role.");
     setErr("");
-    const ref = `AOH-JOB-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    setApps([{ id: ref, name: f.name.trim(), role: f.role, date: new Date().toLocaleDateString() }, ...apps].slice(0, 20));
-    setF({ name: "", contact: "", role: f.role, note: "" });
-    setOk(ref);
-    window.setTimeout(() => setOk(null), 5000);
+    setBusy(true);
+    try {
+      const match = vacancies.find((v) => v.title === f.role) ?? null;
+      const isUuid = match && /^[0-9a-f-]{36}$/i.test(match.id);
+      const { backend, ref } = await submitVacancyApplication({
+        vacancy_id: isUuid ? match!.id : null,
+        role_title: f.role,
+        name: f.name.trim(),
+        contact: f.contact.trim(),
+        cover_note: f.note.trim(),
+      });
+      setApps([{ id: ref, name: f.name.trim(), role: f.role, date: new Date().toLocaleDateString() }, ...apps].slice(0, 20));
+      setF({ name: "", contact: "", role: f.role, note: "" });
+      setOk(backend ? `${ref} — saved to backend` : ref);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not submit application.");
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => setOk(null), 5000);
+    }
   };
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-3">
-        {SEED_VACANCIES.map((v) => (
+        {backendLive && remote && remote.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-emerald-900/20 bg-white p-6 text-sm text-slate-600">No open roles right now — check back soon or submit a general application below.</p>
+        )}
+        {vacancies.map((v) => (
           <article key={v.id} className={cardCls}>
             <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
               <Building2 className="h-3.5 w-3.5" aria-hidden="true" /> {v.dept} · closes {v.closing}
@@ -655,7 +691,7 @@ function Vacancies() {
           <div>
             <label className={labelCls} htmlFor="vac-role">Role</label>
             <select id="vac-role" className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>
-              {SEED_VACANCIES.map((v) => <option key={v.id}>{v.title}</option>)}
+              {vacancies.map((v) => <option key={v.id}>{v.title}</option>)}
             </select>
           </div>
           <div><label className={labelCls} htmlFor="vac-name">Full name</label><input id="vac-name" className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoComplete="name" /></div>
@@ -665,7 +701,7 @@ function Vacancies() {
             <textarea id="vac-note" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Your experience in 2–3 sentences" />
             <FieldError msg={err} />
           </div>
-          <button type="button" onClick={apply} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Submit application</button>
+          <button type="button" onClick={apply} disabled={busy} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-60">{busy ? "Submitting…" : "Submit application"}</button>
           {ok && <p role="status" className="text-sm font-medium text-emerald-700">Received — your reference is {ok}. Keep it for follow-up.</p>}
           {apps.length > 0 && (
             <ul className="mt-2 space-y-1 text-xs text-slate-600">
@@ -687,27 +723,52 @@ const SEED_BIZ = [
 const BIZ_CATS = ["All", "ICT services", "Food", "Fashion", "Health", "Other"];
 
 function Businesses() {
-  const [items, setItems] = useLocal<{ id: string; name: string; owner: string; cat: string; loc: string; contact: string; blurb: string }[]>("aoh-biz-dir", SEED_BIZ);
+  const [local, setLocal] = useLocal<{ id: string; name: string; owner: string; cat: string; loc: string; contact: string; blurb: string }[]>("aoh-biz-dir", SEED_BIZ);
+  const [remote, setRemote] = useState<AlumniBusiness[]>([]);
+  const [backendLive, setBackendLive] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let on = true;
+    loadBusinesses().then(({ rows, backend }) => { if (on) { setRemote(rows); setBackendLive(backend); } }).catch(() => {});
+    return () => { on = false; };
+  }, []);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("All");
   const [f, setF] = useState({ name: "", owner: "", cat: "ICT services", loc: "", contact: "", blurb: "" });
   const [err, setErr] = useState("");
-  const [ok, setOk] = useState(false);
+  const [ok, setOk] = useState("");
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return items.filter((b) => (cat === "All" || b.cat === cat) && (!needle || `${b.name} ${b.owner} ${b.loc} ${b.blurb}`.toLowerCase().includes(needle)));
-  }, [items, q, cat]);
-  const add = () => {
+    const fromBackend: { id: string; name: string; owner: string; cat: string; loc: string; contact: string; blurb: string; logo?: string | null }[] =
+      remote.map((b) => ({ id: b.id, name: b.name, owner: b.owner_name, cat: b.category, loc: b.location, contact: b.contact, blurb: b.description, logo: b.logo_url }));
+    const merged = [...fromBackend, ...local];
+    return merged.filter((b) => (cat === "All" || b.cat.toLowerCase() === cat.toLowerCase()) && (!needle || `${b.name} ${b.owner} ${b.loc} ${b.blurb}`.toLowerCase().includes(needle)));
+  }, [remote, local, q, cat]);
+  const add = async () => {
     if (f.name.trim().length < 2) return setErr("Enter the business name.");
     if (f.owner.trim().length < 2) return setErr("Enter the owner name so customers know who runs it.");
     if (!f.loc.trim()) return setErr("Enter the location, e.g. Monrovia.");
     if (!/^[+\d][\d\s-]{6,}$/.test(f.contact.trim())) return setErr("Enter a valid phone number, e.g. +231 770 000 000.");
     if (f.blurb.trim().length < 10) return setErr("Describe the business (at least 10 characters).");
     setErr("");
-    setItems([{ id: `biz-${Date.now()}`, name: f.name.trim(), owner: f.owner.trim(), cat: f.cat, loc: f.loc.trim(), contact: f.contact.trim(), blurb: f.blurb.trim() }, ...items].slice(0, 40));
-    setF({ name: "", owner: "", cat: "ICT services", loc: "", contact: "", blurb: "" });
-    setOk(true);
-    window.setTimeout(() => setOk(false), 4000);
+    setBusy(true);
+    try {
+      let logo_url: string | null = null;
+      if (logoFile) logo_url = await uploadBoardImage("businesses", logoFile);
+      const res = await submitBusiness({ name: f.name.trim(), owner_name: f.owner.trim(), category: f.cat, location: f.loc.trim(), contact: f.contact.trim(), description: f.blurb.trim(), logo_url });
+      if (res.backend) {
+        setOk("Received — staff will review and publish it to this directory.");
+      } else {
+        setLocal([{ id: `biz-${Date.now()}`, name: f.name.trim(), owner: f.owner.trim(), cat: f.cat, loc: f.loc.trim(), contact: f.contact.trim(), blurb: f.blurb.trim() }, ...local].slice(0, 40));
+        setOk("Listed — it is live in this directory on this device.");
+      }
+      setF({ name: "", owner: "", cat: "ICT services", loc: "", contact: "", blurb: "" });
+      setLogoFile(null);
+      window.setTimeout(() => setOk(""), 5000);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not list business.");
+    } finally { setBusy(false); }
   };
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
@@ -721,9 +782,11 @@ function Businesses() {
           </div>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {backendLive && <p className="col-span-full text-xs font-semibold text-emerald-700">Live from the backend — staff publish new listings after review.</p>}
           {list.length === 0 && <p className="col-span-full rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No businesses match. Try another search or add yours below.</p>}
           {list.map((b) => (
             <article key={b.id} className={cardCls}>
+              {b.logo ? <img src={b.logo} alt={`${b.name} logo`} loading="lazy" className="h-20 w-full rounded-xl object-cover" /> : null}
               <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900"><Store className="h-3.5 w-3.5" aria-hidden="true" /> {b.cat}</p>
               <h3 className="mt-2 font-bold text-emerald-950">{b.name}</h3>
               <p className="mt-1 text-xs font-semibold text-emerald-700">{b.owner} · {b.loc}</p>
@@ -754,8 +817,12 @@ function Businesses() {
             <textarea id="biz-blurb" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.blurb} onChange={(e) => setF({ ...f, blurb: e.target.value })} />
             <FieldError msg={err} />
           </div>
-          <button type="button" onClick={add} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Add business</button>
-          {ok && <p role="status" className="text-sm font-medium text-emerald-700">Listed — it is live in this directory on this device.</p>}
+          <div>
+            <label className={labelCls} htmlFor="biz-logo">Business logo or photo (optional)</label>
+            <input id="biz-logo" type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-sm text-slate-600" />
+          </div>
+          <button type="button" onClick={add} disabled={busy} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-60">{busy ? "Sending…" : "Add business"}</button>
+          {ok && <p role="status" className="text-sm font-medium text-emerald-700">{ok}</p>}
         </div>
       </div>
     </div>
