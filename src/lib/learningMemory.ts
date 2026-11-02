@@ -13,7 +13,11 @@ function cached(id: string): LearningMemory[] {
   try { const rows = JSON.parse(localStorage.getItem(key(id)) || "[]"); return Array.isArray(rows) ? rows.filter((r) => r.user_id === id) : []; } catch { return []; }
 }
 function store(id: string, rows: LearningMemory[]) {
-  localStorage.setItem(key(id), JSON.stringify(rows));
+  try {
+    localStorage.setItem(key(id), JSON.stringify(rows));
+  } catch {
+    /* private mode / quota — keep in-memory rows; cloud sync retries later */
+  }
   window.dispatchEvent(new CustomEvent(changed, { detail: id }));
 }
 

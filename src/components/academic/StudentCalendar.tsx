@@ -15,7 +15,10 @@ interface CalEvent { key: string; date: string; time: string; title: string; kin
 const REMINDER_KEY = "aoh-calendar-reminders-v1";
 
 function loadReminders(): Reminder[] {
-  try { return JSON.parse(localStorage.getItem(REMINDER_KEY) ?? "[]") as Reminder[]; } catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(REMINDER_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((r): r is Reminder => typeof r === "object" && r !== null) : [];
+  } catch { return []; }
 }
 
 // Date-only fields and class times are local wall-clock values. Convert actual
@@ -44,7 +47,7 @@ export default function StudentCalendar() {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", tick); };
   }, []);
 
-  useEffect(() => { localStorage.setItem(REMINDER_KEY, JSON.stringify(reminders)); }, [reminders]);
+  useEffect(() => { try { localStorage.setItem(REMINDER_KEY, JSON.stringify(reminders)); } catch { /* storage unavailable */ } }, [reminders]);
 
   useEffect(() => {
     let cancelled = false;

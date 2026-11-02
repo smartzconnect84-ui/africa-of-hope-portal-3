@@ -197,7 +197,10 @@ export default function CertificateTemplate({
 export function printCertificate(markup: string, title: string): boolean {
   const win = window.open("", "_blank", "width=1180,height=880");
   if (!win) return false;
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+  const safeTitle = title.replace(/[&<>\"]/g, (c) =>
+    c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&quot;",
+  );
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${safeTitle}</title>
     <style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}
     .aoh-cert{width:297mm;height:210mm;min-height:210mm;box-shadow:none !important;border-radius:0 !important}
     ${CERTIFICATE_PRINT_CSS}</style></head><body>${markup}</body></html>`);

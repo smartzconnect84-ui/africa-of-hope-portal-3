@@ -44,7 +44,10 @@ export function printCertificateElement(elementId: string, title: string): boole
   if (!node) return false;
   const win = window.open("", "_blank", "width=1120,height=820");
   if (!win) return false;
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8" /><title>${title}</title>
+  const safeTitle = title.replace(/[&<>\"]/g, (c) =>
+    c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&quot;",
+  );
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8" /><title>${safeTitle}</title>
 <style>${CERTIFICATE_PRINT_CSS}
 html,body{margin:0;padding:0;background:#fff}
 .aoh-cert{margin:0 auto;box-shadow:none !important;border-radius:0 !important;width:297mm;height:210mm}

@@ -19,7 +19,10 @@ export default function StudyPlanner() {
   const { state, currentUser } = useApp();
   const storageKey = `aoh-study-plan-v1-${currentUser?.id ?? "guest"}`;
   const [slots, setSlots] = useState<Slot[]>(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey) ?? "[]") as Slot[]; } catch { return []; }
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
+      return Array.isArray(parsed) ? (parsed as Slot[]) : [];
+    } catch { return []; }
   });
   const myPrograms = useMemo(() => {
     const ids = currentUser?.programIds ?? [];
@@ -31,7 +34,7 @@ export default function StudyPlanner() {
   const [end, setEnd] = useState("19:00");
   const [note, setNote] = useState("");
 
-  useEffect(() => { localStorage.setItem(storageKey, JSON.stringify(slots)); }, [slots, storageKey]);
+  useEffect(() => { try { localStorage.setItem(storageKey, JSON.stringify(slots)); } catch { /* storage unavailable */ } }, [slots, storageKey]);
 
   const courseId = programId || myPrograms[0]?.id || "";
   const titleOf = (id: string) => state.programs.find((p) => p.id === id)?.title ?? "Course";

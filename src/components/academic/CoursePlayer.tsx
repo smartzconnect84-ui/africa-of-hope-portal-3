@@ -46,7 +46,7 @@ export default function CoursePlayer() {
   const [error, setError] = useState("");
   const [programId, setProgramId] = useState(currentUser?.programIds[0] ?? state.programs[0]?.id ?? "");
   const [activeUnitId, setActiveUnitId] = useState("");
-  const [lowData, setLowData] = useState(() => localStorage.getItem(LOW_DATA_KEY) === "1");
+  const [lowData, setLowData] = useState(() => { try { return localStorage.getItem(LOW_DATA_KEY) === "1"; } catch { return false; } });
   const [busy, setBusy] = useState("");
   const memory = useLearningMemory(currentUser?.id);
   const restoredUser = useRef<string | null>(null);
@@ -74,7 +74,7 @@ export default function CoursePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memory.ready, loading, currentUser?.id]);
 
-  useEffect(() => { localStorage.setItem(LOW_DATA_KEY, lowData ? "1" : "0"); }, [lowData]);
+  useEffect(() => { try { localStorage.setItem(LOW_DATA_KEY, lowData ? "1" : "0"); } catch { /* storage unavailable */ } }, [lowData]);
 
   useEffect(() => {
     let cancelled = false;

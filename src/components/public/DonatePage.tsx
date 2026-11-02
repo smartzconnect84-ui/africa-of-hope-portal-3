@@ -44,9 +44,10 @@ export default function DonatePage({ onLogin }: { onLogin: () => void }) {
   const pledge = () => {
     if (!total || total < 500) { toast.error("Enter an amount of at least 500 FCFA"); return; }
     try {
-      const raw = JSON.parse(localStorage.getItem(KEY) ?? "[]");
-      raw.push({ amount: total, freq, method, name, phone, at: new Date().toISOString() });
-      localStorage.setItem(KEY, JSON.stringify(raw));
+      const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+      const list = Array.isArray(parsed) ? parsed : [];
+      list.push({ amount: total, freq, method, name, phone, at: new Date().toISOString() });
+      localStorage.setItem(KEY, JSON.stringify(list));
     } catch { /* storage unavailable */ }
     setDone(true);
     toast.success("Thank you! Your pledge was recorded.");

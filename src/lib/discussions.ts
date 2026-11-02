@@ -11,7 +11,11 @@ function read(userId: string): Store {
 }
 function write(userId: string, store: Store) {
   // Do not silently claim an offline draft was saved when storage is unavailable.
-  localStorage.setItem(key(userId), JSON.stringify(store));
+  try {
+    localStorage.setItem(key(userId), JSON.stringify(store));
+  } catch {
+    /* private mode / quota — callers keep the in-memory overlay; sync retries later */
+  }
 }
 function overlay(threads: DiscussionThread[], pending: Pending[]): DiscussionThread[] {
   const map = new Map(threads.map((t) => [t.id, { ...t, replies: [...t.replies] }]));

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Clock, Loader2, Send, Timer } from "lucide-react";
-import { academicApi, TRAINING_MATERIAL_ACCEPT, type ClassworkStart } from "@/lib/academics";
+import { academicApi, TRAINING_MATERIAL_ACCEPT, MAX_TRAINING_MATERIAL_BYTES, SUPPORTED_TRAINING_MATERIAL_MIME_TYPES, type ClassworkStart } from "@/lib/academics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -123,6 +123,10 @@ export default function ClassworkDialog({
       toast.error("Add a response or attach a file before you submit.");
       return;
     }
+    if (file && (file.size > MAX_TRAINING_MATERIAL_BYTES || !SUPPORTED_TRAINING_MATERIAL_MIME_TYPES.has(file.type))) {
+      toast.error(file.size > MAX_TRAINING_MATERIAL_BYTES ? "That file is larger than 25MB. Choose a smaller file. Your response draft is kept." : "This file format is not supported. Use PDF, Office, image, audio, video, text, or ZIP files. Your response draft is kept.");
+      return;
+    }
     setSubmitting(true);
     try {
       const uploaded = file ? await academicApi.uploadClassworkAttachment(assignmentId, studentId, file) : null;
@@ -186,7 +190,7 @@ export default function ClassworkDialog({
             </div>
             <div>
               <Label htmlFor={fileInputId}>Attach a file (optional)</Label>
-              <Input id={fileInputId} className="mt-1" type="file" accept={TRAINING_MATERIAL_ACCEPT} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <Input id={fileInputId} className="mt-1" type="file" accept={TRAINING_MATERIAL_ACCEPT} onChange={(e) => { const next = e.target.files?.[0] ?? null; if (next && (next.size > MAX_TRAINING_MATERIAL_BYTES || !SUPPORTED_TRAINING_MATERIAL_MIME_TYPES.has(next.type))) { toast.error(next.size > MAX_TRAINING_MATERIAL_BYTES ? "That file is larger than 25MB. Choose a smaller file. Your response draft is kept." : "This file format is not supported. Use PDF, Office, image, audio, video, text, or ZIP files. Your response draft is kept."); e.target.value = ""; setFile(null); return; } setFile(next); }} />
             </div>
           </div>
         )}
