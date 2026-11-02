@@ -63,6 +63,8 @@ export interface BrandLockupProps {
   displayName?: string;
   /** Hide the tagline line entirely (name-only lockup). */
   showTagline?: boolean;
+  /** Hide the name line entirely (logo-only lockup, e.g. footer where the image already carries the name). */
+  showName?: boolean;
   className?: string;
   nameClassName?: string;
   /** Extra classes on the tagline line — e.g. `"hidden sm:block"` so compact headers drop it on narrow phones. */
@@ -76,12 +78,14 @@ export default function BrandLockup({
   size = "md",
   tone = "light",
   showTagline = true,
+  showName = true,
   className,
   nameClassName,
   taglineClassName,
   displayName,
 }: BrandLockupProps) {
   const visibleName = displayName || academyName;
+  const showTaglineLine = showTagline && Boolean(tagline);
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
       {logoUrl ? (
@@ -105,21 +109,25 @@ export default function BrandLockup({
           <GraduationCap className={cn(ICON[size], "text-emerald-800")} aria-hidden="true" />
         </span>
       )}
-      <div className="min-w-0 leading-tight">
-        <p
-          className={cn(
-            NAME_SIZE[size],
-            "truncate font-bold uppercase tracking-[0.18em]",
-            TONE_NAME[tone],
-            nameClassName,
+      {(showName || showTaglineLine) && (
+        <div className="min-w-0 leading-tight">
+          {showName && (
+            <p
+              className={cn(
+                NAME_SIZE[size],
+                "truncate font-bold uppercase tracking-[0.18em]",
+                TONE_NAME[tone],
+                nameClassName,
+              )}
+            >
+              {visibleName}
+            </p>
           )}
-        >
-          {visibleName}
-        </p>
-        {showTagline && tagline && (
-          <p className={cn(TAGLINE_SIZE[size], "truncate", TONE_TAGLINE[tone], taglineClassName)}>{tagline}</p>
-        )}
-      </div>
+          {showTaglineLine && (
+            <p className={cn(TAGLINE_SIZE[size], "truncate", TONE_TAGLINE[tone], taglineClassName)}>{tagline}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
