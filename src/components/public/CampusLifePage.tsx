@@ -1,0 +1,676 @@
+import { useMemo, useState } from "react";
+import {
+  Images, CalendarDays, Briefcase, ClipboardList, GraduationCap,
+  FileText, Star, LibraryBig, Wallet, Bell, CheckCircle2, Download, MapPin,
+} from "lucide-react";
+import ExpandableImage from "./PageImage";
+import { ScrollReveal } from "./motion";
+import { SUPPLIED_PHOTOS, SUPPLIED_DOCS, SUPPLIED_ARTWORK } from "@/data/suppliedMedia";
+
+type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees";
+
+const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
+  { id: "gallery", label: "Gallery", icon: Images },
+  { id: "events", label: "Events", icon: CalendarDays },
+  { id: "careers", label: "Alumni & Jobs", icon: Briefcase },
+  { id: "internship", label: "Internship", icon: ClipboardList },
+  { id: "scholarships", label: "Scholarships", icon: GraduationCap },
+  { id: "transcripts", label: "Transcripts", icon: FileText },
+  { id: "feedback", label: "Feedback", icon: Star },
+  { id: "library", label: "Library", icon: LibraryBig },
+  { id: "fees", label: "Fees & Pay", icon: Wallet },
+];
+
+function useLocal<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [val, setVal] = useState<T>(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : initial;
+    } catch {
+      return initial;
+    }
+  });
+  const save = (v: T) => {
+    setVal(v);
+    try {
+      localStorage.setItem(key, JSON.stringify(v));
+    } catch {
+      /* storage optional */
+    }
+  };
+  return [val, save];
+}
+
+const inputCls =
+  "h-11 w-full rounded-xl border border-emerald-900/20 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-700";
+const labelCls = "mb-1 block text-xs font-semibold uppercase tracking-wider text-emerald-900";
+const cardCls = "aoh-card rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm";
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <p role="alert" className="mt-1 text-xs font-medium text-red-700">
+      {msg}
+    </p>
+  );
+}
+
+/* ---------------- Gallery ---------------- */
+function Gallery() {
+  return (
+    <div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {SUPPLIED_PHOTOS.map((p, i) => (
+          <ScrollReveal key={p.id} delay={Math.min(i * 0.05, 0.2)}>
+            <figure className="aoh-card group overflow-hidden rounded-2xl bg-white">
+              <ExpandableImage
+                src={p.src}
+                alt={p.caption}
+                className="h-64"
+                imgClassName="aoh-photo h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              />
+              <figcaption className="flex items-center justify-between gap-2 p-4">
+                <span className="text-sm font-semibold text-emerald-950">{p.caption}</span>
+                <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+                  {p.tag}
+                </span>
+              </figcaption>
+            </figure>
+          </ScrollReveal>
+        ))}
+      </div>
+      <h3 className="mt-10 text-lg font-bold text-emerald-950">Documents & brand artwork</h3>
+      <p className="mt-1 text-sm text-slate-600">Brochure and certificate samples open larger on click; artwork keeps its original framing.</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <figure className="aoh-card overflow-hidden rounded-2xl bg-white">
+          <ExpandableImage src={SUPPLIED_DOCS.brochure.src} alt={SUPPLIED_DOCS.brochure.label} className="h-64" imgClassName="h-full w-full object-cover object-top" />
+          <figcaption className="p-4 text-sm font-semibold text-emerald-950">{SUPPLIED_DOCS.brochure.label}</figcaption>
+        </figure>
+        <figure className="aoh-card overflow-hidden rounded-2xl bg-white">
+          <ExpandableImage src={SUPPLIED_DOCS.certificateSample.src} alt={SUPPLIED_DOCS.certificateSample.label} className="h-64" imgClassName="h-full w-full bg-slate-50 object-contain p-2" />
+          <figcaption className="p-4 text-sm font-semibold text-emerald-950">{SUPPLIED_DOCS.certificateSample.label}</figcaption>
+        </figure>
+        {SUPPLIED_ARTWORK.slice(0, 1).map((a) => (
+          <figure key={a.id} className="aoh-card overflow-hidden rounded-2xl bg-white">
+            <ExpandableImage src={a.src} alt={a.caption} className="h-64" imgClassName="h-full w-full bg-white object-contain p-6" />
+            <figcaption className="p-4 text-sm font-semibold text-emerald-950">{a.caption} — transparent PNG, shown uncropped</figcaption>
+          </figure>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-3">
+        {SUPPLIED_ARTWORK.slice(1).map((a) => (
+          <a key={a.id} href={a.src} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-900/15 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">
+            <Download className="h-3.5 w-3.5" aria-hidden="true" /> {a.caption}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Events ---------------- */
+const SEED_EVENTS = [
+  { id: "open-day", title: "Open Day & Campus Tour", date: "2026-12-12T10:00:00", venue: "Main campus, Monrovia", note: "Meet lecturers, tour labs, on-the-spot admission guidance." },
+  { id: "orientation", title: "New Intake Orientation", date: "2027-01-12T09:00:00", venue: "Main hall", note: "Strictly online learners join live; onsite learners attend in person." },
+  { id: "career-fair", title: "Careers & Internship Fair", date: "2027-02-20T10:00:00", venue: "Main campus", note: "Employers, alumni panels and logbook clinics." },
+  { id: "graduation", title: "Graduation & Awards", date: "2027-03-27T10:00:00", venue: "Main hall", note: "Certificates issued to completers; family welcome." },
+];
+
+function Events() {
+  const [rsvps, setRsvps] = useLocal<Record<string, { name: string; phone: string; remind: boolean }>>("aoh-event-rsvp", {});
+  const [form, setForm] = useState<Record<string, { name: string; phone: string }>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [done, setDone] = useState<string | null>(null);
+  const now = Date.now();
+  const fmt = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    } catch {
+      return iso;
+    }
+  };
+  const rsvp = (id: string) => {
+    const f = form[id] || { name: "", phone: "" };
+    if (!f.name.trim()) {
+      setErrors({ [id]: "Please enter your full name." });
+      return;
+    }
+    if (!/^[+\d][\d\s-]{6,}$/.test(f.phone.trim())) {
+      setErrors({ [id]: "Enter a valid phone number, e.g. +231 770 000 000." });
+      return;
+    }
+    setErrors({});
+    setRsvps({ ...rsvps, [id]: { name: f.name.trim(), phone: f.phone.trim(), remind: true } });
+    setDone(id);
+    window.setTimeout(() => setDone(null), 4000);
+  };
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {SEED_EVENTS.map((e) => {
+        const past = new Date(e.date).getTime() < now;
+        const saved = rsvps[e.id];
+        const f = form[e.id] || { name: "", phone: "" };
+        return (
+          <article key={e.id} className={cardCls}>
+            <p className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold ${past ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-800"}`}>
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {past ? "Completed" : fmt(e.date)}
+            </p>
+            <h3 className="mt-3 text-lg font-bold text-emerald-950">{e.title}</h3>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+              <MapPin className="h-4 w-4" aria-hidden="true" /> {e.venue}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{e.note}</p>
+            {saved ? (
+              <p className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
+                  You are on the list as <strong>{saved.name}</strong>. We will remind {saved.phone} before the event. Attendance is marked at the gate.
+                </span>
+              </p>
+            ) : past ? (
+              <p className="mt-4 text-sm text-slate-500">Missed it? Watch the gallery above for highlights.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className={labelCls} htmlFor={`ev-name-${e.id}`}>Full name</label>
+                  <input id={`ev-name-${e.id}`} className={inputCls} value={f.name} onChange={(ev) => setForm({ ...form, [e.id]: { ...f, name: ev.target.value } })} placeholder="e.g. Massa Kromah" autoComplete="name" />
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor={`ev-phone-${e.id}`}>Phone / WhatsApp</label>
+                  <input id={`ev-phone-${e.id}`} className={inputCls} value={f.phone} onChange={(ev) => setForm({ ...form, [e.id]: { ...f, phone: ev.target.value } })} placeholder="+231 ..." inputMode="tel" aria-invalid={!!errors[e.id]} aria-describedby={errors[e.id] ? `ev-err-${e.id}` : undefined} />
+                  <span id={`ev-err-${e.id}`}><FieldError msg={errors[e.id]} /></span>
+                </div>
+                <button type="button" onClick={() => rsvp(e.id)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">
+                  <Bell className="h-4 w-4" aria-hidden="true" /> RSVP & remind me
+                </button>
+                {done === e.id && <p role="status" className="text-sm font-medium text-emerald-700">Saved — see you there.</p>}
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------- Careers ---------------- */
+const SEED_JOBS = [
+  { id: "job-1", title: "Junior ICT Support Assistant", org: "Partner school, Monrovia", type: "Internship → contract", pay: "Stipend + transport" },
+  { id: "job-2", title: "Community Health Volunteer", org: "County clinic partner", type: "Volunteer", pay: "Certificate + reference" },
+  { id: "job-3", title: "Business Admin Intern", org: "Local enterprise partner", type: "3-month internship", pay: "Monthly stipend" },
+  { id: "job-4", title: "Media & Comms Assistant", org: "AFRICA OF HOPE", type: "Part-time", pay: "Project-based" },
+];
+
+function Careers() {
+  const [savedJobs, setSavedJobs] = useLocal<string[]>("aoh-saved-jobs", []);
+  const [stories, setStories] = useLocal<{ name: string; role: string; text: string }[]>("aoh-alumni-stories", [
+    { name: "Alumni cohort '25", role: "Now: Admin Officer", text: "The practical logbook got me my first interview — I showed real tasks, not just grades." },
+  ]);
+  const [s, setS] = useState({ name: "", role: "", text: "" });
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState(false);
+  const submit = () => {
+    if (s.name.trim().length < 2) return setErr("Please enter your name.");
+    if (s.text.trim().length < 20) return setErr("Tell us a little more (at least 20 characters) so juniors can learn from you.");
+    setErr("");
+    setStories([{ name: s.name.trim(), role: s.role.trim() || "Alumnus", text: s.text.trim() }, ...stories].slice(0, 20));
+    setS({ name: "", role: "", text: "" });
+    setOk(true);
+    window.setTimeout(() => setOk(false), 4000);
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div>
+        <h3 className="text-lg font-bold text-emerald-950">Jobs & internships board</h3>
+        <div className="mt-3 space-y-3">
+          {SEED_JOBS.map((j) => {
+            const saved = savedJobs.includes(j.id);
+            return (
+              <article key={j.id} className={cardCls}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-bold text-emerald-950">{j.title}</h4>
+                    <p className="mt-1 text-sm text-slate-600">{j.org} · {j.type} · {j.pay}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSavedJobs(saved ? savedJobs.filter((x) => x !== j.id) : [...savedJobs, j.id])}
+                    aria-pressed={saved}
+                    className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold ${saved ? "bg-emerald-800 text-white" : "bg-emerald-100 text-emerald-900 hover:bg-emerald-200"}`}
+                  >
+                    {saved ? "Saved ✓" : "Save"}
+                  </button>
+                </div>
+                <p className="mt-3 text-xs text-slate-500">To apply, message admissions with the job title + your student ID. Placement team confirms within 3 working days.</p>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-emerald-950">Where our graduates are</h3>
+        <div className="mt-3 space-y-3">
+          {stories.map((t, i) => (
+            <figure key={i} className="rounded-2xl bg-emerald-950 p-5 text-white">
+              <blockquote className="text-sm leading-6 text-emerald-50">“{t.text}”</blockquote>
+              <figcaption className="mt-3 text-xs font-bold uppercase tracking-wider text-amber-300">{t.name} — {t.role}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <div className={`${cardCls} mt-4`}>
+          <h4 className="font-bold text-emerald-950">Share your outcome</h4>
+          <div className="mt-3 space-y-3">
+            <div><label className={labelCls} htmlFor="al-name">Your name</label><input id="al-name" className={inputCls} value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} /></div>
+            <div><label className={labelCls} htmlFor="al-role">Current role (optional)</label><input id="al-role" className={inputCls} value={s.role} onChange={(e) => setS({ ...s, role: e.target.value })} placeholder="e.g. Nurse intern" /></div>
+            <div>
+              <label className={labelCls} htmlFor="al-text">Your story</label>
+              <textarea id="al-text" rows={3} className="w-full rounded-xl border border-emerald-900/20 bg-white px-3 py-2.5 text-sm" value={s.text} onChange={(e) => setS({ ...s, text: e.target.value })} placeholder="What did you study, and where are you now?" aria-invalid={!!err} />
+              <FieldError msg={err} />
+            </div>
+            <button type="button" onClick={submit} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Post story</button>
+            {ok && <p role="status" className="text-sm font-medium text-emerald-700">Thank you — your story is live on this device.</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Internship logbook ---------------- */
+function Internship() {
+  const [entries, setEntries] = useLocal<{ id: string; week: string; hours: number; tasks: string; supervisor: string }[]>("aoh-logbook", []);
+  const [f, setF] = useState({ week: "", hours: "", tasks: "", supervisor: "" });
+  const [err, setErr] = useState("");
+  const total = entries.reduce((a, e) => a + (Number(e.hours) || 0), 0);
+  const TARGET = 240;
+  const add = () => {
+    const h = Number(f.hours);
+    if (!f.week.trim()) return setErr("Enter the week, e.g. Week 3 — 12–16 Jan.");
+    if (!Number.isFinite(h) || h <= 0 || h > 60) return setErr("Hours must be between 1 and 60 for the week.");
+    if (f.tasks.trim().length < 10) return setErr("Describe tasks (at least 10 characters) — supervisors verify this.");
+    setErr("");
+    setEntries([{ id: `log-${Date.now()}`, week: f.week.trim(), hours: h, tasks: f.tasks.trim(), supervisor: f.supervisor.trim() }, ...entries]);
+    setF({ week: "", hours: "", tasks: "", supervisor: "" });
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">Log practical hours</h3>
+        <div className="mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
+          <strong>{total} / {TARGET} hrs</strong>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-200/60" role="progressbar" aria-valuenow={Math.min(100, Math.round((total / TARGET) * 100))} aria-valuemin={0} aria-valuemax={100} aria-label="Internship progress">
+            <div className="h-full rounded-full bg-emerald-700 transition-all" style={{ width: `${Math.min(100, (total / TARGET) * 100)}%` }} />
+          </div>
+        </div>
+        <div className="mt-4 space-y-3">
+          <div><label className={labelCls} htmlFor="lb-week">Week</label><input id="lb-week" className={inputCls} value={f.week} onChange={(e) => setF({ ...f, week: e.target.value })} placeholder="Week 3 — 12–16 Jan" /></div>
+          <div><label className={labelCls} htmlFor="lb-hours">Hours this week</label><input id="lb-hours" className={inputCls} value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} inputMode="decimal" placeholder="e.g. 20" aria-invalid={!!err} /></div>
+          <div><label className={labelCls} htmlFor="lb-tasks">Tasks done</label><textarea id="lb-tasks" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.tasks} onChange={(e) => setF({ ...f, tasks: e.target.value })} placeholder="Ward rounds, filing, stock count…" /></div>
+          <div><label className={labelCls} htmlFor="lb-sup">Supervisor (optional)</label><input id="lb-sup" className={inputCls} value={f.supervisor} onChange={(e) => setF({ ...f, supervisor: e.target.value })} placeholder="Name + sign date" /></div>
+          <FieldError msg={err} />
+          <button type="button" onClick={add} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Add entry</button>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {entries.length === 0 && <p className="rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No entries yet — log your first week above. Entries stay on this device until your supervisor signs them in the portal.</p>}
+        {entries.map((e) => (
+          <article key={e.id} className={cardCls}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h4 className="font-bold text-emerald-950">{e.week} — {e.hours} hrs</h4>
+                <p className="mt-1 whitespace-pre-line text-sm text-slate-600">{e.tasks}</p>
+                {e.supervisor && <p className="mt-1 text-xs text-slate-500">Supervisor: {e.supervisor}</p>}
+              </div>
+              <button type="button" aria-label={`Delete entry ${e.week}`} onClick={() => { if (window.confirm(`Delete log entry "${e.week}"?`)) setEntries(entries.filter((x) => x.id !== e.id)); }} className="rounded-lg px-2 py-1 text-xs font-bold text-red-700 hover:bg-red-50">Delete</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Scholarships ---------------- */
+const SEED_AID = [
+  { id: "merit", title: "Merit Scholarship", cover: "Up to 50% tuition", who: "New applicants with strong entrance results; continuing students with GPA 3.5+." },
+  { id: "need", title: "Hope Bursary (need-based)", cover: "Up to 70% tuition", who: "Learners with demonstrated financial need + community service record." },
+  { id: "sponsor", title: "Sponsor-a-Student", cover: "Full or partial, by donors", who: "Donors pick a programme; school matches a vetted learner and reports progress." },
+];
+
+function Scholarships() {
+  const [apps, setApps] = useLocal<{ id: string; aid: string; name: string; phone: string; date: string }[]>("aoh-aid-apps", []);
+  const [f, setF] = useState({ aid: "merit", name: "", phone: "", note: "" });
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState(false);
+  const apply = () => {
+    if (f.name.trim().length < 2) return setErr("Please enter your full name.");
+    if (!/^[+\d][\d\s-]{6,}$/.test(f.phone.trim())) return setErr("Enter a valid phone number, e.g. +231 770 000 000.");
+    if (f.note.trim().length < 20) return setErr("Tell us why in at least 20 characters — sponsors read this.");
+    setErr("");
+    setApps([{ id: `AID-${Date.now().toString().slice(-6)}`, aid: SEED_AID.find((a) => a.id === f.aid)?.title || f.aid, name: f.name.trim(), phone: f.phone.trim(), date: new Date().toLocaleDateString() }, ...apps]);
+    setF({ aid: "merit", name: "", phone: "", note: "" });
+    setOk(true);
+    window.setTimeout(() => setOk(false), 5000);
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-3">
+        {SEED_AID.map((a) => (
+          <article key={a.id} className={cardCls}>
+            <h3 className="font-bold text-emerald-950">{a.title}</h3>
+            <p className="mt-1 text-sm font-semibold text-emerald-700">{a.cover}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{a.who}</p>
+          </article>
+        ))}
+      </div>
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">Apply for aid</h3>
+        <div className="mt-3 space-y-3">
+          <div>
+            <label className={labelCls} htmlFor="aid-kind">Scholarship</label>
+            <select id="aid-kind" className={inputCls} value={f.aid} onChange={(e) => setF({ ...f, aid: e.target.value })}>
+              {SEED_AID.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+            </select>
+          </div>
+          <div><label className={labelCls} htmlFor="aid-name">Full name</label><input id="aid-name" className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div><label className={labelCls} htmlFor="aid-phone">Phone / WhatsApp</label><input id="aid-phone" className={inputCls} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" aria-invalid={!!err} /></div>
+          <div>
+            <label className={labelCls} htmlFor="aid-note">Why should sponsors consider you?</label>
+            <textarea id="aid-note" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
+            <FieldError msg={err} />
+          </div>
+          <button type="button" onClick={apply} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Submit application</button>
+          {ok && <p role="status" className="text-sm font-medium text-emerald-700">Received — your reference is {apps[0]?.id}. Keep it for follow-up.</p>}
+          {apps.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-slate-600">
+              {apps.slice(0, 5).map((a) => <li key={a.id}>{a.id} · {a.aid} · {a.name} · {a.date}</li>)}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Transcripts ---------------- */
+function Transcripts() {
+  const [reqs, setReqs] = useLocal<{ id: string; name: string; kind: string; date: string }[]>("aoh-doc-reqs", []);
+  const [f, setF] = useState({ name: "", phone: "", program: "", copies: "1", kind: "Transcript", address: "" });
+  const [err, setErr] = useState("");
+  const submit = () => {
+    if (f.name.trim().length < 2) return setErr("Enter the full name on the certificate/record.");
+    if (!/^[+\d][\d\s-]{6,}$/.test(f.phone.trim())) return setErr("Enter a valid phone number, e.g. +231 770 000 000.");
+    if (!f.program.trim()) return setErr("Enter your programme, e.g. Nursing Assistant.");
+    const n = Number(f.copies);
+    if (!Number.isInteger(n) || n < 1 || n > 5) return setErr("Copies must be a whole number from 1 to 5.");
+    setErr("");
+    const ref = `AOH-DOC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    setReqs([{ id: ref, name: f.name.trim(), kind: `${f.kind} × ${n}`, date: new Date().toLocaleDateString() }, ...reqs].slice(0, 20));
+    setF({ name: "", phone: "", program: "", copies: "1", kind: "Transcript", address: "" });
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">Request a document</h3>
+        <p className="mt-1 text-sm text-slate-600">Transcripts, reference letters, duplicate certificates. Ready in 5 working days; pickup or delivery.</p>
+        <div className="mt-4 space-y-3">
+          <div><label className={labelCls} htmlFor="doc-name">Name on record</label><input id="doc-name" className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls} htmlFor="doc-kind">Document</label>
+              <select id="doc-kind" className={inputCls} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value })}>
+                <option>Transcript</option><option>Reference letter</option><option>Duplicate certificate</option><option>Enrolment letter</option>
+              </select>
+            </div>
+            <div><label className={labelCls} htmlFor="doc-copies">Copies (1–5)</label><input id="doc-copies" className={inputCls} value={f.copies} onChange={(e) => setF({ ...f, copies: e.target.value })} inputMode="numeric" aria-invalid={!!err} /></div>
+          </div>
+          <div><label className={labelCls} htmlFor="doc-prog">Programme</label><input id="doc-prog" className={inputCls} value={f.program} onChange={(e) => setF({ ...f, program: e.target.value })} placeholder="e.g. Computer Studies" /></div>
+          <div><label className={labelCls} htmlFor="doc-phone">Phone / WhatsApp</label><input id="doc-phone" className={inputCls} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} inputMode="tel" /></div>
+          <div><label className={labelCls} htmlFor="doc-addr">Delivery / pickup note (optional)</label><input id="doc-addr" className={inputCls} value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="e.g. Pickup Friday" /></div>
+          <FieldError msg={err} />
+          <button type="button" onClick={submit} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Submit request</button>
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-emerald-950">Your requests on this device</h3>
+        {reqs.length === 0 ? (
+          <p className="mt-3 rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No requests yet. Your reference number appears here after you submit.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {reqs.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 rounded-xl bg-white p-4 text-sm shadow-sm">
+                <span><strong className="text-emerald-900">{r.id}</strong> · {r.kind}<br /><span className="text-xs text-slate-500">{r.name} · {r.date}</span></span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-900">Queued</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Feedback ---------------- */
+function Feedback() {
+  const [items, setItems] = useLocal<{ course: string; rating: number; text: string }[]>("aoh-evals", []);
+  const [f, setF] = useState({ course: "", rating: 5, text: "" });
+  const [err, setErr] = useState("");
+  const avg = items.length ? (items.reduce((a, b) => a + b.rating, 0) / items.length).toFixed(1) : "—";
+  const submit = () => {
+    if (f.course.trim().length < 2) return setErr("Enter the course name, e.g. Computer Studies.");
+    if (f.text.trim().length < 10) return setErr("Add a short comment (at least 10 characters).");
+    setErr("");
+    setItems([{ course: f.course.trim(), rating: f.rating, text: f.text.trim() }, ...items].slice(0, 30));
+    setF({ course: "", rating: 5, text: "" });
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">Rate a course</h3>
+        <p className="mt-1 text-sm text-slate-600">Average on this device: <strong>{avg} / 5</strong> from {items.length} review(s).</p>
+        <div className="mt-3 space-y-3">
+          <div><label className={labelCls} htmlFor="fb-course">Course</label><input id="fb-course" className={inputCls} value={f.course} onChange={(e) => setF({ ...f, course: e.target.value })} /></div>
+          <div>
+            <span className={labelCls} id="fb-rate-label">Rating</span>
+            <div role="radiogroup" aria-labelledby="fb-rate-label" className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} type="button" role="radio" aria-checked={f.rating === n} aria-label={`${n} star${n > 1 ? "s" : ""}`} onClick={() => setF({ ...f, rating: n })} className={`grid h-11 w-11 place-items-center rounded-xl ${f.rating >= n ? "bg-amber-400 text-emerald-950" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}>
+                  <Star className="h-5 w-5" aria-hidden="true" fill="currentColor" />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="fb-text">What worked? What should improve?</label>
+            <textarea id="fb-text" rows={3} className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm" value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} aria-invalid={!!err} />
+            <FieldError msg={err} />
+          </div>
+          <button type="button" onClick={submit} className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">Submit feedback</button>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {items.length === 0 && <p className="rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No feedback yet on this device.</p>}
+        {items.map((r, i) => (
+          <article key={i} className={cardCls}>
+            <p className="text-sm font-bold text-emerald-950">{r.course} <span className="ml-2 text-amber-600">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span></p>
+            <p className="mt-1 text-sm text-slate-600">{r.text}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Library ---------------- */
+const LIB_ITEMS = [
+  { id: "brochure", title: "ENA programme brochure", meta: "JPG image · opens & downloads", href: SUPPLIED_DOCS.brochure.src },
+  { id: "cert", title: "Certificate of Completion — sample", meta: "PNG image · verify real ones at #verify", href: SUPPLIED_DOCS.certificateSample.src },
+  ...SUPPLIED_PHOTOS.map((p) => ({ id: p.id, title: p.caption, meta: `${p.tag} · JPG`, href: p.src })),
+];
+
+function Library() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {LIB_ITEMS.map((r) => (
+        <article key={r.id} className={`${cardCls} flex flex-col`}>
+          <LibraryBig className="h-6 w-6 text-emerald-700" aria-hidden="true" />
+          <h3 className="mt-3 font-bold text-emerald-950">{r.title}</h3>
+          <p className="mt-1 text-xs text-slate-500">{r.meta}</p>
+          <div className="mt-4 flex gap-2">
+            <a href={r.href} target="_blank" rel="noreferrer" className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-800 text-xs font-bold text-white hover:bg-emerald-900">Open</a>
+            <a href={r.href} download className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-900/20 text-xs font-bold text-emerald-900 hover:bg-emerald-50">
+              <Download className="h-3.5 w-3.5" aria-hidden="true" /> Save
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- Fees ---------------- */
+function Fees() {
+  const [receipts, setReceipts] = useLocal<{ id: string; amount: string; method: string; date: string; splits: string }[]>("aoh-fee-receipts", []);
+  const [f, setF] = useState({ total: "150", parts: "3", method: "Mobile Money", account: "" });
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState<string | null>(null);
+  const splits = useMemo(() => {
+    const totalCents = Math.round(Number(f.total) * 100);
+    const n = Number(f.parts);
+    if (!Number.isFinite(totalCents) || totalCents <= 0 || !Number.isInteger(n) || n < 1 || n > 12) return [];
+    const base = Math.floor(totalCents / n);
+    const out = Array(n).fill(base) as number[];
+    let rest = totalCents - base * n;
+    for (let i = 0; rest > 0; i++, rest--) out[i] += 1;
+    return out.map((c) => (c / 100).toFixed(2));
+  }, [f.total, f.parts]);
+  const pay = () => {
+    const total = Number(f.total);
+    if (!Number.isFinite(total) || total <= 0) return setErr("Enter the fee total, e.g. 150. Amounts use dollars and cents.");
+    if (splits.length === 0) return setErr("Instalments must be a whole number from 1 to 12.");
+    if (f.account.trim().length < 4) return setErr(f.method === "Mobile Money" ? "Enter the Mobile Money number to debit, e.g. +231 ..." : "Enter the cardholder name.");
+    setErr("");
+    const ref = `AOH-PAY-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    setReceipts([{ id: ref, amount: `$${total.toFixed(2)}`, method: f.method, date: new Date().toLocaleString(), splits: splits.map((s, i) => `#${i + 1} $${s}`).join(" · ") }, ...receipts].slice(0, 20));
+    setOk(ref);
+  };
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className={cardCls}>
+        <h3 className="font-bold text-emerald-950">Fee planner & demo payment</h3>
+        <p className="mt-1 text-xs text-slate-500">Demo checkout — no real money moves here. The school cashier confirms Mobile Money before receipts count as paid.</p>
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={labelCls} htmlFor="fee-total">Total (USD)</label><input id="fee-total" className={inputCls} value={f.total} onChange={(e) => setF({ ...f, total: e.target.value })} inputMode="decimal" aria-invalid={!!err} /></div>
+            <div><label className={labelCls} htmlFor="fee-parts">Instalments (1–12)</label><input id="fee-parts" className={inputCls} value={f.parts} onChange={(e) => setF({ ...f, parts: e.target.value })} inputMode="numeric" /></div>
+          </div>
+          {splits.length > 0 && (
+            <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
+              Split amounts must total <strong>${Number(f.total).toFixed(2)}</strong>: {splits.map((s, i) => <span key={i}>#{i + 1} ${s}{i < splits.length - 1 ? " + " : ""}</span>)}
+            </p>
+          )}
+          <div>
+            <label className={labelCls} htmlFor="fee-method">Method</label>
+            <select id="fee-method" className={inputCls} value={f.method} onChange={(e) => setF({ ...f, method: e.target.value })}>
+              <option>Mobile Money</option><option>Card</option><option>Bank transfer</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="fee-acct">{f.method === "Card" ? "Cardholder name" : f.method === "Bank transfer" ? "Depositor name" : "Mobile Money number"}</label>
+            <input id="fee-acct" className={inputCls} value={f.account} onChange={(e) => setF({ ...f, account: e.target.value })} placeholder={f.method === "Mobile Money" ? "+231 ..." : "As on card/account"} />
+            <FieldError msg={err} />
+          </div>
+          <button type="button" onClick={pay} className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900">
+            <Wallet className="h-4 w-4" aria-hidden="true" /> Record demo payment
+          </button>
+          {ok && <p role="status" className="text-sm font-medium text-emerald-700">Saved as {ok}. Show it at the cashier with your student ID.</p>}
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-emerald-950">Receipts on this device</h3>
+        {receipts.length === 0 ? (
+          <p className="mt-3 rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No payments recorded yet.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {receipts.map((r) => (
+              <li key={r.id} className="rounded-xl bg-white p-4 text-sm shadow-sm">
+                <p><strong className="text-emerald-900">{r.id}</strong> · {r.amount} · {r.method}</p>
+                <p className="mt-1 text-xs text-slate-500">{r.splits}</p>
+                <p className="text-xs text-slate-400">{r.date}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Page ---------------- */
+export default function CampusLifePage() {
+  const [tab, setTab] = useState<Tab>("gallery");
+  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees }[tab];
+  return (
+    <div className="bg-[#f6f8f7] pb-16 sm:pb-24">
+      <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
+        <ScrollReveal className="mx-auto max-w-6xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Beyond the classroom</p>
+          <h1 className="mt-4 max-w-3xl text-3xl font-bold sm:text-5xl">Campus life, careers & student services</h1>
+          <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100">
+            Photos from our community, open events, alumni jobs, internship logbook, scholarships, transcripts, library and fee planning — all in one place.
+          </p>
+        </ScrollReveal>
+      </section>
+      <div className="sticky top-0 z-20 border-b border-emerald-900/10 bg-[#f6f8f7]/95 backdrop-blur">
+        <div role="tablist" aria-label="Campus life sections" className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={active}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-xs font-bold transition ${active ? "bg-emerald-800 text-white" : "bg-white text-emerald-900 ring-1 ring-emerald-900/15 hover:bg-emerald-50"}`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <section aria-label="Campus life content" className="mx-auto max-w-6xl px-4 pt-6">
+        <Active />
+      </section>
+    </div>
+  );
+}
+
+export function CampusLifePreview() {
+  const four = SUPPLIED_PHOTOS.slice(0, 4);
+  return (
+    <section aria-label="Campus life preview" className="scroll-mt-24 bg-white py-16 sm:py-20">
+      <div className="mx-auto max-w-6xl px-4">
+        <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Campus life</p>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">Real photos, real community</h2>
+            <p className="mt-2 max-w-xl text-sm text-slate-600">Events, alumni jobs, internships, scholarships, transcripts, library and fee planning — plus every photo you shared.</p>
+          </div>
+          <a href="#campus-life" className="group inline-flex h-11 items-center gap-1.5 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">
+            Open Campus Life
+          </a>
+        </ScrollReveal>
+        <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {four.map((p) => (
+            <a key={p.id} href="#campus-life" className="group overflow-hidden rounded-2xl" aria-label={`${p.caption} — open campus life`}>
+              <img src={p.src} alt={p.caption} loading="lazy" className="aoh-photo h-44 w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 sm:h-56" />
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -33,6 +33,7 @@ import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
 import TermDatesPage from "./public/TermDatesPage";
 import AdmissionsPage from "./public/AdmissionsPage";
+import CampusLifePage, { CampusLifePreview } from "./public/CampusLifePage";
 import SupportSection from "./public/SupportSection";
 import NewsletterSignup from "./public/NewsletterSignup";
 import NewsletterAction from "./public/NewsletterAction";
@@ -48,6 +49,7 @@ const NAV_LINKS: [string, string][] = [
   ["#programmes", "Programmes"],
   ["#term-dates", "Term dates"],
   ["#blog", "Blog"],
+  ["#campus-life", "Campus Life"],
   ["#policies", "Policies"],
   ["#donate", "Donate"],
   ["#support", "Get involved"],
@@ -61,6 +63,7 @@ const POLICIES_RE = /^#policies$/i;
 const COOKIES_RE = /^#cookies$/i;
 const DONATE_RE = /^#donate$/i;
 const ADMISSIONS_RE = /^#(admissions|apply|apply-online)$/i;
+const CAMPUS_RE = /^#campus-life$/i;
 const HOME_RE = /^#(home)?$/i;
 const BLOG_RE = /^#blog$/i;
 // "About" is now its own full page (organisation profile). It replaced the
@@ -72,6 +75,7 @@ type View =
   | { type: "programmes" }
   | { type: "term-dates" }
   | { type: "admissions" }
+  | { type: "campus" }
   | { type: "policies" }
   | { type: "transparency" }
   | { type: "cookies" }
@@ -119,6 +123,7 @@ function parseHash(hash: string): View {
     return { type: "blogPost", slug };
   }
   if (ADMISSIONS_RE.test(h)) return { type: "admissions" };
+  if (CAMPUS_RE.test(h)) return { type: "campus" };
   // Donate / Volunteer / Partner / Join our staff links open the support form on that tab.
   if (/^#support-(donation|volunteer|partner|staff)$/i.test(h)) return { type: "home", anchor: "support" };
   if (HOME_RE.test(h)) return { type: "home", anchor: null };
@@ -191,6 +196,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-transparency", href: "#transparency", label: "Transparency" }];
     if (!links.some((l) => ADMISSIONS_RE.test(l.href.trim())))
       links = [...links, { id: "nav-admissions", href: "#admissions", label: "Admissions" }];
+    if (!links.some((l) => CAMPUS_RE.test(l.href.trim())))
+      links = [...links, { id: "nav-campus", href: "#campus-life", label: "Campus Life" }];
     // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
     // Admissions stays visible in the menu bar as its own page.
     return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
@@ -262,6 +269,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     else if (view.type === "about") document.title = `About AFRICA OF HOPE — ${base}`;
     else if (view.type === "team") document.title = `Our Team — ${base}`;
     else if (view.type === "blog" || view.type === "blogPost") document.title = `Blog — ${base}`;
+    else if (view.type === "campus") document.title = `Campus Life — ${base}`;
     else document.title = base;
   }, [view, displayName]);
 
@@ -507,6 +515,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           {view.type === "blog" && <BlogListPage onApply={openApply} />}
           {view.type === "blogPost" && <BlogPostPage slug={view.slug} onApply={openApply} />}
           {view.type === "verify" && <VerifyPage serial={view.serial} />}
+          {view.type === "campus" && <CampusLifePage />}
 
           {view.type === "home" && (
             <>
@@ -531,6 +540,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               })}
 
               <ProgrammesCarousel key="programmes" programs={publicPrograms} onApply={openApply} />
+              <CampusLifePreview key="campus-life" />
               <SupportSection key="support" onApply={openApply} />
               {/* Consent-based newsletter signup; hidden unless enabled in Website Settings. */}
               <div key="newsletter" className="bg-black">
