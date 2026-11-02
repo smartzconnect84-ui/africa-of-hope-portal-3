@@ -217,7 +217,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const [hash, setHash] = useState<string>(initialHash);
   const reduceMotion = useReducedMotion();
   const openApply = (programId?: string) => {
-    if (programId) setPendingProgramApply(programId);
+    // Generic CTA buttons pass this directly as onClick, so React would hand a
+    // MouseEvent in as the first argument — only persist real string ids.
+    if (typeof programId === "string" && programId.trim()) setPendingProgramApply(programId.trim());
     onEnterPortal("register");
   };
   const openLogin = () => onEnterPortal("signin");

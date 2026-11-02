@@ -28,7 +28,7 @@ function useVisibleCount() {
  * card right-to-left every few seconds, looping endlessly. Pauses on hover,
  * focus or reduced-motion; arrows allow manual browsing.
  */
-export default function ProgrammesCarousel({ programs, onApply }: { programs: Program[]; onApply: () => void }) {
+export default function ProgrammesCarousel({ programs, onApply }: { programs: Program[]; onApply: (programId?: string) => void }) {
   const reduceMotion = useReducedMotion();
   const visible = useVisibleCount();
   const [index, setIndex] = useState(0);
@@ -169,7 +169,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                         />
                         <button
                           type="button"
-                          onClick={onApply}
+                          onClick={() => onApply(program.id)}
                           tabIndex={i >= total ? -1 : undefined}
                           className="btn-sheen inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1.5 font-semibold text-white transition hover:bg-emerald-800"
                         >

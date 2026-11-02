@@ -46,7 +46,7 @@ interface Props {
   /** Pause triggering while e.g. the mobile menu is open. */
   paused?: boolean;
   onExplore: () => void;
-  onApply: () => void;
+  onApply: (programId?: string) => void;
 }
 
 /**
@@ -205,7 +205,7 @@ export default function ProgramAnnouncementPopup({ programs, paused, onExplore, 
                     dismiss(false);
                     writeNum(POPUP_CONFIG.countKey, readNum(POPUP_CONFIG.countKey, 0) + 1);
                     writeNum(POPUP_CONFIG.dismissedAtKey, Date.now());
-                    onApply();
+                    onApply(program.id);
                   }}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-900/15 bg-white/70 px-4 text-sm font-semibold text-emerald-900 transition hover:bg-white"
                 >

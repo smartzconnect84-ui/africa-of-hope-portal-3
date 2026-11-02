@@ -432,8 +432,11 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
     if (pendingApplied || state.programs.length === 0) return;
     const pending = consumePendingProgramApply();
     setPendingApplied(true);
-    if (pending && state.programs.some((p) => p.id === pending)) {
+    if (!pending) return;
+    if (state.programs.some((p) => p.id === pending)) {
       setReg((r) => (r.programIds.includes(pending) ? r : { ...r, programIds: [...r.programIds, pending] }));
+    } else {
+      toast.info("That programme is no longer listed — please choose another below.");
     }
   }, [pendingApplied, state.programs]);
   const set = <K extends keyof typeof emptyReg>(key: K, v: (typeof emptyReg)[K]) => {
@@ -849,7 +852,19 @@ export default function AuthPortal({
 }) {
   const { state } = useApp();
   const registrationOpen = state.settings.selfRegistrationOpen;
+  // The visitor arrived via a public “Apply” button when true. Kept separate
+  // from `tab` so we can explain the closed-registration dead-end instead of
+  // silently landing on Sign in with no application form.
+  const [applyIntent] = useState(initialTab === "register");
   const [tab, setTab] = useState<AuthTab>(initialTab === "register" && registrationOpen ? "register" : "signin");
+  // If the portal is already mounted (e.g. site already “portal”) and a public
+  // Apply button asks for registration, honour it instead of staying on Sign in.
+  useEffect(() => {
+    if (initialTab === "register" && registrationOpen) setTab("register");
+  }, [initialTab, registrationOpen]);
+  // The pending programme id is intentionally retained while applications are
+  // closed: the register form never mounts so it cannot consume it, and the
+  // Admissions page / RegisterForm picks it up once registration reopens.
   const [resetOpen, setResetOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [verifyOpen, setVerifyOpen] = useState(false);
@@ -901,6 +916,37 @@ export default function AuthPortal({
             </div>
 
             <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-xl shadow-emerald-900/5 sm:p-7">
+              {!registrationOpen && applyIntent && !done && (
+                <div role="alert" className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left">
+                  <p className="text-sm font-semibold text-amber-900">You tapped “Apply for this programme”.</p>
+                  <p className="mt-1 text-sm text-amber-800">
+                    Online applications are currently closed, so the application form is unavailable right now.
+                    Your programme choice is saved — explore Admissions options below and it will be preselected once applications reopen.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onBackToSite?.();
+                        window.requestAnimationFrame(() => { window.location.hash = "#admissions"; });
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" /> Admissions & apply options
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onBackToSite?.();
+                        window.requestAnimationFrame(() => { window.location.hash = "#support"; });
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+                    >
+                      Contact admissions
+                    </button>
+                  </div>
+                </div>
+              )}
               {done ? (
                 <div className="text-center">
                   <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50">

@@ -9,7 +9,7 @@ export default function CtaBand({
   onLogin,
 }: {
   copy: SectionCopy;
-  onApply: () => void;
+  onApply: (programId?: string) => void;
   onLogin: () => void;
 }) {
   return (
@@ -20,7 +20,7 @@ export default function CtaBand({
           {copy.subtitle && <p className="mt-2 text-sm text-emerald-100/85">{copy.subtitle}</p>}
         </Reveal>
         <Reveal delay={0.08} className="flex shrink-0 flex-wrap gap-3">
-          <Button onClick={onApply} className="bg-amber-400 text-emerald-950 hover:bg-amber-300">
+          <Button onClick={() => onApply()} className="bg-amber-400 text-emerald-950 hover:bg-amber-300">
             {copy.ctaText || "Apply online"} <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
           <Button onClick={onLogin} variant="outline" className="border-white/30 bg-white/5 text-white hover:bg-white/10">
