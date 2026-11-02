@@ -133,7 +133,7 @@ export default function BlogListPage() {
         {featured && (
           <ScrollReveal className="mt-8">
             <a
-              href={`#blog/${featured.slug}`}
+              href={`#blog-${featured.slug}`}
               className="aoh-card aoh-glass group grid overflow-hidden rounded-3xl shadow-sm transition hover:shadow-xl lg:grid-cols-2"
             >
               <div className="h-56 overflow-hidden lg:h-full">

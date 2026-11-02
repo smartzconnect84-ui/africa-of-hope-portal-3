@@ -107,8 +107,10 @@ function parseHash(hash: string): View {
   if (BLOG_RE.test(h)) return { type: "blog" };
   if (ABOUT_RE.test(h)) return { type: "about" };
   if (/^#\/?(team|our-team)$/i.test(h)) return { type: "team" };
-  if (/^#blog\//i.test(h)) {
-    const raw = h.replace(/^#blog\//i, "");
+  // Keep blog routes CSS-selector-safe: the preview runtime may query hash
+  // anchors as selectors, and `/` is not valid in an unescaped id selector.
+  if (/^#blog(?:\/|-)/i.test(h)) {
+    const raw = h.replace(/^#blog(?:\/|-)/i, "");
     let slug = raw;
     try {
       slug = decodeURIComponent(raw);
@@ -560,7 +562,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                       {blogPreview.map((post) => (
                         <motion.a
                           key={post.id}
-                          href={`#blog/${post.slug}`}
+                          href={`#blog-${post.slug}`}
                           variants={fadeUpVariants}
                           whileHover={{ y: -6 }}
                           className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 p-5 shadow-sm transition-shadow hover:shadow-lg"
