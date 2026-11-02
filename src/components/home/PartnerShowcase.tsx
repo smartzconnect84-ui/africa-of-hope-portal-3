@@ -54,9 +54,9 @@ function FlipCard({ partner }: { partner: PartnerItem }) {
           <img
             src={partner.logo}
             alt={`${partner.name} logo`}
-            loading="lazy"
-            className="aoh-logo h-20 w-full sm:h-24"
-            onError={e => { e.currentTarget.style.visibility = 'hidden'; }}
+            decoding="async"
+            className="aoh-logo h-20 w-full object-contain object-center sm:h-24"
+            onError={e => { e.currentTarget.alt = `${partner.name} logo unavailable`; e.currentTarget.style.opacity = '0.2'; }}
           />
           <p className="line-clamp-2 text-xs font-bold leading-5 text-emerald-950">{partner.name}</p>
         </div>
