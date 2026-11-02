@@ -183,7 +183,7 @@ export default function BlogPostPage({ slug }: { slug: string }) {
               {more.map((p) => (
                 <a
                   key={p.id}
-                  href={`#blog/${p.slug}`}
+                  href={`#blog-${p.slug}`}
                   className="group rounded-xl border border-emerald-900/10 p-4 transition hover:border-emerald-700/30 hover:shadow-sm"
                 >
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
