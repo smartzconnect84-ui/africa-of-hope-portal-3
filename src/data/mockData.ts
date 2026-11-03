@@ -183,7 +183,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   contactPhone: "For Inquiries: +231776679963 or afrohope033@gmail.com",
   contactEmail: "",
   address: "Boystown Junction-Lower Margibi, Republic of Liberia",
-  officeHours: "Online 24/7",
+  officeHours: "Onsite/Online Training",
   applyCtaText: "Apply Online",
   verifyEnabled: true,
 
