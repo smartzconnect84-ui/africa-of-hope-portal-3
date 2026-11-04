@@ -16,8 +16,10 @@ const json = (body: unknown, status = 200) =>
 const BATCH_SIZE = 20;
 const MAX_ATTEMPTS = 5;
 const OUTBOX_STATUSES = ["queued", "sending", "sent", "failed", "skipped"] as const;
-const BRAND_NAME = "Africa of Hope Academy";
+const BRAND_NAME = "AFRICA OF HOPE, INC";
 const BRAND_COLOR = "#0f5132";
+const BRAND_LOGO_URL =
+  "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
 
 /**
  * Constant-time string comparison for the `x-cron-secret` header. A plain
@@ -69,6 +71,7 @@ function wrapBrand(title: string, bodyHtml: string): string {
           <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
             <tr>
               <td style="background:${BRAND_COLOR};padding:20px 28px;">
+                <img src="${BRAND_LOGO_URL}" alt="${escapeHtml(BRAND_NAME)} logo" width="120" style="display:block;width:120px;max-width:40%;height:auto;margin-bottom:10px;border:0;outline:none;" />
                 <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.3px;">${escapeHtml(BRAND_NAME)}</span>
               </td>
             </tr>
@@ -106,14 +109,14 @@ function renderTemplate(template: string, subject: string, payload: Record<strin
       const appUrl = new URL(Deno.env.get('APP_URL') || '');
       if (appUrl.protocol === 'https:' && !appUrl.username && !appUrl.password) {
         appUrl.hash = ''; appUrl.search = '';
-        portalLink = `<p style="margin-top:24px"><a href="${escapeHtml(appUrl.href)}" style="background:${BRAND_COLOR};color:white;padding:12px 18px;border-radius:8px;text-decoration:none">Visit AFRICA OF HOPE</a></p><p style="font-size:12px;color:#6b7280">Choose Login on the website. This is not a password or sign-in token.</p>`;
+        portalLink = `<p style="margin-top:24px"><a href="${escapeHtml(appUrl.href)}" style="background:${BRAND_COLOR};color:white;padding:12px 18px;border-radius:8px;text-decoration:none">Visit ${escapeHtml(BRAND_NAME)}</a></p><p style="font-size:12px;color:#6b7280">Choose Login on the website. This is not a password or sign-in token.</p>`;
       }
     } catch { /* APP_URL is optional; never invent a production URL. */ }
     return wrapBrand(subject, `<p style="font-size:14px;line-height:1.7;white-space:pre-wrap">${escapeHtml(payload.body)}</p>${portalLink}`);
   }
   if (template === "newsletter_confirmation") {
     const link = String(payload.confirmation_url ?? "");
-    return wrapBrand(subject, `<p>Please confirm that you requested Africa of Hope newsletters.</p><p><a href="${escapeHtml(link)}">Confirm your subscription</a></p><p>This link expires after 24 hours. Ignore this email if you did not request it. No newsletter will be sent until you confirm.</p>`);
+    return wrapBrand(subject, `<p>Please confirm that you requested ${escapeHtml(BRAND_NAME)} newsletters.</p><p><a href="${escapeHtml(link)}">Confirm your subscription</a></p><p>This link expires after 24 hours. Ignore this email if you did not request it. No newsletter will be sent until you confirm.</p>`);
   }
   if (template === "newsletter") {
     const body = String(payload.body ?? "").replaceAll("{{name}}", String(payload.recipient_name || "Reader"));
