@@ -84,4 +84,25 @@ export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
 };
 export const DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }
+
+/** Sentences the owner removed via visual edits. Published CMS bodies may still
+ *  contain them (Supabase website settings), so filter them at render time.
+ *  Matching is substring-based to survive curly/straight apostrophe differences. */
+export const REMOVED_ABOUT_PHRASES = [
+  'As a parent organization, AFRICA OF HOPE brings these diverse areas',
+  'We are committed to a people-centered approach',
+  'lasting transformation happens when compassion',
+  'approach places people first',
+  'builds opp',
+  'shapes our broad approach to community',
+  'guided by the belief that when people rece',
+];
+export function cleanAboutBody(body: string) {
+  return paragraphText(body || '')
+    .filter((p) => !REMOVED_ABOUT_PHRASES.some((s) => p.includes(s)))
+    .join('\n\n');
+}
+export function cleanAboutParagraphs(body: string) {
+  return paragraphText(cleanAboutBody(body));
+}
 export { resolveIcon };
