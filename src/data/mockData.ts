@@ -4,7 +4,7 @@ import { CATALOG_2026 } from "./programCatalog2026";
 import { DEFAULT_PUBLIC_COPY, DEFAULT_SUPPORT } from "./publicContent";
 import { ABOUT_META } from "./aboutContent";
 import { DEFAULT_TEAM } from "./teamContent";
-import { DEFAULT_ABOUT, DEFAULT_PRESENTATION, DEFAULT_PWA, DEFAULT_LAYOUT } from './publicPresentation';
+import { DEFAULT_ABOUT, DEFAULT_PRESENTATION, DEFAULT_PWA, DEFAULT_LAYOUT, DEFAULT_CAMPUS_LIFE } from './publicPresentation';
 import { DEFAULT_PUBLIC_PAGES } from '../lib/publicPages';
 
 // Reused across the About and Impact homepage sections and the CTA band so the
@@ -54,6 +54,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   aboutPage: DEFAULT_ABOUT,
   presentation: DEFAULT_PRESENTATION,
   pwa: DEFAULT_PWA,
+  campusLife: DEFAULT_CAMPUS_LIFE,
   publicLayout: DEFAULT_LAYOUT,
   brandRevision: 2,
   publicCopy: DEFAULT_PUBLIC_COPY,

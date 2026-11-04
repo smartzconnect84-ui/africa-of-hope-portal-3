@@ -46,6 +46,41 @@ export const DEFAULT_PWA = {
   icon192: '/icons/icon-192.png', icon512: '/icons/icon-512.png',
   maskable: '/icons/maskable-512.png', touchIcon: '/icons/apple-touch-icon.png',
   splashImage: '/logo/aoh-logo.png', splashText: 'AFRICA OF HOPE',
+  themeColor: '#16803C', backgroundColor: '#FFFFFF',
+  display: 'standalone' as 'standalone' | 'minimal-ui' | 'browser' | 'fullscreen',
+  orientation: 'any' as 'any' | 'portrait' | 'landscape',
+};
+export interface CampusGalleryItem { id: string; caption: string; tag: string; image: string }
+export interface CampusLifeSettings {
+  enabled: boolean;
+  eyebrow: string; title: string; subtitle: string; body: string;
+  galleryTitle: string; galleryNote: string;
+  gallery: CampusGalleryItem[];
+  tabs: Record<string, boolean>;
+}
+export const CAMPUS_TABS = [
+  { id: 'gallery', label: 'Gallery' },
+  { id: 'events', label: 'Events' },
+  { id: 'careers', label: 'Alumni & Jobs' },
+  { id: 'internship', label: 'Internship' },
+  { id: 'scholarships', label: 'Scholarships' },
+  { id: 'transcripts', label: 'Transcripts' },
+  { id: 'feedback', label: 'Feedback' },
+  { id: 'library', label: 'Library' },
+  { id: 'fees', label: 'Fees & Pay' },
+  { id: 'vacancies', label: 'Vacancies' },
+  { id: 'businesses', label: 'Businesses' },
+];
+export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
+  enabled: true,
+  eyebrow: 'Campus life',
+  title: 'Life at Africa of Hope',
+  subtitle: 'Study, community and careers in one place.',
+  body: 'Explore the gallery, join events, meet alumni, track internships, apply for scholarships and support, request transcripts, share feedback, use the library and pay fees — all from one hub.',
+  galleryTitle: 'Campus gallery',
+  galleryNote: 'Tap any photo to view it larger.',
+  gallery: [],
+  tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true },
 };
 export const DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }

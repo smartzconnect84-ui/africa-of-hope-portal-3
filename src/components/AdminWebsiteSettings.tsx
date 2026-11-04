@@ -17,6 +17,7 @@ import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
 import { copySuppliedBrandAssets } from "../lib/brandSetup";
+import CampusLifeEditor from './CampusLifeEditor';
 import SiteModulesManager from './SiteModulesManager';
 import { FOUNDER_PROFILE } from "../data/teamContent";
 
@@ -35,6 +36,7 @@ const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] =
   { key: "faqs", label: "FAQ", icon: HelpCircle, hint: "Questions and answers" },
   { key: "support", label: "Support", icon: Building2, hint: "Support forms" },
   { key: "team", label: "Team page", icon: Building2, hint: "Public profiles, photos and ordering" },
+  { key: "campus", label: "Campus Life", icon: Building2, hint: "Hero copy, gallery photos and tab visibility" },
   { key: "editorial", label: "Public copy & newsletter", icon: Globe, hint: "Editorial labels and subscription section" },
   { key: "certificates", label: "Certificates", icon: Award, hint: "Certificate wording, signatories and verified contact details" },
   { key: "footer", label: "Contact & footer", icon: Link2, hint: "Address, phone, socials, links" },
@@ -221,6 +223,7 @@ export default function AdminWebsiteSettings() {
       {(publishError || Object.keys(errors).length > 0) && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-semibold">Changes have not been published. Your draft is retained.</p>{publishError && <p className="mt-2">{publishError}</p>}<ul className="mt-2 list-inside list-disc">{Object.entries(errors).map(([key, message]) => <li key={key}>{key}: {message}</li>)}</ul></div>}
       <fieldset disabled={saving || copyingBrand} className="min-w-0 space-y-5 disabled:opacity-75">
       {tab === "modules" && <SiteModulesManager draft={draft} patch={patch} />}
+      {tab === "campus" && <CampusLifeEditor draft={draft} patch={patch} />}
       {tab === 'presentation' && <PublicContentEditor draft={draft} patch={patch} errors={errors} />}
       {tab === 'pwa' && <><PwaSettingsEditor draft={draft} patch={patch} errors={errors} /><div className={`${panelClass} p-5`}><ImageBox label="Favicon" folder="favicon" round value={draft.faviconUrl} onChange={faviconUrl => patch({ faviconUrl })} />{errors.faviconUrl && <p role="alert" className="mt-2 text-sm text-rose-800">{errors.faviconUrl}</p>}</div></>}
       {tab === "branding" && (
