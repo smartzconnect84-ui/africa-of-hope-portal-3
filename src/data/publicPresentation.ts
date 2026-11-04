@@ -96,6 +96,12 @@ export const REMOVED_ABOUT_PHRASES = [
   'builds opp',
   'shapes our broad approach to community',
   'guided by the belief that when people rece',
+  'School of Professional Studies offers both online',
+  'require more than temporary',
+  'creating pathways through which',
+  'appropriate initiatives and partnerships',
+  'encourage initiatives that help communities',
+  'television, digital media, creative arts',
 ];
 export function cleanAboutBody(body: string) {
   return paragraphText(body || '')
