@@ -74,7 +74,6 @@ export const ABOUT_WHO: AboutProse = {
   paragraphs: [
     "We believe every person deserves dignity, opportunity, access to knowledge, and the chance to build a better future. Guided by this conviction, we pursue initiatives that respond to community needs, develop human potential, and contribute to meaningful social and economic progress.",
     "Our work spans education and professional training, healthcare initiatives, rehabilitation, agriculture, media and entertainment, advocacy, humanitarian outreach, and child welfare development.",
-    "Our School of Professional Studies offers both online and on-site training. Online learning makes professional development more accessible, while on-site learning supports face-to-face guidance and practical engagement. Together, these options help learners develop relevant knowledge and skills in a way that fits their circumstances; available study modes are listed for each programme.",
   ],
 };
 
@@ -116,7 +115,6 @@ export const ABOUT_MISSION = [
     body: [
       "Our purpose is to bridge opportunity gaps, strengthen human capacity, support vulnerable populations, and encourage sustainable community development.",
       "We aim to create opportunities that help people move beyond immediate challenges toward greater independence, improved well-being, and meaningful participation in society.",
-      "We believe lasting transformation happens when compassion is combined with practical solutions, collaboration, and a commitment to empowering people.",
     ],
   },
 ] as const;
