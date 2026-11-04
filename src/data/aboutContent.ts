@@ -303,10 +303,8 @@ export const ABOUT_FUTURE: AboutProse = {
   eyebrow: "Our commitment",
   title: "Our commitment to the future",
   paragraphs: [
-    "AFRICA OF HOPE envisions a future in which more people can access education, improve their well-being, develop practical skills, express their creativity, and participate meaningfully in community development.",
     "We are committed to exploring innovative solutions, building responsible partnerships, and developing initiatives that respond to emerging needs and opportunities.",
     "We understand that sustainable progress requires dedication, learning, accountability, and collaboration. As our work develops, we aim to strengthen our capacity to serve, expand opportunities for participation, and contribute to positive change across the communities we reach.",
-    "Our future is rooted in a simple belief: when people are empowered, communities become stronger, and hope becomes a foundation for progress.",
   ],
 };
 
@@ -343,13 +341,10 @@ export const ABOUT_JOIN = {
   eyebrow: "Be part of the hope",
   title: "Together, we can make a difference",
   paragraphs: [
-    "Every meaningful transformation begins with people who believe change is possible.",
     "At AFRICA OF HOPE, we believe unity, compassion, creativity, and collective action can create opportunities, strengthen communities, and inspire a brighter future.",
     "Whether you are an individual who wants to volunteer, an organization interested in partnership, a supporter who shares our vision, or a community member seeking to learn more about our work, there are opportunities to connect with our mission.",
-    "Your time, ideas, skills, resources, and collaboration can help turn shared aspirations into meaningful action.",
   ],
-  signoff:
-    "Your support can inspire hope. Your partnership can empower people. Together, we can work toward lasting change.",
+  signoff: "",
 } as const;
 
 export const ABOUT_PROMISE = {

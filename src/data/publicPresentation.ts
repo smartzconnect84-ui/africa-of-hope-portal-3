@@ -102,6 +102,11 @@ export const REMOVED_ABOUT_PHRASES = [
   'appropriate initiatives and partnerships',
   'encourage initiatives that help communities',
   'television, digital media, creative arts',
+  'envisions a future in which more people',
+  'Our future is rooted in a simple belief',
+  'Every meaningful transformation begins with people',
+  'Your time, ideas, skills, resources',
+  'Your support can inspire hope',
 ];
 export function cleanAboutBody(body: string) {
   return paragraphText(body || '')
