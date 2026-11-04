@@ -82,7 +82,6 @@ export const ABOUT_STORY: AboutProse = {
   eyebrow: "Our story",
   title: "Founded on Hope. Driven by Purpose.",
   paragraphs: [
-    "AFRICA OF HOPE was established in 2021 with a commitment to making hope a foundation for meaningful change.",
     "We recognize that many communities face interconnected challenges, including limited educational opportunities, barriers to healthcare, unemployment, social vulnerability, and restricted access to resources for personal and economic development.",
     "We believe these challenges require more than temporary assistance. They call for thoughtful, coordinated initiatives that equip people with knowledge, practical skills, opportunities, and the support needed to improve their circumstances.",
   ],
@@ -341,7 +340,6 @@ export const ABOUT_JOIN = {
   eyebrow: "Be part of the hope",
   title: "Together, we can make a difference",
   paragraphs: [
-    "At AFRICA OF HOPE, we believe unity, compassion, creativity, and collective action can create opportunities, strengthen communities, and inspire a brighter future.",
     "Whether you are an individual who wants to volunteer, an organization interested in partnership, a supporter who shares our vision, or a community member seeking to learn more about our work, there are opportunities to connect with our mission.",
   ],
   signoff: "",
@@ -350,7 +348,7 @@ export const ABOUT_JOIN = {
 export const ABOUT_PROMISE = {
   eyebrow: "Our promise",
   quote:
-    "We remain committed to pursuing our mission with compassion, integrity, and a belief in the potential of people and communities.",
+    "",
   body: "We understand that meaningful change is a shared journey, and we welcome those who wish to contribute to a future filled with greater dignity, opportunity, and hope.",
   signature: "Empowering People. Transforming Communities. Inspiring Hope.",
   footnote:

@@ -107,6 +107,9 @@ export const REMOVED_ABOUT_PHRASES = [
   'Every meaningful transformation begins with people',
   'Your time, ideas, skills, resources',
   'Your support can inspire hope',
+  'we believe unity, compassion',
+  'We remain committed to pursuing our mission with compassi',
+  'was established in 2021 with a commitment',
 ];
 export function cleanAboutBody(body: string) {
   return paragraphText(body || '')
