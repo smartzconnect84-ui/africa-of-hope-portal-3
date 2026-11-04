@@ -7,6 +7,8 @@ import {
 import ExpandableImage from "./PageImage";
 import { ScrollReveal } from "./motion";
 import { SUPPLIED_PHOTOS, SUPPLIED_DOCS, SUPPLIED_ARTWORK } from "@/data/suppliedMedia";
+import { useApp } from "@/context/AppContext";
+import { resolvedCampusLife } from "@/lib/publicSettingsValidation";
 import { loadVacancies, loadBusinesses, submitVacancyApplication, submitBusiness, uploadBoardImage } from "@/lib/opportunityBoard";
 import type { AlumniBusiness } from "@/lib/opportunityBoard";
 
@@ -62,10 +64,24 @@ function FieldError({ msg }: { msg?: string }) {
 
 /* ---------------- Gallery ---------------- */
 function Gallery() {
+  let photos: { id: string; src: string; caption: string; tag: string }[] = SUPPLIED_PHOTOS.map((p) => ({ id: String(p.id), src: String(p.src), caption: p.caption, tag: p.tag }));
+  let galleryTitle = "Campus gallery";
+  let galleryNote = "Tap any photo to view it larger.";
+  try {
+    const { state } = useApp();
+    const cms = resolvedCampusLife(state.websiteSettings);
+    if (cms.gallery.length) photos = cms.gallery.map((g) => ({ id: g.id, src: g.image, caption: g.caption, tag: g.tag || "Campus" }));
+    galleryTitle = cms.galleryTitle || galleryTitle;
+    galleryNote = cms.galleryNote || galleryNote;
+  } catch { /* fallback to supplied photos */ }
   return (
     <div>
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-emerald-950">{galleryTitle}</h2>
+        {galleryNote ? <p className="mt-1 text-sm text-slate-600">{galleryNote}</p> : null}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SUPPLIED_PHOTOS.map((p, i) => (
+        {photos.map((p, i) => (
           <ScrollReveal key={p.id} delay={Math.min(i * 0.05, 0.2)}>
             <figure className="aoh-card group overflow-hidden rounded-2xl bg-white">
               <ExpandableImage
@@ -833,23 +849,38 @@ function Businesses() {
 /* ---------------- Page ---------------- */
 export default function CampusLifePage() {
   const [tab, setTab] = useState<Tab>("gallery");
-  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses }[tab];
+  let eyebrow = "Beyond the classroom";
+  let title = "Campus life, careers & student services";
+  let subtitle = "Photos from our community, open events, alumni jobs, internship logbook, scholarships, transcripts, library and fee planning — all in one place.";
+  let visibleTabs = TABS;
+  try {
+    const { state } = useApp();
+    const cms = resolvedCampusLife(state.websiteSettings);
+    eyebrow = cms.eyebrow || eyebrow;
+    title = cms.title || title;
+    subtitle = cms.subtitle || subtitle;
+    if (cms.body) subtitle = cms.body;
+    const filtered = TABS.filter((t) => cms.tabs[t.id] !== false);
+    if (filtered.length) visibleTabs = filtered;
+  } catch { /* supplied fallback */ }
+  const safeTab = visibleTabs.some((t) => t.id === tab) ? tab : visibleTabs[0].id;
+  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses }[safeTab];
   return (
     <div className="bg-[#f6f8f7] pb-16 sm:pb-24">
       <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
         <ScrollReveal className="mx-auto max-w-6xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">Beyond the classroom</p>
-          <h1 className="mt-4 max-w-3xl text-3xl font-bold sm:text-5xl">Campus life, careers & student services</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{eyebrow}</p>
+          <h1 className="mt-4 max-w-3xl text-3xl font-bold sm:text-5xl">{title}</h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100">
-            Photos from our community, open events, alumni jobs, internship logbook, scholarships, transcripts, library and fee planning — all in one place.
+            {subtitle}
           </p>
         </ScrollReveal>
       </section>
       <div className="sticky top-0 z-20 border-b border-emerald-900/10 bg-[#f6f8f7]/95 backdrop-blur">
         <div role="tablist" aria-label="Campus life sections" className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 py-3">
-          {TABS.map((t) => {
+          {visibleTabs.map((t) => {
             const Icon = t.icon;
-            const active = tab === t.id;
+            const active = safeTab === t.id;
             return (
               <button
                 key={t.id}
@@ -873,15 +904,26 @@ export default function CampusLifePage() {
 }
 
 export function CampusLifePreview() {
-  const four = SUPPLIED_PHOTOS.slice(0, 4);
+  let four: { id: string; src: string; caption: string }[] = SUPPLIED_PHOTOS.slice(0, 4).map((p) => ({ id: String(p.id), src: String(p.src), caption: p.caption }));
+  let eyebrow = "Campus life";
+  let title = "Real photos, real community";
+  let subtitle = "Events, alumni jobs, internships, scholarships, transcripts, library and fee planning — plus every photo you shared.";
+  try {
+    const { state } = useApp();
+    const cms = resolvedCampusLife(state.websiteSettings);
+    eyebrow = cms.eyebrow || eyebrow;
+    title = cms.title || title;
+    if (cms.subtitle) subtitle = cms.subtitle;
+    if (cms.gallery.length) four = cms.gallery.slice(0, 4).map((g) => ({ id: g.id, src: g.image, caption: g.caption }));
+  } catch { /* supplied fallback */ }
   return (
     <section aria-label="Campus life preview" className="scroll-mt-24 bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4">
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Campus life</p>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">Real photos, real community</h2>
-            <p className="mt-2 max-w-xl text-sm text-slate-600">Events, alumni jobs, internships, scholarships, transcripts, library and fee planning — plus every photo you shared.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{eyebrow}</p>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">{title}</h2>
+            <p className="mt-2 max-w-xl text-sm text-slate-600">{subtitle}</p>
           </div>
           <a href="#campus-life" className="group inline-flex h-11 items-center gap-1.5 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">
             Open Campus Life
