@@ -40,7 +40,55 @@ import NewsletterAction from "./public/NewsletterAction";
 import OrderedSections from './public/OrderedSections';
 import { DEFAULT_PRESENTATION } from '@/data/publicPresentation';
 import { useLocale } from "@/lib/locale";
+import { isPublicPageEnabled } from "@/lib/publicPages";
 import { format } from "date-fns";
+
+function pageKeyForHref(href: string): string | null {
+  const h = href.trim().toLowerCase();
+  if (/^#(home)?\/?$/.test(h) || h === "#") return "home";
+  if (/^#(about|about-us|who-we-are)\/?$/.test(h)) return "about";
+  if (/^#(programmes|programs)\/?$/.test(h)) return "programmes";
+  if (/^#(admissions|apply|apply-online)\/?$/.test(h)) return "admissions";
+  if (/^#term-dates\/?$/.test(h)) return "term-dates";
+  if (/^#\/?(team|our-team)\/?$/.test(h)) return "team";
+  if (/^#blog(\/.*)?$/.test(h)) return "blog";
+  if (/^#policies\/?$/.test(h)) return "policies";
+  if (/^#\/?transparency\/?$/.test(h)) return "transparency";
+  if (/^#donate\/?$/.test(h)) return "donate";
+  if (/^#support(-.*)?$/.test(h)) return "support";
+  if (/^#\/?verify(\?.*)?$/.test(h)) return "verify";
+  if (/^#cookies\/?$/.test(h)) return "cookies";
+  return null;
+}
+
+function viewPageKey(view: View): string | null {
+  switch (view.type) {
+    case "programmes": return "programmes";
+    case "admissions": return "admissions";
+    case "term-dates": return "term-dates";
+    case "policies": return "policies";
+    case "transparency": return "transparency";
+    case "cookies": return "cookies";
+    case "donate": return "donate";
+    case "about": return "about";
+    case "team": return "team";
+    case "blog":
+    case "blogPost": return "blog";
+    case "verify": return "verify";
+    default: return null;
+  }
+}
+
+function PageUnavailable({ label }: { label: string }) {
+  return (
+    <section className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Unavailable</p>
+      <h1 className="mt-3 text-3xl font-bold text-emerald-950">This {label} page is currently unavailable.</h1>
+      <p className="mt-3 text-sm text-slate-600">It has been hidden by the site administrator. Please check back later or return home.</p>
+      <a href="#home" className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white hover:bg-emerald-800">Back to home</a>
+    </section>
+  );
+}
 
 const NAV_LINKS: [string, string][] = [
   ["#home", "Home"],
@@ -200,8 +248,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       links = [...links, { id: "nav-campus", href: "#campus-life", label: "Campus Life" }];
     // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
     // Admissions stays visible in the menu bar as its own page.
-    return links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
-  }, [saved]);
+    // CMS wiring: hidden (deleted) pages are removed from every menu automatically.
+    const withoutCtas = links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
+    return withoutCtas.filter((l) => {
+      const key = pageKeyForHref(l.href);
+      return !key || isPublicPageEnabled(w, key);
+    });
+  }, [saved, w]);
   const displayName = useMemo(() => {
     const full = (w.academyName || settings.academyName || "").trim();
     // Short institutional name shown on tablet/desktop header + footer.
@@ -502,6 +555,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
       <AnimatePresence mode="wait">
         <motion.main key={hash} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          {(() => {
+            const hiddenKey = viewPageKey(view);
+            if (hiddenKey && !isPublicPageEnabled(w, hiddenKey)) return <PageUnavailable label={hiddenKey} />;
+            return null;
+          })()}
+          {(() => {
+            const hiddenKey = viewPageKey(view);
+            if (hiddenKey && !isPublicPageEnabled(w, hiddenKey)) return null;
+            return (<>
           {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
           {view.type === "admissions" && <AdmissionsPage onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
@@ -605,6 +667,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 </div>
               </section>
               </OrderedSections>
+            </>
+          )}
             </>
           )}
         </motion.main>

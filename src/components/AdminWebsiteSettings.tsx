@@ -17,9 +17,11 @@ import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
 import { copySuppliedBrandAssets } from "../lib/brandSetup";
+import SiteModulesManager from './SiteModulesManager';
 import { FOUNDER_PROFILE } from "../data/teamContent";
 
 const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] = [
+  { key: "modules", label: "Modules & downloads", icon: Globe, hint: "Edit, hide/delete and download every public feature" },
   { key: "branding", label: "Branding & header", icon: Building2, hint: "Logo, favicon, announcement bar" },
   { key: "presentation", label: "Public design & About page", icon: Globe, hint: "Fonts, icons, complete section order and About content" },
   { key: "pwa", label: "PWA & favicon", icon: Globe, hint: "Install icons, app name, launch screen and favicon" },
@@ -57,7 +59,7 @@ export default function AdminWebsiteSettings() {
   const live = state.websiteSettings;
   const [draft, setDraft] = useState<WebsiteSettings>(live);
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState("branding");
+  const [tab, setTab] = useState("modules");
   const [saving, setSaving] = useState(false);
   const [copyingBrand, setCopyingBrand] = useState(false);
   const [errors, setErrors] = useState<PublicSettingsErrors>({});
@@ -218,6 +220,7 @@ export default function AdminWebsiteSettings() {
 
       {(publishError || Object.keys(errors).length > 0) && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-semibold">Changes have not been published. Your draft is retained.</p>{publishError && <p className="mt-2">{publishError}</p>}<ul className="mt-2 list-inside list-disc">{Object.entries(errors).map(([key, message]) => <li key={key}>{key}: {message}</li>)}</ul></div>}
       <fieldset disabled={saving || copyingBrand} className="min-w-0 space-y-5 disabled:opacity-75">
+      {tab === "modules" && <SiteModulesManager draft={draft} patch={patch} />}
       {tab === 'presentation' && <PublicContentEditor draft={draft} patch={patch} errors={errors} />}
       {tab === 'pwa' && <><PwaSettingsEditor draft={draft} patch={patch} errors={errors} /><div className={`${panelClass} p-5`}><ImageBox label="Favicon" folder="favicon" round value={draft.faviconUrl} onChange={faviconUrl => patch({ faviconUrl })} />{errors.faviconUrl && <p role="alert" className="mt-2 text-sm text-rose-800">{errors.faviconUrl}</p>}</div></>}
       {tab === "branding" && (
