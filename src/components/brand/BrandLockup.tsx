@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -95,16 +95,17 @@ export default function BrandLockup({
   const [src, setSrc] = useState(initialSrc);
   const [failed, setFailed] = useState(false);
   // Keep in sync when CMS value changes (draft preview / publish).
-  if (initialSrc !== src && !failed) {
-    // Render the newest URL; a later error still falls back once.
-  }
+  useEffect(() => {
+    setSrc(initialSrc);
+    setFailed(false);
+  }, [initialSrc]);
   const activeSrc = failed ? FALLBACK_LOGO : src;
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
       {logoUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          src={src === FALLBACK_LOGO && failed ? FALLBACK_LOGO : src}
+          src={activeSrc}
           onError={() => {
             if (!failed) {
               setFailed(true);

@@ -2,18 +2,18 @@
 
 > AFRICA OF HOPE School of Professional Studies at Boystown Junction, Lower Margibi, Liberia offers practical two-week to six-month certificate programmes in trades, technology, business and hospitality for high-school leavers and working adults. Tuition is sponsored — learners pay only a registration package of US$5 to US$45. Strictly online students can enrol anytime; on-site cohorts follow the published term calendar. Every certificate carries a unique serial number that employers can check live on the Verify page. The school does not offer degree programmes and never issues certificates without completed coursework.
 
-- Home: https://africaofhope.monstarx.app/
-- About: https://africaofhope.monstarx.app/about
-- Programmes: https://africaofhope.monstarx.app/programmes
-- Admissions: https://africaofhope.monstarx.app/admissions
-- Term dates: https://africaofhope.monstarx.app/term-dates
-- Verify a certificate: https://africaofhope.monstarx.app/verify
-- Donate: https://africaofhope.monstarx.app/donate
-- Transparency reports: https://africaofhope.monstarx.app/transparency
-- Our team: https://africaofhope.monstarx.app/team
-- Blog: https://africaofhope.monstarx.app/blog
-- School policies: https://africaofhope.monstarx.app/policies
-- Campus life: https://africaofhope.monstarx.app/campus-life
+- Home: https://africaofhopelr.org/
+- About: https://africaofhopelr.org/about
+- Programmes: https://africaofhopelr.org/programmes
+- Admissions: https://africaofhopelr.org/admissions
+- Term dates: https://africaofhopelr.org/term-dates
+- Verify a certificate: https://africaofhopelr.org/verify
+- Donate: https://africaofhopelr.org/donate
+- Transparency reports: https://africaofhopelr.org/transparency
+- Our team: https://africaofhopelr.org/team
+- Blog: https://africaofhopelr.org/blog
+- School policies: https://africaofhopelr.org/policies
+- Campus life: https://africaofhopelr.org/campus-life
 
 ## What it costs
 
@@ -22,7 +22,7 @@ Tuition is sponsored. The only fixed charge is a one-time registration package: 
 ## How certificate verification works
 
 1. Find the unique serial number printed on the certificate (or scan its QR code).
-2. Enter the serial number in the verification box on the Verify page (https://africaofhope.monstarx.app/verify).
+2. Enter the serial number in the verification box on the Verify page (https://africaofhopelr.org/verify).
 3. A valid result shows the holder's name, programme, completion date and status; revoked or unknown serials are reported as not valid.
 
 ## Questions and answers
