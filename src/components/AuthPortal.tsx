@@ -296,10 +296,9 @@ function RememberMe({ checked, onChange }: { checked: boolean; onChange: (value:
 // ── Sign in ───────────────────────────────────────────────────────────────────
 
 function SignInForm({
-  onForgot, onVerify, onRegister,
+  onForgot, onRegister,
 }: {
   onForgot: (email: string) => void;
-  onVerify: () => void;
   onRegister: () => void;
 }) {
   const { state, login } = useApp();
@@ -379,10 +378,7 @@ function SignInForm({
         <span className="h-px flex-1 bg-slate-200" /> or <span className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        <Button type="button" variant="outline" onClick={onVerify} className="h-11 rounded-xl border-slate-200">
-          <ShieldCheck className="h-4 w-4 text-emerald-700" /> Verify certificate
-        </Button>
+      <div className="grid grid-cols-1 gap-2.5">
         <Button
           type="button"
           variant="outline"
@@ -1148,7 +1144,6 @@ export default function AuthPortal({
                   {tab === "signin" ? (
                     <SignInForm
                       onForgot={(email) => { setResetEmail(email); setResetOpen(true); }}
-                      onVerify={() => setVerifyOpen(true)}
                       onRegister={() => setTab("register")}
                     />
                   ) : (
