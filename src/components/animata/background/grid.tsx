@@ -44,7 +44,7 @@ export default function Grid({
   children,
   className,
   style = {
-    backgroundColor: "white",
+    backgroundColor: "var(--aoh-canvas, #f2ebd6)",
   },
 }: GridProps) {
   return (

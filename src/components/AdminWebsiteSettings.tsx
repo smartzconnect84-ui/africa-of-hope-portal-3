@@ -219,7 +219,7 @@ export default function AdminWebsiteSettings() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5">
+      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-slate-200 bg-[#f2ebd6] p-1.5">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -429,7 +429,7 @@ export default function AdminWebsiteSettings() {
                   },
                 });
               return (
-                <div key={key} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div key={key} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#fdf9ec] px-4 py-3">
                   <GripVertical className="h-4 w-4 text-slate-300" />
                   <span className={`flex-1 text-sm font-semibold ${hidden ? "text-slate-400" : "text-slate-800"}`}>
                     {SECTION_LABELS[key]}
