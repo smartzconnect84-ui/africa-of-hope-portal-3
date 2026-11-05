@@ -12,7 +12,5 @@ Disallow: /student
 Disallow: /instructor
 Disallow: /staff
 Disallow: /newsletter/
-Disallow: /*?*
-Disallow: /.env
 
-Sitemap: https://africaofhopelr.org/sitemap.xml
+Sitemap: https://africaofhope.monstarx.app/sitemap.xml
