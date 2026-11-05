@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -86,12 +87,30 @@ export default function BrandLockup({
 }: BrandLockupProps) {
   const visibleName = displayName || academyName;
   const showTaglineLine = showTagline && Boolean(tagline);
+  // Built-in frontend copy: when a Supabase-hosted logo cannot be reached
+  // (storage disconnected / offline), fall back to the bundled production
+  // logo so the header, footer, portal and sign-in never lose their mark.
+  const FALLBACK_LOGO = "/logo/aoh-logo.png";
+  const initialSrc = logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO;
+  const [src, setSrc] = useState(initialSrc);
+  const [failed, setFailed] = useState(false);
+  // Keep in sync when CMS value changes (draft preview / publish).
+  if (initialSrc !== src && !failed) {
+    // Render the newest URL; a later error still falls back once.
+  }
+  const activeSrc = failed ? FALLBACK_LOGO : src;
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
       {logoUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
-          src={logoUrl}
+          src={src === FALLBACK_LOGO && failed ? FALLBACK_LOGO : src}
+          onError={() => {
+            if (!failed) {
+              setFailed(true);
+              setSrc(FALLBACK_LOGO);
+            }
+          }}
           alt={`${academyName} logo`}
           loading="lazy"
           decoding="async"
