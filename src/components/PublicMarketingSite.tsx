@@ -7,6 +7,14 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { AuthTab } from "./AuthPortal";
+import { useLocation, useNavigate } from "react-router";
+import {
+  legacyHashToPath,
+  normalizePublicHref,
+  parsePublicPath,
+  viewToPath,
+  type PublicView,
+} from "@/lib/publicRoutes";
 import HeroSlider from "./HeroSlider";
 import { HOME_SECTION_REGISTRY } from "./home/registry";
 import ProgrammesCarousel from "./home/ProgrammesCarousel";
@@ -44,24 +52,27 @@ import { isPublicPageEnabled } from "@/lib/publicPages";
 import { format } from "date-fns";
 
 function pageKeyForHref(href: string): string | null {
-  const h = href.trim().toLowerCase();
-  if (/^#(home)?\/?$/.test(h) || h === "#") return "home";
-  if (/^#(about|about-us|who-we-are)\/?$/.test(h)) return "about";
-  if (/^#(programmes|programs)\/?$/.test(h)) return "programmes";
-  if (/^#(admissions|apply|apply-online)\/?$/.test(h)) return "admissions";
-  if (/^#term-dates\/?$/.test(h)) return "term-dates";
-  if (/^#\/?(team|our-team)\/?$/.test(h)) return "team";
-  if (/^#blog(\/.*)?$/.test(h)) return "blog";
-  if (/^#policies\/?$/.test(h)) return "policies";
-  if (/^#\/?transparency\/?$/.test(h)) return "transparency";
-  if (/^#donate\/?$/.test(h)) return "donate";
-  if (/^#support(-.*)?$/.test(h)) return "support";
-  if (/^#\/?verify(\?.*)?$/.test(h)) return "verify";
-  if (/^#cookies\/?$/.test(h)) return "cookies";
+  const h = normalizePublicHref(href).toLowerCase();
+  if (h === "/" || h.startsWith("/?section=")) {
+    if (h === "/") return "home";
+    return "support";
+  }
+  if (h === "/about" || h === "/about-us" || h === "/who-we-are") return "about";
+  if (h === "/programmes" || h === "/programs") return "programmes";
+  if (h === "/admissions" || h === "/apply" || h === "/apply-online") return "admissions";
+  if (h.startsWith("/term-dates")) return "term-dates";
+  if (h.startsWith("/team") || h.startsWith("/our-team")) return "team";
+  if (h.startsWith("/blog")) return "blog";
+  if (h.startsWith("/policies")) return "policies";
+  if (h.startsWith("/transparency")) return "transparency";
+  if (h.startsWith("/donate")) return "donate";
+  if (h === "/" || h.startsWith("/?section=support")) return "support";
+  if (h.startsWith("/verify")) return "verify";
+  if (h.startsWith("/cookies")) return "cookies";
   return null;
 }
 
-function viewPageKey(view: View): string | null {
+function viewPageKey(view: PublicView): string | null {
   switch (view.type) {
     case "programmes": return "programmes";
     case "admissions": return "admissions";
@@ -85,98 +96,51 @@ function PageUnavailable({ label }: { label: string }) {
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Unavailable</p>
       <h1 className="mt-3 text-3xl font-bold text-emerald-950">This {label} page is currently unavailable.</h1>
       <p className="mt-3 text-sm text-slate-600">It has been hidden by the site administrator. Please check back later or return home.</p>
-      <a href="#home" className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white hover:bg-emerald-800">Back to home</a>
+      <a href="/" className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white hover:bg-emerald-800">Back to home</a>
     </section>
   );
 }
 
 const NAV_LINKS: [string, string][] = [
-  ["#home", "Home"],
-  ["#about", "About"],
-  ["#team", "Team"],
-  ["#programmes", "Programmes"],
-  ["#term-dates", "Term dates"],
-  ["#blog", "Blog"],
-  ["#campus-life", "Campus Life"],
-  ["#policies", "Policies"],
-  ["#donate", "Donate"],
-  ["#support", "Get involved"],
-  ["#verify", "Verify"],
-  ["#admissions", "Admissions"],
+  ["/", "Home"],
+  ["/about", "About"],
+  ["/team", "Team"],
+  ["/programmes", "Programmes"],
+  ["/term-dates", "Term dates"],
+  ["/blog", "Blog"],
+  ["/campus-life", "Campus Life"],
+  ["/policies", "Policies"],
+  ["/donate", "Donate"],
+  ["/?section=support", "Get involved"],
+  ["/verify", "Verify"],
+  ["/admissions", "Admissions"],
 ];
 
-const PROGRAMMES_RE = /^#(programmes|programs)$/i;
-const TERM_DATES_RE = /^#term-dates$/i;
-const POLICIES_RE = /^#policies$/i;
-const COOKIES_RE = /^#cookies$/i;
-const DONATE_RE = /^#donate$/i;
-const ADMISSIONS_RE = /^#(admissions|apply|apply-online)$/i;
-const CAMPUS_RE = /^#campus-life$/i;
-const HOME_RE = /^#(home)?$/i;
-const BLOG_RE = /^#blog$/i;
-// "About" is now its own full page (organisation profile). It replaced the
-// former #about anchor jump, so the default navbar "About" link opens it.
-const ABOUT_RE = /^#(about|about-us|who-we-are)$/i;
+const isHomePath = (href: string) => {
+  const n = normalizePublicHref(href);
+  return n === "/" || n.startsWith("/?section=");
+};
+const PROGRAMMES_RE = /^\/(programmes|programs)\/?$/i;
+const TERM_DATES_RE = /^\/term-dates\/?$/i;
+const POLICIES_RE = /^\/policies\/?$/i;
+const COOKIES_RE = /^\/cookies\/?$/i;
+const DONATE_RE = /^\/donate\/?$/i;
+const ADMISSIONS_RE = /^\/(admissions|apply|apply-online)\/?$/i;
+const CAMPUS_RE = /^\/campus-life\/?$/i;
+const HOME_RE = /^\/(\?section=.*)?$/i;
+const BLOG_RE = /^\/blog\/?$/i;
+// "About" is now its own full page (organisation profile). The default navbar
+// "About" link opens it at the clean /about path.
+const ABOUT_RE = /^\/(about|about-us|who-we-are)\/?$/i;
 
-type View =
-  | { type: "home"; anchor: string | null }
-  | { type: "programmes" }
-  | { type: "term-dates" }
-  | { type: "admissions" }
-  | { type: "campus" }
-  | { type: "policies" }
-  | { type: "transparency" }
-  | { type: "cookies" }
-  | { type: "donate" }
-  | { type: "blog" }
-  | { type: "about" }
-  | { type: "team" }
-  | { type: "newsletter"; action: "confirm" | "unsubscribe"; params: string }
-  | { type: "verify"; serial: string | null }
-  | { type: "blogPost"; slug: string };
+type View = PublicView;
 
+/** Back-compat: old hash (`#about`, `#/verify?serial=X`) → clean path. */
 function parseHash(hash: string): View {
-  const h = hash || "#home";
-  const newsletter = h.match(/^#newsletter\/(confirm|unsubscribe)\?(.*)$/i);
-  if (newsletter) return { type: "newsletter", action: newsletter[1].toLowerCase() as "confirm" | "unsubscribe", params: newsletter[2] };
-  // Certificate verification: `#/verify?serial=AOH-…` (and the plain `#verify`
-  // nav link) open the public verification page, so a printed QR code always
-  // resolves to a real page instead of silently landing on Home.
-  const verify = h.match(/^#\/?verify(?:\?(.*))?$/i);
-  if (verify) {
-    let serial: string | null = null;
-    if (verify[1]) {
-      const params = new URLSearchParams(verify[1]);
-      serial = params.get("serial") || params.get("id") || params.get("certificate") || null;
-    }
-    return { type: "verify", serial };
-  }
-  if (PROGRAMMES_RE.test(h)) return { type: "programmes" };
-  if (TERM_DATES_RE.test(h)) return { type: "term-dates" };
-  if (POLICIES_RE.test(h)) return { type: "policies" };
-  if (/^#\/?transparency$/i.test(h)) return { type: "transparency" };
-  if (COOKIES_RE.test(h)) return { type: "cookies" };
-  if (DONATE_RE.test(h)) return { type: "donate" };
-  if (BLOG_RE.test(h)) return { type: "blog" };
-  if (ABOUT_RE.test(h)) return { type: "about" };
-  if (/^#\/?(team|our-team)$/i.test(h)) return { type: "team" };
-  if (/^#blog\//i.test(h)) {
-    const raw = h.replace(/^#blog\//i, "");
-    let slug = raw;
-    try {
-      slug = decodeURIComponent(raw);
-    } catch {
-      // Malformed percent-encoding — fall back to the raw slug rather than crash.
-    }
-    return { type: "blogPost", slug };
-  }
-  if (ADMISSIONS_RE.test(h)) return { type: "admissions" };
-  if (CAMPUS_RE.test(h)) return { type: "campus" };
-  // Donate / Volunteer / Partner / Join our staff links open the support form on that tab.
-  if (/^#support-(donation|volunteer|partner|staff)$/i.test(h)) return { type: "home", anchor: "support" };
-  if (HOME_RE.test(h)) return { type: "home", anchor: null };
-  // Any other anchor (#about, #impact, #verify, #admissions, #contact, #summary…) stays on Home and scrolls there.
-  return { type: "home", anchor: h.replace(/^#/, "") };
+  const mapped = legacyHashToPath(hash || "#");
+  if (!mapped) return { type: "home", anchor: null };
+  const [path, query] = mapped.split("?");
+  return parsePublicPath(path || "/", query ? `?${query}` : "");
 }
 
 /**
