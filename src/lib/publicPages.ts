@@ -96,7 +96,7 @@ export const PUBLIC_PAGE_DEFS: PublicPageDef[] = [
       title: "Term dates & intake countdown.",
       eyebrow: "Academic calendar",
       subtitle: "Online and onsite training calendar.",
-      body: "Our school offers both online and onsite training. Online training enrollment is open to any student anytime once they complete the requirements. Onsite training dates are loading and will be updated soon.",
+      body: "Our school offers both online and onsite training. Online training enrolment is open to every student at any time once the admission requirements are met. Onsite cohorts meet at Boystown Junction, Lower Margibi; the next onsite intake dates are published on the Term dates page.",
       image: "",
     },
   },

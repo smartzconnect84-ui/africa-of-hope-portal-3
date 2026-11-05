@@ -100,3 +100,19 @@ export const VERIFY_STEPS = [
 
 export const SEO_SUMMARY =
   "AFRICA OF HOPE School of Professional Studies at Boystown Junction, Lower Margibi, Liberia offers practical two-week to six-month certificate programmes in trades, technology, business and hospitality for high-school leavers and working adults. Tuition is sponsored — learners pay only a registration package of US$5 to US$45. Strictly online students can enrol anytime; on-site cohorts follow the published term calendar. Every certificate carries a unique serial number that employers can check live on the Verify page. The school does not offer degree programmes and never issues certificates without completed coursework.";
+
+/**
+ * Inserts the Google Search Console ownership token when configured.
+ * Set VITE_GOOGLE_SITE_VERIFICATION in the environment (or paste the
+ * token into the commented meta tag in index.html) to activate.
+ */
+export function applySearchConsoleVerification(): void {
+  try {
+    const token = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_GOOGLE_SITE_VERIFICATION;
+    if (!token || document.querySelector('meta[name="google-site-verification"]')) return;
+    const meta = document.createElement("meta");
+    meta.name = "google-site-verification";
+    meta.content = token;
+    document.head.appendChild(meta);
+  } catch { /* verification is optional */ }
+}

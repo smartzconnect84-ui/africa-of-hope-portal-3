@@ -213,7 +213,7 @@ export default function BackendStatusCard() {
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed">
                     This app cannot create Storage buckets itself. Open the{" "}
-                    <a className="font-semibold underline" href={sqlEditorUrl} target="_blank" rel="noreferrer">
+                    <a className="font-semibold underline" href={sqlEditorUrl} target="_blank" rel="noopener noreferrer">
                       Supabase SQL editor
                     </a>
                     , paste this script and run it, then press Re-check. It does not touch system_settings, so the earlier column error will not roll the buckets back.

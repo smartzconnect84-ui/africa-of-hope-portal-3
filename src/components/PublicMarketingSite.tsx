@@ -187,6 +187,32 @@ function parseHash(hash: string): View {
 function initialHash(): string {
   if (typeof window === "undefined") return "#home";
   if (window.location.hash) return window.location.hash;
+  // Real crawlable paths (see sitemap.xml) resolve into the matching view
+  // so a search result or typed URL always lands on real content.
+  const path = window.location.pathname.replace(/\/+$/, "").toLowerCase();
+  const pathMap: Record<string, string> = {
+    "/about": "#about",
+    "/programmes": "#programmes",
+    "/programs": "#programmes",
+    "/admissions": "#admissions",
+    "/apply": "#admissions",
+    "/term-dates": "#term-dates",
+    "/verify": "#/verify",
+    "/donate": "#donate",
+    "/transparency": "#transparency",
+    "/team": "#team",
+    "/blog": "#blog",
+    "/policies": "#policies",
+    "/campus-life": "#campus-life",
+    "/cookies": "#cookies",
+  };
+  if (path && pathMap[path]) {
+    const serial = new URLSearchParams(window.location.search).get("serial");
+    if (path === "/verify" && serial) return `#/verify?serial=${encodeURIComponent(serial)}`;
+    const slug = /^\/blog\/(.+)$/i.exec(window.location.pathname)?.[1];
+    if (path.startsWith("/blog/") && slug) return `#blog/${slug}`;
+    return pathMap[path];
+  }
   if (/\/verify\/?$/i.test(window.location.pathname)) {
     const serial = new URLSearchParams(window.location.search).get("serial");
     return serial ? `#/verify?serial=${encodeURIComponent(serial)}` : "#/verify";

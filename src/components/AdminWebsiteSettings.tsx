@@ -303,7 +303,7 @@ export default function AdminWebsiteSettings() {
               <Field
                 label="Public verification address"
                 value={cert.verificationBaseUrl}
-                placeholder="https://africaofhopelr.org/verify"
+                placeholder="https://africaofhope.monstarx.app/verify"
                 onChange={(v) => patchCert({ verificationBaseUrl: v })}
               />
               <p className="mt-1 text-xs text-slate-500">

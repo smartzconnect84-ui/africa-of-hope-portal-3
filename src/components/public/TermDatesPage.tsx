@@ -56,7 +56,7 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
             transition={{ duration: 0.5, delay: 0.16 }}
             className="mt-4 max-w-2xl text-sm leading-6 text-emerald-100/90 sm:text-base"
           >
-            Our school offers both online and onsite training. Online training enrollment is open to any student anytime once they complete the requirements. Onsite training dates are loading and will be updated soon.
+            Our school offers both online and onsite training. Online training enrolment is open to every student at any time once the admission requirements are met — pick your 3 training days and begin. Onsite cohorts meet at Boystown Junction, Lower Margibi; the next onsite intake dates are published below, or contact us on +231776679963 to reserve a seat.
           </motion.p>
           {next && (
             <div className="mt-8 max-w-xl rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md" role="timer" aria-label={`Countdown to ${next.label}`}>
@@ -97,8 +97,8 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
             <p className="mt-2 text-sm leading-6 text-slate-600">Strictly online students can enrol in their selected course anytime — no waiting for the general school opening. Attend within your selected training days, complete the course within its duration, and your certificate is issued upon completion.</p>
           </div>
           <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-900/10">
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Onsite training — coming soon</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Onsite training dates are loading and will be updated soon. Check back here or contact us for the next onsite intake.</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Onsite training — published intakes below</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Onsite cohorts meet at Boystown Junction, Lower Margibi. The next onsite intake dates are listed on this page — online students can enrol at any time. Contact us on +231776679963 to reserve a seat.</p>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
