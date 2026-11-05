@@ -20,7 +20,6 @@
     "watch:errors": "node dala-internal-watch-build-errors.js",
     "preview:dev": "concurrently \"npm run watch:errors\""
   },
-  "packageManager": "bun@1.2.22",
   "dependencies": {
     "@capacitor/core": "^8.5.3",
     "@dnd-kit/core": "^6.3.1",
