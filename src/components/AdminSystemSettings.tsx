@@ -139,7 +139,8 @@ export default function AdminSystemSettings() {
     setSaving(true);
     try {
       const error = await updateSystemSettings(draft);
-      if (!error) toast.success("System settings saved");
+      if (error) toast.error(error);
+      else toast.success("System settings saved");
     } catch {
       toast.error("Settings could not be saved. Check your connection and try again.");
     } finally {

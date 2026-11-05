@@ -374,7 +374,7 @@ function AddStaffDialog({
   onOpenChange: (open: boolean) => void;
   isSuperAdmin: boolean;
 }) {
-  const { adminUsers } = useApp();
+  const { state, adminUsers } = useApp();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -399,6 +399,16 @@ function AddStaffDialog({
       toast.error("Name and email are required.");
       return;
     }
+    const normalized = email.trim().toLowerCase();
+    const clash = state.users.find((u) => u.email.trim().toLowerCase() === normalized);
+    if (clash) {
+      toast.error(`An account with this email already exists (${clash.role}). One email can only be used for one account (User, Admin or Staff) — ask the holder to sign in instead. Email changes only at the user's request via the school office.`);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
     setSubmitting(true);
     const err = await adminUsers("create", {
       name: name.trim(),
@@ -420,7 +430,7 @@ function AddStaffDialog({
       <DialogContent className="max-w-lg" data-component-id="add-staff-close">
         <DialogHeader>
           <DialogTitle>Add staff member</DialogTitle>
-          <DialogDescription>Create a staff account and assign a role.</DialogDescription>
+          <DialogDescription>Create a staff account and assign a role. One email = one account (User, Admin or Staff). Email addresses can only be changed at the user's request via the school office.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -431,6 +441,7 @@ function AddStaffDialog({
             <div>
               <Label>Email</Label>
               <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" data-component-id="add-staff-email" />
+              <p className="mt-1 text-xs text-slate-500">One email = one account across User, Admin and Staff.</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

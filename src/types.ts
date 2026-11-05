@@ -330,6 +330,7 @@ export interface WebsiteSettings {
   aboutPage?: import('./data/publicPresentation').AboutContent;
   presentation?: { font: string; iconWeight: string };
   pwa?: typeof import('./data/publicPresentation').DEFAULT_PWA;
+  campusLife?: import('./data/publicPresentation').CampusLifeSettings;
   publicLayout?: string[];
   /** Records the owner-requested logo replacement; later CMS edits stay independent. */
   brandRevision?: number;

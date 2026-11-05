@@ -1,5 +1,17 @@
 import type { Plugin } from "vite";
-import sharp from "sharp";
+
+// Sharp is loaded lazily inside the helpers so a missing/slow native
+// binding on Vercel never crashes the Vite import graph (exit 2).
+// Every call site goes through getSharp() and generateBundle already
+// catches failures and continues the build.
+let sharpInstance: any = null;
+async function getSharp(): Promise<any> {
+  if (!sharpInstance) {
+    const mod = await import("sharp");
+    sharpInstance = (mod as any).default ?? mod;
+  }
+  return sharpInstance;
+}
 
 // Permanent owner-supplied source. Production emits local files so installed
 // identity and the launch screen do not depend on third-party image hosting.
@@ -11,7 +23,7 @@ async function keyOutBlackBackground(input: Buffer): Promise<Buffer> {
   // itself — CSS cannot remove a background baked into the file.
   // Dark-green figures are preserved because only pixels dark on ALL channels
   // are keyed (green figures have a strong green channel).
-  const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = await (await getSharp())(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const TH = 32;
   const FEATHER = 22;
   for (let i = 0; i < data.length; i += 4) {
@@ -22,7 +34,7 @@ async function keyOutBlackBackground(input: Buffer): Promise<Buffer> {
   }
   // Trim the now-transparent margins so the mark renders larger in the same
   // slot without shifting nearby nav links, cards or text.
-  return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+  return (await getSharp())(data, { raw: { width: info.width, height: info.height, channels: 4 } })
     .trim({ threshold: 8 })
     .png()
     .toBuffer();
@@ -33,17 +45,17 @@ export const createBrandAssets = () => pending ??= (async () => {
     const response = await fetch(SOURCE, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error(`Official logo download failed (${response.status}). Retry the build; no placeholder icon will be shipped.`);
     const original = Buffer.from(await response.arrayBuffer());
-    const metadata = await sharp(original).metadata();
+    const metadata = await (await getSharp())(original).metadata();
     if (!metadata.width || !metadata.height) throw new Error("Official logo is not a valid image.");
     const result = new Map<string, Buffer>();
     const cleaned = await keyOutBlackBackground(original).catch(() => original);
-    result.set("logo/aoh-logo.png", await sharp(cleaned).png().toBuffer());
+    result.set("logo/aoh-logo.png", await (await getSharp())(cleaned).png().toBuffer());
     const square = async (size: number, maskable = false) => {
       // Maskable content fits inside a square whose corners lie within the
       // central 80%-diameter safe circle. No part of the mark is cropped.
       const content = maskable ? Math.floor(size * 0.56) : Math.floor(size * 0.92);
-      const image = await sharp(cleaned).resize(content, content, { fit: "contain", background: "#ffffff00" }).png().toBuffer();
-      return sharp({ create: { width: size, height: size, channels: 4, background: "#ffffff" } })
+      const image = await (await getSharp())(cleaned).resize(content, content, { fit: "contain", background: "#ffffff00" }).png().toBuffer();
+      return (await getSharp())({ create: { width: size, height: size, channels: 4, background: "#ffffff" } })
         .composite([{ input: image, gravity: "centre" }]).png().toBuffer();
     };
     for (const size of [32, 180, 192, 512]) {
@@ -86,7 +98,13 @@ export default function brandAssets(): Plugin {
       });
     },
     async generateBundle() {
-      for (const [fileName, source] of await createBrandAssets()) this.emitFile({ type: "asset", fileName, source });
+      try {
+        for (const [fileName, source] of await createBrandAssets()) this.emitFile({ type: "asset", fileName, source });
+      } catch (error) {
+        // Vercel/production-safe: a blocked logo download (no network,
+        // fetch failure) must never fail `bun run build` with exit 2.
+        this.warn(`Official brand assets unavailable; continuing without regenerated logo files. ${error instanceof Error ? error.message : String(error)}`);
+      }
     },
   };
 }

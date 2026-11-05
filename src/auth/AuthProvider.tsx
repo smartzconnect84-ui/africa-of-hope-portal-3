@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Supabase hides existing accounts by returning a user with no identities.
       // Enforce one account per email: never create a duplicate, send them to sign in.
       if (data.user && (data.user.identities ?? []).length === 0) {
-        return { error: "An account with this email already exists. Sign in instead.", needsConfirmation: false };
+        return { error: "An account with this email already exists. One email can only be used for one account (User, Admin or Staff) — please sign in instead. To change the email on an existing account, contact the school office at your request.", needsConfirmation: false };
       }
       // A session means confirmation is disabled and the user is signed in.
       if (data.session) {

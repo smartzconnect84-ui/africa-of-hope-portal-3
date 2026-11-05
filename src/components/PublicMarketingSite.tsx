@@ -669,7 +669,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               </OrderedSections>
             </>
           )}
-            </>
+          </>
           );
         })()}
         </motion.main>

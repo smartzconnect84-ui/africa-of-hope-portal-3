@@ -19,6 +19,7 @@ import { programIsPublished, removeDemoPublicData } from "../lib/publicSiteData"
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, type PermissionKey } from "../lib/permissions";
 import { resolveCertificateBranding } from "../lib/certificateBrand";
 import { normalizePublicPages } from "../lib/publicPages";
+import { DEFAULT_CAMPUS_LIFE } from "./publicPresentation";
 
 export type Row = Record<string, unknown>;
 
@@ -228,6 +229,25 @@ export function mergeWebsiteSettings(
   };
   return removeDemoPublicData({
     ...withCertificate,
+    campusLife: {
+      ...DEFAULT_CAMPUS_LIFE,
+      ...((withCertificate as unknown as Record<string, unknown>).campusLife as object | undefined ?? {}),
+      gallery: (Array.isArray((withCertificate as unknown as { campusLife?: { gallery?: unknown } }).campusLife?.gallery)
+        ? (withCertificate as unknown as { campusLife: { gallery: unknown[] } }).campusLife.gallery : [...DEFAULT_CAMPUS_LIFE.gallery]
+      ).map((g, i) => {
+        const item = (g ?? {}) as Partial<import('./publicPresentation').CampusGalleryItem>;
+        return {
+          id: String(item.id || `gallery-${i}`),
+          caption: String(item.caption || `Campus photo ${i + 1}`),
+          tag: String(item.tag || 'Campus'),
+          image: String(item.image || ''),
+        };
+      }).filter((g) => g.image),
+      tabs: {
+        ...DEFAULT_CAMPUS_LIFE.tabs,
+        ...((withCertificate as unknown as { campusLife?: { tabs?: object } }).campusLife?.tabs ?? {}),
+      },
+    },
     pageImages: withCertificate.pageImages ?? {},
     pages: normalizePublicPages(
       (withCertificate as unknown as Record<string, unknown>).pages,

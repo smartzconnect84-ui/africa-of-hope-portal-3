@@ -706,6 +706,7 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
                 <AuthField label="Email" icon={Mail} type="email" autoComplete="email" value={reg.email} onChange={(v) => set("email", v)} placeholder="amina@mail.com" error={errors.email} />
                 <AuthField label="Phone" icon={Phone} type="tel" autoComplete="tel" value={reg.phone} onChange={(v) => set("phone", v)} placeholder="+231 77 000 0000" error={errors.phone} />
               </div>
+              <p className="text-xs text-slate-500">One email = one account (User, Admin or Staff). Email changes only at your request via the school office.</p>
               <AuthField
                 label="Password"
                 icon={Lock}

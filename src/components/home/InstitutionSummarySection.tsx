@@ -1,6 +1,6 @@
 import { ArrowRight, GraduationCap, HeartHandshake, MapPin, Sparkles } from "lucide-react";
 import type { SectionCopy, SystemSettings, WebsiteSettings } from "@/types";
-import { DEFAULT_ABOUT, paragraphText } from "@/data/publicPresentation";
+import { DEFAULT_ABOUT, cleanAboutParagraphs } from "@/data/publicPresentation";
 import { ScrollReveal, StaggerGroup } from "../public/motion";
 import { fadeUpVariants } from "../public/motionConstants";
 import { motion } from "framer-motion";
@@ -25,7 +25,7 @@ export default function InstitutionSummarySection({ w, settings, programsCount }
         <p className="aoh-eyebrow inline-flex items-center gap-1.5 rounded-full border border-transparent bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{headline?.eyebrow}</p>
         <h2 className="mt-4 text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl">{headline?.title}</h2>
         {headline?.subtitle && <p className="mt-3 text-base font-medium leading-7 text-emerald-900">{headline.subtitle}</p>}
-        <div className="mt-4 space-y-4 text-sm leading-7 text-slate-600 sm:text-base">{paragraphText(headline?.body || '').map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div>
+        <div className="mt-4 space-y-4 text-sm leading-7 text-slate-600 sm:text-base">{cleanAboutParagraphs(headline?.body || '').map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div>
         <a href="#about" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-800 underline underline-offset-4">{w.publicCopy['summary.link'] || 'Read our full story'} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
       </ScrollReveal>
       <StaggerGroup className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

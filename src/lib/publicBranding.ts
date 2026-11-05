@@ -35,6 +35,11 @@ export function applyPublicBranding(w: WebsiteSettings) {
     if (!meta) { meta = document.createElement('meta'); meta.name = name; document.head.appendChild(meta); }
     meta.content = pwa.shortName;
   }
+  for (const [name, content] of [['theme-color', pwa.themeColor], ['msapplication-TileColor', pwa.themeColor]] as const) {
+    let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+    if (!meta) { meta = document.createElement('meta'); meta.name = name; document.head.appendChild(meta); }
+    meta.content = content;
+  }
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ image: safeImage(pwa.splashImage), text: pwa.splashText })); } catch { /* Storage is optional. */ }
   restorePublicLaunch();
   if (!('serviceWorker' in navigator)) return;
@@ -43,8 +48,8 @@ export function applyPublicBranding(w: WebsiteSettings) {
   const ports = new Set<MessagePort>();
   const manifest = {
     id: '/', name: pwa.name, short_name: pwa.shortName, description: pwa.description,
-    start_url: '/', scope: '/', display: 'standalone', orientation: 'any',
-    background_color: '#FFFFFF', theme_color: '#16803C', lang: 'en',
+    start_url: '/', scope: '/', display: pwa.display, orientation: pwa.orientation,
+    background_color: pwa.backgroundColor, theme_color: pwa.themeColor, lang: 'en',
     icons: [
       { src: safeImage(pwa.icon192), sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: safeImage(pwa.icon512), sizes: '512x512', type: 'image/png', purpose: 'any' },

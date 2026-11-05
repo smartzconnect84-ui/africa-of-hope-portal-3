@@ -167,6 +167,7 @@ export function SignupPage({
 
             <div aria-live="polite">
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
+              <p className="mt-2 text-xs text-gray-500">One email = one account (User, Admin or Staff). Email changes only at your request via the school office.</p>
             </div>
 
             <button

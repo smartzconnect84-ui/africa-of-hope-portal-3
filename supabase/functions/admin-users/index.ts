@@ -63,7 +63,11 @@ Deno.serve(async (req: Request) => {
       const created = password
         ? await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: name, phone } })
         : await admin.auth.admin.inviteUserByEmail(email, { data: { full_name: name, phone } });
-      if (created.error || !created.data?.user) return json({ error: created.error?.message ?? "Could not create the account" }, 400);
+      if (created.error || !created.data?.user) {
+        const raw = created.error?.message ?? "Could not create the account";
+        const duplicate = /already|exists|registered|taken|duplicate|unique/i.test(raw);
+        return json({ error: duplicate ? "An account with this email already exists. One email can only be used for one account (User, Admin or Staff). Email addresses are changed only at the user's request." : raw }, 400);
+      }
       const userId = created.data.user.id;
       const { data: saved, error: profileError } = await admin.from("profiles")
         .update({ name, full_name: name, email, phone, role, status: "Active", title }).eq("id", userId).select("id").single();

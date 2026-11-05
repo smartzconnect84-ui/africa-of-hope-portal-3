@@ -223,7 +223,6 @@ function PortalAnnouncementTicker({ onOpenBoard }: { onOpenBoard: () => void }) 
   const items = useMemo(() => {
     const now = Date.now();
     return state.announcements.filter((item) => {
-      if ((item.audience ?? "all") === "public") return false;
       if (!isAnnouncementLiveFor(item, currentUser?.role ?? "Student", now)) return false;
       return !dismissedIds.includes(item.id) && (item.title.trim() || item.body.trim());
     });

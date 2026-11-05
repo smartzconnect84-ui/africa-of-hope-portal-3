@@ -46,7 +46,77 @@ export const DEFAULT_PWA = {
   icon192: '/icons/icon-192.png', icon512: '/icons/icon-512.png',
   maskable: '/icons/maskable-512.png', touchIcon: '/icons/apple-touch-icon.png',
   splashImage: '/logo/aoh-logo.png', splashText: 'AFRICA OF HOPE',
+  themeColor: '#16803C', backgroundColor: '#FFFFFF',
+  display: 'standalone' as 'standalone' | 'minimal-ui' | 'browser' | 'fullscreen',
+  orientation: 'any' as 'any' | 'portrait' | 'landscape',
+};
+export interface CampusGalleryItem { id: string; caption: string; tag: string; image: string }
+export interface CampusLifeSettings {
+  enabled: boolean;
+  eyebrow: string; title: string; subtitle: string; body: string;
+  galleryTitle: string; galleryNote: string;
+  gallery: CampusGalleryItem[];
+  tabs: Record<string, boolean>;
+}
+export const CAMPUS_TABS = [
+  { id: 'gallery', label: 'Gallery' },
+  { id: 'events', label: 'Events' },
+  { id: 'careers', label: 'Alumni & Jobs' },
+  { id: 'internship', label: 'Internship' },
+  { id: 'scholarships', label: 'Scholarships' },
+  { id: 'transcripts', label: 'Transcripts' },
+  { id: 'feedback', label: 'Feedback' },
+  { id: 'library', label: 'Library' },
+  { id: 'fees', label: 'Fees & Pay' },
+  { id: 'vacancies', label: 'Vacancies' },
+  { id: 'businesses', label: 'Businesses' },
+];
+export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
+  enabled: true,
+  eyebrow: 'Campus life',
+  title: 'Life at Africa of Hope',
+  subtitle: 'Study, community and careers in one place.',
+  body: 'Explore the gallery, join events, meet alumni, track internships, apply for scholarships and support, request transcripts, share feedback, use the library and pay fees — all from one hub.',
+  galleryTitle: 'Campus gallery',
+  galleryNote: 'Tap any photo to view it larger.',
+  gallery: [],
+  tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true },
 };
 export const DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }
+
+/** Sentences the owner removed via visual edits. Published CMS bodies may still
+ *  contain them (Supabase website settings), so filter them at render time.
+ *  Matching is substring-based to survive curly/straight apostrophe differences. */
+export const REMOVED_ABOUT_PHRASES = [
+  'As a parent organization, AFRICA OF HOPE brings these diverse areas',
+  'We are committed to a people-centered approach',
+  'lasting transformation happens when compassion',
+  'approach places people first',
+  'builds opp',
+  'shapes our broad approach to community',
+  'guided by the belief that when people rece',
+  'School of Professional Studies offers both online',
+  'require more than temporary',
+  'creating pathways through which',
+  'appropriate initiatives and partnerships',
+  'encourage initiatives that help communities',
+  'television, digital media, creative arts',
+  'envisions a future in which more people',
+  'Our future is rooted in a simple belief',
+  'Every meaningful transformation begins with people',
+  'Your time, ideas, skills, resources',
+  'Your support can inspire hope',
+  'we believe unity, compassion',
+  'We remain committed to pursuing our mission with compassi',
+  'was established in 2021 with a commitment',
+];
+export function cleanAboutBody(body: string) {
+  return paragraphText(body || '')
+    .filter((p) => !REMOVED_ABOUT_PHRASES.some((s) => p.includes(s)))
+    .join('\n\n');
+}
+export function cleanAboutParagraphs(body: string) {
+  return paragraphText(cleanAboutBody(body));
+}
 export { resolveIcon };

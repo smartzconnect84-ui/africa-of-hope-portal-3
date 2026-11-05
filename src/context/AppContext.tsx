@@ -395,7 +395,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Supabase hides existing accounts by returning a user with no identities.
         if (data.user && (data.user.identities ?? []).length === 0) {
           return {
-            error: "An account with this email already exists. Sign in instead.",
+            error: "An account with this email already exists. One email can only be used for one account (User, Admin or Staff) — please sign in instead. To change the email on an existing account, contact the school office at your request.",
           };
         }
         if (data.session && data.user) {
