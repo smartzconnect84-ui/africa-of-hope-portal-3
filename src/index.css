@@ -463,6 +463,11 @@ html[data-portal-icons="filled"] .portal-icon {
     animation-play-state: paused;
   }
 
+  .aoh-marquee-paused .marquee-horizontal,
+  .aoh-marquee-paused .marquee-vertical {
+    animation-play-state: paused;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .marquee-horizontal,
     .marquee-vertical {
