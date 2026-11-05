@@ -671,7 +671,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           )}
           </>
           );
-          })()}
+        })()}
         </motion.main>
       </AnimatePresence>
 
