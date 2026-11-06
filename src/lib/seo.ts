@@ -6,7 +6,7 @@
  * per-page head updater (src/lib/publicSeo.ts).
  */
 
-export const CANONICAL_ORIGIN = "https://africaofhope.monstarx.app";
+export const CANONICAL_ORIGIN = "https://africaofhopelr.org";
 
 export const SITE_NAME = "AFRICA OF HOPE School of Professional Studies";
 
@@ -16,8 +16,7 @@ export const SITE_DESCRIPTION =
 export const SITE_KEYWORDS =
   "AFRICA OF HOPE, professional studies Liberia, certificate programmes Liberia, online admissions Liberia, verify certificate Liberia, vocational training Margibi, computer training Liberia";
 
-export const OG_IMAGE =
-  "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+export const OG_IMAGE = "https://africaofhopelr.org/logo/aoh-logo.png";
 
 export const OG_IMAGE_ALT =
   "AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia";
