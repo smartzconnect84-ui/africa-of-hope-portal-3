@@ -115,19 +115,19 @@ html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"
 .aoh-no-zoom img, img.aoh-no-zoom { transform: none !important; scale: 1 !important; }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #f5efe0;
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --card: #fdf9ec;
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
+  --popover: #fdf9ec;
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: #e9e0c6;
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --muted: #ece3c8;
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --accent: #ece3c8;
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
@@ -139,11 +139,11 @@ html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"
   --chart-3: oklch(0.55 0.22 263);
   --chart-4: oklch(0.49 0.22 264);
   --chart-5: oklch(0.42 0.18 266);
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: #efe8d2;
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-primary-foreground: #fdf9ec;
+  --sidebar-accent: #e9e0c6;
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
@@ -468,6 +468,11 @@ html[data-portal-icons="filled"] .portal-icon {
   }
 
   .group\/marquee:hover .marquee-pause-on-hover {
+    animation-play-state: paused;
+  }
+
+  .aoh-marquee-paused .marquee-horizontal,
+  .aoh-marquee-paused .marquee-vertical {
     animation-play-state: paused;
   }
 
@@ -855,3 +860,18 @@ html[data-portal-icons="filled"] .portal-icon {
 .aoh-public[data-visual-mode="dark"] :is(.text-amber-900, .text-amber-800, .text-yellow-900) { color: #fde68a !important; }
 .aoh-public[data-visual-mode="dark"] :is(.border-emerald-900\/20, .border-slate-200, .border-slate-300) { border-color: rgb(255 255 255 / 0.16) !important; }
 .aoh-public[data-visual-mode="dark"] :is(.ring-amber-900\/10, .shadow-lg, .shadow-emerald-900\/10) { box-shadow: 0 8px 24px rgb(0 0 0 / 0.35) !important; }
+
+/* Warm adaptable canvas: no pure-white page backgrounds across public site + portal.
+   Light mode only — dark mode (.dark / data-visual-mode="dark") keeps its deep-green surfaces.
+   Canvas #EFE7D0 (warm sand) + surfaces #FDF9EC (warm ivory) keep emerald/gold branding readable. */
+:root {
+  --aoh-canvas: #efe7d0;
+  --aoh-canvas-soft: #f2ebd6;
+  --aoh-surface: #fdf9ec;
+}
+html:not(.dark) body { background-color: var(--aoh-canvas); }
+html:not(.dark) .aoh-public { background-color: var(--aoh-canvas-soft) !important; }
+html:not(.dark) .aoh-public :is(.bg-white) { background-color: var(--aoh-surface) !important; }
+html:not(.dark) :is(.bg-white) { background-color: var(--aoh-surface); }
+html:not(.dark) :is(.bg-\[\#f6f8f7\], .bg-\[\#fafafa\], .bg-\[\#f8fafc\], .bg-slate-50, .bg-gray-50, .bg-stone-50, .bg-neutral-50) { background-color: var(--aoh-canvas-soft); }
+html:not(.dark) .aoh-public :is(.bg-\[\#f6f8f7\], .bg-\[\#fafafa\], .bg-\[\#f8fafc\], .bg-slate-50, .bg-gray-50, .bg-stone-50, .bg-neutral-50) { background-color: var(--aoh-canvas-soft) !important; }

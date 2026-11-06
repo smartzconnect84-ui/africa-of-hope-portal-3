@@ -4,9 +4,10 @@ import Marquee from '@/components/animata/container/marquee';
 import type { PartnerItem, WebsiteSettings } from '@/types';
 
 /**
- * Live partnership shelf.
- * CMS partners win when saved; otherwise the five supplied partner marks
- * keep the section live so the page never renders empty.
+ * Live partnership shelf — logo-first, no duplication.
+ * CMS partners win when they include a logo; otherwise the five supplied
+ * partner marks keep real logos on screen instead of text-only cards.
+ * A single scrolling row shows each logo once per cycle.
  */
 const SUPPLIED_PARTNERS: PartnerItem[] = [
   {
@@ -41,41 +42,60 @@ const SUPPLIED_PARTNERS: PartnerItem[] = [
   },
 ];
 
-function FlipCard({ partner }: { partner: PartnerItem }) {
+function LogoCard({ partner }: { partner: PartnerItem }) {
+  const [failed, setFailed] = useState(false);
+  const initial = partner.name.trim().charAt(0).toUpperCase() || '•';
   return (
     <div
-      className="aoh-partner-flip group w-60 shrink-0 sm:w-72"
-      tabIndex={0}
-      role="group"
-      aria-label={`${partner.name}${partner.description ? `. ${partner.description}` : ''}`}
+      className="w-56 shrink-0 sm:w-64"
+      title={partner.description ? `${partner.name} — ${partner.description}` : partner.name}
     >
-      <div className="aoh-partner-flip-inner relative h-44 sm:h-48">
-        <div className="aoh-partner-face absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white p-4 text-center shadow-sm">
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-white/20 bg-white p-4 shadow-sm sm:h-36">
+        {!failed && partner.logo ? (
           <img
             src={partner.logo}
             alt={`${partner.name} logo`}
             loading="lazy"
-            className="aoh-logo h-20 w-full sm:h-24"
-            onError={e => { e.currentTarget.style.visibility = 'hidden'; }}
+            decoding="async"
+            className="aoh-logo h-full max-h-24 w-full sm:max-h-28"
+            onError={() => setFailed(true)}
           />
-          <p className="line-clamp-2 text-xs font-bold leading-5 text-emerald-950">{partner.name}</p>
-        </div>
-        <div className="aoh-partner-face aoh-partner-back absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl bg-emerald-950 p-4 text-center text-white">
-          <Briefcase className="h-6 w-6 text-amber-300" aria-hidden="true" />
-          <p className="line-clamp-2 text-xs font-bold leading-5 text-amber-200">{partner.name}</p>
-          {partner.description && (
-            <p className="line-clamp-4 text-[11px] leading-5 text-emerald-100/90">{partner.description}</p>
-          )}
-        </div>
+        ) : (
+          <span
+            aria-hidden="true"
+            className="grid h-16 w-16 place-items-center rounded-full bg-emerald-950 text-2xl font-bold text-amber-300"
+          >
+            {initial}
+          </span>
+        )}
+        <span className="sr-only">{partner.name}</span>
       </div>
     </div>
   );
 }
 
-/** Only published CMS partners are presented; supplied marks fill an empty CMS list. */
+/** CMS logos win; text-only CMS entries never replace real logos. Single row, no duplicates. */
 export default function PartnerShowcase({ w }: { w: WebsiteSettings }) {
-  const saved = useMemo(() => w.partners.filter(p => p.name.trim()), [w.partners]);
-  const partners = saved.length ? saved : SUPPLIED_PARTNERS;
+  const partners = useMemo(() => {
+    const saved = w.partners.filter(p => p.name.trim());
+    const withLogos = saved.filter(p => (p.logo ?? '').trim());
+    const seen = new Set<string>();
+    const deduped = (withLogos.length ? withLogos : saved.length ? saved : SUPPLIED_PARTNERS).filter(p => {
+      const key = p.id || p.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    if (!deduped.length) {
+      return SUPPLIED_PARTNERS;
+    }
+    // If CMS supplied names but no logos, keep real supplied logos on screen.
+    if (withLogos.length === 0 && saved.length > 0) {
+      return SUPPLIED_PARTNERS;
+    }
+    return deduped;
+  }, [w.partners]);
+
   const [paused, setPaused] = useState(false);
   const config = w.partnerShowcase;
 
@@ -95,10 +115,10 @@ export default function PartnerShowcase({ w }: { w: WebsiteSettings }) {
             <p className="mt-2 text-sm leading-6 text-emerald-100/85">{config.description}</p>
           )}
           <p className="mt-2 text-xs leading-5 text-emerald-100/60">
-            Live shelf — scrolling continuously. Hover to pause, hover or focus a card to flip it.
+            Our partners — scrolling continuously. Hover to pause.
           </p>
           <a
-            href="#support-partner"
+            href="/support-partner"
             className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-amber-400/60 px-4 text-sm font-semibold text-amber-200 transition hover:-translate-y-0.5 hover:bg-amber-400 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-300"
           >
             Start a partnership <span aria-hidden="true">→</span>
@@ -115,25 +135,15 @@ export default function PartnerShowcase({ w }: { w: WebsiteSettings }) {
         </button>
       </div>
 
-      <div className={paused ? 'aoh-marquee-paused mt-6 space-y-4' : 'mt-6 space-y-4'}>
+      <div className={paused ? 'aoh-marquee-paused mt-6' : 'mt-6'}>
         <Marquee
-          repeat={3}
+          repeat={2}
           pauseOnHover
           applyMask
           className="overflow-hidden rounded-2xl"
           style={{ ['--duration' as string]: '45s', ['--gap' as string]: '16px' } as React.CSSProperties}
         >
-          {partners.map(p => <FlipCard key={`row-a-${p.id}`} partner={p} />)}
-        </Marquee>
-        <Marquee
-          repeat={3}
-          reverse
-          pauseOnHover
-          applyMask
-          className="overflow-hidden rounded-2xl"
-          style={{ ['--duration' as string]: '55s', ['--gap' as string]: '16px' } as React.CSSProperties}
-        >
-          {[...partners].reverse().map(p => <FlipCard key={`row-b-${p.id}`} partner={p} />)}
+          {partners.map(p => <LogoCard key={p.id} partner={p} />)}
         </Marquee>
       </div>
     </section>

@@ -1,8 +1,16 @@
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /api
+Disallow: /api/
 Disallow: /private
-Disallow: /.env
+Disallow: /portal
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /login
+Disallow: /signin
+Disallow: /student
+Disallow: /instructor
+Disallow: /staff
+Disallow: /newsletter/
 
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://africaofhope.monstarx.app/sitemap.xml

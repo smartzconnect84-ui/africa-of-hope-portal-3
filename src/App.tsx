@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { applyPublicBranding } from './lib/publicBranding';
 import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
 import { initOneSignalClickRouting } from '@/lib/onesignal';
+import { applySearchConsoleVerification } from '@/lib/seo';
 import { initNativeOneSignal } from '@/lib/nativeOneSignal';
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
@@ -158,6 +159,7 @@ function Shell() {
     // Browser PWA: the Web SDK owns push. The two never double-init.
     try { void initNativeOneSignal().catch(() => undefined); } catch { /* best-effort */ }
     initOneSignalClickRouting();
+    applySearchConsoleVerification();
     try {
       const target = takeLaunchPushTarget();
       if (!target) return;

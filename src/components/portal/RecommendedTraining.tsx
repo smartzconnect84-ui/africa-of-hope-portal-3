@@ -71,7 +71,7 @@ export default function RecommendedTraining() {
             <p className="mt-2 text-xs text-slate-500">{m.level} · {m.duration} · {m.format} · Best for: {m.bestFor}</p>
             <div className="mt-3 flex gap-2">
               <Button size="sm" variant="outline" asChild>
-                <a href={m.url} target="_blank" rel="noreferrer">Visit <ArrowUpRight className="ml-1 h-3.5 w-3.5" /></a>
+                <a href={m.url} target="_blank" rel="noopener noreferrer">Visit <ArrowUpRight className="ml-1 h-3.5 w-3.5" /></a>
               </Button>
               <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800" disabled={busy === m.id || imported.includes(m.id)} onClick={() => doImport(m.id)}>
                 <Download className="mr-1.5 h-3.5 w-3.5" />{imported.includes(m.id) ? "Imported" : busy === m.id ? "Importing…" : "Import"}

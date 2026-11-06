@@ -40,7 +40,7 @@ export const DEFAULT_CERTIFICATE_BRANDING: CertificateBranding = {
   presentationLine: "This certificate is proudly presented to",
   completionLine: "in recognition of successfully completing the required training and assessment for",
   awardingLine: "offered by AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES.",
-  websiteUrl: "https://africaofhopelr.org",
+  websiteUrl: "https://africaofhope.monstarx.app",
   contactEmail: "",
   contactPhone: "",
   contactAddress: "",

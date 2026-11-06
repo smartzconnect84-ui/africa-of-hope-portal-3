@@ -16,7 +16,7 @@ import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitive
 import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
-import { copySuppliedBrandAssets } from "../lib/brandSetup";
+import { copySuppliedBrandAssets, builtInBrandAssets } from "../lib/brandSetup";
 import CampusLifeEditor from './CampusLifeEditor';
 import SiteModulesManager from './SiteModulesManager';
 import { FOUNDER_PROFILE } from "../data/teamContent";
@@ -102,18 +102,37 @@ export default function AdminWebsiteSettings() {
   const copyBrand = async () => {
     setCopyingBrand(true);
     try {
-      const { portraitUrl, ...brand } = await copySuppliedBrandAssets();
+      const result = await copySuppliedBrandAssets();
       setDraft((d) => {
         const index = d.team.members.findIndex((member) => member.id === FOUNDER_PROFILE.id || /shedrick.*nungehn/i.test(member.name));
-        const founder = { ...FOUNDER_PROFILE, image: portraitUrl };
-        return { ...d, ...brand, brandRevision: 2, teamRevision: 1, team: { ...d.team, members: index < 0 ? [founder, ...d.team.members] : d.team.members.map((member, i) => i === index ? { ...member, ...founder } : member) } };
+        const founder = { ...FOUNDER_PROFILE, image: result.portraitUrl };
+        return { ...d, logoUrl: result.logoUrl, faviconUrl: result.faviconUrl, logos: { ...d.logos, ...result.logos }, brandRevision: 2, teamRevision: 1, team: { ...d.team, members: index < 0 ? [founder, ...d.team.members] : d.team.members.map((member, i) => i === index ? { ...member, ...founder } : member) } };
       });
       revision.current += 1;
       setDirty(true);
-      toast.success("Assets copied to Supabase. Review the draft, then Publish changes to save these URLs.");
+      if (result.storageUnreachable) {
+        toast.error("Supabase storage could not be reached. The draft now uses the built-in site images so nothing is lost. Reconnect Supabase, then copy again to back them up.");
+      } else if (result.warnings.length) {
+        toast.success("Assets copied to Supabase with notes. Review the draft, then Publish changes to save these URLs.");
+        for (const warning of result.warnings) toast.warning(warning);
+      } else {
+        toast.success("Assets copied to Supabase. Review the draft, then Publish changes to save these URLs.");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not copy brand assets. Nothing has been published.");
     } finally { setCopyingBrand(false); }
+  };
+
+  const useBuiltInBrand = () => {
+    const builtIn = builtInBrandAssets();
+    setDraft((d) => {
+      const index = d.team.members.findIndex((member) => member.id === FOUNDER_PROFILE.id || /shedrick.*nungehn/i.test(member.name));
+      const founder = { ...FOUNDER_PROFILE, image: builtIn.portraitUrl };
+      return { ...d, logoUrl: builtIn.logoUrl, faviconUrl: builtIn.faviconUrl, logos: { ...d.logos, ...builtIn.logos }, brandRevision: 2, teamRevision: 1, team: { ...d.team, members: index < 0 ? [founder, ...d.team.members] : d.team.members.map((member, i) => i === index ? { ...member, ...founder } : member) } };
+    });
+    revision.current += 1;
+    setDirty(true);
+    toast.success("Draft now uses the built-in site images. They work even while Supabase is disconnected. Publish changes to make it live.");
   };
 
   const publish = async () => {
@@ -200,7 +219,7 @@ export default function AdminWebsiteSettings() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5">
+      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-slate-200 bg-[#f2ebd6] p-1.5">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -232,6 +251,7 @@ export default function AdminWebsiteSettings() {
             <p className="text-sm font-semibold text-emerald-950">Owner-supplied logo & founder portrait</p>
             <p className="mt-2 text-sm text-slate-600">Copy the official logo into the default, header, footer, portal, sign-in, certificate, brochure and favicon folders, plus the founder photo into Team storage. Existing files are not deleted. Review the draft before publishing. Install icons and splash use the generated production assets.</p>
             <button type="button" disabled={copyingBrand || saving} onClick={() => void copyBrand()} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-50">{copyingBrand ? "Copying assets…" : "Copy supplied assets to Supabase"}</button>
+            <button type="button" disabled={copyingBrand || saving} onClick={useBuiltInBrand} className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-emerald-800/30 bg-white px-4 text-sm font-semibold text-emerald-900 hover:bg-emerald-50 disabled:opacity-50">Use built-in site images (works offline)</button>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Site / Academy Name" value={draft.academyName} onChange={(v) => patch({ academyName: v })} />
@@ -303,7 +323,7 @@ export default function AdminWebsiteSettings() {
               <Field
                 label="Public verification address"
                 value={cert.verificationBaseUrl}
-                placeholder="https://africaofhopelr.org/verify"
+                placeholder="https://africaofhope.monstarx.app/verify"
                 onChange={(v) => patchCert({ verificationBaseUrl: v })}
               />
               <p className="mt-1 text-xs text-slate-500">
@@ -409,7 +429,7 @@ export default function AdminWebsiteSettings() {
                   },
                 });
               return (
-                <div key={key} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div key={key} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#fdf9ec] px-4 py-3">
                   <GripVertical className="h-4 w-4 text-slate-300" />
                   <span className={`flex-1 text-sm font-semibold ${hidden ? "text-slate-400" : "text-slate-800"}`}>
                     {SECTION_LABELS[key]}
