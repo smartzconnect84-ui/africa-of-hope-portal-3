@@ -17,16 +17,22 @@ export async function copySuppliedBrandAssets(): Promise<{
   logos: NonNullable<WebsiteSettings["logos"]>;
   portraitUrl: string;
 }> {
-  const [logo, favicon, portrait] = await Promise.all([
+  const [logo, favicon] = await Promise.all([
     imageFile("/logo/aoh-logo.png", "aoh-logo.png", "image/png"),
     imageFile("/favicon.png", "favicon.png", "image/png"),
-    imageFile(FOUNDER_PROFILE.image, "shedrick-nungehn.jpeg", "image/jpeg"),
   ]);
   const placements = ["header", "footer", "portal", "auth", "certificate", "brochure"] as const;
   const logoUrl = await uploadSiteAsset("logo", logo);
   const logos: NonNullable<WebsiteSettings["logos"]> = {};
   for (const placement of placements) logos[placement] = await uploadSiteAsset(`logos/${placement}`, logo);
   const faviconUrl = await uploadSiteAsset("favicon", favicon);
-  const portraitUrl = await uploadSiteAsset("team", portrait);
+  let portraitUrl = FOUNDER_PROFILE.image;
+  try {
+    const portrait = await imageFile(FOUNDER_PROFILE.image, "shedrick-nungehn.jpeg", "image/jpeg");
+    portraitUrl = await uploadSiteAsset("team", portrait);
+  } catch {
+    // Keep the approved source URL when the external host blocks browser fetches.
+    // Logo and favicon copying must remain usable even when that optional source is unavailable.
+  }
   return { logoUrl, faviconUrl, logos, portraitUrl };
 }

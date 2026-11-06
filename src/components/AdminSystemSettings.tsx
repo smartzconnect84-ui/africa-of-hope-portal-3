@@ -26,7 +26,7 @@ const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher"];
 
 const TAB = "data-[state=active]:bg-emerald-800 data-[state=active]:text-white";
 const SELECT =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 dark:border-white/20 dark:bg-[#0c1f16] dark:text-emerald-50";
 
 function ToggleRow({
   title, hint, checked, onChange,
