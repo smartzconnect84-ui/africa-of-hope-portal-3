@@ -50,6 +50,7 @@ import { DEFAULT_PRESENTATION } from '@/data/publicPresentation';
 import { useLocale } from "@/lib/locale";
 import { isPublicPageEnabled } from "@/lib/publicPages";
 import { format } from "date-fns";
+import { applyPublicSeo } from "@/lib/publicSeo";
 
 function pageKeyForHref(href: string): string | null {
   const h = normalizePublicHref(href).toLowerCase();
@@ -299,21 +300,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     return () => window.cancelAnimationFrame(id);
   }, [hash, homeAnchor, reduceMotion]);
 
-  // Document title per view.
+  // Keep titles, descriptions, social cards, canonical URLs and page schema in sync with the public view.
   useEffect(() => {
-    const base = displayName || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
-    if (view.type === "programmes") document.title = `Programmes — ${base}`;
-    else if (view.type === "admissions") document.title = `Admissions — ${base}`;
-    else if (view.type === "term-dates") document.title = `Term dates — ${base}`;
-    else if (view.type === "policies") document.title = `School Policies — ${base}`;
-    else if (view.type === "transparency") document.title = `Transparency reports — ${base}`;
-    else if (view.type === "cookies") document.title = `Cookies Policy — ${base}`;
-    else if (view.type === "donate") document.title = `Donate & Support — ${base}`;
-    else if (view.type === "about") document.title = `About AFRICA OF HOPE — ${base}`;
-    else if (view.type === "team") document.title = `Our Team — ${base}`;
-    else if (view.type === "blog" || view.type === "blogPost") document.title = `Blog — ${base}`;
-    else if (view.type === "campus") document.title = `Campus Life — ${base}`;
-    else document.title = base;
+    applyPublicSeo({ view, displayName });
   }, [view, displayName]);
 
   // Animated header shadow once the page scrolls past the hero area.

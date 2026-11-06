@@ -13,4 +13,4 @@ Disallow: /instructor
 Disallow: /staff
 Disallow: /newsletter/
 
-Sitemap: https://africaofhope.monstarx.app/sitemap.xml
+Sitemap: https://africaofhopelr.org/sitemap.xml
