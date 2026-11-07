@@ -1,16 +1,5 @@
+
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /api/
-Disallow: /private
-Disallow: /portal
-Disallow: /dashboard
-Disallow: /auth
-Disallow: /login
-Disallow: /signin
-Disallow: /student
-Disallow: /instructor
-Disallow: /staff
-Disallow: /newsletter/
 
-Sitemap: https://africaofhopelr.org/sitemap.xml
+Sitemap: https://www.africaofhopelr.org/sitemap.xml
