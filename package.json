@@ -9,8 +9,8 @@
   "scripts": {
     "brand:prepare": "node src/build/prepareBrandAssets.mjs || true",
     "dev": "node src/build/prepareBrandAssets.mjs && PORT=3000 vite --host 0.0.0.0",
-    "build": "node src/build/prepareBrandAssets.mjs || true; node scripts/generate-sitemap.mjs || true; vite build",
-    "build:strict": "node src/build/prepareBrandAssets.mjs || true; tsc -b && vite build",
+    "build": "node src/build/prepareBrandAssets.mjs || true; node scripts/generate-sitemap.mjs && vite build",
+    "build:strict": "node src/build/prepareBrandAssets.mjs || true; node scripts/generate-sitemap.mjs && tsc -b && vite build",
     "test": "tsc --noEmit -p tsconfig.tests.json && node --test tests/academicApi.test.ts tests/blogApi.test.ts tests/paymentsApi.test.ts",
     "test:academic:db": "bash supabase/tests/run-academic-contract.sh",
     "typecheck": "tsc --noEmit",

@@ -1,422 +1,265 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-
-  <title>AFRICA OF HOPE School of Professional Studies | Certificates that open doors</title>
-
-  <!-- Primary SEO -->
-  <meta name="description" content="AFRICA OF HOPE in Liberia offers practical certificate programmes with online admissions and verifiable certificates."/>
-  <meta name="author" content="AFRICA OF HOPE"/>
-  <meta name="keywords" content="AFRICA OF HOPE, professional studies Liberia, certificate programmes Liberia, online admissions Liberia, verify certificate Liberia, vocational training Margibi, computer training Liberia"/>
-  <meta name="robots" content="index, follow, max-image-preview:large"/>
-
-  <!-- Canonical URL -->
-  <link rel="canonical" href="https://www.africaofhopelr.org/"/>
-
-  <!-- Brand assets -->
-  <link rel="preconnect" href="https://files.monstarx.app" crossorigin=""/>
-  <link rel="icon" href="/favicon.png" sizes="32x32" type="image/png"/>
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180"/>
-  <link rel="preload" href="/logo/aoh-logo.png" as="image"/>
-
-  <!-- Google Search Console verification -->
-  <!-- Set VITE_GOOGLE_SITE_VERIFICATION in your environment. -->
-  <!-- <meta name="google-site-verification" content="PASTE_GOOGLE_VERIFICATION_TOKEN_HERE"/> -->
-
-  <!-- Theme and PWA -->
-  <meta name="theme-color" content="#16803C"/>
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)"/>
-  <link rel="manifest" href="/manifest.webmanifest"/>
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://www.africaofhopelr.org/"/>
-  <meta property="og:title" content="AFRICA OF HOPE School of Professional Studies"/>
-  <meta property="og:description" content="Practical certificate programmes with mentors and verifiable certificates. Apply online in minutes."/>
-  <meta property="og:image" content="https://www.africaofhopelr.org/logo/aoh-logo.png"/>
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:image:alt" content="AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia"/>
-  <meta property="og:site_name" content="AFRICA OF HOPE"/>
-  <meta property="og:locale" content="en"/>
-
-  <!-- Twitter / X -->
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:url" content="https://www.africaofhopelr.org/"/>
-  <meta name="twitter:title" content="AFRICA OF HOPE School of Professional Studies"/>
-  <meta name="twitter:description" content="Practical certificate programmes with mentors and verifiable certificates."/>
-  <meta name="twitter:image" content="https://www.africaofhopelr.org/logo/aoh-logo.png"/>
-  <meta name="twitter:image:alt" content="AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia"/>
-
-  <!-- Installable app metadata -->
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="AFRICA OF HOPE"/>
-  <meta name="application-name" content="AFRICA OF HOPE"/>
-  <meta name="format-detection" content="telephone=no"/>
-
-  <style>
-    #aoh-splash {
-      position: fixed;
-      inset: 0;
-      z-index: 2147483000;
-      display: grid;
-      place-items: center;
-      background: #ffffff;
-      color: #000000;
-      font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      padding: calc(1.5rem + env(safe-area-inset-top)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
-      transition: opacity 380ms ease, visibility 380ms ease;
-    }
-
-    #aoh-splash[data-hidden="true"] {
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    #aoh-splash .aoh-splash-inner {
-      display: grid;
-      justify-items: center;
-      gap: 1rem;
-      text-align: center;
-      width: 100%;
-    }
-
-    #aoh-splash img {
-      width: clamp(180px, 52vw, 300px);
-      height: auto;
-      max-height: 46vh;
-      object-fit: contain;
-      display: block;
-      margin-inline: auto;
-    }
-
-    #aoh-splash .aoh-splash-name {
-      margin: 0;
-      font-size: clamp(0.78rem, 2.6vw, 0.95rem);
-      font-weight: 800;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: #16803c;
-    }
-
-    @media (min-width: 768px) {
-      #aoh-splash .aoh-splash-inner {
-        gap: 1.25rem;
-      }
-
-      #aoh-splash img {
-        width: clamp(240px, 26vw, 340px);
-        max-height: 48vh;
-      }
-    }
-
-    #aoh-splash .aoh-splash-bar {
-      width: clamp(160px, 42vw, 210px);
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(22, 128, 60, 0.14);
-      overflow: hidden;
-    }
-
-    #aoh-splash .aoh-splash-bar span {
-      display: block;
-      height: 100%;
-      width: 45%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #16803c, #d4af37);
-      animation: aoh-splash-slide 1.15s ease-in-out infinite;
-    }
-
-    @keyframes aoh-splash-slide {
-      0% { transform: translateX(-110%); }
-      100% { transform: translateX(300%); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #aoh-splash {
-        transition: none;
-      }
-
-      #aoh-splash .aoh-splash-bar span {
-        animation: none;
-        width: 100%;
-      }
-    }
-
-    noscript #aoh-splash,
-    #aoh-splash[data-hidden="true"] {
-      display: none;
-    }
-
-    #aoh-seo-static {
-      max-width: 60rem;
-      margin: 0 auto;
-      padding: 2rem 1.25rem 3rem;
-      font-family: ui-sans-serif, system-ui, sans-serif;
-      color: #0f172a;
-    }
-
-    #aoh-seo-static h1 {
-      font-size: 1.75rem;
-      line-height: 1.2;
-      color: #064e2b;
-    }
-
-    #aoh-seo-static h2 {
-      font-size: 1.15rem;
-      margin-top: 1.75rem;
-      color: #064e2b;
-    }
-
-    #aoh-seo-static a {
-      color: #047857;
-    }
-  </style>
-
-  <!-- Educational Organization structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
-    "name": "AFRICA OF HOPE",
-    "alternateName": "AFRICA OF HOPE School of Professional Studies",
-    "description": "AFRICA OF HOPE in Liberia offers practical certificate programmes with online admissions and verifiable certificates.",
-    "url": "https://www.africaofhopelr.org/",
-    "telephone": "+231776679963",
-    "email": "afrohope033@gmail.com",
-    "sameAs": [
-      "https://www.africaofhopelr.org/",
-      "https://wa.me/231776679963"
-    ],
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Boystown Junction",
-      "addressLocality": "Lower Margibi",
-      "addressCountry": "LR"
-    }
+<meta charset="utf-8"/>
+<!-- Brand mark: the official transparent logo (same file as the site header). -->
+<link href="/favicon.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/icons/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/logo/aoh-logo.png" rel="preload" as="image"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<meta content="AFRICA OF HOPE in Liberia offers practical certificate programmes with online admissions and verifiable certificates." name="description"/>
+<meta content="AFRICA OF HOPE" name="author"/>
+<meta content="AFRICA OF HOPE, professional studies Liberia, certificate programmes Liberia, online admissions Liberia, verify certificate Liberia, vocational training Margibi, computer training Liberia" name="keywords"/>
+<meta content="index, follow" name="robots"/>
+<meta content="max-image-preview:large" name="robots"/>
+<link href="https://africaofhopelr.org/" rel="canonical"/>
+<!-- Google Search Console ownership: set VITE_GOOGLE_SITE_VERIFICATION in the
+     environment (or paste the token into this meta tag) to activate. -->
+<!-- <meta content="PASTE_GOOGLE_VERIFICATION_TOKEN_HERE" name="google-site-verification"/> -->
+<!-- Brand green is the browser/PWA chrome colour; installed dark UI uses black. -->
+<meta content="#16803C" name="theme-color"/>
+<meta content="#000000" media="(prefers-color-scheme: dark)" name="theme-color"/>
+<link href="/manifest.webmanifest" rel="manifest"/>
+<!-- Open Graph / Facebook -->
+<meta content="website" property="og:type"/>
+<meta content="https://africaofhopelr.org/" property="og:url"/>
+<meta content="AFRICA OF HOPE School of Professional Studies" property="og:title"/>
+<meta content="Practical certificate programmes with mentors and verifiable certificates. Apply online in minutes." property="og:description"/>
+<meta content="https://africaofhopelr.org/logo/aoh-logo.png" property="og:image"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia" property="og:image:alt"/>
+<meta content="AFRICA OF HOPE" property="og:site_name"/>
+<meta content="en" property="og:locale"/>
+<!-- Twitter -->
+<meta content="summary_large_image" property="twitter:card"/>
+<meta content="https://africaofhopelr.org/" property="twitter:url"/>
+<meta content="AFRICA OF HOPE School of Professional Studies" property="twitter:title"/>
+<meta content="Practical certificate programmes with mentors and verifiable certificates." property="twitter:description"/>
+<meta content="https://africaofhopelr.org/logo/aoh-logo.png" property="twitter:image"/>
+<meta content="AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia" property="twitter:image:alt"/>
+<!-- Installable app metadata -->
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="AFRICA OF HOPE" name="apple-mobile-web-app-title"/>
+<meta content="AFRICA OF HOPE" name="application-name"/>
+<meta content="telephone=no" name="format-detection"/>
+<title>AFRICA OF HOPE School of Professional Studies | Certificates that open doors</title>
+<style>
+  /* Branded launch splash — replaced by the app as soon as React mounts. */
+  #aoh-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    color: #000000;
+    font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: calc(1.5rem + env(safe-area-inset-top)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
+    transition: opacity 380ms ease, visibility 380ms ease;
   }
-  </script>
-
-  <!-- Certificate programmes structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": "Certificate programmes at AFRICA OF HOPE",
-    "itemListElement": [
-      {
-        "@type": "Course",
-        "position": 1,
-        "name": "Computer Studies certificate (Two-Week to Six-Month tracks)",
-        "description": "Practical computer skills with a verifiable certificate. Fully online is 1 hour a day, 3 days a week; fully on-site is 2 hours daily, 2 days a week.",
-        "provider": {
-          "@type": "EducationalOrganization",
-          "name": "AFRICA OF HOPE",
-          "url": "https://www.africaofhopelr.org/"
-        },
-        "offers": {
-          "@type": "Offer",
-          "price": "5",
-          "priceCurrency": "USD",
-          "category": "Registration package"
-        },
-        "hasCourseInstance": {
-          "@type": "CourseInstance",
-          "courseMode": ["online", "onsite"],
-          "courseWorkload": "1 hour a day, 3 days a week (online)"
-        }
-      },
-      {
-        "@type": "Course",
-        "position": 2,
-        "name": "Tailoring and Fashion certificate (Two-Week to Six-Month tracks)",
-        "description": "Hands-on tailoring training with mentor guidance and a verifiable certificate on completion.",
-        "provider": {
-          "@type": "EducationalOrganization",
-          "name": "AFRICA OF HOPE",
-          "url": "https://www.africaofhopelr.org/"
-        },
-        "offers": {
-          "@type": "Offer",
-          "price": "5",
-          "priceCurrency": "USD",
-          "category": "Registration package"
-        },
-        "hasCourseInstance": {
-          "@type": "CourseInstance",
-          "courseMode": ["onsite", "blended"]
-        }
-      },
-      {
-        "@type": "Course",
-        "position": 3,
-        "name": "Catering and Hospitality certificate (Two-Week to Six-Month tracks)",
-        "description": "Practical catering and hospitality skills with a verifiable certificate on completion.",
-        "provider": {
-          "@type": "EducationalOrganization",
-          "name": "AFRICA OF HOPE",
-          "url": "https://www.africaofhopelr.org/"
-        },
-        "offers": {
-          "@type": "Offer",
-          "price": "5",
-          "priceCurrency": "USD",
-          "category": "Registration package"
-        },
-        "hasCourseInstance": {
-          "@type": "CourseInstance",
-          "courseMode": ["onsite", "blended"]
-        }
-      },
-      {
-        "@type": "Course",
-        "position": 4,
-        "name": "Business and Entrepreneurship certificate (Two-Week to Six-Month tracks)",
-        "description": "Business skills for working adults, with online and on-site study options and a verifiable certificate.",
-        "provider": {
-          "@type": "EducationalOrganization",
-          "name": "AFRICA OF HOPE",
-          "url": "https://www.africaofhopelr.org/"
-        },
-        "offers": {
-          "@type": "Offer",
-          "price": "5",
-          "priceCurrency": "USD",
-          "category": "Registration package"
-        },
-        "hasCourseInstance": {
-          "@type": "CourseInstance",
-          "courseMode": ["online", "onsite", "blended"]
-        }
-      }
-    ]
+  #aoh-splash[data-hidden="true"] { opacity: 0; visibility: hidden; }
+  #aoh-splash .aoh-splash-inner { display: grid; justify-items: center; gap: 1rem; text-align: center; width: 100%; }
+  /* Responsive launch logo: large enough to be read at arm's length on a phone,
+     still inside the safe area on 320px screens and landscape phones. */
+  #aoh-splash img {
+    width: clamp(180px, 52vw, 300px);
+    height: auto;
+    max-height: 46vh;
+    object-fit: contain;
+    display: block;
+    margin-inline: auto;
   }
-  </script>
-
-  <!-- FAQ structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What is AFRICA OF HOPE School of Professional Studies?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "AFRICA OF HOPE is a practical training school at Boystown Junction, Lower Margibi, Liberia. It offers short certificate programmes in trades, technology, business and hospitality, with mentors who guide learners from enrolment to graduation."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What courses can I study?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "You can choose two-week, one-month, three-month or six-month certificate tracks, including computer studies, tailoring, catering, electrical work, plumbing, business and more. Fully online study is 1 hour a day, 3 days a week; fully on-site study is 2 hours daily, 2 days a week."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How much does it cost?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Tuition is sponsored, so you only pay a one-time registration package: US$5 for two-week courses, US$10 for one-month courses, US$30 for three-month courses and US$45 for six-month courses. You can reserve a seat with half of the package."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How do admissions work?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Admissions for 2026/2027 are open. Strictly online students can enrol anytime once they meet the requirements — pick your 3 training days, attend within them, finish within the course duration and receive your certificate on completion. Apply online in minutes from the Admissions page."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How can an employer verify my certificate?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Every certificate carries a unique serial number. Enter it on the Verify page and it is checked live against the institutional register. A valid result shows the holder's name, programme and issue date; revoked certificates are reported as revoked."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Who is AFRICA OF HOPE for, and what does it not do?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It is for high-school leavers and working adults in Liberia who want practical, job-ready skills with a verifiable certificate. It does not offer degree programmes, and it never issues a certificate without completed coursework — any credential can be checked on the Verify page."
-        }
-      }
-    ]
+  #aoh-splash .aoh-splash-name {
+    margin: 0;
+    font-size: clamp(0.78rem, 2.6vw, 0.95rem);
+    font-weight: 800;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #16803c;
   }
-  </script>
+  @media (min-width: 768px) {
+    #aoh-splash .aoh-splash-inner { gap: 1.25rem; }
+    #aoh-splash img { width: clamp(240px, 26vw, 340px); max-height: 48vh; }
+  }
+  #aoh-splash .aoh-splash-bar {
+    width: clamp(160px, 42vw, 210px);
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(22, 128, 60, 0.14);
+    overflow: hidden;
+  }
+  #aoh-splash .aoh-splash-bar span {
+    display: block;
+    height: 100%;
+    width: 45%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #16803c, #d4af37);
+    animation: aoh-splash-slide 1.15s ease-in-out infinite;
+  }
+  @keyframes aoh-splash-slide {
+    0% { transform: translateX(-110%); }
+    100% { transform: translateX(300%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #aoh-splash { transition: none; }
+    #aoh-splash .aoh-splash-bar span { animation: none; width: 100%; }
+  }
+  /* Never trap the page behind the splash if the bundle fails to run. */
+  noscript #aoh-splash, #aoh-splash[data-hidden="true"] { display: none; }
+  /* Static first-response copy for crawlers and no-JS readers. Hidden once the app mounts. */
+  #aoh-seo-static { max-width: 60rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; font-family: ui-sans-serif, system-ui, sans-serif; color: #0f172a; }
+  #aoh-seo-static h1 { font-size: 1.75rem; line-height: 1.2; color: #064e2b; }
+  #aoh-seo-static h2 { font-size: 1.15rem; margin-top: 1.75rem; color: #064e2b; }
+  #aoh-seo-static a { color: #047857; }
+</style>
+<script id="genvibe-inspector-loader">if(window.top!==window)document.write('<script src="https://genvibe.pro/inspector-script.js?v=e2b-capture2"><\/script>')</script><script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "name": "AFRICA OF HOPE",
+  "alternateName": "AFRICA OF HOPE School of Professional Studies",
+  "description": "AFRICA OF HOPE in Liberia offers practical certificate programmes with online admissions and verifiable certificates.",
+  "url": "https://africaofhopelr.org/",
+  "telephone": "+231776679963",
+  "email": "afrohope033@gmail.com",
+  "sameAs": [
+    "https://africaofhopelr.org/",
+    "https://wa.me/231776679963"
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Boystown Junction",
+    "addressLocality": "Lower Margibi",
+    "addressCountry": "LR"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Certificate programmes at AFRICA OF HOPE",
+  "itemListElement": [
+    {
+      "@type": "Course",
+      "position": 1,
+      "name": "Computer Studies certificate (Two-Week to Six-Month tracks)",
+      "description": "Practical computer skills with a verifiable certificate. Fully online is 1 hour a day, 3 days a week; fully on-site is 2 hours daily, 2 days a week.",
+      "provider": { "@type": "EducationalOrganization", "name": "AFRICA OF HOPE", "url": "https://africaofhopelr.org/" },
+      "offers": { "@type": "Offer", "price": "5", "priceCurrency": "USD", "category": "Registration package" },
+      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": ["online", "onsite"], "courseWorkload": "1 hour a day, 3 days a week (online)" }
+    },
+    {
+      "@type": "Course",
+      "position": 2,
+      "name": "Tailoring and Fashion certificate (Two-Week to Six-Month tracks)",
+      "description": "Hands-on tailoring training with mentor guidance and a verifiable certificate on completion.",
+      "provider": { "@type": "EducationalOrganization", "name": "AFRICA OF HOPE", "url": "https://africaofhopelr.org/" },
+      "offers": { "@type": "Offer", "price": "5", "priceCurrency": "USD", "category": "Registration package" },
+      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": ["onsite", "blended"] }
+    },
+    {
+      "@type": "Course",
+      "position": 3,
+      "name": "Catering and Hospitality certificate (Two-Week to Six-Month tracks)",
+      "description": "Practical catering and hospitality skills with a verifiable certificate on completion.",
+      "provider": { "@type": "EducationalOrganization", "name": "AFRICA OF HOPE", "url": "https://africaofhopelr.org/" },
+      "offers": { "@type": "Offer", "price": "5", "priceCurrency": "USD", "category": "Registration package" },
+      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": ["onsite", "blended"] }
+    },
+    {
+      "@type": "Course",
+      "position": 4,
+      "name": "Business and Entrepreneurship certificate (Two-Week to Six-Month tracks)",
+      "description": "Business skills for working adults, with online and on-site study options and a verifiable certificate.",
+      "provider": { "@type": "EducationalOrganization", "name": "AFRICA OF HOPE", "url": "https://africaofhopelr.org/" },
+      "offers": { "@type": "Offer", "price": "5", "priceCurrency": "USD", "category": "Registration package" },
+      "hasCourseInstance": { "@type": "CourseInstance", "courseMode": ["online", "onsite", "blended"] }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is AFRICA OF HOPE School of Professional Studies?",
+      "acceptedAnswer": { "@type": "Answer", "text": "AFRICA OF HOPE is a practical training school at Boystown Junction, Lower Margibi, Liberia. It offers short certificate programmes in trades, technology, business and hospitality, with mentors who guide learners from enrolment to graduation." }
+    },
+    {
+      "@type": "Question",
+      "name": "What courses can I study?",
+      "acceptedAnswer": { "@type": "Answer", "text": "You can choose two-week, one-month, three-month or six-month certificate tracks, including computer studies, tailoring, catering, electrical work, plumbing, business and more. Fully online study is 1 hour a day, 3 days a week; fully on-site study is 2 hours daily, 2 days a week." }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does it cost?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Tuition is sponsored, so you only pay a one-time registration package: US$5 for two-week courses, US$10 for one-month courses, US$30 for three-month courses and US$45 for six-month courses. You can reserve a seat with half of the package." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do admissions work?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Admissions for 2026/2027 are open. Strictly online students can enrol anytime once they meet the requirements — pick your 3 training days, attend within them, finish within the course duration and receive your certificate on completion. Apply online in minutes from the Admissions page." }
+    },
+    {
+      "@type": "Question",
+      "name": "How can an employer verify my certificate?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Every certificate carries a unique serial number. Enter it on the Verify page and it is checked live against the institutional register. A valid result shows the holder's name, programme and issue date; revoked certificates are reported as revoked." }
+    },
+    {
+      "@type": "Question",
+      "name": "Who is AFRICA OF HOPE for, and what does it not do?",
+      "acceptedAnswer": { "@type": "Answer", "text": "It is for high-school leavers and working adults in Liberia who want practical, job-ready skills with a verifiable certificate. It does not offer degree programmes, and it never issues a certificate without completed coursework — any credential can be checked on the Verify page." }
+    }
+  ]
+}
+</script>
 </head>
-
 <body>
-  <div id="aoh-splash" role="status" aria-live="polite" aria-label="Loading AFRICA OF HOPE">
-    <div class="aoh-splash-inner">
-      <img src="/logo/aoh-logo.png" alt="AFRICA OF HOPE" width="953" height="631" fetchpriority="high" decoding="async"/>
-      <p class="aoh-splash-name">AFRICA OF HOPE</p>
-      <div class="aoh-splash-bar" aria-hidden="true"><span></span></div>
-    </div>
+<div id="aoh-splash" role="status" aria-live="polite" aria-label="Loading AFRICA OF HOPE">
+  <div class="aoh-splash-inner">
+    <img src="/logo/aoh-logo.png" alt="AFRICA OF HOPE" width="953" height="631" fetchpriority="high" decoding="async"/>
+    <p class="aoh-splash-name">AFRICA OF HOPE</p>
+    <div class="aoh-splash-bar" aria-hidden="true"><span></span></div>
   </div>
-
-  <noscript>
-    <style>#aoh-splash { display: none; }</style>
-  </noscript>
-
-  <div id="root"></div>
-
-  <noscript>
-    <div id="aoh-seo-static">
-      <h1>AFRICA OF HOPE School of Professional Studies — practical certificate programmes in Liberia</h1>
-
-      <p>
-        AFRICA OF HOPE at Boystown Junction, Lower Margibi, Liberia offers practical two-week, one-month, three-month and six-month certificate programmes in trades, technology, business and hospitality for high-school leavers and working adults. Tuition is sponsored — you pay only a registration package of US$5 to US$45. Strictly online students can enrol anytime; on-site cohorts follow the published term calendar. Phone/WhatsApp <a href="tel:+231776679963">+231776679963</a>, email <a href="mailto:afrohope033@gmail.com">afrohope033@gmail.com</a>.
-      </p>
-
-      <h2>Programmes and fees</h2>
-      <p>
-        Two-week courses (US$5), one-month courses (US$10), three-month courses (US$30) and six-month courses (US$45), including computer studies, tailoring, catering, electrical work, plumbing, business and more. Fully online study is 1 hour a day, 3 days a week; fully on-site study is 2 hours daily, 2 days a week. See <a href="https://www.africaofhopelr.org/programmes">Programmes</a> and <a href="https://www.africaofhopelr.org/admissions">Admissions</a>.
-      </p>
-
-      <h2>How certificate verification works</h2>
-      <ol>
-        <li>Find the unique serial number printed on the certificate (or scan its QR code).</li>
-        <li>Enter the serial number on the <a href="https://www.africaofhopelr.org/verify">Verify page</a>.</li>
-        <li>A valid result shows the holder's name, programme, completion date and status; revoked or unknown serials are reported as not valid.</li>
-      </ol>
-
-      <h2>Questions and answers</h2>
-      <p><strong>What courses can I study?</strong> Two-week to six-month certificate tracks with online, on-site and blended options.</p>
-      <p><strong>How much does it cost?</strong> Registration only: US$5 / US$10 / US$30 / US$45 by track; reserve a seat with half.</p>
-      <p><strong>How do admissions work?</strong> Admissions for 2026/2027 are open and online students can enrol anytime — <a href="https://www.africaofhopelr.org/admissions">apply online</a>.</p>
-      <p><strong>Who is it for?</strong> High-school leavers and working adults in Liberia. Degree programmes are not offered.</p>
-
-      <p>
-        <a href="https://www.africaofhopelr.org/about">About</a> ·
-        <a href="https://www.africaofhopelr.org/term-dates">Term dates</a> ·
-        <a href="https://www.africaofhopelr.org/transparency">Transparency</a> ·
-        <a href="https://www.africaofhopelr.org/donate">Donate</a>
-      </p>
-    </div>
-  </noscript>
-
-  <script type="module" src="/src/main.tsx"></script>
-
-  <script>
-    /* Safety net: remove splash if the app bundle never mounts. */
-    window.setTimeout(function () {
-      var splash = document.getElementById("aoh-splash");
-
-      if (splash && !document.querySelector("#root > *")) {
-        splash.remove();
-      }
-    }, 12000);
-  </script>
+</div>
+<noscript><style>#aoh-splash{display:none}</style></noscript>
+<div id="root"></div>
+<noscript>
+  <div id="aoh-seo-static">
+    <h1>AFRICA OF HOPE School of Professional Studies — practical certificate programmes in Liberia</h1>
+    <p>AFRICA OF HOPE at Boystown Junction, Lower Margibi, Liberia offers practical two-week, one-month, three-month and six-month certificate programmes in trades, technology, business and hospitality for high-school leavers and working adults. Tuition is sponsored — you pay only a registration package of US$5 to US$45. Strictly online students can enrol anytime; on-site cohorts follow the published term calendar. Phone/WhatsApp <a href="tel:+231776679963">+231776679963</a>, email <a href="mailto:afrohope033@gmail.com">afrohope033@gmail.com</a>.</p>
+    <h2>Programmes and fees</h2>
+    <p>Two-week courses (US$5), one-month courses (US$10), three-month courses (US$30) and six-month courses (US$45), including computer studies, tailoring, catering, electrical work, plumbing, business and more. Fully online study is 1 hour a day, 3 days a week; fully on-site study is 2 hours daily, 2 days a week. See <a href="https://africaofhopelr.org/programmes">Programmes</a> and <a href="https://africaofhopelr.org/admissions">Admissions</a>.</p>
+    <h2>How certificate verification works</h2>
+    <ol>
+      <li>Find the unique serial number printed on the certificate (or scan its QR code).</li>
+      <li>Enter the serial number on the <a href="https://africaofhopelr.org/verify">Verify page</a>.</li>
+      <li>A valid result shows the holder's name, programme, completion date and status; revoked or unknown serials are reported as not valid.</li>
+    </ol>
+    <h2>Questions and answers</h2>
+    <p><strong>What courses can I study?</strong> Two-week to six-month certificate tracks with online, on-site and blended options.</p>
+    <p><strong>How much does it cost?</strong> Registration only: US$5 / US$10 / US$30 / US$45 by track; reserve a seat with half.</p>
+    <p><strong>How do admissions work?</strong> Admissions for 2026/2027 are open and online students can enrol anytime — <a href="https://africaofhopelr.org/admissions">apply online</a>.</p>
+    <p><strong>Who is it for?</strong> High-school leavers and working adults in Liberia. Degree programmes are not offered.</p>
+    <p><a href="https://africaofhopelr.org/about">About</a> · <a href="https://africaofhopelr.org/term-dates">Term dates</a> · <a href="https://africaofhopelr.org/transparency">Transparency</a> · <a href="https://africaofhopelr.org/donate">Donate</a></p>
+  </div>
+</noscript>
+<script src="/src/main.tsx" type="module"></script>
+<script>
+  /* Safety net: if the app bundle never mounts, remove the launch splash so the
+     static HTML (error copy, noscript content) is never hidden behind it. */
+  window.setTimeout(function () {
+    var splash = document.getElementById("aoh-splash");
+    if (splash && !document.querySelector("#root > *")) splash.remove();
+  }, 12000);
+</script>
 </body>
 </html>
