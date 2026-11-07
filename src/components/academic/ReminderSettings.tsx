@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, BellOff, CalendarClock, Loader2, Smartphone, Wallet, Megaphone, Send } from "lucide-react";
+import { Bell, BellOff, CalendarClock, ClipboardCheck, Loader2, Smartphone, Wallet, Megaphone, Send } from "lucide-react";
 import { useApp, formatCurrency } from "@/context/AppContext";
 import { academicApi } from "@/lib/academics";
 import { useReminderNotifications, type ReminderItem } from "@/lib/pushReminders";
@@ -110,8 +110,9 @@ export default function ReminderSettings() {
   if (!currentUser) return null;
 
   const on = reminders.prefs.enabled && reminders.permission === "granted";
-  const chips: { key: "lessons" | "fees" | "announcements"; label: string; icon: typeof Bell }[] = [
+  const chips: { key: "lessons" | "assignments" | "fees" | "announcements"; label: string; icon: typeof Bell }[] = [
     { key: "lessons", label: "Lesson & quiz due dates", icon: CalendarClock },
+    { key: "assignments", label: "Assignment deadlines", icon: ClipboardCheck },
     { key: "fees", label: "Fee balance deadlines", icon: Wallet },
     { key: "announcements", label: "New announcements", icon: Megaphone },
   ];
