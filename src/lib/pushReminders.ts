@@ -5,9 +5,11 @@ import { isIos, isStandalone } from "@/lib/pwa";
 const BRAND_ICON = "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
 export type ReminderKind = "lesson" | "assignment" | "fee" | "announcement";
 export interface ReminderItem { id: string; kind: ReminderKind; title: string; body: string; dueAt: string; url: string }
-export interface ReminderPrefs { enabled: boolean; lessons: boolean; fees: boolean; announcements: boolean; windowHours: number }
-export const DEFAULT_REMINDER_PREFS: ReminderPrefs = { enabled: false, lessons: true, fees: true, announcements: true, windowHours: 24 };
+export interface ReminderPrefs { enabled: boolean; lessons: boolean; assignments: boolean; fees: boolean; announcements: boolean; windowHours: number }
+export const DEFAULT_REMINDER_PREFS: ReminderPrefs = { enabled: false, lessons: true, assignments: true, fees: true, announcements: true, windowHours: 24 };
 const PREF_PREFIX = "aoh-reminders:prefs:";
+const REMINDER_KINDS = ["lessons", "assignments", "fees", "announcements"] as const;
+type ReminderKindPreference = (typeof REMINDER_KINDS)[number];
 export function loadReminderPrefs(userId?: string): ReminderPrefs {
   try { return userId ? { ...DEFAULT_REMINDER_PREFS, ...JSON.parse(localStorage.getItem(PREF_PREFIX + userId) || "{}") } : DEFAULT_REMINDER_PREFS; }
   catch { return DEFAULT_REMINDER_PREFS; }
@@ -35,7 +37,8 @@ function publicKeyBytes(value: string) {
   return Uint8Array.from(text, c => c.charCodeAt(0));
 }
 export function isReminderDue(item: ReminderItem, prefs: ReminderPrefs, now = Date.now()) {
-  if (!(item.kind === "fee" ? prefs.fees : item.kind === "announcement" ? prefs.announcements : prefs.lessons)) return false;
+  const preference = item.kind === "fee" ? prefs.fees : item.kind === "announcement" ? prefs.announcements : item.kind === "assignment" ? prefs.assignments : prefs.lessons;
+  if (!preference) return false;
   const due = Date.parse(item.dueAt);
   return item.kind === "announcement" ? due <= now && now - due <= 48 * 3600000 : due - now <= prefs.windowHours * 3600000 && due > now - 3600000;
 }
@@ -48,7 +51,7 @@ export interface ReminderController {
   supported: boolean; permission: NotificationPermission; prefs: ReminderPrefs; pushState: PushState;
   busy: boolean; notice: string; next: ReminderItem[]; help: string;
   enable: () => Promise<void>; disable: () => Promise<void>;
-  toggleKind: (kind: "lessons" | "fees" | "announcements") => void;
+  toggleKind: (kind: "lessons" | "assignments" | "fees" | "announcements") => void;
   sendTest: () => Promise<void>;
 }
 
@@ -90,7 +93,7 @@ export function useReminderNotifications(userId: string | undefined, items: Remi
 
   const syncSettings = useCallback(async (next: ReminderPrefs) => {
     if (!userId) return;
-    const { error } = await supabase.from("reminder_settings").upsert({ user_id: userId, enabled: next.enabled, lessons: next.lessons, fees: next.fees, announcements: next.announcements, window_hours: next.windowHours, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    const { error } = await supabase.from("reminder_settings").upsert({ user_id: userId, enabled: next.enabled, lessons: next.lessons, assignments: next.assignments, fees: next.fees, announcements: next.announcements, window_hours: next.windowHours, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     if (error) throw error;
     const worker = await navigator.serviceWorker.getRegistration("/");
     const sub = await worker?.pushManager?.getSubscription();
@@ -141,7 +144,7 @@ export function useReminderNotifications(userId: string | undefined, items: Remi
     finally { setBusy(false); }
   }, [userId, busy, save]);
 
-  const toggleKind = useCallback((kind: "lessons" | "fees" | "announcements") => {
+  const toggleKind = useCallback((kind: "lessons" | "assignments" | "fees" | "announcements") => {
     const next = { ...prefsRef.current, [kind]: !prefsRef.current[kind] }; save(next);
     void syncSettings(next).catch(error => setNotice(`Saved on this device only; backend sync failed: ${message(error)}`));
   }, [save, syncSettings]);

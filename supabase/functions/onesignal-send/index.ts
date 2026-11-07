@@ -31,7 +31,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
 
-  const APP_ID = Deno.env.get("ONESIGNAL_APP_ID") ?? "";
+  // The App ID is public, but the REST key must remain a server-side secret.
+  // Support the project-provided Vite name for the public ID while keeping the
+  // server secret on the Edge Function only.
+  const APP_ID = Deno.env.get("ONESIGNAL_APP_ID") ?? Deno.env.get("VITE_ONESIGNAL_APP_ID") ?? "";
   const API_KEY = Deno.env.get("ONESIGNAL_REST_API_KEY") ?? "";
   if (!APP_ID || !API_KEY) return json({ error: "Push not configured (missing OneSignal app credentials on server)." }, 503);
 
@@ -48,7 +51,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: "Invalid session." }, 401);
   const admin = createClient(supabaseUrl, serviceKey);
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  const role = String((profile as any)?.role ?? "").toLowerCase();
+  const role = String((profile as any)?.role ?? "").toLowerCase().trim().replace(/[\s-]+/g, "_");
   if (!STAFF_ROLES.includes(role)) return json({ error: "Only authorized staff may send push notifications." }, 403);
 
   let body: any = {};
