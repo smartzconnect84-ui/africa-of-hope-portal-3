@@ -1,7 +1,7 @@
 /**
  * Regenerates public/sitemap.xml from the canonical public routes.
  *
- * Canonical domain: https://africaofhopelr.org
+ * Canonical domain: https://www.africaofhopelr.org
  * Source of truth for public paths: src/lib/publicRoutes.ts (viewToPath).
  * Private routes (admin, portal dashboards, student/instructor accounts,
  * auth, /api, /newsletter confirm+unsubscribe) are intentionally excluded.
@@ -18,7 +18,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const CANONICAL = "https://africaofhopelr.org";
+const CANONICAL = "https://www.africaofhopelr.org";
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const PUBLIC_URLS = [
