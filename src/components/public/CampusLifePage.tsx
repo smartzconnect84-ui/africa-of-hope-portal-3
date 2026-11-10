@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Images, CalendarDays, Briefcase, ClipboardList, GraduationCap,
   FileText, Star, LibraryBig, Wallet, Bell, CheckCircle2, Download, MapPin,
-  Building2, Store,
+  Building2, Store, Award, Compass,
 } from "lucide-react";
 import ExpandableImage from "./PageImage";
 import { ScrollReveal } from "./motion";
@@ -11,8 +11,10 @@ import { useApp } from "@/context/AppContext";
 import { resolvedCampusLife } from "@/lib/publicSettingsValidation";
 import { loadVacancies, loadBusinesses, submitVacancyApplication, submitBusiness, uploadBoardImage } from "@/lib/opportunityBoard";
 import type { AlumniBusiness } from "@/lib/opportunityBoard";
+import EntrancePrepPack from "./EntrancePrepPack";
+import { ReferenceLetterRequest } from "@/components/portal/ReferenceLetters";
 
-type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses";
+type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses" | "reference-letters" | "prep-pack";
 
 const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "gallery", label: "Gallery", icon: Images },
@@ -26,6 +28,8 @@ const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "fees", label: "Fees & Pay", icon: Wallet },
   { id: "vacancies", label: "Vacancies", icon: Building2 },
   { id: "businesses", label: "Businesses", icon: Store },
+  { id: "reference-letters", label: "Reference letters", icon: Award },
+  { id: "prep-pack", label: "Entrance prep", icon: Compass },
 ];
 
 function useLocal<T>(key: string, initial: T): [T, (v: T) => void] {
@@ -851,7 +855,7 @@ export default function CampusLifePage() {
   const [tab, setTab] = useState<Tab>("gallery");
   let eyebrow = "Beyond the classroom";
   let title = "Campus life, careers & student services";
-  let subtitle = "Photos from our community, open events, alumni jobs, internship logbook, scholarships, transcripts, library and fee planning — all in one place.";
+  let subtitle = "Photos from our community, open events, alumni jobs, internship logbook, scholarships, transcripts, reference letters, entrance prep, library and fee planning — all in one place.";
   let visibleTabs = TABS;
   try {
     const { state } = useApp();
@@ -864,7 +868,7 @@ export default function CampusLifePage() {
     if (filtered.length) visibleTabs = filtered;
   } catch { /* supplied fallback */ }
   const safeTab = visibleTabs.some((t) => t.id === tab) ? tab : visibleTabs[0].id;
-  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses }[safeTab];
+  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses, "reference-letters": ReferenceLetterRequest, "prep-pack": EntrancePrepPack }[safeTab];
   return (
     <div className="bg-[#f6f8f7] pb-16 sm:pb-24">
       <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
@@ -907,7 +911,7 @@ export function CampusLifePreview() {
   let four: { id: string; src: string; caption: string }[] = SUPPLIED_PHOTOS.slice(0, 4).map((p) => ({ id: String(p.id), src: String(p.src), caption: p.caption }));
   let eyebrow = "Campus life";
   let title = "Real photos, real community";
-  let subtitle = "Events, alumni jobs, internships, scholarships, transcripts, library and fee planning — plus every photo you shared.";
+  let subtitle = "Events, alumni jobs, internships, scholarships, transcripts, reference letters, entrance prep, library and fee planning — plus every photo you shared.";
   try {
     const { state } = useApp();
     const cms = resolvedCampusLife(state.websiteSettings);

@@ -77,6 +77,8 @@ import TeacherInsights from "./components/academic/TeacherInsights";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
 import GradeAppeals from "./components/portal/GradeAppeals";
+import ReferenceLetters from "./components/portal/ReferenceLetters";
+import EntrancePrepPack from "./components/public/EntrancePrepPack";
 import DonatePage from "./components/public/DonatePage";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
@@ -188,6 +190,21 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Gavel,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("grades.review_appeals")),
     render: (ctx) => <GradeAppeals key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
+    key: "reference-letters",
+    label: (ctx) => (ctx.role === "Student" ? "Reference letters" : "Reference letter desk"),
+    icon: Award,
+    visible: (ctx) =>
+      ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("helpdesk.manage", "students.manage")),
+    render: (ctx) => <ReferenceLetters key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
+    key: "entrance-prep",
+    label: "Entrance prep pack",
+    icon: GraduationCap,
+    visible: () => true,
+    render: () => <EntrancePrepPack />,
   },
   {
     key: "study-calendar",

@@ -70,17 +70,19 @@ export const CAMPUS_TABS = [
   { id: 'fees', label: 'Fees & Pay' },
   { id: 'vacancies', label: 'Vacancies' },
   { id: 'businesses', label: 'Businesses' },
+  { id: 'reference-letters', label: 'Reference letters' },
+  { id: 'prep-pack', label: 'Entrance prep' },
 ];
 export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
   enabled: true,
   eyebrow: 'Campus life',
   title: 'Life at Africa of Hope',
   subtitle: 'Study, community and careers in one place.',
-  body: 'Explore the gallery, join events, meet alumni, track internships, apply for scholarships and support, request transcripts, share feedback, use the library and pay fees — all from one hub.',
+  body: 'Explore the gallery, join events, meet alumni, track internships, apply for scholarships and support, request transcripts and reference letters, prepare for entrance interviews, share feedback, use the library and pay fees — all from one hub.',
   galleryTitle: 'Campus gallery',
   galleryNote: 'Tap any photo to view it larger.',
   gallery: [],
-  tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true },
+  tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true, 'reference-letters': true, 'prep-pack': true },
 };
 export const DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }
