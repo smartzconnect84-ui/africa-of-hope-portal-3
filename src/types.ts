@@ -5,6 +5,12 @@ export type Role =
   | "Registrar"
   | "Admission Officer"
   | "Finance Officer"
+  | "Public Relations Officer"
+  | "Data Entry Officer"
+  | "Executive Assistant"
+  | "Research Officer"
+  | "Customer Care Officer"
+  | "Director of Education"
   | "Student";
 export type AcademicStatus = "Active" | "Suspended" | "Pending Approval";
 export type AttendanceStatus = "Present" | "Absent" | "Late";

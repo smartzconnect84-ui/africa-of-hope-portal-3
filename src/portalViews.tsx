@@ -97,6 +97,9 @@ function DashboardView({ role }: { role: Role | null }) {
   if (role === "Student") return <StudentPortal />;
   if (role === "Teacher") return <TeacherDashboard />;
   if (role === "Admission Officer") return <PeopleManagement initialTab="applicants" />;
+  if (role === "Customer Care Officer") return <Helpdesk key="dashboard-helpdesk" />;
+  if (role === "Data Entry Officer") return <PeopleManagement />;
+  if (role === "Public Relations Officer") return <AdminWebsiteSettings />;
   return <AdminDashboard />;
 }
 
@@ -232,7 +235,12 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "insights",
     label: "Progress Insights",
     icon: TrendingUp,
-    visible: (ctx) => ctx.role === "Teacher" || ctx.role === "School Admin" || ctx.role === "Super Admin",
+    visible: (ctx) =>
+      ctx.role === "Teacher" ||
+      ctx.role === "School Admin" ||
+      ctx.role === "Super Admin" ||
+      ctx.role === "Director of Education" ||
+      ctx.role === "Research Officer",
     render: () => <TeacherInsights />,
   },
   {

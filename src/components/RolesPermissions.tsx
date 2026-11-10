@@ -1,3 +1,4 @@
+import { STAFF_ROLE_GUIDE } from "@/data/staffRoles";
 import { Fragment } from "react";
 import { ShieldCheck, RotateCcw, Lock } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -127,6 +128,25 @@ export default function RolesPermissions() {
       </Reveal>
 
       <Reveal delay={0.05} className={cn(panelClass, "p-4")}>
+        <SectionHeader title="What each back-office role does" subtitle="Share this with the team when creating accounts: duties plus the portal modules each role opens." />
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {STAFF_ROLE_GUIDE.map((g) => (
+            <div key={g.role} className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-sm font-semibold text-slate-800">{g.role}</p>
+              <p className="mt-0.5 text-xs text-slate-600">{g.duty}</p>
+              <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">Portal modules</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-slate-600">
+                {g.modules.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-slate-500">Create one account per person in Staff and Students (People), picking the matching role. Each email can hold only one account.</p>
+      </Reveal>
+
+      <Reveal delay={0.08} className={cn(panelClass, "p-4")}>
         <SectionHeader title="Reset a role" subtitle="Discard every custom grant and restore the default matrix for one role." />
         <div className="mt-3 flex flex-wrap gap-2">
           {STAFF_AND_STUDENT_ROLES.map((role) => (
