@@ -78,6 +78,8 @@ import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
 import GradeAppeals from "./components/portal/GradeAppeals";
 import ReferenceLetters from "./components/portal/ReferenceLetters";
+import EntranceTest from "./components/portal/EntranceTest";
+import EntranceTestAdmin from "./components/admin/EntranceTestAdmin";
 import EntrancePrepPack from "./components/public/EntrancePrepPack";
 import DonatePage from "./components/public/DonatePage";
 
