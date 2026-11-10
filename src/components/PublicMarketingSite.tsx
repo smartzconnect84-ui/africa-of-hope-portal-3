@@ -681,7 +681,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-[11px] text-white/60">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-1 px-4 py-3 text-[11px] text-white/60">
             <p>{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
             <p className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
               <a href="/cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>

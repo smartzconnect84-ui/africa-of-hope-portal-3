@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import ExpandableImage from "./PageImage";
 import { ScrollReveal } from "./motion";
-import { SUPPLIED_PHOTOS, SUPPLIED_DOCS, SUPPLIED_ARTWORK } from "@/data/suppliedMedia";
+import { SUPPLIED_PHOTOS, SUPPLIED_DOCS } from "@/data/suppliedMedia";
 import { useApp } from "@/context/AppContext";
 import { resolvedCampusLife } from "@/lib/publicSettingsValidation";
 import { loadVacancies, loadBusinesses, submitVacancyApplication, submitBusiness, uploadBoardImage } from "@/lib/opportunityBoard";
@@ -104,31 +104,6 @@ function Gallery() {
               </figcaption>
             </figure>
           </ScrollReveal>
-        ))}
-      </div>
-      <h3 className="mt-10 text-lg font-bold text-emerald-950">Documents & brand artwork</h3>
-      <p className="mt-1 text-sm text-slate-600">Brochure and certificate samples open larger on click; artwork keeps its original framing.</p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <figure className="aoh-card overflow-hidden rounded-2xl bg-white">
-          <ExpandableImage src={SUPPLIED_DOCS.brochure.src} alt={SUPPLIED_DOCS.brochure.label} className="h-64" imgClassName="h-full w-full object-cover object-top" />
-          <figcaption className="p-4 text-sm font-semibold text-emerald-950">{SUPPLIED_DOCS.brochure.label}</figcaption>
-        </figure>
-        <figure className="aoh-card overflow-hidden rounded-2xl bg-white">
-          <ExpandableImage src={SUPPLIED_DOCS.certificateSample.src} alt={SUPPLIED_DOCS.certificateSample.label} className="h-64" imgClassName="h-full w-full bg-slate-50 object-contain p-2" />
-          <figcaption className="p-4 text-sm font-semibold text-emerald-950">{SUPPLIED_DOCS.certificateSample.label}</figcaption>
-        </figure>
-        {SUPPLIED_ARTWORK.slice(0, 1).map((a) => (
-          <figure key={a.id} className="aoh-card overflow-hidden rounded-2xl bg-white">
-            <ExpandableImage src={a.src} alt={a.caption} className="h-64" imgClassName="h-full w-full bg-white object-contain p-6" />
-            <figcaption className="p-4 text-sm font-semibold text-emerald-950">{a.caption} — transparent PNG, shown uncropped</figcaption>
-          </figure>
-        ))}
-      </div>
-      <div className="mt-4 flex flex-wrap gap-3">
-        {SUPPLIED_ARTWORK.slice(1).map((a) => (
-          <a key={a.id} href={a.src} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-900/15 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">
-            <Download className="h-3.5 w-3.5" aria-hidden="true" /> {a.caption}
-          </a>
         ))}
       </div>
     </div>
