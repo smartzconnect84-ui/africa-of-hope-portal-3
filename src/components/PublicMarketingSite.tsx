@@ -654,19 +654,21 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         </motion.main>
       </AnimatePresence>
 
-      <footer className="bg-black text-white">
+      <footer className="aoh-site-footer">
         <div className="border-b border-white/10">
           <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:grid-cols-2 lg:grid-cols-4">
             <p className="flex items-start gap-2.5 text-sm text-white/85">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><MapPin className="h-4 w-4 text-amber-400" /></span><span>{w.address || settings.address}</span>
             </p>
-            <p className="flex items-center gap-2.5 text-sm text-white/85">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Phone className="h-4 w-4 text-amber-400" /></span><span>{w.contactPhone || settings.contactPhone}</span>
-            </p>
+            {(w.contactPhone || settings.contactPhone) && (
+              <a href={`tel:${(w.contactPhone || settings.contactPhone).replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-sm text-white/85 transition hover:underline">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Phone className="h-4 w-4 text-amber-400" /></span><span>{w.contactPhone || settings.contactPhone}</span>
+              </a>
+            )}
             {(w.contactEmail || settings.contactEmail) && (
-              <p className="flex items-center gap-2.5 text-sm text-white/85">
+              <a href={`mailto:${w.contactEmail || settings.contactEmail}`} className="flex items-center gap-2.5 text-sm text-white/85 transition hover:underline">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Mail className="h-4 w-4 text-amber-400" /></span><span className="break-all">{w.contactEmail || settings.contactEmail}</span>
-              </p>
+              </a>
             )}
             {w.officeHours && (
               <p className="flex items-center gap-2.5 text-sm text-white/85">

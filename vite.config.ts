@@ -20,7 +20,8 @@ try {
 let clearLogPlugin: () => { name: string } = () => ({ name: "noop-clear-log" });
 try {
   if (existsSync("./dala-internal-vite-clear-log-plugin.js")) {
-    const mod = await import("./dala-internal-vite-clear-log-plugin.js");
+    const loadOptionalPlugin = new Function("path", "return import(path)") as (path: string) => Promise<unknown>;
+    const mod = await loadOptionalPlugin("./dala-internal-vite-clear-log-plugin.js");
     const candidate = (mod as { default?: unknown }).default ?? mod;
     if (typeof candidate === "function") clearLogPlugin = candidate as () => { name: string };
   }
