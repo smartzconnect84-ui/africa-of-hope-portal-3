@@ -852,7 +852,7 @@ export default function CampusLifePage() {
         <ScrollReveal className="mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{eyebrow}</p>
           <h1 className="mt-4 max-w-3xl text-3xl font-bold text-amber-300 sm:text-5xl">{title}</h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100">
+          <p className="mt-5 max-w-2xl text-base leading-8 text-amber-100/90">
             {subtitle}
           </p>
         </ScrollReveal>

@@ -247,7 +247,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.p
               custom={2}
               variants={textStagger}
-              className="mt-3 max-w-[65ch] text-base text-emerald-100/90 sm:text-lg"
+              className="mt-3 max-w-[65ch] text-base text-amber-100/90 sm:text-lg"
             >
               {slide.description}
             </motion.p>
@@ -281,7 +281,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               </button>
               <a
                 href="/verify"
-                className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-emerald-100 underline-offset-4 transition hover:text-white hover:underline"
+                className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-amber-100 underline-offset-4 transition hover:text-amber-200 hover:underline"
               >
                 <ShieldCheck className="h-4 w-4" /> {copy['hero.verify']}
               </a>
@@ -321,7 +321,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
 
         <div className="flex items-center justify-between gap-4">
           {/* Slide counter */}
-          <span className="text-xs font-semibold tabular-nums text-emerald-200/80">
+          <span className="text-xs font-semibold tabular-nums text-amber-200/80">
             {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
           </span>
 

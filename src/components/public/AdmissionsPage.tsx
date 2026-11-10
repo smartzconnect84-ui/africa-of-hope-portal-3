@@ -36,7 +36,7 @@ export default function AdmissionsPage({ onApply }: { onApply: () => void }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.16 }}
-            className="mt-4 max-w-2xl text-sm leading-6 text-emerald-100/90 sm:text-base"
+            className="mt-4 max-w-2xl text-sm leading-6 text-amber-100/90 sm:text-base"
           >
             Strictly online students can enrol anytime — no waiting for the general school opening. Pick your 3
             training days, attend within them, complete within the duration and receive your certificate on completion.
@@ -48,7 +48,7 @@ export default function AdmissionsPage({ onApply }: { onApply: () => void }) {
             <a href="#programmes" className="inline-flex h-10 items-center rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10">
               Browse programmes
             </a>
-            <a href="#term-dates" className="inline-flex h-10 items-center rounded-xl px-2 text-sm font-medium text-emerald-50 underline decoration-amber-300/60 underline-offset-4 hover:text-white">
+            <a href="#term-dates" className="inline-flex h-10 items-center rounded-xl px-2 text-sm font-medium text-amber-50 underline decoration-amber-300/60 underline-offset-4 hover:text-amber-100">
               Term dates
             </a>
           </div>
