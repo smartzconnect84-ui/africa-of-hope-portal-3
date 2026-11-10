@@ -23,7 +23,7 @@ export function EnquiryForm({ settings }: { settings: SystemSettings }) {
 
   return (
     <div className="rounded-3xl border border-emerald-900/10 bg-[#f6f8f7] p-5 sm:p-6">
-      <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-800">
+      <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-amber-700">
         <Users className="h-3.5 w-3.5" /> Talk to admissions
       </p>
       <h3 className="mt-2 text-lg font-semibold text-slate-900">Send us an enquiry</h3>

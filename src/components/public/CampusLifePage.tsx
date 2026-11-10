@@ -12,9 +12,10 @@ import { resolvedCampusLife } from "@/lib/publicSettingsValidation";
 import { loadVacancies, loadBusinesses, submitVacancyApplication, submitBusiness, uploadBoardImage } from "@/lib/opportunityBoard";
 import type { AlumniBusiness } from "@/lib/opportunityBoard";
 import EntrancePrepPack from "./EntrancePrepPack";
+import YearbookWall from "./YearbookWall";
 import { ReferenceLetterRequest } from "@/components/portal/ReferenceLetters";
 
-type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses" | "reference-letters" | "prep-pack";
+type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses" | "reference-letters" | "prep-pack" | "yearbook";
 
 const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "gallery", label: "Gallery", icon: Images },
@@ -30,6 +31,7 @@ const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "businesses", label: "Businesses", icon: Store },
   { id: "reference-letters", label: "Reference letters", icon: Award },
   { id: "prep-pack", label: "Entrance prep", icon: Compass },
+  { id: "yearbook", label: "Yearbook", icon: GraduationCap },
 ];
 
 function useLocal<T>(key: string, initial: T): [T, (v: T) => void] {
@@ -868,13 +870,13 @@ export default function CampusLifePage() {
     if (filtered.length) visibleTabs = filtered;
   } catch { /* supplied fallback */ }
   const safeTab = visibleTabs.some((t) => t.id === tab) ? tab : visibleTabs[0].id;
-  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses, "reference-letters": ReferenceLetterRequest, "prep-pack": EntrancePrepPack }[safeTab];
+  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses, "reference-letters": ReferenceLetterRequest, "prep-pack": EntrancePrepPack, yearbook: YearbookWall }[safeTab];
   return (
     <div className="bg-[#f6f8f7] pb-16 sm:pb-24">
       <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
         <ScrollReveal className="mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{eyebrow}</p>
-          <h1 className="mt-4 max-w-3xl text-3xl font-bold sm:text-5xl">{title}</h1>
+          <h1 className="mt-4 max-w-3xl text-3xl font-bold text-amber-300 sm:text-5xl">{title}</h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100">
             {subtitle}
           </p>
@@ -926,7 +928,7 @@ export function CampusLifePreview() {
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{eyebrow}</p>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">{title}</h2>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-amber-600 sm:text-3xl">{title}</h2>
             <p className="mt-2 max-w-xl text-sm text-slate-600">{subtitle}</p>
           </div>
           <a href="#campus-life" className="group inline-flex h-11 items-center gap-1.5 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">

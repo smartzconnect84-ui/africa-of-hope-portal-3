@@ -236,7 +236,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.h1
               custom={1}
               variants={textStagger}
-              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl"
+              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight text-amber-400 sm:text-5xl lg:text-6xl"
             >
               {slide.title}
               <br />
@@ -266,7 +266,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 {copy['hero.apply']} <ArrowRight className="h-4 w-4" />
               </button>
               <a
-                href="#donate"
+                href="/donate"
                 aria-label="Donate to AFRICA OF HOPE"
                 className="group inline-flex h-11 items-center gap-2 rounded-xl border-2 border-amber-300/80 bg-emerald-950/70 px-5 text-sm font-semibold text-white ring-1 ring-amber-300/20 transition hover:border-amber-200 hover:bg-emerald-900 hover:text-amber-100 active:scale-[0.98]"
               >
@@ -280,7 +280,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 <LogIn className="h-4 w-4" /> {copy['hero.portal']}
               </button>
               <a
-                href="#verify"
+                href="/verify"
                 className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-emerald-100 underline-offset-4 transition hover:text-white hover:underline"
               >
                 <ShieldCheck className="h-4 w-4" /> {copy['hero.verify']}

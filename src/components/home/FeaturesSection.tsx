@@ -15,7 +15,7 @@ export default function FeaturesSection({ copy, w }: { copy: SectionCopy; w: Web
               </p>
             )}
             {copy.title && (
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{copy.title}</h2>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-amber-400 sm:text-4xl">{copy.title}</h2>
             )}
             {copy.subtitle && <p className="mt-2 text-sm text-emerald-100/80">{copy.subtitle}</p>}
           </div>

@@ -136,53 +136,9 @@ const ABOUT_RE = /^\/(about|about-us|who-we-are)\/?$/i;
 
 type View = PublicView;
 
-/** Back-compat: old hash (`#about`, `#/verify?serial=X`) → clean path. */
-function parseHash(hash: string): View {
-  const mapped = legacyHashToPath(hash || "#");
-  if (!mapped) return { type: "home", anchor: null };
-  const [path, query] = mapped.split("?");
-  return parsePublicPath(path || "/", query ? `?${query}` : "");
-}
-
-/**
- * The app is hash-routed, but a certificate QR code may open the plain path
- * form `/verify?serial=…` (the brief's example URL). Normalise a path-style
- * verification link into the hash route so the serial is still looked up.
- */
-function initialHash(): string {
-  if (typeof window === "undefined") return "#home";
-  if (window.location.hash) return window.location.hash;
-  // Real crawlable paths (see sitemap.xml) resolve into the matching view
-  // so a search result or typed URL always lands on real content.
-  const path = window.location.pathname.replace(/\/+$/, "").toLowerCase();
-  const pathMap: Record<string, string> = {
-    "/about": "#about",
-    "/programmes": "#programmes",
-    "/programs": "#programmes",
-    "/admissions": "#admissions",
-    "/apply": "#admissions",
-    "/term-dates": "#term-dates",
-    "/verify": "#/verify",
-    "/donate": "#donate",
-    "/transparency": "#transparency",
-    "/team": "#team",
-    "/blog": "#blog",
-    "/policies": "#policies",
-    "/campus-life": "#campus-life",
-    "/cookies": "#cookies",
-  };
-  if (path && pathMap[path]) {
-    const serial = new URLSearchParams(window.location.search).get("serial");
-    if (path === "/verify" && serial) return `#/verify?serial=${encodeURIComponent(serial)}`;
-    const slug = /^\/blog\/(.+)$/i.exec(window.location.pathname)?.[1];
-    if (path.startsWith("/blog/") && slug) return `#blog/${slug}`;
-    return pathMap[path];
-  }
-  if (/\/verify\/?$/i.test(window.location.pathname)) {
-    const serial = new URLSearchParams(window.location.search).get("serial");
-    return serial ? `#/verify?serial=${encodeURIComponent(serial)}` : "#/verify";
-  }
-  return "#home";
+/** Current clean-path view from react-router location (no `#` routing). */
+function viewFromLocation(pathname: string, search: string): View {
+  return parsePublicPath(pathname || "/", search || "");
 }
 
 function formatDate(iso: string | null): string {
@@ -220,27 +176,27 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const navLinks = useMemo(() => {
     let links = saved;
     if (!links.some((l) => HOME_RE.test(l.href.trim()) && l.href.trim() !== "#"))
-      links = [{ id: "nav-home", href: "#home", label: "Home" }, ...links];
+      links = [{ id: "nav-home", href: "/", label: "Home" }, ...links];
     if (!links.some((l) => PROGRAMMES_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-programmes", href: "#programmes", label: "Programmes" }];
+      links = [...links, { id: "nav-programmes", href: "/programmes", label: "Programmes" }];
     if (!links.some((l) => TERM_DATES_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-termdates", href: "#term-dates", label: "Term dates" }];
+      links = [...links, { id: "nav-termdates", href: "/term-dates", label: "Term dates" }];
     if (!links.some((l) => BLOG_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-blog", href: "#blog", label: "Blog" }];
-    if (!links.some((l) => /^#\/?(team|our-team)$/i.test(l.href.trim())))
-      links = [...links, { id: "nav-team", href: "#team", label: "Team" }];
+      links = [...links, { id: "nav-blog", href: "/blog", label: "Blog" }];
+    if (!links.some((l) => /^\/?(team|our-team)$/i.test(l.href.trim())))
+      links = [...links, { id: "nav-team", href: "/team", label: "Team" }];
     if (!links.some((l) => POLICIES_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-policies", href: "#policies", label: "Policies" }];
-    if (!links.some((l) => /^#\/?transparency$/i.test(l.href.trim())))
-      links = [...links, { id: "nav-transparency", href: "#transparency", label: "Transparency" }];
+      links = [...links, { id: "nav-policies", href: "/policies", label: "Policies" }];
+    if (!links.some((l) => /^\/?transparency$/i.test(l.href.trim())))
+      links = [...links, { id: "nav-transparency", href: "/transparency", label: "Transparency" }];
     if (!links.some((l) => ADMISSIONS_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-admissions", href: "#admissions", label: "Admissions" }];
+      links = [...links, { id: "nav-admissions", href: "/admissions", label: "Admissions" }];
     if (!links.some((l) => CAMPUS_RE.test(l.href.trim())))
-      links = [...links, { id: "nav-campus", href: "#campus-life", label: "Campus Life" }];
+      links = [...links, { id: "nav-campus", href: "/campus-life", label: "Campus Life" }];
     // Apply + Donate CTAs are hidden from the navbar on all devices (pages stay reachable by URL/other CTAs).
     // Admissions stays visible in the menu bar as its own page.
     // CMS wiring: hidden (deleted) pages are removed from every menu automatically.
-    const withoutCtas = links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/#\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
+    const withoutCtas = links.filter((l) => !DONATE_RE.test(l.href.trim()) && !/\/?(policies|term-dates|transparency)\/?$/i.test(l.href.trim()));
     return withoutCtas.filter((l) => {
       const key = pageKeyForHref(l.href);
       return !key || isPublicPageEnabled(w, key);
@@ -255,10 +211,22 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   // Day mode only: night mode removed per branding — public site always renders light.
   const presentation = w.presentation || DEFAULT_PRESENTATION;
   const [menu, setMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [hash, setHash] = useState<string>(initialHash);
+  const location = useLocation();
+  const navigate = useNavigate();
+  // One-time back-compat: old `#about`, `#/verify?serial=X` bookmarks → clean path.
+  useEffect(() => {
+    try {
+      const h = window.location.hash;
+      if (h && h !== "#") {
+        const mapped = legacyHashToPath(h);
+        if (mapped) window.history.replaceState(null, "", mapped);
+      }
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const reduceMotion = useReducedMotion();
   const openApply = (programId?: string) => {
     // Generic CTA buttons pass this directly as onClick, so React would hand a
@@ -268,16 +236,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   };
   const openLogin = () => onEnterPortal("signin");
 
-  const view = useMemo(() => parseHash(hash), [hash]);
-
-  // Hash-based routing: no router — anchor clicks and the browser's own
-  // back/forward buttons both just change window.location.hash, so a single
-  // `hashchange` listener is enough to drive every public view.
-  useEffect(() => {
-    const onHashChange = () => setHash(window.location.hash);
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+  const view = useMemo(() => viewFromLocation(location.pathname, location.search), [location.pathname, location.search]);
 
   // Scroll behaviour per view: top for Programmes/Blog/BlogPost and bare
   // Home. Section anchors on Home (`#about`, `#verify`, …) are scrolled to by
@@ -291,7 +250,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     const run = () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
     const id = window.requestAnimationFrame(run);
     return () => window.cancelAnimationFrame(id);
-  }, [hash, homeAnchor, reduceMotion]);
+  }, [location.pathname, location.search, homeAnchor, reduceMotion]);
 
   // Keep titles, descriptions, social cards, canonical URLs and page schema in sync with the public view.
   useEffect(() => {
@@ -359,11 +318,14 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   }, [menu]);
 
   const goHomeTop = useCallback((e: MouseEvent) => {
-    if (HOME_RE.test(window.location.hash || "#home")) {
+    if (location.pathname === "/" && !location.search) {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    } else {
+      e.preventDefault();
+      navigate("/");
     }
-  }, [reduceMotion]);
+  }, [reduceMotion, location.pathname, location.search, navigate]);
 
   // `w.home.order` is normalised (every registry key present, "summary"
   // first when missing) by mergeWebsiteSettings, so no special-casing here.
@@ -432,7 +394,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         data-aoh-sticky-header=""
       >
         <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-1 px-2 py-2 sm:gap-2 sm:px-5 lg:gap-1.5">
-          <a href="#home" onClick={goHomeTop} className="flex min-w-0 items-center">
+          <a href="/" onClick={goHomeTop} className="flex min-w-0 items-center">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
               academyName={displayName}
@@ -525,7 +487,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        <motion.main key={hash} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+        <motion.main key={viewToPath(view)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           {(() => {
             const hiddenKey = viewPageKey(view);
             if (hiddenKey && !isPublicPageEnabled(w, hiddenKey)) return <PageUnavailable label={hiddenKey} />;
@@ -583,9 +545,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 <section key="team" id="staff" className="scroll-mt-24 py-16">
                   <div className="mx-auto max-w-6xl px-4">
                     <h2 className="text-3xl font-bold text-emerald-950">{w.team.title}</h2>
-                    <p className="mt-3 text-slate-600">{w.team.description}</p>
+                    <p className="mt-3 text-black">{w.team.description}</p>
                     <TeamProfiles team={w.team} />
-                    <a href="#team" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-800 hover:underline">{w.publicCopy['team.link']} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+                    <a href="/team" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-800 hover:underline">{w.publicCopy['team.link']} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
                   </div>
                 </section>
               )}
@@ -599,7 +561,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                         {w.publicCopy["blog.title"]}
                       </h2>
                     </div>
-                    <a href="#blog" className="group inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
+                    <a href="/blog" className="group inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
                       {w.publicCopy["blog.link"]} <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </a>
                   </ScrollReveal>
@@ -609,14 +571,14 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                       {blogPreview.map((post) => (
                         <motion.a
                           key={post.id}
-                          href={`#blog/${post.slug}`}
+                          href={`/blog/${post.slug}`}
                           variants={fadeUpVariants}
                           whileHover={{ y: -6 }}
                           className="aoh-card aoh-glass group flex h-full flex-col overflow-hidden rounded-2xl border border-emerald-900/10 p-5 shadow-sm transition-shadow hover:shadow-lg"
                         >
                           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">{post.category || "News"}</p>
                           <h3 className="mt-2 line-clamp-2 text-base font-semibold text-emerald-950">{post.title}</h3>
-                          <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-slate-600">
+                          <p className="mt-2 line-clamp-2 flex-1 text-sm leading-6 text-black">
                             {post.excerpt || post.body.slice(0, 140)}
                           </p>
                           <div className="mt-4 flex items-center gap-3 border-t border-emerald-900/10 pt-3 text-[11px] text-slate-500">
@@ -695,9 +657,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.programmes"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-white/75">
               {state.programs.slice(0, 6).map((p) => (
-                <li key={p.id}><a href="#programmes" className="transition hover:text-amber-300">{p.title}</a></li>
+                <li key={p.id}><a href="/programmes" className="transition hover:text-amber-300">{p.title}</a></li>
               ))}
-              <li><a href="#programmes" className="inline-flex items-center gap-1 font-semibold text-amber-300 hover:text-amber-200">{w.publicCopy["footer.all"]} <ChevronRight className="h-3.5 w-3.5" /></a></li>
+              <li><a href="/programmes" className="inline-flex items-center gap-1 font-semibold text-amber-300 hover:text-amber-200">{w.publicCopy["footer.all"]} <ChevronRight className="h-3.5 w-3.5" /></a></li>
             </ul>
           </div>
           <div className="md:col-span-3">
@@ -705,15 +667,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <ul className="mt-4 space-y-2.5 text-sm text-white/75">
               <li><button type="button" onClick={() => openApply()} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</button></li>
               <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
-              <li><a href="#support-donation" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
-              <li><a href="#support-volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
-              <li><a href="#support-partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
-              <li><a href="#support-staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
-              <li><a href="#term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
-              <li><a href="#verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
-              {!w.footerLinks.some(l => /#\/?transparency$/i.test(l.href)) && <li><a href="#transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
+              <li><a href="/?section=support&support=donation" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
+              <li><a href="/?section=support&support=volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
+              <li><a href="/?section=support&support=partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
+              <li><a href="/?section=support&support=staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
+              <li><a href="/term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
+              <li><a href="/verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
+              {!w.footerLinks.some(l => /\/transparency$/i.test(l.href)) && <li><a href="/transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
               {w.footerLinks.map((l) => (
-                <li key={l.id}><a href={l.href || "#"} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {l.label}</a></li>
+                <li key={l.id}><a href={l.href || "/"} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {l.label}</a></li>
               ))}
             </ul>
           </div>
@@ -722,8 +684,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-[11px] text-white/60">
             <p>{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
             <p className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-              <a href="#cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>
-              <a href="#policies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Policies</a>
+              <a href="/cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>
+              <a href="/policies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Policies</a>
               <span className="inline-flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-amber-400" /> {settings.academicYear} / {settings.semester}</span>
             </p>
           </div>
@@ -734,7 +696,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       <ProgramAnnouncementPopup
         programs={publicPrograms}
         paused={menu}
-        onExplore={() => { window.location.hash = "#programmes"; }}
+        onExplore={() => { navigate("/programmes"); }}
         onApply={openApply}
       />
       <InstallPrompt />

@@ -112,6 +112,8 @@ export const REMOVED_ABOUT_PHRASES = [
   'we believe unity, compassion',
   'We remain committed to pursuing our mission with compassi',
   'was established in 2021 with a commitment',
+  'A people-centered vision',
+  'A connected approach',
 ];
 export function cleanAboutBody(body: string) {
   return paragraphText(body || '')

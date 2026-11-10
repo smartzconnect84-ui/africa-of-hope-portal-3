@@ -45,7 +45,7 @@ export default function ContactSection({
           {cards.map(({ icon: Icon, label, value }) => (
             <Reveal key={label}>
               <div className="aoh-card aoh-glass h-full rounded-2xl p-5 transition-shadow hover:shadow-lg">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-800">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-800">
                   <Icon className="h-5 w-5" />
                 </span>
                 <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>

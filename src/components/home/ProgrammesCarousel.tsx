@@ -85,7 +85,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
       <div className="mx-auto max-w-6xl px-4">
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Programmes</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Programmes</p>
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">
               {total} certificate programmes
             </h2>
@@ -112,8 +112,8 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
               </>
             )}
             <a
-              href="#programmes"
-              className="ml-2 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900"
+              href="/programmes"
+              className="ml-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-800"
             >
               View all <ArrowRight className="h-4 w-4" />
             </a>

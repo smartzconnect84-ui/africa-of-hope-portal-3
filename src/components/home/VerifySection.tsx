@@ -61,7 +61,7 @@ export default function VerifySection({
         <Reveal>
           <div className="aoh-card aoh-glass rounded-3xl p-6 sm:p-8">
             {copy.eyebrow && (
-              <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-amber-900">
                 <ShieldCheck className="h-3.5 w-3.5" /> {copy.eyebrow}
               </p>
             )}
