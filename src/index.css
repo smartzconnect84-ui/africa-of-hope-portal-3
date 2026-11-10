@@ -869,9 +869,40 @@ html[data-portal-icons="filled"] .portal-icon {
   --aoh-canvas-soft: #f2ebd6;
   --aoh-surface: #fdf9ec;
 }
-html:not(.dark) body { background-color: var(--aoh-canvas); }
-html:not(.dark) .aoh-public { background-color: var(--aoh-canvas-soft) !important; }
+html:not(.dark) body { background-color: var(--aoh-canvas); color: #0a0f0d; }
+html:not(.dark) .aoh-public { background-color: var(--aoh-canvas-soft) !important; color: #0a0f0d; }
+html:not(.dark) body :is(h1, h2, h3, h4) { color: #07130d; }
+html:not(.dark) .aoh-public :is(h1, h2, h3, h4) { color: #06281c !important; }
+html:not(.dark) body :is(p, li, span, div) { border-color: inherit; }
+/* Deep ink text: muted greys become deep black-green for AA contrast in light mode. */
+html:not(.dark) :is(.text-slate-500, .text-slate-600, .text-gray-500, .text-gray-600, .text-stone-500, .text-stone-600, .text-neutral-500, .text-neutral-600, .text-slate-400, .text-gray-400) { color: #10231a !important; }
+html:not(.dark) :is(.text-slate-700, .text-gray-700, .text-stone-700, .text-neutral-700, .text-slate-800, .text-gray-800, .text-slate-900, .text-gray-900, .text-black) { color: #060d0a !important; }
+html:not(.dark) :is(.text-emerald-800, .text-emerald-900, .text-emerald-950) { color: #052e1f !important; }
+html:not(.dark) :is(.text-emerald-700, .text-emerald-600) { color: #06402c !important; }
+html:not(.dark) .aoh-public :is(.text-slate-500, .text-slate-600, .text-gray-500, .text-gray-600, .text-stone-500, .text-stone-600) { color: #10231a !important; }
+html:not(.dark) .aoh-public :is(.text-slate-700, .text-slate-800, .text-slate-900, .text-gray-700, .text-gray-800, .text-gray-900) { color: #060d0a !important; }
+/* Form labels always deep ink in light mode. */
+html:not(.dark) :is(label, legend) { color: #060d0a; }
+html:not(.dark) .aoh-public :is(label, legend) { color: #06281c !important; }
 html:not(.dark) .aoh-public :is(.bg-white) { background-color: var(--aoh-surface) !important; }
 html:not(.dark) :is(.bg-white) { background-color: var(--aoh-surface); }
 html:not(.dark) :is(.bg-\[\#f6f8f7\], .bg-\[\#fafafa\], .bg-\[\#f8fafc\], .bg-slate-50, .bg-gray-50, .bg-stone-50, .bg-neutral-50) { background-color: var(--aoh-canvas-soft); }
 html:not(.dark) .aoh-public :is(.bg-\[\#f6f8f7\], .bg-\[\#fafafa\], .bg-\[\#f8fafc\], .bg-slate-50, .bg-gray-50, .bg-stone-50, .bg-neutral-50) { background-color: var(--aoh-canvas-soft) !important; }
+
+/* Brand borders: gold + deep-green framing for every card, panel and form placeholder. */
+:root {
+  --aoh-border-gold: #c9a227;
+  --aoh-border-green: #06402c;
+  --aoh-border-gold-soft: #e4c65b;
+  --aoh-border-green-soft: #0b6b4a;
+}
+html:not(.dark) :is(.aoh-gold-border) {
+  border-color: #b8942a !important;
+  box-shadow: 0 0 0 1px rgb(201 162 39 / 0.22), 0 8px 22px rgb(6 64 44 / 0.08) !important;
+}
+html:not(.dark) :is(input, textarea, select) { border-color: #0b6b4a !important; }
+html:not(.dark) :is(input, textarea, select):focus { border-color: #06402c !important; box-shadow: 0 0 0 3px rgb(201 162 39 / 0.28) !important; outline: none; }
+:is(input, textarea)::placeholder { color: #0b3d2a !important; opacity: 0.85 !important; font-weight: 500; }
+.dark :is(.aoh-gold-border) { border-color: #e4c65b !important; }
+.dark :is(input, textarea, select) { border-color: #0b6b4a !important; }
+.dark :is(input, textarea)::placeholder { color: #b9d9c8 !important; opacity: 0.9 !important; }
