@@ -202,6 +202,20 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: (ctx) => <ReferenceLetters key={`${ctx.currentUser?.id}:${ctx.role}`} />,
   },
   {
+    key: "entrance-test",
+    label: "Entrance test",
+    icon: ClipboardCheck,
+    visible: () => true,
+    render: () => <EntranceTest />,
+  },
+  {
+    key: "entrance-control",
+    label: (ctx) => (ctx.role === "Student" ? "My entrance result" : "Entrance test control"),
+    icon: ShieldCheck,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results")),
+    render: (ctx) => (ctx.role === "Student" ? <EntranceTest /> : <EntranceTestAdmin />),
+  },
+  {
     key: "entrance-prep",
     label: "Entrance prep pack",
     icon: GraduationCap,

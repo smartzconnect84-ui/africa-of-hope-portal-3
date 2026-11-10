@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { accountId } from "@/lib/identifiers";
 import { toast } from "sonner";
 import {
@@ -59,6 +59,8 @@ import {
 import { EmptyState, SectionHeader, panelClass } from "./Navigation";
 import DataTools from "./DataTools";
 import CongratulationsAction from './CongratulationsAction';
+import { supabase } from "@/integrations/supabase/client";
+import { loadEntrancePasses, loadRequirePass } from "@/lib/entranceTest";
 import { cn } from "@/lib/utils";
 
 const TH = "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500";
@@ -723,8 +725,36 @@ function ApplicantsTab() {
   const pending = state.users.filter((u) => u.role === "Student" && u.status === "Pending Approval");
   const [assignFor, setAssignFor] = useState<User | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
+  const [passContacts, setPassContacts] = useState<Set<string>>(new Set());
+  const [requirePass] = useState(loadRequirePass);
+
+  useEffect(() => {
+    const local = new Set(loadEntrancePasses().filter((p) => p.passed).map((p) => p.contact.trim().toLowerCase()));
+    setPassContacts(local);
+    (async () => {
+      try {
+        const { data } = await supabase.from("entrance_test_results").select("contact,passed").eq("passed", true).limit(500);
+        if (data) {
+          setPassContacts((prev) => {
+            const next = new Set(prev);
+            (data as { contact: string }[]).forEach((r) => { if (r.contact) next.add(r.contact.trim().toLowerCase()); });
+            return next;
+          });
+        }
+      } catch { /* backend optional until migration applied */ }
+    })();
+  }, []);
+
+  function hasPass(u: User) {
+    const cands = [u.phone, u.email, u.name].map((s) => (s || "").trim().toLowerCase()).filter(Boolean);
+    return cands.some((c) => passContacts.has(c));
+  }
 
   async function approve(u: User) {
+    if (requirePass && !hasPass(u)) {
+      toast.error(`${u.name} has no passing entrance test yet — ask them to take it before approval.`, { description: "Entrance control: passing test required." });
+      return;
+    }
     setApproving(u.id);
     try {
       const error = await approveApplicant(u.id);
@@ -749,7 +779,7 @@ function ApplicantsTab() {
                       {initials(u.name)}
                     </span>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{u.name}</p>
+                      <p className="text-sm font-medium text-slate-800">{u.name} {hasPass(u) ? <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Entrance passed</span> : <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">No entrance pass</span>}</p>
                       <p className="flex items-center gap-2 text-[11px] text-slate-500">
                         <Mail className="h-3 w-3" /> {u.email}
                         <Phone className="h-3 w-3" /> {u.phone}

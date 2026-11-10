@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ENTRANCE_PASS_KEY,
   ENTRANCE_REQUIRE_KEY,
   loadEntrancePasses,
   loadRequirePass,
@@ -27,9 +26,11 @@ export default function EntranceTestAdmin() {
   const [requirePass, setRequirePass] = useState(() => loadRequirePass());
   const [passMark, setPassMark] = useState(50);
   const [timeLimit, setTimeLimit] = useState(15);
+  const [maxAttempts, setMaxAttempts] = useState(3);
   const [passes, setPasses] = useState<PassRow[]>([]);
   const [backendRows, setBackendRows] = useState<PassRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [backendReady, setBackendReady] = useState(false);
 
   useEffect(() => {
     setPasses(loadEntrancePasses());
@@ -39,24 +40,43 @@ export default function EntranceTestAdmin() {
     let active = true;
     (async () => {
       try {
+        // Settings row uses integer id = 1 per migration 20261107020000.
+        const { data: sData, error: sError } = await supabase
+          .from("entrance_settings")
+          .select("require_pass,pass_mark,time_minutes,max_attempts")
+          .eq("id", 1)
+          .maybeSingle();
+        if (!sError && sData && active) {
+          const row = sData as Record<string, unknown>;
+          if (typeof row.require_pass === "boolean") setRequirePass(row.require_pass);
+          if (row.pass_mark != null) setPassMark(Number(row.pass_mark));
+          if (row.time_minutes != null) setTimeLimit(Number(row.time_minutes));
+          if (row.max_attempts != null) setMaxAttempts(Number(row.max_attempts));
+          setBackendReady(true);
+        }
+      } catch {
+        /* settings table missing until migration applied */
+      }
+      try {
         const { data, error } = await supabase
           .from("entrance_test_results")
-          .select("*")
-          .order("taken_at", { ascending: false })
+          .select("name,contact,programme,ref,percent,passed,created_at")
+          .order("created_at", { ascending: false })
           .limit(50);
         if (error) return;
         if (!active || !data) return;
+        setBackendReady(true);
         setBackendRows(
           data.map((r) => {
             const row = r as Record<string, unknown>;
             return {
-              name: String(row.applicant_name ?? "—"),
+              name: String(row.name ?? "—"),
               contact: String(row.contact ?? ""),
               programme: String(row.programme ?? ""),
-              reference: String(row.reference ?? ""),
+              reference: String(row.ref ?? ""),
               percent: Number(row.percent ?? 0),
               passed: Boolean(row.passed),
-              takenAt: String(row.taken_at ?? ""),
+              takenAt: String(row.created_at ?? ""),
             };
           }),
         );
@@ -91,23 +111,30 @@ export default function EntranceTestAdmin() {
       toast.error("Time limit must be between 5 and 120 minutes.");
       return;
     }
+    if (maxAttempts < 1 || maxAttempts > 20) {
+      toast.error("Attempts must be between 1 and 20.");
+      return;
+    }
     try {
       localStorage.setItem(ENTRANCE_REQUIRE_KEY, JSON.stringify(requirePass));
-      localStorage.setItem("aoh-entrance-passmark", JSON.stringify(passMark));
-      localStorage.setItem("aoh-entrance-timelimit", JSON.stringify(timeLimit));
+      localStorage.setItem(
+        "aoh-entrance-settings",
+        JSON.stringify({ requirePass, passMark, timeMinutes: timeLimit, maxAttempts }),
+      );
     } catch {
       /* storage optional */
     }
     setSaving(true);
     try {
       const { error } = await supabase.from("entrance_settings").upsert(
-        { id: "default", require_pass: requirePass, pass_mark: passMark, time_limit_minutes: timeLimit },
+        { id: 1, require_pass: requirePass, pass_mark: passMark, time_minutes: timeLimit, max_attempts: maxAttempts },
         { onConflict: "id" },
       );
       if (error) {
         toast.success("Entrance rules saved on this device. Backend save needs the new migration applied.");
         return;
       }
+      setBackendReady(true);
       setPasses(loadEntrancePasses());
       toast.success("Entrance test rules published to the backend.");
     } catch {
@@ -125,9 +152,10 @@ export default function EntranceTestAdmin() {
         </h3>
         <p className="mt-1 text-sm text-slate-600">
           The online entrance/aptitude test is mandatory before training begins. Set the pass mark, time limit,
-          and whether approval requires a pass. Results from this browser and the backend appear below.
+          attempts and whether approval requires a pass. Results from this browser and the backend appear below.
+          {!backendReady ? " Backend tables appear after the pending migration is applied — this screen keeps working on this device until then." : null}
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
           <label className="rounded-xl border border-slate-100 p-3 text-sm">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-emerald-900">Pass mark (%)</span>
             <Input
@@ -148,6 +176,17 @@ export default function EntranceTestAdmin() {
               value={timeLimit}
               onChange={(e) => setTimeLimit(Number(e.target.value))}
               aria-label="Entrance test time limit minutes"
+            />
+          </label>
+          <label className="rounded-xl border border-slate-100 p-3 text-sm">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-emerald-900">Attempts allowed</span>
+            <Input
+              type="number"
+              min={1}
+              max={20}
+              value={maxAttempts}
+              onChange={(e) => setMaxAttempts(Number(e.target.value))}
+              aria-label="Entrance test attempts allowed"
             />
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-100 p-3 text-sm">
@@ -201,5 +240,3 @@ export default function EntranceTestAdmin() {
     </div>
   );
 }
-
-export { ENTRANCE_PASS_KEY };
