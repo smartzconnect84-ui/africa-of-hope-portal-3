@@ -903,6 +903,52 @@ html:not(.dark) :is(.aoh-gold-border) {
 html:not(.dark) :is(input, textarea, select) { border-color: #0b6b4a !important; }
 html:not(.dark) :is(input, textarea, select):focus { border-color: #06402c !important; box-shadow: 0 0 0 3px rgb(201 162 39 / 0.28) !important; outline: none; }
 :is(input, textarea)::placeholder { color: #0b3d2a !important; opacity: 0.85 !important; font-weight: 500; }
-.dark :is(.aoh-gold-border) { border-color: #e4c65b !important; }
-.dark :is(input, textarea, select) { border-color: #0b6b4a !important; }
-.dark :is(input, textarea)::placeholder { color: #b9d9c8 !important; opacity: 0.9 !important; }
+/* DAY MODE ONLY — night mode removed. Any legacy .dark or data-visual-mode="dark"
+   is forced back to the day brand: Green #06402c / #052e1f, Gold #c9a227 / #d4af37,
+   White #ffffff / #fdf9ec, Black #060d0a. Keeps text deep black/green for visibility. */
+html { color-scheme: light !important; }
+html.dark { color-scheme: light !important; background-color: var(--aoh-canvas, #efe7d0) !important; }
+.dark {
+  --background: #f5efe0;
+  --foreground: #060d0a;
+  --card: #fdf9ec;
+  --card-foreground: #060d0a;
+  --popover: #fdf9ec;
+  --popover-foreground: #060d0a;
+  --primary: #06402c;
+  --primary-foreground: #ffffff;
+  --secondary: #e9e0c6;
+  --secondary-foreground: #060d0a;
+  --muted: #ece3c8;
+  --muted-foreground: #10231a;
+  --accent: #ece3c8;
+  --accent-foreground: #060d0a;
+  --border: #c9a227;
+  --input: #0b6b4a;
+  --ring: #c9a227;
+  --sidebar: #efe8d2;
+  --sidebar-foreground: #060d0a;
+  --sidebar-accent: #e9e0c6;
+  --sidebar-accent-foreground: #060d0a;
+  --sidebar-border: #c9a227;
+  color-scheme: light;
+}
+.dark body { background-color: var(--aoh-canvas, #efe7d0) !important; color: #060d0a !important; }
+.dark :is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-stone-50, .bg-\[\#f6f8f7\], .bg-emerald-50, .bg-amber-50) { background-color: #fdf9ec !important; }
+.dark :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-950, .text-gray-900, .text-gray-800, .text-gray-700, .text-emerald-950, .text-emerald-900, .text-emerald-800, .text-slate-600, .text-slate-500, .text-gray-600, .text-gray-500, .text-emerald-700, .text-emerald-600) { color: #060d0a !important; }
+.dark :is(.border-slate-100, .border-slate-200, .border-gray-200, .border-emerald-100, .border-emerald-200, .border-emerald-900\/10) { border-color: #c9a227 !important; }
+.dark :is(select, input, textarea) { background-color: #ffffff !important; border-color: #0b6b4a !important; color: #060d0a !important; }
+.dark :is(select option) { background-color: #ffffff; color: #060d0a; }
+.dark :is(.aoh-gold-border) { border-color: #b8942a !important; box-shadow: 0 0 0 1px rgb(201 162 39 / 0.22), 0 8px 22px rgb(6 64 44 / 0.08) !important; }
+.dark :is(input, textarea)::placeholder { color: #0b3d2a !important; opacity: 0.85 !important; }
+.aoh-public[data-visual-mode="dark"] { background: #f2ebd6 !important; color: #060d0a !important; color-scheme: light !important; }
+.aoh-public[data-visual-mode="dark"] :is(.bg-white, .bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-gray-50, .bg-gray-100, .bg-emerald-50, .bg-emerald-100, .bg-amber-50, .bg-amber-100, .aoh-glass, .aoh-card) { background-color: #fdf9ec !important; }
+.aoh-public[data-visual-mode="dark"] :is(.text-emerald-950, .text-emerald-900, .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-gray-900, .text-gray-800, .text-gray-700, .text-slate-600, .text-slate-500, .text-gray-600, .text-emerald-800) { color: #060d0a !important; }
+.aoh-public[data-visual-mode="dark"] :is(input, select, textarea) { background-color: #ffffff !important; border-color: #0b6b4a !important; color: #060d0a !important; }
+.aoh-public[data-visual-mode="dark"] input::placeholder, .aoh-public[data-visual-mode="dark"] textarea::placeholder { color: #0b3d2a !important; }
+html:has(.aoh-public[data-visual-mode="dark"]) { color-scheme: light !important; }
+
+/* Full brand cards + placeholders: white/ivory surfaces, deep black-green text, gold/green borders. */
+:is(.aoh-card, .aoh-glass, .aoh-gold-border) { border: 1px solid #c9a227 !important; box-shadow: inset 0 0 0 1px #06402c22, 0 8px 22px rgb(6 64 44 / 0.08) !important; }
+:is(input, textarea, select) { border: 1px solid #0b6b4a !important; background-color: #ffffff !important; color: #060d0a !important; }
+:is(input, textarea, select):focus { border-color: #06402c !important; box-shadow: 0 0 0 3px rgb(201 162 39 / 0.3) !important; outline: none !important; }

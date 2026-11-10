@@ -187,16 +187,9 @@ function Shell() {
     root.dataset.portalAlign = theme.contentAlignment;
     root.dataset.portalIcons = theme.iconStyle;
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
-    const applyMode = () => {
-      const dark = theme.mode === "dark" || (theme.mode === "system" && prefersDark.matches);
-      root.classList.toggle("dark", dark);
-    };
-    applyMode();
-    if (theme.mode === "system") {
-      prefersDark.addEventListener("change", applyMode);
-      return () => prefersDark.removeEventListener("change", applyMode);
-    }
+    // Day mode only: night mode removed per branding — always render light.
+    root.classList.remove("dark");
+    root.style.colorScheme = "light";
   }, [state.themeSettings]);
 
   return (

@@ -300,15 +300,10 @@ export default function AdminSystemSettings() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>Color mode</Label>
-                <select
-                  className={SELECT}
-                  value={themeDraft.mode}
-                  onChange={(e) => setTheme("mode", e.target.value as PortalThemeSettings["mode"])}
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="system">Match device</option>
+                <select className={SELECT} value="light" disabled aria-label="Color mode locked to day mode">
+                  <option value="light">Day mode only</option>
                 </select>
+                <p className="text-[11px] text-slate-500">Night mode removed — portal stays in day mode for brand visibility.</p>
               </div>
               <div className="space-y-1.5">
                 <Label>Font family</Label>

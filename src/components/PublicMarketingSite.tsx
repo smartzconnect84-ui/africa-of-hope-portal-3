@@ -3,7 +3,7 @@ import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-
 import {
   LogIn, Menu, X, Mail, Phone,
   MapPin, Sparkles, Globe, ChevronRight, ArrowRight,
-  BookOpen, CalendarDays, Moon, Sun,
+  BookOpen, CalendarDays,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { AuthTab } from "./AuthPortal";
@@ -252,14 +252,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     if (/africa\s+of\s+hope/i.test(full)) return "AFRICA OF HOPE";
     return full || "AFRICA OF HOPE";
   }, [w.academyName, settings.academyName]);
-  const [visualMode, setVisualMode] = useState<'light' | 'dark'>(() => {
-    try { const saved = localStorage.getItem('aoh-public-visual-mode'); return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; } catch { return 'light'; }
-  });
-  const toggleVisualMode = () => setVisualMode(previous => {
-    const next = previous === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem('aoh-public-visual-mode', next); } catch { /* optional preference */ }
-    return next;
-  });
+  // Day mode only: night mode removed per branding — public site always renders light.
   const presentation = w.presentation || DEFAULT_PRESENTATION;
   const [menu, setMenu] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -408,7 +401,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
   return (
     <MotionConfig reducedMotion="user">
-    <div id="top" data-visual-mode={visualMode} data-public-font={presentation.font} data-icon-weight={presentation.iconWeight} className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
+    <div id="top" data-visual-mode="light" data-public-font={presentation.font} data-icon-weight={presentation.iconWeight} className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
       {w.announcementEnabled && bannerItems.length > 0 && (
         <div className="overflow-hidden bg-amber-400 text-emerald-950" role="region" aria-label="Announcements">
           <div className="sr-only" aria-live="polite">
@@ -452,7 +445,6 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </a>
           <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
           <div className="ml-auto flex shrink-0 items-center gap-[0.15rem] lg:ml-1 lg:gap-0">
-            <button type="button" onClick={toggleVisualMode} aria-label={`Switch to ${visualMode === 'dark' ? 'light' : 'dark'} visual mode`} aria-pressed={visualMode === 'dark'} title="Visual mode" className="grid h-10 w-8 shrink-0 place-items-center rounded-xl text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 sm:w-10">{visualMode === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
             <motion.button
               type="button"
               onClick={openLogin}
