@@ -89,7 +89,7 @@ export default function ContactSection({
   return (
     <section
       id="contact"
-      className="scroll-mt-24 bg-gradient-to-b from-[#eef4f0] via-[#f6f8f7] to-white py-14 sm:py-16"
+      className="scroll-mt-24 bg-gradient-to-b from-[#eef4f0] via-[#f6f8f7] to-white py-10 sm:py-12"
     >
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
@@ -107,7 +107,7 @@ export default function ContactSection({
             {copy.subtitle && <p className="mt-2 text-sm text-slate-600">{copy.subtitle}</p>}
           </div>
         </Reveal>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map(({ icon: Icon, label, value }) => (
             <Reveal key={label}>
               <div className="aoh-card aoh-glass h-full rounded-2xl p-5 transition-shadow hover:shadow-lg">

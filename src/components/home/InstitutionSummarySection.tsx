@@ -28,9 +28,9 @@ export default function InstitutionSummarySection({
     { icon: TrendingUp, eyebrow: mission?.eyebrow || "Our mission", title: "Heal · Educate · Empower", body: mission?.body?.[0] || "" },
   ];
   return (
-    <section id="summary" aria-labelledby="mission-heading" className="scroll-mt-24 bg-white py-12 sm:py-16 lg:py-20">
+    <section id="summary" aria-labelledby="mission-heading" className="scroll-mt-24 bg-white py-8 sm:py-10 lg:py-12">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+        <div className="grid items-start gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
           <ScrollReveal>
             <p className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-900">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />

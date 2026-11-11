@@ -13,7 +13,7 @@ export default function CtaBand({
   onLogin: () => void;
 }) {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-emerald-800 via-emerald-900 to-emerald-950 py-14 text-white sm:py-20">
+    <section className="relative overflow-hidden bg-gradient-to-br from-emerald-800 via-emerald-900 to-emerald-950 py-10 text-white sm:py-12">
       <div aria-hidden="true" className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-amber-400/15 blur-3xl" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">

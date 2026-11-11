@@ -21,7 +21,7 @@ type Size = "sm" | "md" | "lg";
 type Tone = "light" | "dark";
 
 const IMG: Record<Size, string> = {
-  sm: "h-7 w-auto max-w-[128px] object-contain",
+  sm: "h-5 w-auto max-w-[96px] object-contain",
   md: "h-8 w-auto max-w-[168px] object-contain md:h-10 md:max-w-[200px]",
   lg: "h-10 w-auto max-w-[176px] object-contain sm:h-11",
 };

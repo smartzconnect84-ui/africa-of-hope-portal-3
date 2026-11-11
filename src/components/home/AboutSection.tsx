@@ -12,7 +12,7 @@ export default function AboutSection({
   settings: SystemSettings;
 }) {
   return (
-    <section id="about" className="scroll-mt-24 bg-white py-10 sm:py-12">
+    <section id="about" className="scroll-mt-24 bg-white py-8 sm:py-10">
       <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 lg:grid-cols-2">
         {copy.image && (
           <Reveal>

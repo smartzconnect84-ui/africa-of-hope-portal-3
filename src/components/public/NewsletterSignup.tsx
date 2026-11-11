@@ -24,8 +24,8 @@ export default function NewsletterSignup() {
     catch (err) { setError(err instanceof Error ? err.message : 'Unable to subscribe. Please retry.'); }
     finally { setBusy(false); }
   }
-  return <section id="newsletter" className="border-b border-white/15 px-4 py-10">
-    <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2">
+  return <section id="newsletter" className="border-b border-white/15 px-4 py-8">
+    <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
       <div><h2 className="text-xl font-bold text-amber-400">{copy.title}</h2><p className="mt-2 text-sm text-white/75">{copy.description}</p></div>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">

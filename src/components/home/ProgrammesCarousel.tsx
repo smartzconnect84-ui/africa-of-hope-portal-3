@@ -81,7 +81,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
   if (total === 0) return null;
 
   return (
-    <section id="programs" className="scroll-mt-20 border-y border-emerald-900/10 bg-[#f2ebd6] py-12 sm:py-16 lg:py-20">
+    <section id="programs" className="scroll-mt-20 border-y border-emerald-900/10 bg-[#f2ebd6] py-8 sm:py-10 lg:py-12">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>

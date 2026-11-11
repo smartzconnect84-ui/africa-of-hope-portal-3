@@ -283,7 +283,7 @@ export function CampusLifePreview() {
     .slice(0, 3);
 
   return (
-    <section className="bg-[#f6f8f7] py-12 sm:py-16" aria-labelledby="campus-life-preview-heading">
+    <section className="bg-[#f6f8f7] py-8 sm:py-10" aria-labelledby="campus-life-preview-heading">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
@@ -298,7 +298,7 @@ export function CampusLifePreview() {
           </a>
         </div>
         {photos.length ? (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((photo) => (
               <figure key={photo.id} className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-sm">
                 <img src={photo.image} alt={photo.caption} loading="lazy" className="aspect-[4/3] w-full object-cover" />

@@ -211,12 +211,12 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-800 via-amber-400 to-emerald-800" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pt-14 lg:pb-28 lg:pt-16">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
+      <div className="relative mx-auto w-full max-w-6xl px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-10 lg:pb-16 lg:pt-12">
+        <div className="grid items-center gap-6 lg:grid-cols-[1.02fr_0.98fr] lg:gap-10">
           {/* ——— Copy ——— */}
           <div className="aoh-hero-copy min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-900/10 bg-white/80 py-1.5 pl-1.5 pr-3 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-900 shadow-sm backdrop-blur">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+              <span className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-emerald-900/10 bg-white/80 py-1.5 pl-1.5 pr-3 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-900 shadow-sm backdrop-blur">
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-900 px-2.5 py-1 text-[10px] tracking-[0.12em] text-amber-300">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-75" />
@@ -224,7 +224,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                   </span>
                   2026 / 27
                 </span>
-                <span className="truncate">{slide.eyebrow}</span>
+                <span className="min-w-0 flex-1 truncate">{slide.eyebrow}</span>
               </span>
               {badgeText ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-950 shadow-[0_8px_24px_-8px_rgba(251,191,36,0.8)]">
@@ -243,7 +243,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                   exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
                   transition={{ duration: prefersReducedMotion ? 0.2 : 0.45, ease: "easeOut" }}
                 >
-                  <h1 className="text-balance text-[2.05rem] font-extrabold leading-[1.04] tracking-tight text-emerald-950 min-[480px]:text-5xl sm:text-6xl lg:text-[4.1rem]">
+                  <h1 className="text-balance break-words text-[1.65rem] font-extrabold leading-[1.08] tracking-tight text-emerald-950 min-[480px]:text-4xl sm:text-5xl lg:text-6xl">
                     {slide.title}
                     {slide.highlight ? (
                       <>
@@ -268,7 +268,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                       </>
                     ) : null}
                   </h1>
-                  <p className="mt-5 max-w-[56ch] text-pretty text-base leading-relaxed text-slate-600 sm:text-lg">
+                  <p className="mt-4 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-slate-600 sm:text-lg">
                     {slide.description}
                   </p>
                 </motion.div>
@@ -317,7 +317,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
           <div className="relative mx-auto w-full max-w-[560px] lg:mx-0">
             {/* Arch frame */}
             <div className="relative overflow-hidden rounded-[2rem] rounded-tr-[4.5rem] border border-emerald-900/10 bg-white shadow-[0_40px_80px_-30px_rgba(6,78,59,0.35)]">
-              <div className="relative aspect-[4/3.6] min-h-[320px] w-full overflow-hidden bg-emerald-100 min-[480px]:aspect-[4/4] sm:aspect-[5/4.6] sm:min-h-[400px] lg:aspect-[4/4.6] lg:min-h-[440px]">
+              <div className="relative aspect-[4/3.6] min-h-[240px] w-full overflow-hidden bg-emerald-100 min-[480px]:aspect-[4/4] sm:aspect-[5/4.6] sm:min-h-[320px] lg:aspect-[4/4.6] lg:min-h-[400px]">
                 {safeSlides.map((s, i) => {
                   const active = i === current % safeSlides.length;
                   return (
@@ -397,7 +397,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             </div>
 
             {/* Floating: verified */}
-            <div className="absolute -left-3 top-8 flex items-center gap-3 rounded-2xl border border-emerald-900/10 bg-white/95 py-2.5 pl-2.5 pr-4 shadow-xl shadow-emerald-950/10 backdrop-blur sm:-left-8">
+            <div className="absolute left-2 top-4 flex max-w-[calc(100%-1rem)] items-center gap-2.5 rounded-2xl border border-emerald-900/10 bg-white/95 py-2 pl-2.5 pr-3 shadow-xl shadow-emerald-950/10 backdrop-blur sm:-left-8 sm:left-auto sm:top-8">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-800 text-amber-300">
                 <BadgeCheck className="h-5 w-5" aria-hidden="true" />
               </span>
@@ -405,7 +405,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 <span className="block text-[13px] font-extrabold leading-tight text-emerald-950">
                   Certificate/Diploma
                 </span>
-                <span className="block text-xs font-medium tracking-wide text-slate-600">Professional credential verification</span>
+                <span className="block text-xs font-medium tracking-wide text-slate-600">P-Tech & Voc Training</span>
               </span>
             </div>
 

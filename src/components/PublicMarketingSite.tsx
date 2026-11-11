@@ -592,7 +592,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 </div>
               </HomeSectionFrame>
               {w.team.enabled && (
-                <section key="team" id="staff" className="scroll-mt-24 py-16">
+                <section key="team" id="staff" className="scroll-mt-24 py-10 sm:py-12">
                   <div className="mx-auto max-w-6xl px-4">
                     <h2 className="text-3xl font-bold text-emerald-950">{w.team.title}</h2>
                     <p className="mt-3 text-black">{w.team.description}</p>
@@ -602,7 +602,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 </section>
               )}
 
-              <section key="blog" id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-10 sm:py-12">
+              <section key="blog" id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-8 sm:py-10">
                 <div className="mx-auto max-w-6xl px-4">
                   <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
                     <div>
@@ -695,7 +695,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2 lg:grid-cols-3">
           <div className="flex flex-col items-start lg:col-span-1">
             <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="light" size="sm" showTagline={false} showName={false} className="self-start" />
             {w.socials.length > 0 && (
@@ -707,11 +707,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             )}
             <div className="mt-6 flex flex-wrap gap-2">
               <button type="button" onClick={() => openApply()} className="inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">{w.publicCopy["footer.apply"]}</button>
-              <button type="button" onClick={openLogin} className="inline-flex h-10 items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-emerald-950 transition hover:border-emerald-700">{w.publicCopy["footer.portal"]}</button>
+              <button type="button" onClick={openLogin} className="inline-flex h-10 items-center rounded-xl border-2 border-emerald-600 bg-white px-4 text-sm font-semibold text-emerald-950 transition hover:border-emerald-700 hover:bg-emerald-50">{w.publicCopy["footer.portal"]}</button>
             </div>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-800">{w.publicCopy["footer.explore"]}</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-amber-600">{w.publicCopy["footer.explore"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
               {navLinks.map((l) => (
                 <li key={l.id}><a href={l.href} className="transition hover:text-amber-300">{t(l.label)}</a></li>
@@ -719,7 +719,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             </ul>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-800">{w.publicCopy["footer.started"]}</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-amber-600">{w.publicCopy["footer.started"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
               <li><a href="/admissions" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</a></li>
               <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
@@ -737,7 +737,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </div>
         </div>
         <div className="border-t border-slate-200">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-center text-[11px] leading-relaxed text-slate-500 sm:flex-row sm:gap-x-6 sm:gap-y-2 sm:px-6 sm:py-5 sm:text-left sm:text-xs md:gap-x-8">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-center text-[13px] leading-relaxed text-slate-500 sm:flex-row sm:gap-x-6 sm:gap-y-2 sm:px-6 sm:py-5 sm:text-left sm:text-sm md:gap-x-8">
             <p className="max-w-full sm:max-w-[60%]">{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
             <p className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">
               <a href="/cookies" className="underline decoration-slate-300 underline-offset-2 transition hover:text-emerald-800">Cookies</a>

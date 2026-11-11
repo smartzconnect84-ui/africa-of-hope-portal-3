@@ -16,7 +16,7 @@ export default function AdmissionsSection({
   return (
     <section
       id="admissions"
-      className="scroll-mt-24 bg-gradient-to-b from-emerald-50/80 via-white to-amber-50/40 py-10 sm:py-12"
+      className="scroll-mt-24 bg-gradient-to-b from-emerald-50/80 via-white to-amber-50/40 py-8 sm:py-10"
     >
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
@@ -34,7 +34,7 @@ export default function AdmissionsSection({
         </Reveal>
 
         {w.admissionSteps.length > 0 && (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {w.admissionSteps.map((s, i) => {
               const Icon = resolveIcon(s.icon);
               return (
@@ -55,7 +55,7 @@ export default function AdmissionsSection({
           </div>
         )}
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+        <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.1fr] lg:items-start">
           {w.admissionRequirements.length > 0 && (
             <Reveal delay={0.1}>
               <div className="aoh-card aoh-glass rounded-3xl p-6">
