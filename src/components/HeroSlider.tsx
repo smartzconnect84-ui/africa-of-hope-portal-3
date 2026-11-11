@@ -279,21 +279,21 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               <button
                 type="button"
                 onClick={onOpenApply}
-                className="group inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-950 px-5 text-[13px] font-bold text-white shadow-[0_18px_40px_-14px_rgba(6,78,59,0.6)] transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
+                className="group inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-950 px-3.5 text-xs font-bold text-white shadow-[0_18px_40px_-14px_rgba(6,78,59,0.6)] transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
               >
                 {applyLabel}
                 <ArrowRight className="h-4 w-4 text-amber-300 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
               </button>
               <a
                 href="#programmes"
-                className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-900/15 bg-white px-5 text-[13px] font-bold text-emerald-950 shadow-sm transition hover:border-emerald-900/30 hover:bg-emerald-50 active:scale-[0.98] sm:w-auto"
+                className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-900/15 bg-white px-3.5 text-xs font-bold text-emerald-950 shadow-sm transition hover:border-emerald-900/30 hover:bg-emerald-50 active:scale-[0.98] sm:w-auto"
               >
                 Explore programmes
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </a>
               <a
                 href="/donate"
-                className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-[13px] font-bold text-emerald-950 shadow-[0_14px_30px_-12px_rgba(251,191,36,0.8)] transition hover:bg-amber-300 active:scale-[0.98] sm:w-auto"
+                className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3.5 text-xs font-bold text-emerald-950 shadow-[0_14px_30px_-12px_rgba(251,191,36,0.8)] transition hover:bg-amber-300 active:scale-[0.98] sm:w-auto"
               >
                 <HeartHandshake className="h-4 w-4" aria-hidden="true" />
                 {donateLabel}
@@ -301,15 +301,6 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-              <span className="inline-flex items-center gap-2">
-                <span className="flex" aria-hidden="true">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  ))}
-                </span>
-                <span className="font-semibold text-emerald-950">Cohort-trusted</span>
-                <span className="text-slate-500">· mentor-led learning</span>
-              </span>
               <a
                 href="/verify"
                 className="inline-flex min-h-[44px] items-center gap-1.5 font-semibold text-emerald-800 underline-offset-4 transition hover:text-emerald-950 hover:underline"
@@ -317,13 +308,6 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                 {verifyLabel}
               </a>
-              <button
-                type="button"
-                onClick={onEnterPortal}
-                className="inline-flex min-h-[44px] items-center gap-1.5 font-semibold text-slate-600 underline-offset-4 transition hover:text-emerald-950 hover:underline"
-              >
-                {portalLabel} →
-              </button>
             </div>
 
             {/* Slide selector removed per design review — prev/next + caption controls remain on the visual card. */}
@@ -419,9 +403,9 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               </span>
               <span>
                 <span className="block text-[13px] font-extrabold leading-tight text-emerald-950">
-                  Certificate verified
+                  Certificate/Diploma
                 </span>
-                <span className="block text-xs text-slate-500">Check any credential online</span>
+                <span className="block text-xs font-medium tracking-wide text-slate-600">Professional credential verification</span>
               </span>
             </div>
 
