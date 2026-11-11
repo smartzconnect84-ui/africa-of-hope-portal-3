@@ -691,8 +691,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-12">
-          <div className="md:col-span-5">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="lg:col-span-1">
             <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="dark" size="md" showTagline={false} showName={false} />
             {w.socials.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -706,7 +706,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               <button type="button" onClick={openLogin} className="inline-flex h-10 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold text-white transition hover:border-amber-400/60 hover:text-amber-300">{w.publicCopy["footer.portal"]}</button>
             </div>
           </div>
-          <div className="md:col-span-2">
+          <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.explore"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-white/75">
               {navLinks.map((l) => (
@@ -714,24 +714,15 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               ))}
             </ul>
           </div>
-          <div className="md:col-span-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.programmes"]}</p>
-            <ul className="mt-4 space-y-2.5 text-sm text-white/75">
-              {state.programs.slice(0, 6).map((p) => (
-                <li key={p.id}><a href="/programmes" className="transition hover:text-amber-300">{p.title}</a></li>
-              ))}
-              <li><a href="/programmes" className="inline-flex items-center gap-1 font-semibold text-amber-300 hover:text-amber-200">{w.publicCopy["footer.all"]} <ChevronRight className="h-3.5 w-3.5" /></a></li>
-            </ul>
-          </div>
-          <div className="md:col-span-3">
+          <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.started"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-white/75">
-              <li><button type="button" onClick={() => openApply()} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</button></li>
+              <li><a href="/admissions" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</a></li>
               <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
-              <li><a href="/?section=support&support=donation" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
-              <li><a href="/?section=support&support=volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
-              <li><a href="/?section=support&support=partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
-              <li><a href="/?section=support&support=staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
+              <li><a href="/donate" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
+              <li><a href="/?section=support#support-volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
+              <li><a href="/?section=support#support-partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
+              <li><a href="/?section=support#support-staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
               <li><a href="/term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
               <li><a href="/verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
               {!w.footerLinks.some(l => /\/transparency$/i.test(l.href)) && <li><a href="/transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
@@ -742,7 +733,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-1 px-4 py-3 text-[11px] text-white/60">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 text-[11px] leading-relaxed text-white/60">
             <p>{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
             <p className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
               <a href="/cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>
