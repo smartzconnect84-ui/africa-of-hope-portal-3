@@ -115,8 +115,15 @@ export const REMOVED_ABOUT_PHRASES = [
   'A people-centered vision',
   'A connected approach',
 ];
+export const REPLACEMENT_ORG_PARAGRAPH =
+  'The organization advances holistic human and community development through eight interconnected areas: education, healthcare, rehabilitation, agriculture, media, advocacy, humanitarian support, and child welfare. Its integrated approach promotes dignity, empowerment, self-reliance, social inclusion, and sustainable development while addressing the fundamental challenges affecting individuals and communities.';
 export function cleanAboutBody(body: string) {
   return paragraphText(body || '')
+    .map((p) =>
+      p.includes('brings eight') || p.includes('organization brings eight') || p.includes('organisation brings eight')
+        ? REPLACEMENT_ORG_PARAGRAPH
+        : p,
+    )
     .filter((p) => !REMOVED_ABOUT_PHRASES.some((s) => p.includes(s)))
     .join('\n\n');
 }
