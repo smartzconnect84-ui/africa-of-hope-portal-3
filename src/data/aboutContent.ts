@@ -63,7 +63,8 @@ export const ABOUT_SUMMARY: AboutProse = {
   subtitle: 'Nonprofit · Est. 2021 · Education, training and community empowerment.',
   paragraphs: [
     'AFRICA OF HOPE (est. 2021) is a nonprofit that turns hope into practical opportunity: professional training, education and community support that build self-reliance across Africa and beyond.',
-    'The organization advances holistic human and community development through eight interconnected areas: education, healthcare, rehabilitation, agriculture, media, advocacy, humanitarian support, and child welfare. Its integrated approach promotes dignity, empowerment, self-reliance, social inclusion, and sustainable development while addressing the fundamental challenges affecting individuals and communities.',
+    'We believe every person deserves dignity, opportunity, access to knowledge, and the chance to build a better future. Guided by this conviction, we pursue initiatives that respond to community needs, develop human potential, and contribute to meaningful social and economic progress.',
+    'Our work spans education and professional training, healthcare initiatives, rehabilitation, agriculture, media and entertainment, advocacy, humanitarian outreach, and child welfare development.',
   ],
 };
 

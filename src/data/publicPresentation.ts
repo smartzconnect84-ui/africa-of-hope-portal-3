@@ -199,7 +199,7 @@ export const REMOVED_ABOUT_PHRASES = [
   'A connected approach',
 ];
 export const REPLACEMENT_ORG_PARAGRAPH =
-  'The organization advances holistic human and community development through eight interconnected areas: education, healthcare, rehabilitation, agriculture, media, advocacy, humanitarian support, and child welfare. Its integrated approach promotes dignity, empowerment, self-reliance, social inclusion, and sustainable development while addressing the fundamental challenges affecting individuals and communities.';
+  'We believe every person deserves dignity, opportunity, access to knowledge, and the chance to build a better future. Guided by this conviction, we pursue initiatives that respond to community needs, develop human potential, and contribute to meaningful social and economic progress.\n\nOur work spans education and professional training, healthcare initiatives, rehabilitation, agriculture, media and entertainment, advocacy, humanitarian outreach, and child welfare development.';
 export function cleanAboutBody(body: string) {
   return paragraphText(body || '')
     .map((p) =>

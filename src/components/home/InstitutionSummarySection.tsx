@@ -25,7 +25,7 @@ export default function InstitutionSummarySection({ w, settings, programsCount }
   return <section id="summary" className="scroll-mt-24 border-b border-emerald-900/10 bg-white py-10 sm:py-12">
     <div className="mx-auto max-w-6xl px-4">
       <ScrollReveal className="max-w-4xl">
-        <p className="aoh-eyebrow inline-flex items-center gap-1.5 rounded-full border border-transparent bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{headline?.eyebrow}</p>
+        <p className="aoh-eyebrow inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-emerald-900 shadow-sm"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{headline?.eyebrow}</p>
         <h2 className="mt-3 bg-gradient-to-r from-amber-500 via-yellow-500 to-emerald-700 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">HEAL | EDUCATE | EMPOWER</h2>
         <div className="mt-3 space-y-3 text-sm leading-7 text-black sm:text-base">{cleanAboutParagraphs(headline?.body || '').map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div>
         <a href="/about" className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-amber-700 underline underline-offset-4 hover:text-amber-800">{w.publicCopy['summary.link'] || 'Read our full story'} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
