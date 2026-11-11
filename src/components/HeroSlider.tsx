@@ -279,21 +279,21 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               <button
                 type="button"
                 onClick={onOpenApply}
-                className="group inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-950 px-3.5 text-xs font-bold text-white shadow-[0_18px_40px_-14px_rgba(6,78,59,0.6)] transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
+                className="group inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-950 px-3.5 text-[14.4px] font-bold text-white shadow-[0_18px_40px_-14px_rgba(6,78,59,0.6)] transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
               >
                 {applyLabel}
                 <ArrowRight className="h-4 w-4 text-amber-300 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
               </button>
               <a
                 href="#programmes"
-                className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-900/15 bg-white px-3.5 text-xs font-bold text-emerald-950 shadow-sm transition hover:border-emerald-900/30 hover:bg-emerald-50 active:scale-[0.98] sm:w-auto"
+                className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-900/15 bg-white px-3.5 text-[14.4px] font-bold text-emerald-950 shadow-sm transition hover:border-emerald-900/30 hover:bg-emerald-50 active:scale-[0.98] sm:w-auto"
               >
                 Explore programmes
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </a>
               <a
                 href="/donate"
-                className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3.5 text-xs font-bold text-emerald-950 shadow-[0_14px_30px_-12px_rgba(251,191,36,0.8)] transition hover:bg-amber-300 active:scale-[0.98] sm:w-auto"
+                className="inline-flex h-[30px] w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3.5 text-[14.4px] font-bold text-emerald-950 shadow-[0_14px_30px_-12px_rgba(251,191,36,0.8)] transition hover:bg-amber-300 active:scale-[0.98] sm:w-auto"
               >
                 <HeartHandshake className="h-4 w-4" aria-hidden="true" />
                 {donateLabel}

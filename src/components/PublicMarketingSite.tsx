@@ -646,7 +646,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                           type="button"
                           onClick={() => setBlogExpanded((v) => !v)}
                           aria-expanded={blogExpanded}
-                          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-800/20 bg-white px-5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+                          className="inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
                         >
                           {blogExpanded ? "Show less" : `View more stories (${blogPreview.length - 1} more)`}
                         </button>

@@ -22,7 +22,7 @@ type Tone = "light" | "dark";
 
 const IMG: Record<Size, string> = {
   sm: "h-5 w-auto max-w-[96px] object-contain",
-  md: "h-10 w-auto max-w-[220px] max-h-[52px] shrink-0 object-contain sm:h-11 sm:max-w-[240px] md:h-12 md:max-w-[260px] md:max-h-[60px]",
+  md: "h-[52px] w-auto max-w-[286px] max-h-[68px] shrink-0 object-contain sm:h-[57px] sm:max-w-[312px] md:h-[62px] md:max-w-[338px] md:max-h-[78px]",
   lg: "h-10 w-auto max-w-[176px] object-contain sm:h-11",
 };
 
