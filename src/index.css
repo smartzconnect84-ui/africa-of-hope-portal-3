@@ -80,11 +80,11 @@ img:not([class*="rounded-full"]) { border-radius: inherit; }
 .aoh-public[data-visual-mode="dark"] :is(.bg-amber-400, .bg-amber-300) { color: #06281c; }
 .aoh-public[data-visual-mode="dark"] :is(.bg-emerald-800, .bg-emerald-900, .bg-emerald-950) { color: #ffffff; }
 /* Borders + dividers glow subtly instead of disappearing. */
-.aoh-public[data-visual-mode="dark"] :is(.border, .border-t, .border-b, .border-l, .border-r, [class*="border-slate-"], [class*="border-gray-"], [class*="border-stone-"], [class*="border-neutral-"], [class*="border-emerald-"]) { border-color: rgba(255, 255, 255, 0.14); }
-.aoh-public[data-visual-mode="dark"] :is(.border-slate-100, .border-slate-200, .border-gray-200, .border-stone-200, .border-emerald-100, .border-emerald-900\/10) { border-color: rgba(255, 255, 255, 0.14); }
+.aoh-public[data-visual-mode="dark"] :is(.border, .border-t, .border-b, .border-l, .border-r, [class*="border-slate-"], [class*="border-gray-"], [class*="border-stone-"], [class*="border-neutral-"], [class*="border-emerald-"]) { border-color: #236b49; }
+.aoh-public[data-visual-mode="dark"] :is(.border-slate-100, .border-slate-200, .border-gray-200, .border-stone-200, .border-emerald-100, .border-emerald-900\/10) { border-color: #236b49; }
 .aoh-public[data-visual-mode="dark"] :is(.divide-slate-100, .divide-slate-200, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: rgba(255, 255, 255, 0.12); }
 /* Cards + glass panels: dark surface, light text, visible edge. */
-.aoh-public[data-visual-mode="dark"] :is(.aoh-card, .aoh-glass) { border-color: rgba(255, 255, 255, 0.14); box-shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.7); color: #ecfdf5; }
+.aoh-public[data-visual-mode="dark"] :is(.aoh-card, .aoh-glass) { border-color: #236b49; box-shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.7); color: #ecfdf5; }
 /* Form fields stay dark with readable text. */
 .aoh-public[data-visual-mode="dark"] :is(input, select, textarea) { background-color: #0c1f16 !important; border-color: rgba(255, 255, 255, 0.18) !important; color: #ecfdf5 !important; }
   .aoh-public[data-visual-mode="dark"] input::placeholder,
@@ -113,6 +113,12 @@ html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"
 .aoh-public[data-visual-mode="dark"] :is(.text-amber-400, .text-amber-500) { color: #fbbf24; }
 /* Subtle hover zoom is intentional for marketing cards only. */
 .aoh-no-zoom img, img.aoh-no-zoom { transform: none !important; scale: 1 !important; }
+
+/* Cards, panels, and empty placeholders use the platform border palette. */
+:is([data-slot="card"], .aoh-card, .aoh-glass, .aoh-glass-dark, [class*="placeholder"]) { border-color: #d4af37; }
+.dark :is([data-slot="card"], .aoh-card, .aoh-glass, .aoh-glass-dark, [class*="placeholder"]) { border-color: #236b49; }
+::placeholder { color: #000000; opacity: 0.72; }
+.dark ::placeholder { color: #b9d8c7; opacity: 0.88; }
 
 /* Public footer follows the platform contrast contract: gold with black text in
    light mode, deep green with high-contrast light text in night mode. */
@@ -152,13 +158,13 @@ html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"
   --secondary: #eadb9b;
   --secondary-foreground: #000000;
   --muted: #eee3b9;
-  --muted-foreground: #302a18;
+  --muted-foreground: #000000;
   --accent: #eadb9b;
   --accent-foreground: #000000;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: #d4af37;
+  --input: #d4af37;
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.81 0.1 252);
   --chart-2: oklch(0.62 0.19 260);
@@ -217,13 +223,13 @@ html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"
   --secondary: #173b2a;
   --secondary-foreground: #f2f8f4;
   --muted: #173b2a;
-  --muted-foreground: #c4ddd0;
+  --muted-foreground: #b9d8c7;
   --accent: #d4af37;
   --accent-foreground: #000000;
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.275 0 0);
-  --input: oklch(0.325 0 0);
+  --border: #236b49;
+  --input: #236b49;
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.81 0.1 252);
   --chart-2: oklch(0.62 0.19 260);
