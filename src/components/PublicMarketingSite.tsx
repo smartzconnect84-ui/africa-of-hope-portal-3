@@ -46,6 +46,7 @@ import SupportSection from "./public/SupportSection";
 import NewsletterSignup from "./public/NewsletterSignup";
 import NewsletterAction from "./public/NewsletterAction";
 import OrderedSections from './public/OrderedSections';
+import HomeSectionFrame from './public/HomeSectionFrame';
 import { DEFAULT_PRESENTATION } from '@/data/publicPresentation';
 import { useLocale } from "@/lib/locale";
 import { isPublicPageEnabled } from "@/lib/publicPages";
@@ -557,7 +558,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               {visibleSections.map((key) => {
                 const Section = HOME_SECTION_REGISTRY[key];
                 return (
-                  <div key={key}>
+                  <HomeSectionFrame key={key} sectionKey={key}>
                     <Section
                       copy={w.home.sections[key] ?? {}}
                       w={w}
@@ -566,17 +567,27 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                       onLogin={openLogin}
                       programsCount={publicPrograms.length}
                     />
-                  </div>
+                  </HomeSectionFrame>
                 );
               })}
 
-              <ProgrammesCarousel key="programmes" programs={publicPrograms} onApply={openApply} />
-              <CampusLifePreview key="campus-life" />
-              {supportRevealed && <SupportSection key="support" onApply={openApply} />}
+              <HomeSectionFrame key="programmes" sectionKey="programmes">
+                <ProgrammesCarousel programs={publicPrograms} onApply={openApply} />
+              </HomeSectionFrame>
+              <HomeSectionFrame key="campus-life" sectionKey="campus-life">
+                <CampusLifePreview />
+              </HomeSectionFrame>
+              {supportRevealed && (
+                <HomeSectionFrame key="support" sectionKey="support">
+                  <SupportSection onApply={openApply} />
+                </HomeSectionFrame>
+              )}
               {/* Consent-based newsletter signup; hidden unless enabled in Website Settings. */}
-              <div key="newsletter" className="bg-black">
-                <NewsletterSignup />
-              </div>
+              <HomeSectionFrame key="newsletter" sectionKey="newsletter">
+                <div className="bg-black">
+                  <NewsletterSignup />
+                </div>
+              </HomeSectionFrame>
               {w.team.enabled && (
                 <section key="team" id="staff" className="scroll-mt-24 py-16">
                   <div className="mx-auto max-w-6xl px-4">

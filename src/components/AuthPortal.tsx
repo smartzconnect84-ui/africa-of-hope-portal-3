@@ -611,7 +611,6 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
     }
     toast.success("Application submitted. The registrar will review it shortly.");
     try { localStorage.removeItem(APPLICATION_DRAFT_KEY); } catch { /* ignore */ }
-    void deleteDraftFromBackend(reg.email);
     setDraftSavedAt(null);
     setDraftRestored(false);
     onDone(reg.email.trim(), result.status ?? "confirm_email");

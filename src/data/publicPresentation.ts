@@ -135,7 +135,18 @@ export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
   transcriptNote: 'Document requests are handled through the secure student portal.',
   tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true, 'reference-letters': true, 'prep-pack': true, yearbook: true },
 };
-export const DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
+/** Relevance-first homepage flow (most decision-critical first).
+ *  Hero (rendered separately) → trust snapshot (summary) → offer
+ *  (programmes) → proof (impact) → story (about) → reasons (features) →
+ *  how to join (admissions) → people (team) → experience (campus-life) →
+ *  stories (blog) → objections (faq) → assurance (verify) → generosity
+ *  (support) → stay in touch (newsletter) → talk to us (contact) → final
+ *  call (cta). CMS-saved `publicLayout` arrays still win; this default only
+ *  shapes fresh sites and the reader/tab order fallback. No copy is changed. */
+export const DEFAULT_LAYOUT = ['summary', 'programmes', 'impact', 'about', 'features', 'admissions', 'team', 'campus-life', 'blog', 'faq', 'verify', 'support', 'newsletter', 'contact', 'cta'];
+/** The pre-restructure default order, kept so saved CMS layouts that exactly
+ *  match it can be migrated forward to the relevance order exactly once. */
+export const LEGACY_DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }
 
 /** Sentences the owner removed via visual edits. Published CMS bodies may still
