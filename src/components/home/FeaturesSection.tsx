@@ -5,7 +5,7 @@ import { resolveIcon } from "./icons";
 export default function FeaturesSection({ copy, w }: { copy: SectionCopy; w: WebsiteSettings }) {
   if (w.features.length === 0) return null;
   return (
-    <section className="scroll-mt-24 bg-emerald-950 py-16 text-white sm:py-20">
+    <section className="scroll-mt-24 bg-emerald-950 py-10 text-white sm:py-12">
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
           <div className="max-w-2xl">
@@ -15,12 +15,12 @@ export default function FeaturesSection({ copy, w }: { copy: SectionCopy; w: Web
               </p>
             )}
             {copy.title && (
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-amber-400 sm:text-4xl">{copy.title}</h2>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{copy.title}</h2>
             )}
             {copy.subtitle && <p className="mt-2 text-sm text-emerald-100/80">{copy.subtitle}</p>}
           </div>
         </Reveal>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {w.features.map((f, i) => {
             const Icon = resolveIcon(f.icon);
             return (

@@ -212,6 +212,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const presentation = w.presentation || DEFAULT_PRESENTATION;
   const [menu, setMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [supportRevealed, setSupportRevealed] = useState(false);
+  const [verifyRevealed, setVerifyRevealed] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
@@ -235,6 +237,46 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     onEnterPortal("register");
   };
   const openLogin = () => onEnterPortal("signin");
+
+  // Visual edits #8/#10: homepage #support and #verify stay removed until the
+  // visitor explicitly asks for them via a Donate / Verify Certificate action
+  // anywhere on the public site. Dedicated /donate and /verify pages remain.
+  useEffect(() => {
+    const onClick = (e: Event) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("a,button") as HTMLElement | null;
+      if (!el) return;
+      const href = (el.getAttribute("href") || "").toLowerCase();
+      const text = (el.textContent || "").toLowerCase();
+      const wantsSupport = href.includes("/donate") || href.includes("support") || text.includes("donate");
+      const wantsVerify = href.includes("/verify") || text.includes("verify certificate") || (href === "#verify");
+      if (wantsSupport) {
+        setSupportRevealed(true);
+        if (href.includes("support")) {
+          window.setTimeout(() => document.getElementById("support")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+        }
+      }
+      if (wantsVerify) {
+        setVerifyRevealed(true);
+        if (href === "#verify" || href.includes("section=verify")) {
+          e.preventDefault();
+          window.setTimeout(() => document.getElementById("verify")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+        }
+      }
+    };
+    const onHash = () => {
+      const h = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (h.includes("support") || search.includes("section=support")) setSupportRevealed(true);
+      if (h.includes("verify") || search.includes("section=verify")) setVerifyRevealed(true);
+    };
+    document.addEventListener("click", onClick);
+    window.addEventListener("hashchange", onHash);
+    onHash();
+    return () => {
+      document.removeEventListener("click", onClick);
+      window.removeEventListener("hashchange", onHash);
+    };
+  }, []);
 
   const view = useMemo(() => viewFromLocation(location.pathname, location.search), [location.pathname, location.search]);
 
@@ -330,8 +372,12 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   // `w.home.order` is normalised (every registry key present, "summary"
   // first when missing) by mergeWebsiteSettings, so no special-casing here.
   const visibleSections = useMemo(
-    () => w.home.order.filter((key) => !w.home.hidden.includes(key) && HOME_SECTION_REGISTRY[key]),
-    [w.home.order, w.home.hidden],
+    () => w.home.order.filter((key) => {
+      if (w.home.hidden.includes(key) || !HOME_SECTION_REGISTRY[key]) return false;
+      if (key === "verify" && !verifyRevealed) return false;
+      return true;
+    }),
+    [w.home.order, w.home.hidden, verifyRevealed],
   );
 
   const announcements = state.announcements
@@ -537,7 +583,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
               <ProgrammesCarousel key="programmes" programs={publicPrograms} onApply={openApply} />
               <CampusLifePreview key="campus-life" />
-              <SupportSection key="support" onApply={openApply} />
+              {supportRevealed && <SupportSection key="support" onApply={openApply} />}
               {/* Consent-based newsletter signup; hidden unless enabled in Website Settings. */}
               <div key="newsletter" className="bg-black">
                 <NewsletterSignup />
@@ -553,7 +599,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 </section>
               )}
 
-              <section key="blog" id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-16 sm:py-20">
+              <section key="blog" id="blog-preview" className="scroll-mt-20 bg-[#f6f8f7] py-10 sm:py-12">
                 <div className="mx-auto max-w-6xl px-4">
                   <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
                     <div>

@@ -93,7 +93,7 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
   if (!copy.enabled) return null;
 
   return (
-    <section id="support" className="scroll-mt-24 bg-[#f6f8f7] py-16 sm:py-20">
+    <section id="support" className="scroll-mt-24 bg-[#f6f8f7] py-10 sm:py-12">
       <div className="mx-auto max-w-6xl px-4">
         <ScrollReveal className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{copy.eyebrow}</p>
@@ -105,7 +105,7 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
           </p>
         </ScrollReveal>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="grid gap-3">
             {tabs.map((tab, i) => {
               const Icon = tab.icon;
