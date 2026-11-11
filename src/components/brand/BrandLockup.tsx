@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  *
  * Logo treatment: the uploaded logo is rendered raw and transparent — no
  * surrounding plate, box, ring, drop shadow or background shape anywhere in
- * the system — and stepped up ~40% in size for visibility. The outer flex row, gap and
+ * the system. The outer flex row, gap and
  * text block are untouched so nearby nav links, buttons, cards and text do
  * not shift. For a truly clean cut, upload a PNG with a transparent
  * background in Website Settings → Branding; any flat background baked into
@@ -21,9 +21,9 @@ type Size = "sm" | "md" | "lg";
 type Tone = "light" | "dark";
 
 const IMG: Record<Size, string> = {
-  sm: "h-14 w-auto max-w-[190px]",
-  md: "h-16 w-auto max-w-[230px] sm:h-[4.5rem]",
-  lg: "h-20 w-auto max-w-[260px] sm:h-24",
+  sm: "h-[2.8rem] w-auto max-w-[152px]",
+  md: "h-[3.2rem] w-auto max-w-[184px] sm:h-[3.6rem]",
+  lg: "h-16 w-auto max-w-[208px] sm:h-[4.8rem]",
 };
 
 const ICON: Record<Size, string> = {
