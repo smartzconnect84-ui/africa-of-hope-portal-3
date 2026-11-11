@@ -32,6 +32,17 @@ const schema = z.object({
       tag: z.string().max(60, 'Tag must be 60 characters or fewer.'),
       image: image.refine(v => !!v, 'Each gallery photo needs an image.'),
     })).max(60, 'Use at most 60 gallery photos.'),
+    events: z.array(z.object({ id: required('Event ID', 120), title: required('Event title', 240), date: z.string().max(60), venue: z.string().max(240), note: z.string().max(1000) })).max(80).optional(),
+    jobs: z.array(z.object({ id: required('Job ID', 120), title: required('Job title', 240), org: z.string().max(240), type: z.string().max(120), pay: z.string().max(120), applyNote: z.string().max(500) })).max(80).optional(),
+    spotlights: z.array(z.object({ id: required('Story ID', 120), name: required('Name', 120), role: z.string().max(160), text: required('Story', 1000) })).max(60).optional(),
+    aid: z.array(z.object({ id: required('Aid ID', 120), title: required('Aid title', 240), cover: z.string().max(240), who: z.string().max(1000) })).max(40).optional(),
+    resources: z.array(z.object({ id: required('Resource ID', 120), title: required('Resource title', 240), meta: z.string().max(240), href: z.string().max(2000) })).max(80).optional(),
+    feePlans: z.array(z.object({ id: required('Plan ID', 120), title: required('Plan title', 240), amount: z.string().max(120), note: z.string().max(1000) })).max(40).optional(),
+    sectionTitles: z.record(z.string(), z.string()).optional(),
+    sectionBodies: z.record(z.string(), z.string()).optional(),
+    internshipTarget: z.number().min(1).max(2000).optional(),
+    feesNote: z.string().max(1000).optional(),
+    transcriptNote: z.string().max(1000).optional(),
     tabs: z.record(z.string(), z.boolean()),
   }).optional(),
   faviconUrl: image,
@@ -65,6 +76,8 @@ export function resolvedPwa(settings: WebsiteSettings) {
 
 export function resolvedCampusLife(settings: WebsiteSettings) {
   const saved = (settings.campusLife ?? {}) as Partial<typeof DEFAULT_CAMPUS_LIFE>;
+  const cleanList = <T extends { id: string }>(v: unknown, fallback: T[]): T[] =>
+    Array.isArray(v) ? (v as T[]).filter((x) => x && typeof (x as T).id === 'string') : fallback;
   const gallery = Array.isArray(saved.gallery) ? saved.gallery.filter(g => g && typeof g.id === 'string' && typeof g.image === 'string' && g.image) : [];
   const tabs: Record<string, boolean> = {};
   for (const t of CAMPUS_TABS) tabs[t.id] = (saved.tabs as Record<string, boolean> | undefined)?.[t.id] ?? true;
@@ -77,6 +90,17 @@ export function resolvedCampusLife(settings: WebsiteSettings) {
     galleryTitle: typeof saved.galleryTitle === 'string' ? saved.galleryTitle : DEFAULT_CAMPUS_LIFE.galleryTitle,
     galleryNote: typeof saved.galleryNote === 'string' ? saved.galleryNote : DEFAULT_CAMPUS_LIFE.galleryNote,
     gallery: gallery as { id: string; caption: string; tag: string; image: string }[],
+    events: cleanList(saved.events, DEFAULT_CAMPUS_LIFE.events),
+    jobs: cleanList(saved.jobs, DEFAULT_CAMPUS_LIFE.jobs),
+    spotlights: cleanList(saved.spotlights, DEFAULT_CAMPUS_LIFE.spotlights),
+    aid: cleanList(saved.aid, DEFAULT_CAMPUS_LIFE.aid),
+    resources: cleanList(saved.resources, DEFAULT_CAMPUS_LIFE.resources),
+    feePlans: cleanList(saved.feePlans, DEFAULT_CAMPUS_LIFE.feePlans),
+    sectionTitles: { ...DEFAULT_CAMPUS_LIFE.sectionTitles, ...((saved.sectionTitles as Record<string, string> | undefined) ?? {}) },
+    sectionBodies: { ...DEFAULT_CAMPUS_LIFE.sectionBodies, ...((saved.sectionBodies as Record<string, string> | undefined) ?? {}) },
+    internshipTarget: typeof saved.internshipTarget === 'number' && saved.internshipTarget > 0 ? saved.internshipTarget : DEFAULT_CAMPUS_LIFE.internshipTarget,
+    feesNote: typeof saved.feesNote === 'string' ? saved.feesNote : DEFAULT_CAMPUS_LIFE.feesNote,
+    transcriptNote: typeof saved.transcriptNote === 'string' ? saved.transcriptNote : DEFAULT_CAMPUS_LIFE.transcriptNote,
     tabs,
   };
 }

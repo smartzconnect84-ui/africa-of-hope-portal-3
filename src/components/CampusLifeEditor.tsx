@@ -1,26 +1,21 @@
-import { CAMPUS_TABS, type CampusGalleryItem, type CampusLifeSettings } from "@/data/publicPresentation";
+import { CAMPUS_TABS, DEFAULT_CAMPUS_LIFE, type CampusLifeSettings } from "@/data/publicPresentation";
 import type { WebsiteSettings } from "@/types";
-import { Field, Area, Toggle, ImageBox, genId } from "./CmsPrimitives";
+import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitives";
 import { panelClass } from "./Navigation";
 
 export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSettings; patch: (f: Partial<WebsiteSettings>) => void }) {
-  const campus: CampusLifeSettings = draft.campusLife;
+  const campus: CampusLifeSettings = { ...DEFAULT_CAMPUS_LIFE, ...(draft.campusLife ?? {}) };
   const set = (fields: Partial<CampusLifeSettings>) => patch({ campusLife: { ...campus, ...fields } });
-  const setItem = (id: string, fields: Partial<CampusGalleryItem>) =>
-    set({ gallery: campus.gallery.map((g) => (g.id === id ? { ...g, ...fields } : g)) });
-  const addItem = () =>
-    set({ gallery: [...campus.gallery, { id: genId("photo"), caption: "New campus photo", tag: "Campus", image: "" }] });
-  const removeItem = (id: string) => {
-    if (!window.confirm("Remove this photo from Campus Life? The uploaded file stays in storage.")) return;
-    set({ gallery: campus.gallery.filter((g) => g.id !== id) });
-  };
+  const setTitle = (key: string, v: string) => set({ sectionTitles: { ...campus.sectionTitles, [key]: v } });
+  const setBody = (key: string, v: string) => set({ sectionBodies: { ...campus.sectionBodies, [key]: v } });
 
   return (
     <div className={`${panelClass} space-y-5 p-5`}>
       <div>
         <h2 className="text-base font-semibold text-slate-900">Campus Life page content</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Hero copy, gallery heading and every gallery photo on the public Campus Life page. Publish changes to take it live.
+          Shared by every role and account with CMS access. Add, edit, upload and delete below, then Publish changes.
+          The public site shows <strong>only</strong> this published data — visitors can view but never edit it.
         </p>
       </div>
       <Toggle label="Show Campus Life section" hint="Hides the whole hub when off." checked={campus.enabled} onChange={(v) => set({ enabled: v })} />
@@ -36,25 +31,206 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
       </div>
 
       <div className="border-t border-slate-100 pt-5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-slate-900">Gallery photos ({campus.gallery.length})</h3>
-          <button type="button" onClick={addItem} className="inline-flex min-h-10 items-center rounded-xl bg-emerald-800 px-3 text-sm font-semibold text-white hover:bg-emerald-900">
-            Add photo
-          </button>
-        </div>
-        <p className="mt-1 text-xs text-slate-500">Upload, retitle, retag or delete. Empty image slots fall back to the supplied campus photos.</p>
-        <div className="mt-4 space-y-4">
-          {campus.gallery.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No custom photos yet — the live page shows the supplied campus photos.</p>}
-          {campus.gallery.map((item) => (
-            <div key={item.id} className="grid gap-4 rounded-2xl border border-slate-200 p-4 md:grid-cols-[220px_1fr]">
-              <ImageBox label="Photo" folder="pages/campus-life" value={item.image} onChange={(image) => setItem(item.id, { image })} />
-              <div className="space-y-3">
-                <Field label="Caption" value={item.caption} onChange={(v) => setItem(item.id, { caption: v })} />
-                <Field label="Tag" value={item.tag} onChange={(v) => setItem(item.id, { tag: v })} />
-                <button type="button" onClick={() => removeItem(item.id)} className="text-sm font-semibold text-rose-700 hover:underline">
-                  Remove photo
-                </button>
+        <h3 className="text-sm font-semibold text-slate-900">Gallery photos ({campus.gallery.length})</h3>
+        <p className="mt-1 text-xs text-slate-500">Upload, retitle, retag, reorder or delete. Empty slots fall back to the supplied campus photos on the live page.</p>
+        <div className="mt-3">
+          <ListEditor
+            title="Photo"
+            items={campus.gallery}
+            onChange={(gallery) => set({ gallery })}
+            addLabel="Add photo"
+            emptyHint="No custom photos yet — the live page shows the supplied campus photos."
+            newItem={() => ({ id: genId("photo"), caption: "New campus photo", tag: "Campus", image: "" })}
+            renderItem={(item, update) => (
+              <div className="grid gap-4 md:grid-cols-[220px_1fr]">
+                <ImageBox label="Photo" folder="pages/campus-life" value={item.image} onChange={(image) => update({ image })} />
+                <div className="space-y-3">
+                  <Field label="Caption" value={item.caption} onChange={(v) => update({ caption: v })} />
+                  <Field label="Tag" value={item.tag} onChange={(v) => update({ tag: v })} />
+                </div>
               </div>
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Events heading" value={campus.sectionTitles.events ?? ""} onChange={(v) => setTitle("events", v)} />
+        </div>
+        <div className="mt-3"><Area label="Events intro" value={campus.sectionBodies.events ?? ""} onChange={(v) => setBody("events", v)} rows={2} /></div>
+        <div className="mt-3">
+          <ListEditor
+            title="Event"
+            items={campus.events}
+            onChange={(events) => set({ events })}
+            addLabel="Add event"
+            emptyHint="No events published — the live page shows an empty state."
+            newItem={() => ({ id: genId("event"), title: "New event", date: new Date().toISOString().slice(0, 16), venue: "Main campus", note: "" })}
+            renderItem={(item, update) => (
+              <>
+                <Field label="Title" value={item.title} onChange={(v) => update({ title: v })} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Date & time (e.g. 2027-02-20T10:00)" value={item.date} onChange={(v) => update({ date: v })} />
+                  <Field label="Venue" value={item.venue} onChange={(v) => update({ venue: v })} />
+                </div>
+                <Area label="Details" value={item.note} onChange={(v) => update({ note: v })} rows={2} />
+              </>
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Careers heading" value={campus.sectionTitles.careers ?? ""} onChange={(v) => setTitle("careers", v)} />
+        </div>
+        <div className="mt-3"><Area label="Careers intro" value={campus.sectionBodies.careers ?? ""} onChange={(v) => setBody("careers", v)} rows={2} /></div>
+        <div className="mt-3">
+          <ListEditor
+            title="Job"
+            items={campus.jobs}
+            onChange={(jobs) => set({ jobs })}
+            addLabel="Add job"
+            emptyHint="No jobs published — the live page shows an empty state."
+            newItem={() => ({ id: genId("job"), title: "New role", org: "", type: "Internship", pay: "", applyNote: "" })}
+            renderItem={(item, update) => (
+              <>
+                <Field label="Job title" value={item.title} onChange={(v) => update({ title: v })} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Organisation" value={item.org} onChange={(v) => update({ org: v })} />
+                  <Field label="Type" value={item.type} onChange={(v) => update({ type: v })} />
+                </div>
+                <Field label="Pay / reward" value={item.pay} onChange={(v) => update({ pay: v })} />
+                <Area label="How to apply" value={item.applyNote} onChange={(v) => update({ applyNote: v })} rows={2} />
+              </>
+            )}
+          />
+        </div>
+        <div className="mt-4">
+          <h4 className="text-sm font-semibold text-slate-900">Alumni spotlights ({campus.spotlights.length})</h4>
+          <p className="mt-1 text-xs text-slate-500">Published graduate outcomes shown on the public careers tab.</p>
+          <div className="mt-3">
+            <ListEditor
+              title="Spotlight"
+              items={campus.spotlights}
+              onChange={(spotlights) => set({ spotlights })}
+              addLabel="Add spotlight"
+              emptyHint="No spotlights published yet."
+              newItem={() => ({ id: genId("spot"), name: "Graduate name", role: "Current role", text: "" })}
+              renderItem={(item, update) => (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Name" value={item.name} onChange={(v) => update({ name: v })} />
+                    <Field label="Role" value={item.role} onChange={(v) => update({ role: v })} />
+                  </div>
+                  <Area label="Story" value={item.text} onChange={(v) => update({ text: v })} rows={3} />
+                </>
+              )}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Internship heading" value={campus.sectionTitles.internship ?? ""} onChange={(v) => setTitle("internship", v)} />
+          <Field label="Target hours" value={String(campus.internshipTarget)} onChange={(v) => set({ internshipTarget: Math.max(1, Number(v) || 0) })} />
+        </div>
+        <div className="mt-3"><Area label="Internship guide" value={campus.sectionBodies.internship ?? ""} onChange={(v) => setBody("internship", v)} rows={2} /></div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Scholarships heading" value={campus.sectionTitles.scholarships ?? ""} onChange={(v) => setTitle("scholarships", v)} />
+        </div>
+        <div className="mt-3"><Area label="Scholarships intro" value={campus.sectionBodies.scholarships ?? ""} onChange={(v) => setBody("scholarships", v)} rows={2} /></div>
+        <div className="mt-3">
+          <ListEditor
+            title="Aid"
+            items={campus.aid}
+            onChange={(aid) => set({ aid })}
+            addLabel="Add scholarship / sponsor"
+            emptyHint="No aid published — the live page shows an empty state."
+            newItem={() => ({ id: genId("aid"), title: "New scholarship", cover: "", who: "" })}
+            renderItem={(item, update) => (
+              <>
+                <Field label="Title" value={item.title} onChange={(v) => update({ title: v })} />
+                <Field label="Cover" value={item.cover} onChange={(v) => update({ cover: v })} />
+                <Area label="Eligibility" value={item.who} onChange={(v) => update({ who: v })} rows={2} />
+              </>
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Transcripts heading" value={campus.sectionTitles.transcripts ?? ""} onChange={(v) => setTitle("transcripts", v)} />
+        </div>
+        <div className="mt-3"><Area label="Transcripts note" value={campus.transcriptNote} onChange={(v) => set({ transcriptNote: v })} rows={2} /></div>
+        <div className="mt-3"><Area label="Transcripts intro (public tab)" value={campus.sectionBodies.transcripts ?? ""} onChange={(v) => setBody("transcripts", v)} rows={2} /></div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Library heading" value={campus.sectionTitles.library ?? ""} onChange={(v) => setTitle("library", v)} />
+        </div>
+        <div className="mt-3"><Area label="Library intro" value={campus.sectionBodies.library ?? ""} onChange={(v) => setBody("library", v)} rows={2} /></div>
+        <div className="mt-3">
+          <ListEditor
+            title="Resource"
+            items={campus.resources}
+            onChange={(resources) => set({ resources })}
+            addLabel="Add resource"
+            emptyHint="No downloads published — the live page shows an empty state."
+            newItem={() => ({ id: genId("res"), title: "New download", meta: "", href: "" })}
+            renderItem={(item, update) => (
+              <>
+                <Field label="Title" value={item.title} onChange={(v) => update({ title: v })} />
+                <Field label="Type / size note" value={item.meta} onChange={(v) => update({ meta: v })} placeholder="e.g. Programme guide · JPG" />
+                <ImageBox label="File (image/PDF cover)" folder="pages/campus-life" value={item.href} onChange={(href) => update({ href })} />
+              </>
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Fees heading" value={campus.sectionTitles.fees ?? ""} onChange={(v) => setTitle("fees", v)} />
+        </div>
+        <div className="mt-3"><Area label="Fees intro" value={campus.sectionBodies.fees ?? ""} onChange={(v) => setBody("fees", v)} rows={2} /></div>
+        <div className="mt-3"><Area label="Payment note" value={campus.feesNote} onChange={(v) => set({ feesNote: v })} rows={2} /></div>
+        <div className="mt-3">
+          <ListEditor
+            title="Payment plan"
+            items={campus.feePlans}
+            onChange={(feePlans) => set({ feePlans })}
+            addLabel="Add payment plan"
+            emptyHint="No payment plans published — the live page shows an empty state."
+            newItem={() => ({ id: genId("plan"), title: "New plan", amount: "", note: "" })}
+            renderItem={(item, update) => (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Plan" value={item.title} onChange={(v) => update({ title: v })} />
+                  <Field label="Amount / split" value={item.amount} onChange={(v) => update({ amount: v })} placeholder="e.g. 50% + 50%" />
+                </div>
+                <Area label="Note" value={item.note} onChange={(v) => update({ note: v })} rows={2} />
+              </>
+            )}
+          />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 pt-5">
+        <h3 className="text-sm font-semibold text-slate-900">Other tabs — public headings & intros</h3>
+        <p className="mt-1 text-xs text-slate-500">Feedback, vacancies, businesses, reference letters, entrance prep and yearbook lists are managed in their own backend queues; edit only the public headings here.</p>
+        <div className="mt-3 grid gap-4">
+          {(["feedback", "vacancies", "businesses", "reference-letters", "prep-pack", "yearbook"] as const).map((key) => (
+            <div key={key} className="grid gap-3 rounded-2xl border border-slate-200 p-4">
+              <Field label={`${key} heading`} value={campus.sectionTitles[key] ?? ""} onChange={(v) => setTitle(key, v)} />
+              <Area label={`${key} intro`} value={campus.sectionBodies[key] ?? ""} onChange={(v) => setBody(key, v)} rows={2} />
             </div>
           ))}
         </div>

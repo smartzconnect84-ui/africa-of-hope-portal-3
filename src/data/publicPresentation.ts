@@ -51,11 +51,30 @@ export const DEFAULT_PWA = {
   orientation: 'any' as 'any' | 'portrait' | 'landscape',
 };
 export interface CampusGalleryItem { id: string; caption: string; tag: string; image: string }
+export interface CampusEventItem { id: string; title: string; date: string; venue: string; note: string }
+export interface CampusJobItem { id: string; title: string; org: string; type: string; pay: string; applyNote: string }
+export interface CampusSpotlight { id: string; name: string; role: string; text: string }
+export interface CampusAidItem { id: string; title: string; cover: string; who: string }
+export interface CampusResourceItem { id: string; title: string; meta: string; href: string }
+export interface CampusFeePlan { id: string; title: string; amount: string; note: string }
 export interface CampusLifeSettings {
   enabled: boolean;
   eyebrow: string; title: string; subtitle: string; body: string;
   galleryTitle: string; galleryNote: string;
   gallery: CampusGalleryItem[];
+  events: CampusEventItem[];
+  jobs: CampusJobItem[];
+  spotlights: CampusSpotlight[];
+  aid: CampusAidItem[];
+  resources: CampusResourceItem[];
+  feePlans: CampusFeePlan[];
+  /** Editable intro copy per tab, keyed by tab id. Public viewers see only this published copy. */
+  sectionTitles: Record<string, string>;
+  sectionBodies: Record<string, string>;
+  /** Internship target hours + guide text shown above the logbook. */
+  internshipTarget: number;
+  feesNote: string;
+  transcriptNote: string;
   tabs: Record<string, boolean>;
 }
 export const CAMPUS_TABS = [
@@ -72,6 +91,7 @@ export const CAMPUS_TABS = [
   { id: 'businesses', label: 'Businesses' },
   { id: 'reference-letters', label: 'Reference letters' },
   { id: 'prep-pack', label: 'Entrance prep' },
+  { id: 'yearbook', label: 'Yearbook' },
 ];
 export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
   enabled: true,
@@ -82,7 +102,70 @@ export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
   galleryTitle: 'Campus gallery',
   galleryNote: 'Tap any photo to view it larger.',
   gallery: [],
-  tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true, 'reference-letters': true, 'prep-pack': true },
+  events: [
+    { id: 'open-day', title: 'Open Day & Campus Tour', date: '2026-12-12T10:00:00', venue: 'Main campus, Monrovia', note: 'Meet lecturers, tour labs, on-the-spot admission guidance.' },
+    { id: 'orientation', title: 'New Intake Orientation', date: '2027-01-12T09:00:00', venue: 'Main hall', note: 'Strictly online learners join live; onsite learners attend in person.' },
+    { id: 'career-fair', title: 'Careers & Internship Fair', date: '2027-02-20T10:00:00', venue: 'Main campus', note: 'Employers, alumni panels and logbook clinics.' },
+    { id: 'graduation', title: 'Graduation & Awards', date: '2027-03-27T10:00:00', venue: 'Main hall', note: 'Certificates issued to completers; family welcome.' },
+  ],
+  jobs: [
+    { id: 'job-1', title: 'Junior ICT Support Assistant', org: 'Partner school, Monrovia', type: 'Internship → contract', pay: 'Stipend + transport', applyNote: 'To apply, message admissions with the job title + your student ID. Placement team confirms within 3 working days.' },
+    { id: 'job-2', title: 'Community Health Volunteer', org: 'County clinic partner', type: 'Volunteer', pay: 'Certificate + reference', applyNote: 'To apply, message admissions with the job title + your student ID. Placement team confirms within 3 working days.' },
+    { id: 'job-3', title: 'Business Admin Intern', org: 'Local enterprise partner', type: '3-month internship', pay: 'Monthly stipend', applyNote: 'To apply, message admissions with the job title + your student ID. Placement team confirms within 3 working days.' },
+    { id: 'job-4', title: 'Media & Comms Assistant', org: 'AFRICA OF HOPE', type: 'Part-time', pay: 'Project-based', applyNote: 'To apply, message admissions with the job title + your student ID. Placement team confirms within 3 working days.' },
+  ],
+  spotlights: [
+    { id: 'spot-1', name: "Alumni cohort '25", role: 'Now: Admin Officer', text: 'The practical logbook got me my first interview — I showed real tasks, not just grades.' },
+  ],
+  aid: [
+    { id: 'merit', title: 'Merit Scholarship', cover: 'Up to 50% tuition', who: 'New applicants with strong entrance results; continuing students with GPA 3.5+.' },
+    { id: 'need', title: 'Hope Bursary (need-based)', cover: 'Up to 70% tuition', who: 'Learners with demonstrated financial need + community service record.' },
+    { id: 'sponsor', title: 'Sponsor-a-Student', cover: 'Full or partial, by donors', who: 'Donors pick a programme; school matches a vetted learner and reports progress.' },
+  ],
+  resources: [
+    { id: 'res-brochure', title: 'ENA programme brochure', meta: 'Programme guide · JPG', href: '' },
+    { id: 'res-cert', title: 'Certificate of Completion sample', meta: 'Sample certificate · PNG', href: '' },
+  ],
+  feePlans: [
+    { id: 'plan-full', title: 'Pay in full', amount: 'Save 5%', note: 'One payment at registration. Receipt issued instantly with reference.' },
+    { id: 'plan-two', title: 'Two instalments', amount: '50% + 50%', note: 'Half at registration, balance before mid-term. Both must total exactly.' },
+    { id: 'plan-three', title: 'Three instalments', amount: '40% + 30% + 30%', note: 'For continuing learners in good standing. Instalments must total exactly.' },
+  ],
+  sectionTitles: {
+    gallery: 'Campus gallery',
+    events: 'Open events',
+    careers: 'Jobs & internships board',
+    internship: 'Log practical hours',
+    scholarships: 'Scholarships & sponsors',
+    transcripts: 'Request a document',
+    feedback: 'Course feedback',
+    library: 'Library & downloads',
+    fees: 'Fees & payment plans',
+    vacancies: 'Staff vacancies',
+    businesses: 'Alumni businesses',
+    'reference-letters': 'Reference letters',
+    'prep-pack': 'Entrance prep',
+    yearbook: 'Graduation yearbook',
+  },
+  sectionBodies: {
+    events: 'RSVP below and we will remind you before the event. Attendance is marked at the gate.',
+    careers: 'Save a role, then message admissions with the job title + your student ID.',
+    internship: 'Log each week with hours, tasks and supervisor. Entries stay on this device until signed.',
+    scholarships: 'Apply for aid below. Sponsors read every note.',
+    transcripts: 'Transcripts, reference letters, duplicate certificates. Ready in 5 working days; pickup or delivery.',
+    feedback: 'Rate a course and tell us what to improve. Averages update live.',
+    library: 'Programme guides and sample certificates. Tap to open or download.',
+    fees: 'Plan your instalments — splits must total exactly. A receipt with reference is issued per payment.',
+    vacancies: 'Open teaching and support roles. Shortlisted applicants are contacted within 7 days.',
+    businesses: 'Alumni-owned ventures — customers find and support you here.',
+    'reference-letters': 'Graduates request employer reference letters; staff approve them in one queue.',
+    'prep-pack': 'Sample questions and tips to prepare for admission interviews.',
+    yearbook: 'Each finished cohort publishes a photo wall with graduate names and thank-you notes.',
+  },
+  internshipTarget: 240,
+  feesNote: 'Mobile Money / card mock. Instalment splits must total exactly.',
+  transcriptNote: 'Ready in 5 working days; pickup or delivery.',
+  tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true, 'reference-letters': true, 'prep-pack': true, yearbook: true },
 };
 export const DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }

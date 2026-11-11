@@ -119,6 +119,16 @@ const SEED_EVENTS = [
 ];
 
 function Events() {
+  let events = SEED_EVENTS;
+  let eventsTitle = "Open events";
+  let eventsBody = "RSVP below and we will remind you before the event. Attendance is marked at the gate.";
+  try {
+    const { state } = useApp();
+    const cms = resolvedCampusLife(state.websiteSettings);
+    events = cms.events.map((e) => ({ id: e.id, title: e.title, date: e.date, venue: e.venue, note: e.note }));
+    if (cms.sectionTitles.events) eventsTitle = cms.sectionTitles.events;
+    if (cms.sectionBodies.events) eventsBody = cms.sectionBodies.events;
+  } catch { /* published fallback */ }
   const [rsvps, setRsvps] = useLocal<Record<string, { name: string; phone: string; remind: boolean }>>("aoh-event-rsvp", {});
   const [form, setForm] = useState<Record<string, { name: string; phone: string }>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -147,8 +157,16 @@ function Events() {
     window.setTimeout(() => setDone(null), 4000);
   };
   return (
+    <div>
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-emerald-950">{eventsTitle}</h2>
+        {eventsBody ? <p className="mt-1 text-sm text-slate-600">{eventsBody}</p> : null}
+      </div>
+      {events.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No events published yet — check back soon.</p>
+      ) : (
     <div className="grid gap-4 lg:grid-cols-2">
-      {SEED_EVENTS.map((e) => {
+      {events.map((e) => {
         const past = new Date(e.date).getTime() < now;
         const saved = rsvps[e.id];
         const f = form[e.id] || { name: "", phone: "" };
@@ -191,6 +209,8 @@ function Events() {
           </article>
         );
       })}
+    </div>
+      )}
     </div>
   );
 }
