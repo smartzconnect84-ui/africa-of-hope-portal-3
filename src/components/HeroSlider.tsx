@@ -339,10 +339,10 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             ))}
           </dl>
 
-          {/* Slide selector — swipeable strip on phones/tablets, grid on desktop */}
+          {/* Slide navigation — modern dot indicators with progress (no faded duplicate titles) */}
           {safeSlides.length > 1 ? (
-            <div className="mt-7" role="tablist" aria-label="Choose a highlight">
-              <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-3 lg:overflow-visible">
+            <div className="mt-7 flex items-center gap-3" role="tablist" aria-label="Choose a highlight">
+              <div className="flex items-center gap-2">
                 {safeSlides.slice(0, 5).map((s, i) => {
                   const active = i === current % safeSlides.length;
                   return (
@@ -354,35 +354,32 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                       aria-label={`Show highlight ${i + 1}: ${s.title} ${s.highlight}`.trim()}
                       onClick={() => goTo(i)}
                       className={cn(
-                        "group relative w-[72%] shrink-0 snap-start overflow-hidden rounded-2xl border p-3 text-left transition active:scale-[0.98] sm:w-auto",
+                        "group relative grid h-9 min-w-9 place-items-center overflow-hidden rounded-full border transition active:scale-95",
                         active
-                          ? "border-amber-300/50 bg-white/10 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]"
-                          : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.07]",
+                          ? "w-14 border-amber-300/60 bg-white/10"
+                          : "w-9 border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.07]",
                       )}
                     >
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "text-[11px] font-bold tabular-nums",
-                            active ? "text-amber-300" : "text-emerald-50/50",
-                          )}
-                        >
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <span className={cn("truncate text-xs font-semibold", active ? "text-white" : "text-emerald-50/75")}>
-                          {s.title} {s.highlight}
-                        </span>
+                      <span
+                        className={cn(
+                          "text-[11px] font-bold tabular-nums",
+                          active ? "text-amber-300" : "text-emerald-50/60",
+                        )}
+                      >
+                        {String(i + 1).padStart(2, "0")}
                       </span>
-                      <span className="mt-2 block h-1 overflow-hidden rounded-full bg-white/10">
-                        <span
-                          className={cn("block h-full rounded-full transition-all", active ? "bg-amber-300" : "bg-transparent")}
-                          style={{ width: active ? `${Math.round(progress)}%` : "0%" }}
-                        />
-                      </span>
+                      {active ? (
+                        <span className="absolute inset-x-2 bottom-1.5 block h-0.5 overflow-hidden rounded-full bg-white/15">
+                          <span className="block h-full rounded-full bg-amber-300 transition-all" style={{ width: `${Math.round(progress)}%` }} />
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
               </div>
+              <span className="text-[11px] font-semibold tabular-nums tracking-widest text-emerald-50/50">
+                {String((current % safeSlides.length) + 1).padStart(2, "0")} / {String(safeSlides.length).padStart(2, "0")}
+              </span>
             </div>
           ) : null}
         </div>
@@ -394,8 +391,10 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
           <div aria-hidden="true" className="absolute -right-5 -top-5 hidden h-28 w-28 rounded-3xl border border-amber-300/30 sm:block" />
 
           <div className="relative overflow-hidden rounded-[2rem] bg-emerald-900 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)] ring-1 ring-white/15">
-            <div className="relative aspect-[4/3.1] w-full min-[480px]:aspect-[4/3.2] md:aspect-[16/10] lg:aspect-[4/4.5]">
-              <AnimatePresence mode="popLayout">
+            <div className="relative aspect-[4/3] w-full min-[480px]:aspect-[4/3] md:aspect-[16/11] lg:aspect-[4/4.2]">
+              {/* Single active image only — mode="wait" unmounts the old slide first,
+                  so no faded previous title/image lingers in the background. */}
+              <AnimatePresence mode="wait">
                 <motion.img
                   key={slide.image + current}
                   src={slide.image}
@@ -404,10 +403,10 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                   fetchPriority={current === 0 ? "high" : "low"}
                   decoding="async"
                   draggable={false}
-                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}
-                  animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.99 }}
-                  transition={{ duration: prefersReducedMotion ? 0.2 : 0.65, ease: "easeOut" }}
+                  initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.03 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0.2 : 0.5, ease: "easeOut" }}
                   className="aoh-photo absolute inset-0 h-full w-full object-cover object-center"
                 />
               </AnimatePresence>
@@ -453,11 +452,11 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 </div>
               </div>
 
-              {/* Bottom overlay: caption + counter */}
+              {/* Bottom overlay: supporting info + counter (headline lives once in the copy column) */}
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
                 <div className="min-w-0 rounded-2xl bg-emerald-950/65 px-4 py-3 ring-1 ring-white/15 backdrop-blur-md">
-                  <p className="truncate text-sm font-bold text-white">
-                    {slide.title} {slide.highlight}
+                  <p className="truncate text-xs font-bold uppercase tracking-[0.14em] text-amber-200">
+                    {slide.eyebrow}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-emerald-50/80">
                     <CalendarDays className="h-3 w-3 text-amber-300" aria-hidden="true" />

@@ -120,11 +120,11 @@ html:has(.aoh-public[data-visual-mode="dark"]) :is([role="dialog"], [role="menu"
 ::placeholder { color: #000000; opacity: 0.72; }
 .dark ::placeholder { color: #b9d8c7; opacity: 0.88; }
 
-/* Public footer follows the platform contrast contract: gold with black text in
-   light mode, deep green with high-contrast light text in night mode. */
+/* Public footer: clean white surface with dark text in light mode,
+   deep green with high-contrast light text in night mode. */
 .aoh-site-footer {
-  background: #d4af37;
-  color: #000000;
+  background: #ffffff;
+  color: #0b1f17;
 }
 .aoh-site-footer :is(a, button, p, span) { color: inherit; }
 .aoh-site-footer :is(a:hover, button:hover) { color: #000000; }

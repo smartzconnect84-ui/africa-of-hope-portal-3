@@ -673,24 +673,24 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       </AnimatePresence>
 
       <footer className="aoh-site-footer">
-        <div className="border-b border-white/10">
-          <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 text-white sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
-            <p className="flex items-start gap-2.5 text-sm text-white">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><MapPin className="h-4 w-4 text-amber-400" /></span><span>{w.address || settings.address}</span>
+        <div className="border-b border-slate-200">
+          <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 text-slate-900 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+            <p className="flex items-start gap-2.5 text-sm text-slate-900">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/20"><MapPin className="h-4 w-4 text-amber-700" /></span><span>{w.address || settings.address}</span>
             </p>
             {(w.contactPhone || settings.contactPhone) && (
-              <a href={`tel:${(w.contactPhone || settings.contactPhone).replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-sm text-white transition hover:underline">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Phone className="h-4 w-4 text-amber-400" /></span><span>{w.contactPhone || settings.contactPhone}</span>
+              <a href={`tel:${(w.contactPhone || settings.contactPhone).replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-sm text-slate-900 transition hover:underline">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/20"><Phone className="h-4 w-4 text-amber-700" /></span><span>{w.contactPhone || settings.contactPhone}</span>
               </a>
             )}
             {(w.contactEmail || settings.contactEmail) && (
-              <a href={`mailto:${w.contactEmail || settings.contactEmail}`} className="flex items-center gap-2.5 text-sm text-white transition hover:underline">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Mail className="h-4 w-4 text-amber-400" /></span><span className="break-all">{w.contactEmail || settings.contactEmail}</span>
+              <a href={`mailto:${w.contactEmail || settings.contactEmail}`} className="flex items-center gap-2.5 text-sm text-slate-900 transition hover:underline">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/20"><Mail className="h-4 w-4 text-amber-700" /></span><span className="break-all">{w.contactEmail || settings.contactEmail}</span>
               </a>
             )}
             {w.officeHours && (
-              <p className="flex items-center gap-2.5 text-sm text-white">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Globe className="h-4 w-4 text-amber-400" /></span><span>{w.officeHours}</span>
+              <p className="flex items-center gap-2.5 text-sm text-slate-900">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/20"><Globe className="h-4 w-4 text-amber-700" /></span><span>{w.officeHours}</span>
               </p>
             )}
           </div>
@@ -698,52 +698,52 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-3">
           <div className="lg:col-span-1">
-            <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="dark" size="md" showTagline={false} showName={false} />
+            <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="light" size="md" showTagline={false} showName={false} />
             {w.socials.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 {w.socials.map((s) => (
-                  <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-white/80 transition hover:border-amber-400/60 hover:text-amber-300">{s.platform}</a>
+                  <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:border-amber-500/60 hover:text-emerald-800">{s.platform}</a>
                 ))}
               </div>
             )}
             <div className="mt-6 flex flex-wrap gap-2">
               <button type="button" onClick={() => openApply()} className="inline-flex h-10 items-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">{w.publicCopy["footer.apply"]}</button>
-              <button type="button" onClick={openLogin} className="inline-flex h-10 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold text-white transition hover:border-amber-400/60 hover:text-amber-300">{w.publicCopy["footer.portal"]}</button>
+              <button type="button" onClick={openLogin} className="inline-flex h-10 items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-emerald-950 transition hover:border-emerald-700">{w.publicCopy["footer.portal"]}</button>
             </div>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.explore"]}</p>
-            <ul className="mt-4 space-y-2.5 text-sm text-white/75">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-800">{w.publicCopy["footer.explore"]}</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
               {navLinks.map((l) => (
                 <li key={l.id}><a href={l.href} className="transition hover:text-amber-300">{t(l.label)}</a></li>
               ))}
             </ul>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.started"]}</p>
-            <ul className="mt-4 space-y-2.5 text-sm text-white/75">
-              <li><a href="/admissions" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</a></li>
-              <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
-              <li><a href="/donate" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
-              <li><a href="/?section=support#support-volunteer" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
-              <li><a href="/?section=support#support-partner" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
-              <li><a href="/?section=support#support-staff" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
-              <li><a href="/term-dates" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
-              <li><a href="/verify" className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
-              {!w.footerLinks.some(l => /\/transparency$/i.test(l.href)) && <li><a href="/transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-800">{w.publicCopy["footer.started"]}</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
+              <li><a href="/admissions" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</a></li>
+              <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>
+              <li><a href="/donate" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.donate']}</a></li>
+              <li><a href="/?section=support#support-volunteer" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.volunteer']}</a></li>
+              <li><a href="/?section=support#support-partner" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> Partner</a></li>
+              <li><a href="/?section=support#support-staff" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> Join our staff</a></li>
+              <li><a href="/term-dates" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.terms']}</a></li>
+              <li><a href="/verify" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy['footer.verify']}</a></li>
+              {!w.footerLinks.some(l => /\/transparency$/i.test(l.href)) && <li><a href="/transparency" className="inline-flex min-h-10 items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" />Transparency</a></li>}
               {w.footerLinks.map((l) => (
-                <li key={l.id}><a href={l.href || "/"} className="inline-flex items-center gap-1.5 transition hover:text-amber-300"><ChevronRight className="h-3.5 w-3.5" /> {l.label}</a></li>
+                <li key={l.id}><a href={l.href || "/"} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {l.label}</a></li>
               ))}
             </ul>
           </div>
         </div>
-        <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-center text-[11px] leading-relaxed text-white/60 sm:flex-row sm:gap-x-6 sm:gap-y-2 sm:px-6 sm:py-5 sm:text-left sm:text-xs md:gap-x-8">
+        <div className="border-t border-slate-200">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-center text-[11px] leading-relaxed text-slate-500 sm:flex-row sm:gap-x-6 sm:gap-y-2 sm:px-6 sm:py-5 sm:text-left sm:text-xs md:gap-x-8">
             <p className="max-w-full sm:max-w-[60%]">{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
             <p className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">
-              <a href="/cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>
-              <a href="/policies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Policies</a>
-              <span className="inline-flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-amber-400" /> {settings.academicYear} / {settings.semester}</span>
+              <a href="/cookies" className="underline decoration-slate-300 underline-offset-2 transition hover:text-emerald-800">Cookies</a>
+              <a href="/policies" className="underline decoration-slate-300 underline-offset-2 transition hover:text-emerald-800">Policies</a>
+              <span className="inline-flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-emerald-700" /> {settings.academicYear} / {settings.semester}</span>
             </p>
           </div>
         </div>
