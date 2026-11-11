@@ -1,18 +1,18 @@
 import { Children, isValidElement, type ReactNode } from 'react';
-import { DEFAULT_LAYOUT, LEGACY_DEFAULT_LAYOUT } from '@/data/publicPresentation';
+import { DEFAULT_LAYOUT, LEGACY_DEFAULT_LAYOUT, LEGACY_RELEVANCE_LAYOUT } from '@/data/publicPresentation';
 
 /**
  * Sort React children, not just their CSS positions, so reading/tab order matches.
- * One-time relevance migration: a CMS layout that exactly matches the
- * pre-restructure default is upgraded to the relevance-first default so every
- * site gets the improved journey (decision-critical sections first) without
+ * One-time relevance migration: a CMS layout that exactly matches any
+ * pre-modern default is upgraded to the modern nonprofit default so every
+ * site gets the improved journey (mission → offer → proof → join) without
  * touching any custom order or hidden-section choice an admin saved.
  */
 function migrateLegacyOrder(order: string[]): string[] {
-  const same =
-    order.length === LEGACY_DEFAULT_LAYOUT.length &&
-    order.every((key, i) => key === LEGACY_DEFAULT_LAYOUT[i]);
-  return same ? [...DEFAULT_LAYOUT] : order;
+  const matches = (legacy: string[]) =>
+    order.length === legacy.length && order.every((key, i) => key === legacy[i]);
+  if (matches(LEGACY_DEFAULT_LAYOUT) || matches(LEGACY_RELEVANCE_LAYOUT)) return [...DEFAULT_LAYOUT];
+  return order;
 }
 
 export default function OrderedSections({ order, children }: { order?: string[]; children: ReactNode }) {

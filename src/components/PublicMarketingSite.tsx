@@ -46,6 +46,7 @@ import SupportSection from "./public/SupportSection";
 import NewsletterSignup from "./public/NewsletterSignup";
 import NewsletterAction from "./public/NewsletterAction";
 import OrderedSections from './public/OrderedSections';
+import TrustBar from './home/TrustBar';
 import HomeSectionFrame from './public/HomeSectionFrame';
 import { DEFAULT_PRESENTATION } from '@/data/publicPresentation';
 import { useLocale } from "@/lib/locale";
@@ -555,6 +556,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <>
               <HomeAnchorScroll anchor={view.anchor} reduceMotion={!!reduceMotion} />
               <HeroSlider onOpenApply={openApply} onEnterPortal={openLogin} />
+              <TrustBar programsCount={publicPrograms.length} partnersCount={w.partners.length} />
               <OrderedSections order={w.publicLayout}>
 
               {visibleSections.map((key) => {

@@ -135,18 +135,20 @@ export const DEFAULT_CAMPUS_LIFE: CampusLifeSettings = {
   transcriptNote: 'Document requests are handled through the secure student portal.',
   tabs: { gallery: true, events: true, careers: true, internship: true, scholarships: true, transcripts: true, feedback: true, library: true, fees: true, vacancies: true, businesses: true, 'reference-letters': true, 'prep-pack': true, yearbook: true },
 };
-/** Relevance-first homepage flow (most decision-critical first).
- *  Hero (rendered separately) → trust snapshot (summary) → offer
- *  (programmes) → proof (impact) → story (about) → reasons (features) →
- *  how to join (admissions) → people (team) → experience (campus-life) →
- *  stories (blog) → objections (faq) → assurance (verify) → generosity
- *  (support) → stay in touch (newsletter) → talk to us (contact) → final
- *  call (cta). CMS-saved `publicLayout` arrays still win; this default only
- *  shapes fresh sites and the reader/tab order fallback. No copy is changed. */
-export const DEFAULT_LAYOUT = ['summary', 'programmes', 'impact', 'about', 'features', 'admissions', 'team', 'campus-life', 'blog', 'faq', 'verify', 'support', 'newsletter', 'contact', 'cta'];
-/** The pre-restructure default order, kept so saved CMS layouts that exactly
- *  match it can be migrated forward to the relevance order exactly once. */
+/** Modern nonprofit homepage flow (mission-first, donor + student journey).
+ *  Hero → trust snapshot (summary) → offer (programmes) → proof (impact) →
+ *  how to join (admissions) → reasons (features) → story (about) →
+ *  experience (campus-life) → people (team) → updates (blog) → objections
+ *  (faq) → generosity (support) → assurance (verify) → talk (contact) →
+ *  stay in touch (newsletter) → final call (cta). CMS-saved `publicLayout`
+ *  arrays still win; this default only shapes fresh sites and the
+ *  reader/tab order fallback. No copy is changed. */
+export const DEFAULT_LAYOUT = ['summary', 'programmes', 'impact', 'admissions', 'features', 'about', 'campus-life', 'team', 'blog', 'faq', 'support', 'verify', 'contact', 'newsletter', 'cta'];
+/** Pre-restructure orders, kept so saved CMS layouts that exactly match
+ *  either can be migrated forward to the modern order exactly once. */
 export const LEGACY_DEFAULT_LAYOUT = ['summary', 'programmes', 'about', 'features', 'impact', 'team', 'blog', 'support', 'admissions', 'faq', 'verify', 'newsletter', 'contact', 'cta'];
+/** Intermediate relevance order shipped earlier — also migrates forward. */
+export const LEGACY_RELEVANCE_LAYOUT = ['summary', 'programmes', 'impact', 'about', 'features', 'admissions', 'team', 'campus-life', 'blog', 'faq', 'verify', 'support', 'newsletter', 'contact', 'cta'];
 export function paragraphText(text: string) { return text.split(/\n\s*\n/).filter(Boolean); }
 
 /** Sentences the owner removed via visual edits. Published CMS bodies may still
