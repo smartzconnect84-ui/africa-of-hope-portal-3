@@ -1012,11 +1012,10 @@ export default function AuthPortal({
                 tone="light"
                 size="lg"
                 showTagline={false}
-                className="mx-auto flex-col gap-1"
-                nameClassName="text-center text-sm sm:text-base"
+                className="mx-auto flex-col gap-1 [&_img]:origin-center [&_img]:scale-[1.2]"
+                nameClassName="text-center text-lg font-black sm:text-xl"
               />
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
-              {sub && <p className="mt-1 text-sm text-slate-500">{sub}</p>}
             </div>
 
             <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-b from-amber-50/70 via-white to-white p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
@@ -1083,8 +1082,8 @@ export default function AuthPortal({
                           disabled={disabled}
                           onClick={() => setTab(key)}
                           className={cn(
-                            "relative z-10 h-10 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                            active ? "text-white" : "text-amber-600 hover:text-amber-700",
+                            "relative z-10 h-10 rounded-lg border text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                            active ? "border-transparent text-white" : "border-[#D4AF37] bg-white/60 text-amber-600 shadow-[0_0_0_1px_#D4AF37] hover:text-amber-700",
                           )}
                         >
                           {active && (
@@ -1136,9 +1135,6 @@ export default function AuthPortal({
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-400">
-          <Lock className="mr-1 inline h-3 w-3" /> Protected by encrypted sessions · Accreditation {state.settings.accreditationNo}
-        </p>
       </main>
 
       <ResetDialog open={resetOpen} onOpenChange={setResetOpen} initialEmail={resetEmail} />
