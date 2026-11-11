@@ -29,7 +29,7 @@ export default function ContactSection({
         <Reveal>
           <div className="max-w-2xl">
             {copy.eyebrow && (
-              <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-amber-900">
                 <Globe className="h-3.5 w-3.5" /> {copy.eyebrow}
               </p>
             )}

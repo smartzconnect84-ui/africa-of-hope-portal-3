@@ -24,7 +24,6 @@ export default function InstitutionSummarySection({ w, settings, programsCount }
       <ScrollReveal className="max-w-4xl">
         <p className="aoh-eyebrow inline-flex items-center gap-1.5 rounded-full border border-transparent bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{headline?.eyebrow}</p>
         <h2 className="mt-4 text-3xl font-bold tracking-tight text-amber-600 sm:text-4xl">{headline?.title}</h2>
-        {headline?.subtitle && <p className="mt-3 text-base font-medium leading-7 text-emerald-900">{headline.subtitle}</p>}
         <div className="mt-4 space-y-4 text-sm leading-7 text-black sm:text-base">{cleanAboutParagraphs(headline?.body || '').map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div>
         <a href="/about" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-amber-700 underline underline-offset-4 hover:text-amber-800">{w.publicCopy['summary.link'] || 'Read our full story'} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
       </ScrollReveal>

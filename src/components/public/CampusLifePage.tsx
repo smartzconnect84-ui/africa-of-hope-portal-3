@@ -903,7 +903,7 @@ export function CampusLifePreview() {
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{eyebrow}</p>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-amber-600 sm:text-3xl">{title}</h2>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-amber-400 sm:text-3xl">{title}</h2>
             <p className="mt-2 max-w-xl text-sm text-slate-600">{subtitle}</p>
           </div>
           <a href="#campus-life" className="group inline-flex h-11 items-center gap-1.5 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">
