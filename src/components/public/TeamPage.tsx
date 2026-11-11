@@ -16,25 +16,47 @@ function TeamPortrait({ member, featured }: { member: Member; featured: boolean 
   </div>;
 }
 
-/** Shared by the homepage and full page, both reading the published CMS model. */
+/** Shared by the homepage and full page, both reading the published CMS model.
+ * Shows only the first (featured) profile with a View more toggle for the rest. */
 export function TeamProfiles({ team }: { team: WebsiteSettings["team"] }) {
+  const [expanded, setExpanded] = useState(false);
   const members = team.members.filter((member) => member.name.trim());
   if (!members.length) return <p className="mt-8 rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-slate-600">Team profiles will be published here when available.</p>;
-  return <div className="mt-8 grid min-w-0 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-    {members.map((member, index) => {
-      const featured = index === 0;
-      return <ScrollReveal key={member.id} className={featured ? "sm:col-span-2 lg:col-span-3" : "h-full"}>
-        <article className={`aoh-card min-w-0 overflow-hidden rounded-2xl bg-white ${featured ? "grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" : "flex h-full flex-col"}`}>
-          <TeamPortrait member={member} featured={featured} />
-          <div className={`min-w-0 ${featured ? "flex flex-col justify-center p-6 sm:p-10" : "p-6"}`}>
-            <h2 className={`break-words font-bold text-emerald-950 ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>{member.name}</h2>
-            {member.role && <p className="mt-3 break-words text-sm font-bold uppercase tracking-wider text-emerald-700">{member.role}</p>}
-            {member.bio && <p className="mt-5 whitespace-pre-line break-words text-base leading-8 text-slate-600">{member.bio}</p>}
-          </div>
-        </article>
-      </ScrollReveal>;
-    })}
-  </div>;
+  const visible = expanded ? members : members.slice(0, 1);
+  const remaining = members.length - visible.length;
+  return (
+    <div>
+      <div className="mt-8 grid min-w-0 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {visible.map((member, index) => {
+          const featured = index === 0 && !expanded;
+          return (
+            <ScrollReveal key={member.id} className={featured ? "sm:col-span-2 lg:col-span-3" : "h-full"}>
+              <article className={`aoh-card min-w-0 overflow-hidden rounded-2xl bg-white ${featured ? "grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" : "flex h-full flex-col"}`}>
+                <TeamPortrait member={member} featured={featured} />
+                <div className={`min-w-0 ${featured ? "flex flex-col justify-center p-6 sm:p-10" : "p-6"}`}>
+                  <h2 className={`break-words font-bold text-emerald-950 ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>{member.name}</h2>
+                  {member.role && <p className="mt-3 break-words text-sm font-bold uppercase tracking-wider text-emerald-700">{member.role}</p>}
+                  {member.bio && <p className="mt-5 whitespace-pre-line break-words text-base leading-8 text-black">{member.bio}</p>}
+                </div>
+              </article>
+            </ScrollReveal>
+          );
+        })}
+      </div>
+      {(remaining > 0 || expanded) && (
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-800/20 bg-white px-5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+          >
+            {expanded ? "Show less" : `View more team (${remaining} more)`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function TeamPage() {

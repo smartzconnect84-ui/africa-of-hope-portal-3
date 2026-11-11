@@ -6,15 +6,16 @@ import {
 } from "lucide-react";
 import ExpandableImage from "./PageImage";
 import { ScrollReveal } from "./motion";
-import { SUPPLIED_PHOTOS, SUPPLIED_DOCS, SUPPLIED_ARTWORK } from "@/data/suppliedMedia";
+import { SUPPLIED_PHOTOS, SUPPLIED_DOCS } from "@/data/suppliedMedia";
 import { useApp } from "@/context/AppContext";
 import { resolvedCampusLife } from "@/lib/publicSettingsValidation";
 import { loadVacancies, loadBusinesses, submitVacancyApplication, submitBusiness, uploadBoardImage } from "@/lib/opportunityBoard";
 import type { AlumniBusiness } from "@/lib/opportunityBoard";
 import EntrancePrepPack from "./EntrancePrepPack";
+import YearbookWall from "./YearbookWall";
 import { ReferenceLetterRequest } from "@/components/portal/ReferenceLetters";
 
-type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses" | "reference-letters" | "prep-pack";
+type Tab = "gallery" | "events" | "careers" | "internship" | "scholarships" | "transcripts" | "feedback" | "library" | "fees" | "vacancies" | "businesses" | "reference-letters" | "prep-pack" | "yearbook";
 
 const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "gallery", label: "Gallery", icon: Images },
@@ -30,6 +31,7 @@ const TABS: { id: Tab; label: string; icon: typeof Images }[] = [
   { id: "businesses", label: "Businesses", icon: Store },
   { id: "reference-letters", label: "Reference letters", icon: Award },
   { id: "prep-pack", label: "Entrance prep", icon: Compass },
+  { id: "yearbook", label: "Yearbook", icon: GraduationCap },
 ];
 
 function useLocal<T>(key: string, initial: T): [T, (v: T) => void] {
@@ -104,31 +106,6 @@ function Gallery() {
           </ScrollReveal>
         ))}
       </div>
-      <h3 className="mt-10 text-lg font-bold text-emerald-950">Documents & brand artwork</h3>
-      <p className="mt-1 text-sm text-slate-600">Brochure and certificate samples open larger on click; artwork keeps its original framing.</p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <figure className="aoh-card overflow-hidden rounded-2xl bg-white">
-          <ExpandableImage src={SUPPLIED_DOCS.brochure.src} alt={SUPPLIED_DOCS.brochure.label} className="h-64" imgClassName="h-full w-full object-cover object-top" />
-          <figcaption className="p-4 text-sm font-semibold text-emerald-950">{SUPPLIED_DOCS.brochure.label}</figcaption>
-        </figure>
-        <figure className="aoh-card overflow-hidden rounded-2xl bg-white">
-          <ExpandableImage src={SUPPLIED_DOCS.certificateSample.src} alt={SUPPLIED_DOCS.certificateSample.label} className="h-64" imgClassName="h-full w-full bg-slate-50 object-contain p-2" />
-          <figcaption className="p-4 text-sm font-semibold text-emerald-950">{SUPPLIED_DOCS.certificateSample.label}</figcaption>
-        </figure>
-        {SUPPLIED_ARTWORK.slice(0, 1).map((a) => (
-          <figure key={a.id} className="aoh-card overflow-hidden rounded-2xl bg-white">
-            <ExpandableImage src={a.src} alt={a.caption} className="h-64" imgClassName="h-full w-full bg-white object-contain p-6" />
-            <figcaption className="p-4 text-sm font-semibold text-emerald-950">{a.caption} — transparent PNG, shown uncropped</figcaption>
-          </figure>
-        ))}
-      </div>
-      <div className="mt-4 flex flex-wrap gap-3">
-        {SUPPLIED_ARTWORK.slice(1).map((a) => (
-          <a key={a.id} href={a.src} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-900/15 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">
-            <Download className="h-3.5 w-3.5" aria-hidden="true" /> {a.caption}
-          </a>
-        ))}
-      </div>
     </div>
   );
 }
@@ -142,6 +119,16 @@ const SEED_EVENTS = [
 ];
 
 function Events() {
+  let events = SEED_EVENTS;
+  let eventsTitle = "Open events";
+  let eventsBody = "RSVP below and we will remind you before the event. Attendance is marked at the gate.";
+  try {
+    const { state } = useApp();
+    const cms = resolvedCampusLife(state.websiteSettings);
+    events = cms.events.map((e) => ({ id: e.id, title: e.title, date: e.date, venue: e.venue, note: e.note }));
+    if (cms.sectionTitles.events) eventsTitle = cms.sectionTitles.events;
+    if (cms.sectionBodies.events) eventsBody = cms.sectionBodies.events;
+  } catch { /* published fallback */ }
   const [rsvps, setRsvps] = useLocal<Record<string, { name: string; phone: string; remind: boolean }>>("aoh-event-rsvp", {});
   const [form, setForm] = useState<Record<string, { name: string; phone: string }>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -170,8 +157,16 @@ function Events() {
     window.setTimeout(() => setDone(null), 4000);
   };
   return (
+    <div>
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-emerald-950">{eventsTitle}</h2>
+        {eventsBody ? <p className="mt-1 text-sm text-slate-600">{eventsBody}</p> : null}
+      </div>
+      {events.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">No events published yet — check back soon.</p>
+      ) : (
     <div className="grid gap-4 lg:grid-cols-2">
-      {SEED_EVENTS.map((e) => {
+      {events.map((e) => {
         const past = new Date(e.date).getTime() < now;
         const saved = rsvps[e.id];
         const f = form[e.id] || { name: "", phone: "" };
@@ -214,6 +209,8 @@ function Events() {
           </article>
         );
       })}
+    </div>
+      )}
     </div>
   );
 }
@@ -868,14 +865,14 @@ export default function CampusLifePage() {
     if (filtered.length) visibleTabs = filtered;
   } catch { /* supplied fallback */ }
   const safeTab = visibleTabs.some((t) => t.id === tab) ? tab : visibleTabs[0].id;
-  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses, "reference-letters": ReferenceLetterRequest, "prep-pack": EntrancePrepPack }[safeTab];
+  const Active = { gallery: Gallery, events: Events, careers: Careers, internship: Internship, scholarships: Scholarships, transcripts: Transcripts, feedback: Feedback, library: Library, fees: Fees, vacancies: Vacancies, businesses: Businesses, "reference-letters": ReferenceLetterRequest, "prep-pack": EntrancePrepPack, yearbook: YearbookWall }[safeTab];
   return (
     <div className="bg-[#f6f8f7] pb-16 sm:pb-24">
       <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
         <ScrollReveal className="mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{eyebrow}</p>
-          <h1 className="mt-4 max-w-3xl text-3xl font-bold sm:text-5xl">{title}</h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100">
+          <h1 className="mt-4 max-w-3xl text-3xl font-bold text-amber-300 sm:text-5xl">{title}</h1>
+          <p className="mt-5 max-w-2xl text-base leading-8 text-amber-100/90">
             {subtitle}
           </p>
         </ScrollReveal>
@@ -926,7 +923,7 @@ export function CampusLifePreview() {
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{eyebrow}</p>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-emerald-950 sm:text-3xl">{title}</h2>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-amber-400 sm:text-3xl">{title}</h2>
             <p className="mt-2 max-w-xl text-sm text-slate-600">{subtitle}</p>
           </div>
           <a href="#campus-life" className="group inline-flex h-11 items-center gap-1.5 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">

@@ -287,9 +287,9 @@ function Showcase() {
 }
 
 function RememberMe({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
-  return <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
+  return <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-emerald-700/30 bg-emerald-50/40 p-3 text-sm text-emerald-900">
     <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-emerald-700" />
-    <span className="font-medium">Remember me</span>
+    <span className="font-semibold text-emerald-800">Remember me</span>
   </label>;
 }
 
@@ -384,9 +384,9 @@ function SignInForm({
           variant="outline"
           onClick={onRegister}
           disabled={!state.settings.selfRegistrationOpen}
-          className="h-11 rounded-xl border-slate-200"
+          className="h-11 rounded-xl border-2 border-amber-400 bg-amber-400 font-semibold text-emerald-950 shadow-sm shadow-amber-400/30 hover:bg-amber-300"
         >
-          <UserPlus className="h-4 w-4 text-emerald-700" /> Apply now
+          <UserPlus className="h-4 w-4 text-emerald-950" /> Apply now
         </Button>
       </div>
 
@@ -1046,21 +1046,21 @@ export default function AuthPortal({
 
         <div className="flex flex-1 items-center justify-center py-8">
             <div className={cn("w-full min-w-0 transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
-            <div className="mb-6 text-center">
+            <div className="mb-3 text-center">
               <BrandLockup
                 logoUrl={state.websiteSettings.logos?.auth || state.websiteSettings.logoUrl}
                 academyName={state.websiteSettings.academyName || state.settings.academyName}
                 tone="light"
                 size="lg"
                 showTagline={false}
-                className="mx-auto flex-col gap-2"
+                className="mx-auto flex-col gap-1"
                 nameClassName="text-center text-sm sm:text-base"
               />
-              <h2 className="mt-7 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
-              {sub && <p className="mt-1.5 text-sm text-slate-500">{sub}</p>}
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
+              {sub && <p className="mt-1 text-sm text-slate-500">{sub}</p>}
             </div>
 
-            <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-xl shadow-emerald-900/5 sm:p-7">
+            <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-b from-amber-50/70 via-white to-white p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
               {!registrationOpen && applyIntent && !done && (
                 <div role="alert" className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left">
                   <p className="text-sm font-semibold text-amber-900">You tapped “Apply for this programme”.</p>
@@ -1125,13 +1125,13 @@ export default function AuthPortal({
                           onClick={() => setTab(key)}
                           className={cn(
                             "relative z-10 h-10 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                            active ? "text-emerald-900" : "text-slate-500 hover:text-slate-700",
+                            active ? "text-white" : "text-amber-600 hover:text-amber-700",
                           )}
                         >
                           {active && (
                             <motion.span
                               layoutId="auth-tab-pill"
-                              className="absolute inset-0 -z-10 rounded-lg bg-white shadow-sm"
+                              className="absolute inset-0 -z-10 rounded-lg bg-emerald-700 shadow-sm"
                               transition={{ type: "spring", stiffness: 420, damping: 34 }}
                             />
                           )}

@@ -12,8 +12,8 @@ export default function AboutSection({
   settings: SystemSettings;
 }) {
   return (
-    <section id="about" className="scroll-mt-24 bg-white py-16 sm:py-20">
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-2">
+    <section id="about" className="scroll-mt-24 bg-white py-10 sm:py-12">
+      <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 lg:grid-cols-2">
         {copy.image && (
           <Reveal>
             <div className="relative">
@@ -23,7 +23,7 @@ export default function AboutSection({
                 className="aoh-photo h-80 w-full rounded-3xl object-cover object-center shadow-lg shadow-emerald-900/10 sm:h-[28rem]"
               />
               {w.partners.length > 0 && <div className="aoh-card aoh-glass absolute -bottom-5 left-5 rounded-2xl p-4">
-                <p className="text-2xl font-semibold text-emerald-800">{w.partners.length}</p>
+                <p className="text-2xl font-semibold text-amber-600">{w.partners.length}</p>
                 <p className="text-[11px] uppercase tracking-wide text-slate-500">Partners</p>
               </div>}
             </div>
@@ -37,13 +37,13 @@ export default function AboutSection({
             </p>
           )}
           {copy.title && (
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-amber-600 sm:text-4xl">
               {copy.title}
             </h2>
           )}
-          {copy.body && <p className="mt-4 text-sm text-slate-600 sm:text-base">{copy.body}</p>}
+          {copy.body && <p className="mt-4 text-sm text-black sm:text-base">{copy.body}</p>}
           {w.aboutPoints.length > 0 && (
-            <div className="mt-7 space-y-3">
+            <div className="mt-5 space-y-2.5">
               {w.aboutPoints.map((p) => {
                 const Icon = resolveIcon(p.icon);
                 return (
@@ -58,8 +58,8 @@ export default function AboutSection({
             </div>
           )}
           <a
-            href="#about"
-            className="mt-7 inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900"
+            href="/about"
+            className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300"
           >
             {w.publicCopy['about.story'] || 'Read our full story'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </a>

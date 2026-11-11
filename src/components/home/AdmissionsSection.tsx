@@ -16,7 +16,7 @@ export default function AdmissionsSection({
   return (
     <section
       id="admissions"
-      className="scroll-mt-24 bg-gradient-to-b from-emerald-50/80 via-white to-amber-50/40 py-16 sm:py-20"
+      className="scroll-mt-24 bg-gradient-to-b from-emerald-50/80 via-white to-amber-50/40 py-10 sm:py-12"
     >
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
@@ -34,7 +34,7 @@ export default function AdmissionsSection({
         </Reveal>
 
         {w.admissionSteps.length > 0 && (
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {w.admissionSteps.map((s, i) => {
               const Icon = resolveIcon(s.icon);
               return (
@@ -43,11 +43,11 @@ export default function AdmissionsSection({
                     <span className="absolute -top-3 left-5 grid h-7 w-7 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white">
                       {i + 1}
                     </span>
-                    <span className="mt-2 grid h-10 w-10 place-items-center rounded-xl bg-emerald-100 text-emerald-800">
+                    <span className="mt-2 grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-800">
                       <Icon className="h-5 w-5" />
                     </span>
                     <p className="mt-3 text-sm font-semibold text-slate-800">{s.title}</p>
-                    <p className="mt-1 text-sm text-slate-500">{s.description}</p>
+                    <p className="mt-1 text-sm text-black">{s.description}</p>
                   </div>
                 </Reveal>
               );
@@ -55,14 +55,14 @@ export default function AdmissionsSection({
           </div>
         )}
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start">
           {w.admissionRequirements.length > 0 && (
             <Reveal delay={0.1}>
               <div className="aoh-card aoh-glass rounded-3xl p-6">
-                <h3 className="text-lg font-semibold text-slate-900">{w.publicCopy["admissions.requirements"]?.trim() || "What you need"}</h3>
+                <h3 className="text-lg font-semibold text-amber-600">{w.publicCopy["admissions.requirements"]?.trim() || "What you need"}</h3>
                 <ul className="mt-4 space-y-2.5">
                   {w.admissionRequirements.map((r) => (
-                    <li key={r.id} className="flex items-start gap-2.5 text-sm text-slate-600">
+                    <li key={r.id} className="flex items-start gap-2.5 text-sm text-black">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" /> {r.text}
                     </li>
                   ))}
@@ -71,9 +71,9 @@ export default function AdmissionsSection({
             </Reveal>
           )}
           <Reveal delay={0.16}>
-            <div className="aoh-card aoh-glass-dark flex h-full flex-col items-start justify-center gap-3 rounded-3xl p-6 text-white">
-              <p className="text-lg font-semibold">{w.publicCopy["admissions.ready"]}</p>
-              <p className="text-sm text-emerald-100/80">
+            <div className="flex h-full flex-col items-start justify-center gap-3 rounded-3xl border border-emerald-900 bg-emerald-950 p-6 font-bold text-white shadow-none">
+              <p className="text-lg font-bold text-amber-400">{w.publicCopy["admissions.ready"]}</p>
+              <p className="text-sm font-bold text-white/90">
                 {w.publicCopy["admissions.readyBody"]}
               </p>
               <Button onClick={onApply} className="mt-2 bg-amber-400 text-emerald-950 hover:bg-amber-300">

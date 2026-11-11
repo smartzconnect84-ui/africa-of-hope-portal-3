@@ -96,7 +96,7 @@ export default function ProgrammesPage({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.08 }}
-            className="mt-4 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
+            className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-amber-400 sm:text-4xl lg:text-5xl"
           >
             Choose your course, duration and how you study.
           </motion.h1>

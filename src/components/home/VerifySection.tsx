@@ -55,13 +55,13 @@ export default function VerifySection({
   return (
     <section
       id="verify"
-      className="scroll-mt-24 bg-gradient-to-b from-white via-[#f3f7f4] to-emerald-50/70 py-16 sm:py-20"
+      className="scroll-mt-24 bg-gradient-to-b from-white via-[#f3f7f4] to-emerald-50/70 py-10 sm:py-12"
     >
       <div className="mx-auto max-w-4xl px-4">
         <Reveal>
-          <div className="aoh-card aoh-glass rounded-3xl p-6 sm:p-8">
+          <div className="aoh-card aoh-glass rounded-3xl p-5 sm:p-6">
             {copy.eyebrow && (
-              <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-semibold text-amber-900">
                 <ShieldCheck className="h-3.5 w-3.5" /> {copy.eyebrow}
               </p>
             )}
@@ -72,7 +72,7 @@ export default function VerifySection({
             )}
             {copy.subtitle && <p className="mt-2 text-sm text-slate-600">{copy.subtitle}</p>}
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input

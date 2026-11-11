@@ -93,19 +93,19 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
   if (!copy.enabled) return null;
 
   return (
-    <section id="support" className="scroll-mt-24 bg-[#f6f8f7] py-16 sm:py-20">
+    <section id="support" className="scroll-mt-24 bg-[#f6f8f7] py-10 sm:py-12">
       <div className="mx-auto max-w-6xl px-4">
         <ScrollReveal className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">{copy.eyebrow}</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-bold tracking-tight text-amber-600 sm:text-4xl">
             {copy.title}
           </h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-black">
             {copy.description}
           </p>
         </ScrollReveal>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="mt-6 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="grid gap-3">
             {tabs.map((tab, i) => {
               const Icon = tab.icon;
@@ -123,12 +123,12 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
                     )}
                   >
                     <span className="flex items-center gap-2.5">
-                      <span className={cn("grid h-9 w-9 place-items-center rounded-xl", kind === tab.key ? "bg-amber-400 text-emerald-950" : "bg-emerald-50 text-emerald-800")}>
+                      <span className={cn("grid h-9 w-9 place-items-center rounded-xl", kind === tab.key ? "bg-amber-400 text-emerald-950" : "bg-amber-100 text-amber-800")}>
                         <Icon className="h-4.5 w-4.5" />
                       </span>
                       <span className="text-base font-semibold">{tab.label}</span>
                     </span>
-                    <span className={cn("mt-2 block text-sm leading-6", kind === tab.key ? "text-white/80" : "text-slate-600")}>
+                    <span className={cn("mt-2 block text-sm leading-6", kind === tab.key ? "text-white/80" : "text-black")}>
                       {tab.blurb}
                     </span>
                     <span className={cn("mt-3 inline-flex items-center gap-1 text-xs font-semibold", kind === tab.key ? "text-amber-300" : "text-emerald-800")}>
@@ -160,8 +160,8 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
             ) : (
               <form onSubmit={submit} className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <activeTab.icon className="h-4 w-4 text-emerald-700" />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-800">{activeTab.label} form</h3>
+                  <activeTab.icon className="h-4 w-4 text-amber-600" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-700">{activeTab.label} form</h3>
                 </div>
 
                 {kind === "donation" && (
@@ -182,7 +182,7 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
                     </div>
                     <div>
                       <Label htmlFor="support-amount">Amount ({currency})</Label>
-                        <div className="my-2"><CurrencyConvertButton amount={amount} currency={normalizeCurrencyCode(currency)} /></div>
+                        <div className="my-2"><CurrencyConvertButton amount={amount} currency={normalizeCurrencyCode(currency)} className="border-amber-500 text-amber-700 hover:bg-amber-50 hover:text-amber-800" /></div>
                       <Input id="support-amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(Number(e.target.value.replace(/[^0-9]/g, "")) || 0)} className="mt-1" />
                     </div>
                     <div>
@@ -222,7 +222,7 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <HeartHandshake className="h-4 w-4" />}
                   {busy ? "Sending…" : activeTab.cta}
                 </motion.button>
-                <p className="text-center text-[11px] text-slate-500">{copy.responseNote}</p>
+                <p className="text-center text-[11px] text-black">{copy.responseNote}</p>
               </form>
             )}
           </div>

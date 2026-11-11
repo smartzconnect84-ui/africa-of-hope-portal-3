@@ -26,7 +26,7 @@ export default function NewsletterSignup() {
   }
   return <section id="newsletter" className="border-b border-white/15 px-4 py-10">
     <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2">
-      <div><h2 className="text-xl font-bold text-white">{copy.title}</h2><p className="mt-2 text-sm text-white/75">{copy.description}</p></div>
+      <div><h2 className="text-xl font-bold text-amber-400">{copy.title}</h2><p className="mt-2 text-sm text-white/75">{copy.description}</p></div>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-white/85">Name (optional)<Input className="mt-1 bg-white text-slate-900" autoComplete="given-name" value={name} onChange={e => setName(e.target.value)} maxLength={120} /></label>

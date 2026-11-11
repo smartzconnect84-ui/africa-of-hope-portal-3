@@ -243,6 +243,26 @@ export function mergeWebsiteSettings(
           image: String(item.image || ''),
         };
       }).filter((g) => g.image),
+      events: (Array.isArray((withCertificate as unknown as { campusLife?: { events?: unknown } }).campusLife?.events)
+        ? (withCertificate as unknown as { campusLife: { events: import('./publicPresentation').CampusEventItem[] } }).campusLife.events : [...DEFAULT_CAMPUS_LIFE.events]) as import('./publicPresentation').CampusEventItem[],
+      jobs: (Array.isArray((withCertificate as unknown as { campusLife?: { jobs?: unknown } }).campusLife?.jobs)
+        ? (withCertificate as unknown as { campusLife: { jobs: import('./publicPresentation').CampusJobItem[] } }).campusLife.jobs : [...DEFAULT_CAMPUS_LIFE.jobs]) as import('./publicPresentation').CampusJobItem[],
+      spotlights: (Array.isArray((withCertificate as unknown as { campusLife?: { spotlights?: unknown } }).campusLife?.spotlights)
+        ? (withCertificate as unknown as { campusLife: { spotlights: import('./publicPresentation').CampusSpotlight[] } }).campusLife.spotlights : [...DEFAULT_CAMPUS_LIFE.spotlights]) as import('./publicPresentation').CampusSpotlight[],
+      aid: (Array.isArray((withCertificate as unknown as { campusLife?: { aid?: unknown } }).campusLife?.aid)
+        ? (withCertificate as unknown as { campusLife: { aid: import('./publicPresentation').CampusAidItem[] } }).campusLife.aid : [...DEFAULT_CAMPUS_LIFE.aid]) as import('./publicPresentation').CampusAidItem[],
+      resources: (Array.isArray((withCertificate as unknown as { campusLife?: { resources?: unknown } }).campusLife?.resources)
+        ? (withCertificate as unknown as { campusLife: { resources: import('./publicPresentation').CampusResourceItem[] } }).campusLife.resources : [...DEFAULT_CAMPUS_LIFE.resources]) as import('./publicPresentation').CampusResourceItem[],
+      feePlans: (Array.isArray((withCertificate as unknown as { campusLife?: { feePlans?: unknown } }).campusLife?.feePlans)
+        ? (withCertificate as unknown as { campusLife: { feePlans: import('./publicPresentation').CampusFeePlan[] } }).campusLife.feePlans : [...DEFAULT_CAMPUS_LIFE.feePlans]) as import('./publicPresentation').CampusFeePlan[],
+      sectionTitles: {
+        ...DEFAULT_CAMPUS_LIFE.sectionTitles,
+        ...((withCertificate as unknown as { campusLife?: { sectionTitles?: object } }).campusLife?.sectionTitles ?? {}),
+      },
+      sectionBodies: {
+        ...DEFAULT_CAMPUS_LIFE.sectionBodies,
+        ...((withCertificate as unknown as { campusLife?: { sectionBodies?: object } }).campusLife?.sectionBodies ?? {}),
+      },
       tabs: {
         ...DEFAULT_CAMPUS_LIFE.tabs,
         ...((withCertificate as unknown as { campusLife?: { tabs?: object } }).campusLife?.tabs ?? {}),
