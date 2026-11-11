@@ -275,25 +275,25 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               </AnimatePresence>
             </div>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
               <button
                 type="button"
                 onClick={onOpenApply}
-                className="group inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-950 px-7 text-sm font-bold text-white shadow-[0_18px_40px_-14px_rgba(6,78,59,0.6)] transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
+                className="group inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-950 px-5 text-[13px] font-bold text-white shadow-[0_18px_40px_-14px_rgba(6,78,59,0.6)] transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 active:scale-[0.98] sm:w-auto"
               >
                 {applyLabel}
                 <ArrowRight className="h-4 w-4 text-amber-300 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
               </button>
               <a
                 href="#programmes"
-                className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-emerald-900/15 bg-white px-6 text-sm font-bold text-emerald-950 shadow-sm transition hover:border-emerald-900/30 hover:bg-emerald-50 active:scale-[0.98] sm:w-auto"
+                className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-900/15 bg-white px-5 text-[13px] font-bold text-emerald-950 shadow-sm transition hover:border-emerald-900/30 hover:bg-emerald-50 active:scale-[0.98] sm:w-auto"
               >
                 Explore programmes
                 <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </a>
               <a
                 href="/donate"
-                className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-6 text-sm font-bold text-emerald-950 shadow-[0_14px_30px_-12px_rgba(251,191,36,0.8)] transition hover:bg-amber-300 active:scale-[0.98] sm:w-auto"
+                className="inline-flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-[13px] font-bold text-emerald-950 shadow-[0_14px_30px_-12px_rgba(251,191,36,0.8)] transition hover:bg-amber-300 active:scale-[0.98] sm:w-auto"
               >
                 <HeartHandshake className="h-4 w-4" aria-hidden="true" />
                 {donateLabel}
@@ -326,46 +326,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               </button>
             </div>
 
-            {/* Slide selector */}
-            {safeSlides.length > 1 ? (
-              <div className="mt-7" role="tablist" aria-label="Choose a highlight">
-                <div className="aoh-tabrow flex gap-2 sm:flex-wrap">
-                  {safeSlides.slice(0, 5).map((s, i) => {
-                    const active = i === current % safeSlides.length;
-                    return (
-                      <button
-                        key={`${s.image}-${i}`}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        aria-label={`Show highlight ${i + 1}: ${s.eyebrow}`}
-                        onClick={() => goTo(i)}
-                        className={cn(
-                          "group relative min-h-[44px] overflow-hidden rounded-full border px-4 py-2 text-left text-xs font-bold transition active:scale-[0.97]",
-                          active
-                            ? "border-emerald-950 bg-emerald-950 text-white shadow-lg"
-                            : "border-emerald-900/15 bg-white text-slate-600 hover:border-emerald-900/30 hover:text-emerald-950",
-                        )}
-                      >
-                        <span className="relative z-10 flex items-center gap-2">
-                          <span className={cn("tabular-nums", active ? "text-amber-300" : "text-slate-400")}>
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          <span className="hidden max-w-[14rem] truncate sm:inline">{s.eyebrow}</span>
-                          <span className="sm:hidden">{active ? s.eyebrow.slice(0, 18) : `${i + 1}`}</span>
-                        </span>
-                        {active && !prefersReducedMotion ? (
-                          <span
-                            className="absolute inset-y-0 left-0 bg-white/10"
-                            style={{ width: `${Math.round(progress)}%` }}
-                          />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
+            {/* Slide selector removed per design review — prev/next + caption controls remain on the visual card. */}
           </div>
 
           {/* ——— Visual ——— */}

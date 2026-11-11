@@ -696,8 +696,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         </div>
 
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="light" size="md" showTagline={false} showName={false} />
+          <div className="flex flex-col items-start lg:col-span-1">
+            <BrandLockup logoUrl={w.logos?.footer || w.logoUrl} academyName={displayName} tone="light" size="sm" showTagline={false} showName={false} className="self-start" />
             {w.socials.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 {w.socials.map((s) => (
