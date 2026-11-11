@@ -236,11 +236,11 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.h1
               custom={1}
               variants={textStagger}
-              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight text-amber-400 sm:text-5xl lg:text-6xl"
+              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight text-[#FFD700] drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-6xl"
             >
               {slide.title}
               <br />
-              <span className="text-amber-400">{slide.highlight}</span>
+              <span className="text-[#FFD700]">{slide.highlight}</span>
             </motion.h1>
 
             {/* Description */}
