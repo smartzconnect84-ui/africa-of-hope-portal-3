@@ -610,8 +610,8 @@ export default function Navigation({
             aria-label="Portal navigation"
             className="aoh-drawer absolute left-0 top-0 flex w-[min(20rem,92vw)] flex-col border-r-[3px] border-[#D4AF37] bg-white shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 p-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 p-4">
+              <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                 <BrandLockup
                   logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
                   academyName={state.websiteSettings.academyName || state.settings.academyName}
@@ -619,6 +619,9 @@ export default function Navigation({
                   tone="light"
                   size="sm"
                   showTagline={false}
+                  className="min-w-0 max-w-full items-center gap-2 overflow-hidden"
+                  logoClassName="h-7 w-auto max-w-[112px] shrink-0"
+                  nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-sm leading-none tracking-[0.12em] self-center"
                 />
               </div>
               <button

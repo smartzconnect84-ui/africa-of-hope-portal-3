@@ -146,7 +146,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "admissions-inbox",
-    label: "Admissions & support forms",
+    label: "Admissions & Support",
     icon: Users,
     visible: (ctx) => ctx.canAny("students.manage", "fees.manage"),
     render: () => <EngagementInbox />,

@@ -68,6 +68,8 @@ export interface BrandLockupProps {
   showName?: boolean;
   className?: string;
   nameClassName?: string;
+  /** Extra classes on the logo img — e.g. enlarge one placement without changing the global size. */
+  logoClassName?: string;
   /** Extra classes on the tagline line — e.g. `"hidden sm:block"` so compact headers drop it on narrow phones. */
   taglineClassName?: string;
 }
@@ -82,6 +84,7 @@ export default function BrandLockup({
   showName = true,
   className,
   nameClassName,
+  logoClassName,
   taglineClassName,
   displayName,
 }: BrandLockupProps) {
@@ -118,6 +121,7 @@ export default function BrandLockup({
           className={cn(
             IMG[size],
             "block w-auto shrink-0 bg-transparent object-contain [filter:none] [text-shadow:none] [box-shadow:none]",
+            logoClassName,
           )}
         />
       ) : (
@@ -130,7 +134,7 @@ export default function BrandLockup({
         </span>
       )}
       {(showName || showTaglineLine) && (
-        <div className="min-w-0 leading-tight">
+        <div className="flex min-w-0 flex-col justify-center leading-tight">
           {showName && (
             <p
               className={cn(
