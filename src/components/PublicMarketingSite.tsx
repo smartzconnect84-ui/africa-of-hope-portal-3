@@ -439,15 +439,14 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         data-aoh-sticky-header=""
       >
         <div className="mx-auto flex h-16 md:h-[72px] max-w-7xl items-center gap-2 px-4 md:gap-3 md:px-6 lg:px-8">
-          <a href="/" onClick={goHomeTop} className="flex min-w-0 shrink-0 items-center" aria-label="Africa of Hope — home">
+          <a href="/" onClick={goHomeTop} className="flex h-full min-w-0 max-w-[220px] shrink-0 items-center overflow-hidden sm:max-w-[260px] md:max-w-[300px]" aria-label="Africa of Hope — home">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
               academyName={displayName}
-              tagline={w.tagline}
               tone="dark"
               size="md"
+              showName={false}
               showTagline={false}
-              nameClassName="hidden lg:block"
             />
           </a>
           <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} maxDirect={4} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 md:flex" />

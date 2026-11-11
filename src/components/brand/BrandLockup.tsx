@@ -21,9 +21,9 @@ type Size = "sm" | "md" | "lg";
 type Tone = "light" | "dark";
 
 const IMG: Record<Size, string> = {
-  sm: "h-9 w-auto max-w-[152px]",
-  md: "h-10 w-auto max-w-[184px] md:h-11",
-  lg: "h-12 w-auto max-w-[208px] sm:h-14",
+  sm: "h-9 w-auto max-w-[160px] object-contain",
+  md: "h-10 w-auto max-w-[210px] object-contain md:h-12 md:max-w-[250px]",
+  lg: "h-12 w-auto max-w-[220px] object-contain sm:h-14",
 };
 
 const ICON: Record<Size, string> = {
@@ -117,7 +117,7 @@ export default function BrandLockup({
           decoding="async"
           className={cn(
             IMG[size],
-            "shrink-0 bg-transparent object-contain [filter:none] [text-shadow:none] [box-shadow:none]",
+            "block max-h-full shrink-0 bg-transparent object-contain [filter:none] [text-shadow:none] [box-shadow:none]",
           )}
         />
       ) : (
