@@ -438,7 +438,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md"
         data-aoh-sticky-header=""
       >
-        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-1 px-2 py-2 sm:gap-2 sm:px-5 lg:gap-1.5">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-2 px-3 py-2 sm:gap-2 sm:px-5 lg:gap-1.5">
           <a href="/" onClick={goHomeTop} className="flex min-w-0 items-center">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
@@ -456,7 +456,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               type="button"
               onClick={openLogin}
               {...buttonMotionProps}
-              className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-1.5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
+              className="btn-sheen inline-flex h-11 items-center whitespace-nowrap rounded-xl bg-amber-400 px-3 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
               <LogIn className="mr-1 h-4 w-4" /> MY PORTAL
@@ -469,7 +469,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               aria-haspopup="dialog"
               aria-expanded={menu}
               aria-controls="public-mobile-menu"
-              className="-ml-1 grid h-10 w-8 min-h-10 min-w-8 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:w-10 lg:hidden"
+              className="grid h-11 w-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -496,7 +496,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="aoh-drawer !h-auto absolute right-0 top-0 flex w-72 max-w-[85vw] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 text-white shadow-2xl"
+              className="aoh-drawer absolute right-0 top-0 flex w-[min(20rem,88vw)] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -510,13 +510,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-1 flex min-h-0 flex-none flex-col gap-0 overflow-y-auto overscroll-contain pr-1">
+              <nav className="-mr-1 mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
                     href={l.href}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="min-h-9 rounded-lg px-3 py-2 text-sm font-medium text-emerald-100 transition hover:bg-white/10"
+                    className="flex min-h-11 items-center rounded-lg px-3 py-3 text-[15px] font-medium text-emerald-100 transition hover:bg-white/10"
                   >
                     {t(l.label)}
                   </a>

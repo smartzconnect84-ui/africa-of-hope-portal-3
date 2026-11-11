@@ -23,8 +23,8 @@ export default function TrustBar({ programsCount, partnersCount }: { programsCou
     },
   ];
   return (
-    <div className="relative z-10 mx-auto -mt-8 max-w-6xl px-4 sm:-mt-10">
-      <dl className="grid gap-3 rounded-3xl border border-emerald-900/10 bg-white/95 p-4 shadow-xl shadow-emerald-950/10 backdrop-blur sm:grid-cols-3 sm:p-5">
+    <div className="relative z-10 mx-auto -mt-8 max-w-6xl px-4 sm:-mt-10 sm:px-6">
+      <dl className="grid gap-3 rounded-3xl border border-emerald-900/10 bg-white/95 p-4 shadow-xl shadow-emerald-950/10 backdrop-blur sm:gap-4 sm:p-5 md:grid-cols-3">
         {items.map((item) => {
           const Icon = item.icon;
           return (

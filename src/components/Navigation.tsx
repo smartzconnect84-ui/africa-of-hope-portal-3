@@ -394,7 +394,7 @@ export default function Navigation({
             onClick={() => go(v.key)}
             data-component-id={`nav-${v.key}`}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-lg font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+              "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
               active
                 ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
                 : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
@@ -410,7 +410,7 @@ export default function Navigation({
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-lg font-medium text-emerald-800 transition hover:bg-emerald-50"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-emerald-800 transition hover:bg-emerald-50"
           >
             <Globe className="h-4.5 w-4.5" />
             View public website
@@ -419,7 +419,7 @@ export default function Navigation({
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-lg font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
         >
           <RefreshCw className="h-4.5 w-4.5" />
           Reload live data
@@ -593,7 +593,7 @@ export default function Navigation({
             {sidebar}
           </div>
         </aside>
-        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 lg:p-6">
+        <main className="min-w-0 max-w-full flex-1 overflow-x-clip p-4 sm:p-5 lg:p-6 xl:p-8">
           {view !== "announcements" && <PortalAnnouncementTicker onOpenBoard={() => go("announcements")} />}
           {children}
         </main>

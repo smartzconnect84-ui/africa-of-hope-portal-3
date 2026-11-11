@@ -1017,3 +1017,53 @@ html:has(.aoh-public[data-visual-mode="dark"]) { color-scheme: light !important;
 @media (prefers-reduced-motion: reduce) {
   .aoh-public *, .aoh-public *::before, .aoh-public *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ——— Professional multi-device polish: phones / tablets / desktops ———
+   Layout-only. No copy, CMS or routing changes. */
+html, body { overflow-x: clip; }
+body { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
+img, video, svg { max-width: 100%; }
+.aoh-public img, .aoh-public video { height: auto; }
+
+/* Drawers always fill the visual viewport, clear of notches + home indicator. */
+.aoh-drawer,
+.aoh-public .aoh-drawer { height: 100dvh !important; max-height: 100dvh !important; }
+
+/* Phones (<768px): compact type, full-width CTAs, scrollable tab rows. */
+@media (max-width: 767px) {
+  .aoh-public main { overflow-x: clip; }
+  .aoh-public section[id] { scroll-margin-top: 5.25rem; }
+  .aoh-hero h1 { font-size: clamp(2rem, 8.5vw, 2.5rem); line-height: 1.04; letter-spacing: -0.02em; overflow-wrap: break-word; }
+  .aoh-hero p { overflow-wrap: break-word; }
+  .aoh-tabrow { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-inline: -1rem; padding-inline: 1rem; padding-bottom: 0.25rem; scroll-snap-type: x proximity; }
+  .aoh-tabrow::-webkit-scrollbar { display: none; }
+  .aoh-tabrow > * { scroll-snap-align: start; flex-shrink: 0; }
+}
+
+/* Tablets (768–1023px): breathe without going full desktop spread. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .aoh-device-container { max-width: 56rem; }
+  .aoh-hero h1 { font-size: clamp(2.6rem, 5.6vw, 3.4rem); }
+  .aoh-public section[id] { scroll-margin-top: 5.5rem; }
+}
+
+/* Desktops (1024px+): cap measure for readability on ultrawide. */
+@media (min-width: 1024px) {
+  .aoh-hero-copy p { max-width: 58ch; }
+}
+
+/* Touch devices: keep press targets comfortable without restyling desktop hover. */
+@media (pointer: coarse) {
+  .aoh-public .aoh-drawer a, .aoh-public .aoh-drawer button,
+  .aoh-hero a, .aoh-hero button { min-height: 44px; }
+  .aoh-hero .aoh-tabrow a, .aoh-hero .aoh-tabrow button { min-height: 44px; }
+}
+
+/* Portal: readable content width + horizontal table scroll on small screens. */
+.portal-content { margin-inline: auto; width: 100%; max-width: 72rem; }
+.aoh-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.aoh-table-scroll table { min-width: 560px; }
+@media (max-width: 767px) {
+  .portal-content { max-width: 100%; }
+  .aoh-table-scroll table { min-width: 620px; }
+}

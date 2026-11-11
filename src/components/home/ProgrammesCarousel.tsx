@@ -13,7 +13,7 @@ const INTERVAL_MS = 3500;
 
 /** Cards visible at once for the current viewport width. */
 function useVisibleCount() {
-  const get = () => (typeof window === "undefined" ? 3 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1);
+  const get = () => (typeof window === "undefined" ? 3 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1);
   const [count, setCount] = useState(get);
   useEffect(() => {
     const onResize = () => setCount(get());
@@ -81,8 +81,8 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
   if (total === 0) return null;
 
   return (
-    <section id="programs" className="scroll-mt-20 border-y border-emerald-900/10 bg-[#f2ebd6] py-14 sm:py-16">
-      <div className="mx-auto max-w-6xl px-4">
+    <section id="programs" className="scroll-mt-20 border-y border-emerald-900/10 bg-[#f2ebd6] py-12 sm:py-16 lg:py-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <ScrollReveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Programmes</p>
@@ -97,7 +97,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                   type="button"
                   onClick={() => step(-1)}
                   aria-label="Previous programme"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-emerald-900/15 text-emerald-800 transition hover:bg-emerald-50"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-emerald-900/15 text-emerald-800 transition hover:bg-emerald-50"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -105,7 +105,7 @@ export default function ProgrammesCarousel({ programs, onApply }: { programs: Pr
                   type="button"
                   onClick={() => step(1)}
                   aria-label="Next programme"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-emerald-900/15 text-emerald-800 transition hover:bg-emerald-50"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-emerald-900/15 text-emerald-800 transition hover:bg-emerald-50"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>

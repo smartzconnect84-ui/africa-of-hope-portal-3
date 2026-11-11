@@ -211,8 +211,8 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-800 via-amber-400 to-emerald-800" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 pb-24 pt-10 sm:px-6 sm:pt-14 lg:pb-28 lg:pt-16">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
+      <div className="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6 sm:pt-14 lg:pb-28 lg:pt-16">
+        <div className="grid items-center gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
           {/* ——— Copy ——— */}
           <div className="aoh-hero-copy min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -243,7 +243,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                   exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
                   transition={{ duration: prefersReducedMotion ? 0.2 : 0.45, ease: "easeOut" }}
                 >
-                  <h1 className="text-balance text-[2.4rem] font-extrabold leading-[1.02] tracking-tight text-emerald-950 min-[480px]:text-5xl sm:text-6xl lg:text-[4.1rem]">
+                  <h1 className="text-balance text-[2.05rem] font-extrabold leading-[1.04] tracking-tight text-emerald-950 min-[480px]:text-5xl sm:text-6xl lg:text-[4.1rem]">
                     {slide.title}
                     {slide.highlight ? (
                       <>
@@ -329,7 +329,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             {/* Slide selector */}
             {safeSlides.length > 1 ? (
               <div className="mt-7" role="tablist" aria-label="Choose a highlight">
-                <div className="flex flex-wrap gap-2">
+                <div className="aoh-tabrow flex gap-2 sm:flex-wrap">
                   {safeSlides.slice(0, 5).map((s, i) => {
                     const active = i === current % safeSlides.length;
                     return (
@@ -372,7 +372,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
           <div className="relative mx-auto w-full max-w-[560px] lg:mx-0">
             {/* Arch frame */}
             <div className="relative overflow-hidden rounded-[2rem] rounded-tr-[4.5rem] border border-emerald-900/10 bg-white shadow-[0_40px_80px_-30px_rgba(6,78,59,0.35)]">
-              <div className="relative aspect-[4/4.4] min-h-[440px] w-full overflow-hidden bg-emerald-100 min-[480px]:aspect-[4/4] sm:aspect-[5/4.6] lg:aspect-[4/4.6]">
+              <div className="relative aspect-[4/3.6] min-h-[320px] w-full overflow-hidden bg-emerald-100 min-[480px]:aspect-[4/4] sm:aspect-[5/4.6] sm:min-h-[400px] lg:aspect-[4/4.6] lg:min-h-[440px]">
                 {safeSlides.map((s, i) => {
                   const active = i === current % safeSlides.length;
                   return (
