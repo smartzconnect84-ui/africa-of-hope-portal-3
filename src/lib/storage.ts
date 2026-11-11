@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "./imagePerf";
 
 const MB = 1024 * 1024;
 
@@ -17,6 +18,9 @@ export const DOCUMENT_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 export const MAX_IMAGE_BYTES = 5 * MB;
+export const MAX_IMAGE_INPUT_BYTES = 15 * MB;
+export const MAX_VIDEO_BYTES = 100 * MB;
+export const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 export const MAX_DOCUMENT_BYTES = 10 * MB;
 
 export const DOCUMENT_CATEGORIES = [
@@ -70,12 +74,16 @@ function explain(message: string): string {
 }
 
 async function uploadPublicImage(bucket: string, folder: string, file: File): Promise<string> {
-  const invalid = validateFile(file, IMAGE_TYPES, MAX_IMAGE_BYTES);
+  const typeOk = validateFile(file, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES);
+  // Type is always enforced; oversize phone photos get compressed before the final size check.
+  if (typeOk && !typeOk.includes("larger than")) throw new Error(typeOk);
+  const optimized = await compressImage(file);
+  const invalid = validateFile(optimized, IMAGE_TYPES, MAX_IMAGE_BYTES);
   if (invalid) throw new Error(invalid);
-  const path = `${folder}/${crypto.randomUUID()}.${extension(file)}`;
+  const path = `${folder}/${crypto.randomUUID()}.${extension(optimized)}`;
   const { error } = await supabase.storage
     .from(bucket)
-    .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    .upload(path, optimized, { cacheControl: "31536000", upsert: false, contentType: optimized.type });
   if (error) throw new Error(explain(error.message));
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }

@@ -83,8 +83,23 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderProps) {
   const { state } = useApp();
-  const slides =
+  const rawSlides =
     state.websiteSettings.heroSlides.length > 0 ? state.websiteSettings.heroSlides : SLIDES;
+  // Audit: drop CMS slides with no readable copy so the hero never shows dead/empty text.
+  const slides = (rawSlides.length > 0 ? rawSlides : SLIDES)
+    .map((s, i) => ({
+      image: (s.image || SLIDES[i % SLIDES.length].image).trim(),
+      eyebrow: (s.eyebrow || SLIDES[i % SLIDES.length].eyebrow || "AFRICA OF HOPE").trim(),
+      title: (s.title || SLIDES[i % SLIDES.length].title || "Learn practical skills").trim(),
+      highlight: (s.highlight || SLIDES[i % SLIDES.length].highlight || "").trim(),
+      description: (
+        s.description ||
+        SLIDES[i % SLIDES.length].description ||
+        "Practical certificate programmes with mentors and verifiable certificates."
+      ).trim(),
+    }))
+    .filter((s) => s.image.length > 0 && (s.title.length > 0 || s.description.length > 0));
+  const safeSlides = slides.length > 0 ? slides : SLIDES;
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
   const [paused, setPaused] = useState(false);
@@ -95,12 +110,12 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
 
   const goTo = useCallback(
     (index: number, dir?: number) => {
-      const next = ((index % slides.length) + slides.length) % slides.length;
+      const next = ((index % safeSlides.length) + safeSlides.length) % safeSlides.length;
       setDirection(dir ?? (next > current ? 1 : -1));
       setCurrent(next);
       setProgress(0);
     },
-    [current]
+    [current, safeSlides.length]
   );
 
   const next = useCallback(() => goTo(current + 1, 1), [current, goTo]);
@@ -141,8 +156,24 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
     else if (info.offset.x > 80) prev();
   };
 
-  const slide = slides[current % slides.length];
+  const slide = safeSlides[current % safeSlides.length];
   const copy = state.websiteSettings.publicCopy;
+  const badgeText = (copy['hero.badge'] || '').trim();
+
+  // Performance: warm the first hero photo + the next one so slides never flash blank.
+  useEffect(() => {
+    try {
+      [safeSlides[0]?.image, safeSlides[1]?.image].forEach((src, i) => {
+        if (!src) return;
+        const l = document.createElement('link');
+        l.rel = 'preload';
+        l.as = 'image';
+        l.href = src;
+        if (i === 0) l.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(l);
+      });
+    } catch { /* best-effort */ }
+  }, [safeSlides[0]?.image, safeSlides[1]?.image]);
 
   const variants = {
     enter: (dir: number) => ({
@@ -199,13 +230,18 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
           >
             <img
               src={slide.image}
-              alt={slide.title}
+              alt={`${slide.title} ${slide.highlight}`.trim()}
               loading={current === 0 ? "eager" : "lazy"}
+              fetchPriority={current === 0 ? "high" : "low"}
+              decoding="async"
+              draggable={false}
               className="aoh-photo h-full w-full object-cover object-center"
             />
           </motion.div>
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-950/75 to-emerald-950/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-transparent" />
+          {/* Readability scrim: dark left panel + bottom fade so white/gold copy stays visible on bright photos. */}
+          <div className="absolute inset-0 bg-emerald-950/45" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-950/70 to-emerald-950/15" />
+          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/85 via-emerald-950/20 to-transparent" />
         </motion.div>
       </AnimatePresence>
 
@@ -219,34 +255,44 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
             className="max-w-2xl"
           >
-            {/* Eyebrow badge */}
+            {/* Eyebrow badge — hidden when CMS leaves it blank (no dead pills). */}
+            {(slide.eyebrow || badgeText) && (
             <motion.div custom={0} variants={textStagger} className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold ring-1 ring-white/15 backdrop-blur-sm">
+              {slide.eyebrow ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/70 px-3 py-1.5 text-[11px] font-semibold text-white ring-1 ring-white/25 backdrop-blur-md">
                 <BadgeCheck className="h-3.5 w-3.5 text-amber-400" />
                 {slide.eyebrow}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1.5 text-[11px] font-semibold text-amber-300 ring-1 ring-amber-400/30 backdrop-blur-sm">
+              ) : null}
+              {badgeText ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-[11px] font-bold text-emerald-950 ring-1 ring-amber-200 backdrop-blur-md">
                 <Sparkles className="h-3.5 w-3.5" />
-                {copy['hero.badge']}
+                {badgeText}
               </span>
+              ) : null}
             </motion.div>
+            )}
 
-            {/* Heading */}
+            {/* Heading — pure white + amber on a frosted panel: passes contrast on any photo. */}
             <motion.h1
               custom={1}
               variants={textStagger}
-              className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight text-[#FFD700] drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-6xl"
+              className="mt-4 rounded-2xl border border-white/10 bg-emerald-950/55 p-4 text-3xl font-bold leading-[1.1] tracking-tight text-white shadow-xl backdrop-blur-md [text-shadow:0_2px_12px_rgba(0,0,0,0.7)] sm:p-5 sm:text-5xl lg:text-6xl"
             >
               {slide.title}
-              <br />
-              <span className="text-[#FFD700]">{slide.highlight}</span>
+              {slide.highlight ? (
+                <>
+                  <br />
+                  <span className="text-amber-300 [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">{slide.highlight}</span>
+                </>
+              ) : null}
             </motion.h1>
 
-            {/* Description */}
+            {/* Description — always rendered with fallback so no slide is textless. */}
             <motion.p
               custom={2}
               variants={textStagger}
-              className="mt-3 max-w-[65ch] text-base font-medium text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] sm:text-lg"
+              className="mt-3 max-w-[65ch] rounded-xl bg-black/35 px-4 py-3 text-base font-medium leading-relaxed text-white backdrop-blur-md [text-shadow:0_1px_8px_rgba(0,0,0,0.8)] sm:text-lg"
             >
               {slide.description}
             </motion.p>
@@ -313,13 +359,13 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
 
         <div className="flex items-center justify-between gap-4">
           {/* Slide counter */}
-          <span className="text-xs font-semibold tabular-nums text-amber-200/80">
-            {String(current + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+          <span className="rounded-full bg-black/45 px-2.5 py-1 text-xs font-semibold tabular-nums text-amber-100 backdrop-blur-md">
+            {String(current + 1).padStart(2, "0")} / {String(safeSlides.length).padStart(2, "0")}
           </span>
 
-          {/* Thumbnail pills */}
+          {/* Thumbnail pills — small cached thumbs, not full hero bytes. */}
           <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
-            {slides.map((s, i) => (
+            {safeSlides.map((s, i) => (
               <button
                 key={i}
                 type="button"
@@ -334,8 +380,11 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 <img
                   src={s.image}
                   alt=""
+                  aria-hidden="true"
                   className="h-full w-full object-cover"
                   loading="lazy"
+                  decoding="async"
+                  draggable={false}
                 />
               </button>
             ))}

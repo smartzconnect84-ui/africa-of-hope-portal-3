@@ -20,8 +20,7 @@ try {
 let clearLogPlugin: () => { name: string } = () => ({ name: "noop-clear-log" });
 try {
   if (existsSync("./dala-internal-vite-clear-log-plugin.js")) {
-    const loadOptionalPlugin = new Function("path", "return import(path)") as (path: string) => Promise<unknown>;
-    const mod = await loadOptionalPlugin("./dala-internal-vite-clear-log-plugin.js");
+    const mod = await import("./dala-internal-vite-clear-log-plugin.js");
     const candidate = (mod as { default?: unknown }).default ?? mod;
     if (typeof candidate === "function") clearLogPlugin = candidate as () => { name: string };
   }
@@ -30,16 +29,9 @@ try {
 }
 
 // https://vite.dev/config/
-export default defineConfig({ server: { host: true, allowedHosts: true, headers: { 'Cross-Origin-Embedder-Policy': 'credentialless', 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Resource-Policy': 'cross-origin' } },
+export default defineConfig({ server: { host: true, allowedHosts: true, hmr: { clientPort: 443, protocol: 'wss' }, headers: { 'Cross-Origin-Embedder-Policy': 'credentialless', 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Resource-Policy': 'cross-origin' } },
   plugins: [
     clearLogPlugin(),
-    {
-      name: "ignore-workspace-env-rewrites",
-      configureServer(server) {
-        // v0 periodically rewrites this file; restarting Vite for each sync disconnects the preview.
-        server.watcher.unwatch(path.resolve(process.cwd(), ".env.development.local"));
-      },
-    },
     brandAssets(),
     react(),
     tailwindcss(),
@@ -60,5 +52,17 @@ export default defineConfig({ server: { host: true, allowedHosts: true, headers:
   },
   build: {
     chunkSizeWarningLimit: 5000, // Increases the limit to 5MB
+    sourcemap: false,
+    minify: "esbuild",
+    assetsInlineLimit: 4096,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          ui: ["framer-motion", "lucide-react"],
+          data: ["@tanstack/react-query", "@supabase/supabase-js"],
+        },
+      },
+    },
   },
 });
