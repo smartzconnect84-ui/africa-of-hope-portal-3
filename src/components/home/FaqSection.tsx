@@ -80,7 +80,7 @@ export default function FaqSection({
 }) {
   if (w.faqs.length === 0) return null;
   return (
-    <section id="faq" className="scroll-mt-24 bg-white py-8 sm:py-10">
+    <section id="faq" className="scroll-mt-24 bg-white py-5 sm:py-6">
       <div className="mx-auto max-w-6xl px-4">
         <Reveal>
           <div className="max-w-2xl">
@@ -98,7 +98,7 @@ export default function FaqSection({
           </div>
         </Reveal>
 
-        <div className="mt-5 space-y-2">
+        <div className="mt-4 space-y-2">
             {w.faqs.map((f, i) => (
               <Reveal key={f.id} delay={i * 0.04}>
                 <details className="group rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-3 open:bg-white">

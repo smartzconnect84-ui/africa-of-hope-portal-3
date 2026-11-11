@@ -344,9 +344,8 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                     </div>
                   );
                 })}
-                <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/55 via-transparent to-transparent" />
                 {/* Caption */}
-                <div className="absolute inset-x-4 bottom-4">
+                <div className="absolute inset-x-4 bottom-3">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={current}
@@ -354,9 +353,9 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                       animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
                       exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
                       transition={{ duration: 0.35 }}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/20 bg-emerald-950/55 px-4 py-3 backdrop-blur-xl"
+                      className="flex items-center justify-between gap-1.5 rounded-lg border border-white/20 bg-emerald-950/55 px-2 py-1 backdrop-blur-xl"
                     >
-                      <p className="min-w-0 truncate text-[13px] font-semibold text-white">
+                      <p className="min-w-0 truncate text-[11px] font-semibold text-white">
                         <span className="mr-2 font-extrabold tabular-nums text-amber-300">
                           {String((current % safeSlides.length) + 1).padStart(2, "0")} /{" "}
                           {String(safeSlides.length).padStart(2, "0")}
@@ -368,24 +367,24 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                           type="button"
                           onClick={prev}
                           aria-label="Previous highlight"
-                          className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/20 active:scale-95"
+                          className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/20 active:scale-95"
                         >
-                          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           onClick={next}
                           aria-label="Next highlight"
-                          className="grid h-9 w-9 place-items-center rounded-full bg-amber-400 text-emerald-950 transition hover:bg-amber-300 active:scale-95"
+                          className="grid h-6 w-6 place-items-center rounded-full bg-amber-400 text-emerald-950 transition hover:bg-amber-300 active:scale-95"
                         >
-                          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                          <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           onClick={() => setPaused((p) => !p)}
                           aria-label={paused ? "Resume slideshow" : "Pause slideshow"}
                           aria-pressed={paused}
-                          className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/20 active:scale-95"
+                          className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition hover:bg-white/20 active:scale-95"
                         >
                           {paused ? <Play className="h-3.5 w-3.5" aria-hidden="true" /> : <Pause className="h-3.5 w-3.5" aria-hidden="true" />}
                         </button>
@@ -394,19 +393,6 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                   </AnimatePresence>
                 </div>
               </div>
-            </div>
-
-            {/* Floating: verified */}
-            <div className="absolute left-2 top-4 flex max-w-[calc(100%-1rem)] items-center gap-2.5 rounded-2xl border border-emerald-900/10 bg-white/95 py-2 pl-2.5 pr-3 shadow-xl shadow-emerald-950/10 backdrop-blur sm:-left-8 sm:left-auto sm:top-8">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-800 text-amber-300">
-                <BadgeCheck className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span>
-                <span className="block text-[13px] font-extrabold leading-tight text-emerald-950">
-                  Certificate/Diploma
-                </span>
-                <span className="block text-xs font-medium tracking-wide text-slate-600">P-Tech & Voc Training</span>
-              </span>
             </div>
 
             {/* Floating: intake */}
@@ -436,7 +422,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
 
             {/* Thumbnails */}
             {safeSlides.length > 1 ? (
-              <div className="mt-4 flex items-center gap-2.5 overflow-x-auto pb-1">
+              <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
                 {safeSlides.slice(0, 5).map((s, i) => {
                   const active = i === current % safeSlides.length;
                   return (
@@ -447,7 +433,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                       aria-label={`View photo ${i + 1}`}
                       aria-current={active}
                       className={cn(
-                        "relative h-16 w-24 shrink-0 overflow-hidden rounded-xl border-2 transition active:scale-95",
+                        "relative h-12 w-[72px] shrink-0 overflow-hidden rounded-lg border-2 transition active:scale-95",
                         active
                           ? "border-amber-400 shadow-lg"
                           : "border-white opacity-70 hover:opacity-100",
@@ -458,13 +444,13 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                     </button>
                   );
                 })}
-                <div className="ml-1 hidden items-center gap-4 rounded-xl border border-emerald-900/10 bg-white/80 px-4 py-3 backdrop-blur min-[480px]:flex">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-950">
-                    <Users className="h-4 w-4 text-emerald-700" aria-hidden="true" /> Cohort community
+                <div className="ml-1 hidden items-center gap-1.5 rounded-md border border-emerald-900/10 bg-white/80 px-2 py-1 backdrop-blur min-[480px]:flex">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-950">
+                    <Users className="h-3 w-3 text-emerald-700" aria-hidden="true" /> Cohort community
                   </span>
-                  <span className="h-4 w-px bg-emerald-900/15" aria-hidden="true" />
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-950">
-                    <ShieldCheck className="h-4 w-4 text-emerald-700" aria-hidden="true" /> Transparent fees
+                  <span className="h-3 w-px bg-emerald-900/15" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-950">
+                    <ShieldCheck className="h-3 w-3 text-emerald-700" aria-hidden="true" /> Transparent fees
                   </span>
                 </div>
               </div>

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
  * treatment for conversion-critical blocks (programmes, admissions, cta).
  */
 const ELEVATED_KEYS = new Set(["programmes", "admissions", "cta"]);
+const COMPACT_KEYS = new Set(["admissions", "faq", "cta", "campus-life"]);
 const DARK_KEYS = new Set(["impact"]);
 const TINT_KEYS = new Set(["features", "faq", "newsletter", "support", "team", "blog"]);
 
@@ -22,11 +23,13 @@ export default function HomeSectionFrame({
   const elevated = ELEVATED_KEYS.has(sectionKey);
   const dark = DARK_KEYS.has(sectionKey);
   const tinted = TINT_KEYS.has(sectionKey);
+  const compact = COMPACT_KEYS.has(sectionKey);
   return (
     <div
       data-home-block={sectionKey}
       className={cn(
         "home-block relative min-w-0 scroll-mt-20 overflow-x-clip md:scroll-mt-24",
+        compact && "home-block--compact",
         tinted && !dark && "bg-[#f7f5ee]",
         elevated && "home-block--elevated",
         dark && "home-block--dark",

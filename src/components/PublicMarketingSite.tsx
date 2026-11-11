@@ -439,7 +439,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         data-aoh-sticky-header=""
       >
         <div className="mx-auto flex h-16 md:h-[72px] max-w-7xl items-center gap-2 px-4 md:gap-3 md:px-6 lg:px-8">
-          <a href="/" onClick={goHomeTop} className="flex h-full min-w-0 max-w-[220px] shrink-0 items-center overflow-hidden sm:max-w-[260px] md:max-w-[300px]" aria-label="Africa of Hope — home">
+          <a href="/" onClick={goHomeTop} className="flex h-full min-w-0 max-w-[220px] shrink-0 items-center overflow-visible sm:max-w-[260px] md:max-w-[300px]" aria-label="Africa of Hope — home">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
               academyName={displayName}
@@ -597,7 +597,6 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                     <h2 className="text-3xl font-bold text-emerald-950">{w.team.title}</h2>
                     <p className="mt-3 text-black">{w.team.description}</p>
                     <TeamProfiles team={w.team} />
-                    <a href="/team" className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-800 hover:underline">{w.publicCopy['team.link']} <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
                   </div>
                 </section>
               )}
@@ -711,7 +710,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             </div>
           </div>
           <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-amber-600">{w.publicCopy["footer.explore"]}</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.explore"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
               {navLinks.map((l) => (
                 <li key={l.id}><a href={l.href} className="transition hover:text-amber-300">{t(l.label)}</a></li>
@@ -719,7 +718,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             </ul>
           </div>
           <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-amber-600">{w.publicCopy["footer.started"]}</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.started"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
               <li><a href="/admissions" className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.apply"]}</a></li>
               <li><button type="button" onClick={openLogin} className="inline-flex items-center gap-1.5 transition hover:text-emerald-800"><ChevronRight className="h-3.5 w-3.5" /> {w.publicCopy["footer.portal"]}</button></li>

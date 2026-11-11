@@ -22,7 +22,7 @@ type Tone = "light" | "dark";
 
 const IMG: Record<Size, string> = {
   sm: "h-5 w-auto max-w-[96px] object-contain",
-  md: "h-8 w-auto max-w-[168px] object-contain md:h-10 md:max-w-[200px]",
+  md: "h-10 w-auto max-w-[220px] max-h-[52px] shrink-0 object-contain sm:h-11 sm:max-w-[240px] md:h-12 md:max-w-[260px] md:max-h-[60px]",
   lg: "h-10 w-auto max-w-[176px] object-contain sm:h-11",
 };
 
@@ -101,7 +101,7 @@ export default function BrandLockup({
   }, [initialSrc]);
   const activeSrc = failed ? FALLBACK_LOGO : src;
   return (
-    <div className={cn("flex min-w-0 items-center gap-3", className)}>
+    <div className={cn("flex min-w-0 items-center gap-3 overflow-visible", className)}>
       {logoUrl ? (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
@@ -117,7 +117,7 @@ export default function BrandLockup({
           decoding="async"
           className={cn(
             IMG[size],
-            "block max-h-full shrink-0 bg-transparent object-contain [filter:none] [text-shadow:none] [box-shadow:none]",
+            "block w-auto shrink-0 bg-transparent object-contain [filter:none] [text-shadow:none] [box-shadow:none]",
           )}
         />
       ) : (

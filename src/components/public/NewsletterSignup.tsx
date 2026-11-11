@@ -29,11 +29,11 @@ export default function NewsletterSignup() {
       <div><h2 className="text-xl font-bold text-amber-400">{copy.title}</h2><p className="mt-2 text-sm text-white/75">{copy.description}</p></div>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-xs text-white/85">Name (optional)<Input className="mt-1 bg-white text-slate-900" autoComplete="given-name" value={name} onChange={e => setName(e.target.value)} maxLength={120} /></label>
-          <label className="text-xs text-white/85">Email address<Input className="mt-1 bg-white text-slate-900" type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} /></label>
+          <label className="text-xs font-semibold text-amber-300">Name (optional)<Input className="mt-1 bg-white text-slate-900" autoComplete="given-name" value={name} onChange={e => setName(e.target.value)} maxLength={120} /></label>
+          <label className="text-xs font-semibold text-amber-300">Email address<Input className="mt-1 bg-white text-slate-900" type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} /></label>
         </div>
         <label className="hidden" aria-hidden="true">Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></label>
-        <label className="flex items-start gap-2 text-xs leading-5 text-white/80"><input className="mt-1 shrink-0 accent-amber-400" type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} />{copy.consent}</label>
+        <label className="flex items-start gap-2 text-xs leading-5 text-amber-200/90"><input className="mt-1 shrink-0 accent-amber-400" type="checkbox" required checked={consent} onChange={e => setConsent(e.target.checked)} />{copy.consent}</label>
         <Button type="submit" disabled={busy} className="bg-amber-400 text-emerald-950 hover:bg-amber-300">{busy ? 'Submitting…' : copy.button}</Button>
         {message && <p role="status" className="text-sm text-amber-200">{message}</p>}
         {error && <p role="alert" className="text-sm text-red-200">{error}</p>}

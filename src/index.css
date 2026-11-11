@@ -990,6 +990,9 @@ html:has(.aoh-public[data-visual-mode="dark"]) { color-scheme: light !important;
 .home-block { padding-block: 2.5rem; }
 @media (min-width: 768px) { .home-block { padding-block: 3.5rem; } }
 @media (min-width: 1024px) { .home-block { padding-block: 4.5rem; } }
+.home-block.home-block--compact { padding-block: 1.25rem; }
+@media (min-width: 768px) { .home-block.home-block--compact { padding-block: 1.75rem; } }
+@media (min-width: 1024px) { .home-block.home-block--compact { padding-block: 2rem; } }
 .home-block--elevated { position: relative; }
 .home-block--dark { color-scheme: light; }
 .aoh-public { overflow-x: clip; }
