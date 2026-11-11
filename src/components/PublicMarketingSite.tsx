@@ -453,6 +453,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               onClick={openLogin}
               {...buttonMotionProps}
               className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-1.5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
+              style={{ fontFamily: "system-ui, sans-serif" }}
             >
               <LogIn className="mr-1 h-4 w-4" /> {w.header.loginText || t("School Portal")}
             </motion.button>
