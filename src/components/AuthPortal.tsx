@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { INPUT_CLASS, newPasswordErrors } from "@/lib/forms";
 import { remembersSession, setRememberSession } from "@/lib/authStorage";
 import { consumePendingProgramApply } from "@/lib/programApply";
-import { deleteDraftFromBackend, loadDraftFromBackend, saveDraftToBackend } from "@/lib/opportunityBoard";
 import { VerificationPortal } from "./CertificateVerification";
 import { resolveIcon } from "./home/icons";
 import BrandLockup from "./brand/BrandLockup";
@@ -502,31 +501,16 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
       };
       localStorage.setItem(APPLICATION_DRAFT_KEY, JSON.stringify(payload));
       setDraftSavedAt(payload.savedAt);
-      // Backend backup (same device instant + cross-device resume by email). Passwords never leave this device.
-      if (EMAIL_RE.test(payload.email.trim())) {
-        void saveDraftToBackend(payload.email, {
-          name: payload.name,
-          email: payload.email,
-          phone: payload.phone,
-          programIds: payload.programIds,
-          educationLevel: payload.educationLevel,
-          note: payload.note,
-          agree: payload.agree,
-          step: payload.step,
-        });
-      }
     } catch {
       /* storage optional */
     }
   }, [hydrated, reg.name, reg.email, reg.phone, reg.programIds, reg.educationLevel, reg.note, reg.agree, step]);
   const discardDraft = () => {
-    const email = reg.email;
     try {
       localStorage.removeItem(APPLICATION_DRAFT_KEY);
     } catch {
       /* ignore */
     }
-    if (EMAIL_RE.test(email.trim())) void deleteDraftFromBackend(email);
     setReg(emptyReg);
     setStep(0);
     setErrors({});
@@ -534,30 +518,6 @@ function RegisterForm({ onDone }: { onDone: (email: string, status: DoneStatus) 
     setDraftRestored(false);
     toast.info("Saved application draft discarded.");
   };
-  // Cross-device resume: if this device has no draft but the backend has one for the typed email, offer it once.
-  const [backendDraftEmail, setBackendDraftEmail] = useState("");
-  useEffect(() => {
-    const email = reg.email.trim().toLowerCase();
-    if (!hydrated || draftRestored || !EMAIL_RE.test(email) || backendDraftEmail === email) return;
-    setBackendDraftEmail(email);
-    void loadDraftFromBackend(email).then((b) => {
-      if (!b || typeof b !== "object") return;
-      const rec = b as Partial<ApplicationDraft>;
-      const hasAny = rec.name || rec.phone || (Array.isArray(rec.programIds) && rec.programIds.length) || rec.note || rec.educationLevel;
-      if (!hasAny) return;
-      setReg((r) => ({
-        ...r,
-        name: r.name || (typeof rec.name === "string" ? rec.name : ""),
-        phone: r.phone || (typeof rec.phone === "string" ? rec.phone : ""),
-        programIds: r.programIds.length ? r.programIds : (Array.isArray(rec.programIds) ? rec.programIds.filter((x): x is string => typeof x === "string") : []),
-        educationLevel: r.educationLevel || (typeof rec.educationLevel === "string" ? rec.educationLevel : ""),
-        note: r.note || (typeof rec.note === "string" ? rec.note : ""),
-      }));
-      if (rec.step === 1 || rec.step === 2) setStep(rec.step);
-      setDraftRestored(true);
-      toast.success("Resumed your saved application draft from another device.");
-    });
-  }, [hydrated, reg.email, draftRestored, backendDraftEmail]);
   useEffect(() => {
     if (pendingApplied || state.programs.length === 0) return;
     const pending = consumePendingProgramApply();

@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface Enquiry {
   id: string;
   name: string;
@@ -8,50 +10,74 @@ export interface Enquiry {
   replied: boolean;
 }
 
-const KEY = "aoh-enquiries-v1";
+export type EnquirySource = "contact" | "faq" | "whatsapp";
 
-export function loadEnquiries(): Enquiry[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Enquiry[]) : [];
-  } catch {
-    return [];
-  }
+export interface EnquiryInput {
+  name: string;
+  contact: string;
+  program: string;
+  message: string;
+  source?: EnquirySource;
 }
 
-export function saveEnquiry(input: Omit<Enquiry, "id" | "createdAt" | "replied">): Enquiry {
-  const entry: Enquiry = {
-    ...input,
-    id: `enq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    createdAt: new Date().toISOString(),
-    replied: false,
+type EnquiryRow = {
+  id: string;
+  name: string;
+  contact: string;
+  program: string;
+  message: string;
+  created_at: string;
+  replied: boolean;
+};
+
+function mapEnquiry(row: EnquiryRow): Enquiry {
+  return {
+    id: row.id,
+    name: row.name,
+    contact: row.contact,
+    program: row.program,
+    message: row.message,
+    createdAt: row.created_at,
+    replied: row.replied,
   };
-  try {
-    const list = loadEnquiries();
-    localStorage.setItem(KEY, JSON.stringify([entry, ...list].slice(0, 500)));
-  } catch {
-    // Private mode — the WhatsApp handoff below still delivers the message.
-  }
-  return entry;
 }
 
-export function updateEnquiry(id: string, patch: Partial<Enquiry>) {
-  try {
-    const list = loadEnquiries().map((e) => (e.id === id ? { ...e, ...patch } : e));
-    localStorage.setItem(KEY, JSON.stringify(list));
-  } catch {
-    /* ignore */
-  }
+export async function loadEnquiries(): Promise<Enquiry[]> {
+  const { data, error } = await supabase
+    .from("website_enquiries")
+    .select("id,name,contact,program,message,created_at,replied")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) throw error;
+  return (data ?? []).map((row) => mapEnquiry(row as EnquiryRow));
 }
 
-export function removeEnquiry(id: string) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(loadEnquiries().filter((e) => e.id !== id)));
-  } catch {
-    /* ignore */
-  }
+export async function saveEnquiry(input: EnquiryInput): Promise<void> {
+  const { error } = await supabase.from("website_enquiries").insert({
+    name: input.name.trim(),
+    contact: input.contact.trim(),
+    program: input.program.trim() || "General enquiry",
+    message: input.message.trim(),
+    source: input.source ?? "whatsapp",
+    replied: false,
+  });
+
+  if (error) throw error;
+}
+
+export async function updateEnquiry(id: string, patch: Pick<Partial<Enquiry>, "replied">): Promise<void> {
+  const { error } = await supabase
+    .from("website_enquiries")
+    .update({ replied: patch.replied })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function removeEnquiry(id: string): Promise<void> {
+  const { error } = await supabase.from("website_enquiries").delete().eq("id", id);
+  if (error) throw error;
 }
 
 /** Extract a dialable WhatsApp number from the free-form contact setting. */

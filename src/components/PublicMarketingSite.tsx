@@ -117,22 +117,14 @@ const NAV_LINKS: [string, string][] = [
   ["/admissions", "Admissions"],
 ];
 
-const isHomePath = (href: string) => {
-  const n = normalizePublicHref(href);
-  return n === "/" || n.startsWith("/?section=");
-};
 const PROGRAMMES_RE = /^\/(programmes|programs)\/?$/i;
 const TERM_DATES_RE = /^\/term-dates\/?$/i;
 const POLICIES_RE = /^\/policies\/?$/i;
-const COOKIES_RE = /^\/cookies\/?$/i;
 const DONATE_RE = /^\/donate\/?$/i;
 const ADMISSIONS_RE = /^\/(admissions|apply|apply-online)\/?$/i;
 const CAMPUS_RE = /^\/campus-life\/?$/i;
 const HOME_RE = /^\/(\?section=.*)?$/i;
 const BLOG_RE = /^\/blog\/?$/i;
-// "About" is now its own full page (organisation profile). The default navbar
-// "About" link opens it at the clean /about path.
-const ABOUT_RE = /^\/(about|about-us|who-we-are)\/?$/i;
 
 type View = PublicView;
 
@@ -227,7 +219,6 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         if (mapped) window.history.replaceState(null, "", mapped);
       }
     } catch { /* ignore */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const reduceMotion = useReducedMotion();
   const openApply = (programId?: string) => {
@@ -279,6 +270,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   }, []);
 
   const view = useMemo(() => viewFromLocation(location.pathname, location.search), [location.pathname, location.search]);
+  const hiddenKey = viewPageKey(view);
+  const isCurrentPageVisible = !hiddenKey || isPublicPageEnabled(w, hiddenKey);
 
   // Scroll behaviour per view: top for Programmes/Blog/BlogPost and bare
   // Home. Section anchors on Home (`#about`, `#verify`, …) are scrolled to by
@@ -312,6 +305,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   // Tab inside the sheet and hand focus back to the menu button on close.
   useEffect(() => {
     if (!menu) return;
+    const menuButton = menuButtonRef.current;
     const focusables = () =>
       Array.from(
         drawerRef.current?.querySelectorAll<HTMLElement>(
@@ -355,7 +349,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       root.style.overflow = previousRootOverflow;
       document.removeEventListener("keydown", onKey);
       desktop.removeEventListener("change", onDesktop);
-      menuButtonRef.current?.focus();
+      menuButton?.focus();
     };
   }, [menu]);
 
@@ -535,15 +529,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
       <AnimatePresence mode="wait">
         <motion.main key={viewToPath(view)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-          {(() => {
-            const hiddenKey = viewPageKey(view);
-            if (hiddenKey && !isPublicPageEnabled(w, hiddenKey)) return <PageUnavailable label={hiddenKey} />;
-            return null;
-          })()}
-          {(() => {
-            const hiddenKey = viewPageKey(view);
-            if (hiddenKey && !isPublicPageEnabled(w, hiddenKey)) return null;
-            return (<>
+          {!isCurrentPageVisible && hiddenKey ? <PageUnavailable label={hiddenKey} /> : null}
+          {isCurrentPageVisible && (
+            <>
           {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
           {view.type === "admissions" && <AdmissionsPage onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
@@ -664,8 +652,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             </>
           )}
           </>
-          );
-        })()}
+          )}
         </motion.main>
       </AnimatePresence>
 

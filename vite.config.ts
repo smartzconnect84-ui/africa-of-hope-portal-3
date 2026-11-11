@@ -30,9 +30,16 @@ try {
 }
 
 // https://vite.dev/config/
-export default defineConfig({ server: { host: true, allowedHosts: true, hmr: { clientPort: 443, protocol: 'wss' }, headers: { 'Cross-Origin-Embedder-Policy': 'credentialless', 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Resource-Policy': 'cross-origin' } },
+export default defineConfig({ server: { host: true, allowedHosts: true, headers: { 'Cross-Origin-Embedder-Policy': 'credentialless', 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Resource-Policy': 'cross-origin' } },
   plugins: [
     clearLogPlugin(),
+    {
+      name: "ignore-workspace-env-rewrites",
+      configureServer(server) {
+        // v0 periodically rewrites this file; restarting Vite for each sync disconnects the preview.
+        server.watcher.unwatch(path.resolve(process.cwd(), ".env.development.local"));
+      },
+    },
     brandAssets(),
     react(),
     tailwindcss(),

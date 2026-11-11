@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { CheckCheck, MessageCircle, Trash2, Download, Inbox } from "lucide-react";
+import { useState } from "react";
+import useSWR from "swr";
+import { CheckCheck, MessageCircle, Mail, Trash2, Download, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
@@ -12,21 +13,31 @@ import {
   type Enquiry,
 } from "@/lib/enquiries";
 
-/** f33 staff inbox: reads the same local store the public WhatsApp form writes to. */
-export default function EnquiryInbox() {
-  const [items, setItems] = useState<Enquiry[]>(() => loadEnquiries());
-  const [filter, setFilter] = useState<"all" | "new" | "replied">("all");
-
-  const refresh = () => setItems(loadEnquiries());
-  useEffect(() => {
-    refresh();
-    window.addEventListener("storage", refresh);
-    const t = window.setInterval(refresh, 2000);
-    return () => {
-      window.removeEventListener("storage", refresh);
-      window.clearInterval(t);
+function getReplyAction(enquiry: Enquiry) {
+  const contact = enquiry.contact.trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) {
+    return {
+      href: `mailto:${contact}?subject=${encodeURIComponent("Following up on your Africa of Hope enquiry")}`,
+      byEmail: true,
     };
-  }, []);
+  }
+
+  const phone = contact.replace(/\D/g, "");
+  if (phone.length < 9) return null;
+  return {
+    href: buildWhatsAppLink(phone, `Hello ${enquiry.name}, this is AFRICA OF HOPE following up on your enquiry about ${enquiry.program}.`),
+    byEmail: false,
+  };
+}
+
+/** Staff inbox backed by the protected website_enquiries table. */
+export default function EnquiryInbox() {
+  const { data: items = [], error, isLoading, mutate } = useSWR<Enquiry[]>("staff-website-enquiries", loadEnquiries, {
+    refreshInterval: 15000,
+    revalidateOnFocus: true,
+  });
+  const [filter, setFilter] = useState<"all" | "new" | "replied">("all");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const shown = items.filter((e) =>
     filter === "all" ? true : filter === "new" ? !e.replied : e.replied,
@@ -43,6 +54,33 @@ export default function EnquiryInbox() {
     a.download = "whatsapp-enquiries.csv";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const markReplied = async (id: string) => {
+    setBusyId(id);
+    try {
+      await updateEnquiry(id, { replied: true });
+      await mutate();
+      toast.success("Enquiry marked as replied.");
+    } catch {
+      toast.error("Could not update this enquiry. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const deleteEnquiry = async (enquiry: Enquiry) => {
+    if (!window.confirm(`Delete enquiry from ${enquiry.name}?`)) return;
+    setBusyId(enquiry.id);
+    try {
+      await removeEnquiry(enquiry.id);
+      await mutate();
+      toast.success("Enquiry deleted.");
+    } catch {
+      toast.error("Could not delete this enquiry. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -66,7 +104,9 @@ export default function EnquiryInbox() {
           </div>
         }
       />
-      {!shown.length ? (
+      {error ? <p role="alert" className="mt-5 text-sm text-red-700">Could not load enquiries. Check your staff access and try again.</p> : null}
+      {isLoading ? <p role="status" className="mt-5 text-sm text-slate-500">Loading enquiries…</p> : null}
+      {!error && !isLoading && !shown.length ? (
         <div className="mt-5">
           <EmptyState
             icon={Inbox}
@@ -74,9 +114,11 @@ export default function EnquiryInbox() {
             hint="New messages from the public WhatsApp button will appear here automatically."
           />
         </div>
-      ) : (
+      ) : !error && !isLoading ? (
         <div className="mt-5 grid gap-3">
-          {shown.map((e) => (
+          {shown.map((e) => {
+            const reply = getReplyAction(e);
+            return (
             <article key={e.id} className="rounded-xl border border-slate-200 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -97,32 +139,31 @@ export default function EnquiryInbox() {
                 {new Date(e.createdAt).toLocaleString()}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  className="bg-[#25D366] hover:bg-[#1fb857]"
-                  onClick={() => window.open(buildWhatsAppLink(
-                    e.contact.replace(/\D/g, "") || "",
-                    `Hello ${e.name}, this is AFRICA OF HOPE following up on your enquiry about ${e.program}.`,
-                  ), "_blank", "noopener")}
-                >
-                  <MessageCircle data-icon="inline-start" /> Reply
+              {reply ? (
+                <Button asChild size="sm" className={reply.byEmail ? "bg-slate-700 hover:bg-slate-800" : "bg-[#25D366] hover:bg-[#1fb857]"}>
+                  <a href={reply.href} target={reply.byEmail ? undefined : "_blank"} rel="noreferrer">
+                    {reply.byEmail ? <Mail data-icon="inline-start" /> : <MessageCircle data-icon="inline-start" />}
+                    {reply.byEmail ? "Email reply" : "Reply"}
+                  </a>
                 </Button>
-                {!e.replied && (
-                  <Button size="sm" variant="outline" onClick={() => { updateEnquiry(e.id, { replied: true }); refresh(); }}>
-                    <CheckCheck data-icon="inline-start" /> Mark replied
-                  </Button>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => {
-                  if (!window.confirm(`Delete enquiry from ${e.name}?`)) return;
-                  removeEnquiry(e.id); refresh(); toast.success("Enquiry deleted.");
-                }}>
-                  <Trash2 data-icon="inline-start" /> Delete
+              ) : (
+                <Button size="sm" disabled><MessageCircle data-icon="inline-start" /> No reply address</Button>
+              )}
+              {!e.replied && (
+                <Button size="sm" variant="outline" disabled={busyId === e.id} onClick={() => void markReplied(e.id)}>
+                  <CheckCheck data-icon="inline-start" /> Mark replied
                 </Button>
+              )}
+              <Button size="sm" variant="ghost" disabled={busyId === e.id} onClick={() => void deleteEnquiry(e)}>
+                <Trash2 data-icon="inline-start" /> Delete
+              </Button>
+
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
