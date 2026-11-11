@@ -71,7 +71,7 @@ export default function AdmissionsSection({
             </Reveal>
           )}
           <Reveal delay={0.16}>
-            <div className="aoh-card aoh-glass-dark flex h-full flex-col items-start justify-center gap-3 rounded-3xl p-6 font-bold text-white">
+            <div className="flex h-full flex-col items-start justify-center gap-3 rounded-3xl border border-emerald-900 bg-emerald-950 p-6 font-bold text-white shadow-none">
               <p className="text-lg font-bold text-amber-400">{w.publicCopy["admissions.ready"]}</p>
               <p className="text-sm font-bold text-white/90">
                 {w.publicCopy["admissions.readyBody"]}

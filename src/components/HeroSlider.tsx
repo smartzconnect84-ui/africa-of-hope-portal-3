@@ -14,7 +14,6 @@ import {
   Sparkles,
   ShieldCheck,
   BadgeCheck,
-  LogIn,
   HeartHandshake,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -247,7 +246,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             <motion.p
               custom={2}
               variants={textStagger}
-              className="mt-3 max-w-[65ch] text-base text-amber-100/90 sm:text-lg"
+              className="mt-3 max-w-[65ch] text-base font-medium text-white drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] sm:text-lg"
             >
               {slide.description}
             </motion.p>
@@ -272,13 +271,6 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
               >
                 <HeartHandshake className="h-4 w-4 text-amber-300 transition group-hover:scale-110" aria-hidden="true" /> {copy['hero.donate']}
               </a>
-              <button
-                type="button"
-                onClick={onEnterPortal}
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 active:scale-[0.98]"
-              >
-                <LogIn className="h-4 w-4" /> {copy['hero.portal']}
-              </button>
               <a
                 href="/verify"
                 className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-amber-100 underline-offset-4 transition hover:text-amber-200 hover:underline"

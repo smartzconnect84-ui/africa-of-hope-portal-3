@@ -7,18 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { WebsiteSettings, SectionCopy, SystemSettings } from "@/types";
 import { Reveal } from "../Navigation";
+import { saveEnquiry } from "@/lib/enquiries";
 
-/** Shared by the homepage FAQ section (rendered side-by-side) per the plan's corrections. */
+/** Contact Us form — also rendered inside the Contact section. Saved to the backend enquiry queue. */
 export function EnquiryForm({ settings }: { settings: SystemSettings }) {
-  const [inquiry, setInquiry] = useState({ name: "", email: "", message: "" });
+  const [inquiry, setInquiry] = useState({ name: "", contact: "", message: "" });
 
   const submit = () => {
-    if (!inquiry.name.trim() || !inquiry.email.trim() || !inquiry.message.trim()) {
-      toast.error("Name, email and message are required");
+    if (!inquiry.name.trim() || !inquiry.contact.trim() || !inquiry.message.trim()) {
+      toast.error("Name, contact and message are required");
       return;
     }
+    saveEnquiry({ name: inquiry.name.trim(), contact: inquiry.contact.trim(), program: "General enquiry", message: inquiry.message.trim() });
     toast.success("Enquiry sent. Our admissions team will reply within two working days.");
-    setInquiry({ name: "", email: "", message: "" });
+    setInquiry({ name: "", contact: "", message: "" });
   };
 
   return (
@@ -36,8 +38,8 @@ export function EnquiryForm({ settings }: { settings: SystemSettings }) {
           <Input id="inq-name" value={inquiry.name} onChange={(e) => setInquiry({ ...inquiry, name: e.target.value })} placeholder="Your name" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="inq-email">Email</Label>
-          <Input id="inq-email" value={inquiry.email} onChange={(e) => setInquiry({ ...inquiry, email: e.target.value })} placeholder="you@example.com" />
+          <Label htmlFor="inq-contact">Phone or email</Label>
+          <Input id="inq-contact" value={inquiry.contact} onChange={(e) => setInquiry({ ...inquiry, contact: e.target.value })} placeholder="+231 … or you@example.com" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="inq-message">Message</Label>
@@ -89,8 +91,7 @@ export default function FaqSection({
           </div>
         </Reveal>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-          <div className="space-y-2">
+        <div className="mt-6 space-y-2">
             {w.faqs.map((f, i) => (
               <Reveal key={f.id} delay={i * 0.04}>
                 <details className="group rounded-2xl border border-emerald-900/10 bg-[#f6f8f7] p-3 open:bg-white">
@@ -105,11 +106,6 @@ export default function FaqSection({
               </Reveal>
             ))}
           </div>
-
-          <Reveal delay={0.1}>
-            <EnquiryForm settings={settings} />
-          </Reveal>
-        </div>
       </div>
     </section>
   );

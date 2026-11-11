@@ -1,6 +1,63 @@
-import { Clock, Globe, Mail, MapPin, Phone } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { CalendarCheck, Clock, Globe, Mail, MapPin, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { WebsiteSettings, SectionCopy, SystemSettings } from "@/types";
 import { Reveal } from "../Navigation";
+import { EnquiryForm } from "./FaqSection";
+import { saveEnquiry } from "@/lib/enquiries";
+
+function VisitForm() {
+  const [form, setForm] = useState({ name: "", contact: "", date: "", group: "" });
+  const submit = () => {
+    if (!form.name.trim() || !form.contact.trim() || !form.date.trim()) {
+      toast.error("Name, contact and preferred date are required");
+      return;
+    }
+    saveEnquiry({
+      name: form.name.trim(),
+      contact: form.contact.trim(),
+      program: "Campus visit request",
+      message: `Preferred visit date: ${form.date.trim()}${form.group.trim() ? ` · Group size: ${form.group.trim()}` : ""}. Please confirm my campus visit.`,
+    });
+    toast.success("Visit request sent. We will confirm your campus visit shortly.");
+    setForm({ name: "", contact: "", date: "", group: "" });
+  };
+  return (
+    <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 sm:p-6">
+      <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-700">
+        <CalendarCheck className="h-4 w-4" /> Book a campus visit
+      </p>
+      <h3 className="mt-2 text-lg font-bold text-emerald-950">Visit, call or email</h3>
+      <p className="mt-1 text-sm text-slate-600">Prefer to talk in person? Pick a date and our registrar will confirm your visit.</p>
+      <div className="mt-4 space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="visit-name">Full name</Label>
+          <Input id="visit-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="visit-contact">Phone or email</Label>
+            <Input id="visit-contact" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} placeholder="+231 …" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="visit-date">Preferred date</Label>
+            <Input id="visit-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="visit-group">Group size (optional)</Label>
+          <Input id="visit-group" value={form.group} onChange={(e) => setForm({ ...form, group: e.target.value })} placeholder="e.g. 3 people" />
+        </div>
+        <Button onClick={submit} className="w-full bg-amber-400 text-emerald-950 hover:bg-amber-300">
+          Request visit
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function ContactSection({
   copy,
@@ -53,6 +110,14 @@ export default function ContactSection({
               </div>
             </Reveal>
           ))}
+        </div>
+        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          <Reveal>
+            <EnquiryForm settings={settings} />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <VisitForm />
+          </Reveal>
         </div>
       </div>
     </section>
