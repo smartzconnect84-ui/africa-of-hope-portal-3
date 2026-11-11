@@ -495,7 +495,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="aoh-drawer absolute right-0 top-0 flex w-[min(20rem,88vw)] flex-col border-l-[3px] border-[#D4AF37] bg-black p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
+              className="aoh-drawer absolute right-0 top-0 flex w-[min(20rem,88vw)] flex-col border-l-[3px] border-[#D4AF37] bg-black p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -509,20 +509,20 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain pr-1">
+              <nav className="-mr-1 mt-1.5 flex min-h-0 flex-1 flex-col gap-[3px] overflow-y-auto overscroll-contain pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
                     href={l.href}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="flex min-h-11 items-center rounded-lg px-3 py-3 text-[15px] font-medium text-emerald-100 transition hover:bg-white/10"
+                    className="flex min-h-10 items-center rounded-lg px-2.5 py-2 text-[15px] font-medium text-emerald-100 transition hover:bg-white/10"
                   >
                     {t(l.label)}
                   </a>
                 ))}
               </nav>
-              <div className="mt-2 border-t border-white/10 pt-3">
-                <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
+              <div className="mt-1.5 border-t border-white/10 pt-2">
+                <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
                   {t("School Portal")}
                 </button>
               </div>
