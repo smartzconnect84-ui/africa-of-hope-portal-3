@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Banknote, Receipt, Printer, Plus, CalendarDays, Award, Percent, Megaphone,
-  Clock, Check, AlertTriangle, Download, BookOpen, FileQuestion,
+  Clock, Check, AlertTriangle, Download, BookOpen, FileQuestion, Pencil, Trash2,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
@@ -313,11 +313,13 @@ const emptyTxn: { studentId: string; category: FeeCategory; amount: string; meth
 };
 
 export function FeeRegister() {
-  const { state, currentUser, addFeeTransaction } = useApp();
+  const { state, currentUser, addFeeTransaction, updateFeeTransaction, deleteFeeTransaction } = useApp();
   const isStaff = usePermission("fees.manage");
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyTxn);
   const [receipt, setReceipt] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const students = state.users.filter((u) => u.role === "Student");
   const scoped = isStaff
@@ -333,22 +335,84 @@ export function FeeRegister() {
       0,
     );
 
-  const submit = () => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyTxn);
+    setOpen(true);
+  };
+
+  const openEdit = (id: string) => {
+    const txn = state.fees.find((f) => f.id === id);
+    if (!txn) return;
+    setEditingId(id);
+    setForm({
+      studentId: txn.studentId,
+      category: txn.category,
+      amount: String(txn.amount),
+      method: txn.method,
+      reference: txn.reference,
+    });
+    setOpen(true);
+  };
+
+  const removeTxn = async (id: string) => {
+    const txn = state.fees.find((f) => f.id === id);
+    const label = txn ? `${txn.reference || txn.category} · ${formatCurrency(txn.amount)}` : "this transaction";
+    if (!window.confirm(`Delete ${label}? This removes it from the ledger.`)) return;
+    setBusy(true);
+    try {
+      const error = await deleteFeeTransaction(id);
+      if (error) throw new Error(error);
+      toast.success("Transaction deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete the transaction.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submit = async () => {
+    if (busy) return;
     if (!form.studentId || !form.amount) {
       toast.error("Select a student and enter an amount");
       return;
     }
-    addFeeTransaction({
-      studentId: form.studentId,
-      category: form.category,
-      amount: Number(form.amount),
-      date: new Date().toISOString().slice(0, 10),
-      method: form.method,
-      reference: form.reference || `AOH-${form.category.slice(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 89999)}`,
-    });
-    toast.success("Payment recorded to the ledger");
-    setForm(emptyTxn);
-    setOpen(false);
+    const amount = Number(form.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Enter an amount greater than zero");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (editingId) {
+        const error = await updateFeeTransaction(editingId, {
+          studentId: form.studentId,
+          category: form.category,
+          amount,
+          method: form.method,
+          reference: form.reference || `AOH-${form.category.slice(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 89999)}`,
+        });
+        if (error) throw new Error(error);
+        toast.success("Payment updated in the ledger");
+      } else {
+        addFeeTransaction({
+          studentId: form.studentId,
+          category: form.category,
+          amount,
+          date: new Date().toISOString().slice(0, 10),
+          method: form.method,
+          reference: form.reference || `AOH-${form.category.slice(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 89999)}`,
+        });
+        toast.success("Payment recorded to the ledger");
+      }
+      setForm(emptyTxn);
+      setEditingId(null);
+      setOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save the payment.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const selectedTxn = state.fees.find((f) => f.id === receipt) ?? null;
@@ -361,7 +425,7 @@ export function FeeRegister() {
         subtitle={isStaff ? "Track tuition income, log payments and print receipts" : "Your payment history and printable receipts"}
         action={
           isStaff && (
-            <Button onClick={() => setOpen(true)} className="bg-emerald-700 hover:bg-emerald-800">
+            <Button onClick={openCreate} className="bg-emerald-700 hover:bg-emerald-800">
               <Plus className="mr-1 h-4 w-4" /> Log payment
             </Button>
           )
@@ -423,10 +487,22 @@ export function FeeRegister() {
                   <td className="px-3 py-2 text-xs text-slate-500">{f.reference}</td>
                   <td className="px-3 py-2 text-sm font-semibold text-slate-900">{formatCurrency(f.amount)}</td>
                   <td className="px-3 py-2">
-                    <Button size="sm" variant="outline" onClick={() => setReceipt(f.id)}>
-                      <Printer className="mr-1 h-3.5 w-3.5" /> Receipt
-                    </Button>
-                    <CurrencyConvertButton amount={f.amount} currency="USD" />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => setReceipt(f.id)}>
+                        <Printer className="mr-1 h-3.5 w-3.5" /> Receipt
+                      </Button>
+                      {isStaff && (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => openEdit(f.id)} aria-label={`Edit payment ${f.reference || f.category}`}>
+                            <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-rose-700 hover:text-rose-800" disabled={busy} onClick={() => void removeTxn(f.id)} aria-label={`Delete payment ${f.reference || f.category}`}>
+                            <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                          </Button>
+                        </>
+                      )}
+                      <CurrencyConvertButton amount={f.amount} currency="USD" />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -435,11 +511,11 @@ export function FeeRegister() {
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditingId(null); setForm(emptyTxn); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Log a payment</DialogTitle>
-            <DialogDescription>Record a fee payment into the institutional ledger.</DialogDescription>
+            <DialogTitle>{editingId ? "Edit payment" : "Log a payment"}</DialogTitle>
+            <DialogDescription>{editingId ? "Correct the ledger entry and save." : "Record a fee payment into the institutional ledger."}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
@@ -476,8 +552,8 @@ export function FeeRegister() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} className="bg-emerald-700 hover:bg-emerald-800">Record payment</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); setForm(emptyTxn); }}>Cancel</Button>
+            <Button onClick={() => void submit()} disabled={busy} className="bg-emerald-700 hover:bg-emerald-800">{busy ? "Saving…" : editingId ? "Save changes" : "Record payment"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

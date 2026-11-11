@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, Inbox, Loader2, Plus, Send, UploadCloud } from "lucide-react";
+import { ClipboardList, Inbox, Loader2, Pencil, Plus, Send, Trash2, UploadCloud } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { usePermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /** Student hand-in (text, reference and private file upload) and staff marking inbox. */
 export default function AssignmentInbox() {
-  const { state, currentUser, addAssignment, gradeSubmission, refresh } = useApp();
+  const { state, currentUser, addAssignment, updateAssignment, deleteAssignment, gradeSubmission, refresh } = useApp();
   const canManage = usePermission("assignments.manage");
   const [cohortId, setCohortId] = useState("");
   const [title, setTitle] = useState("");
@@ -32,6 +32,11 @@ export default function AssignmentInbox() {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState("");
   const [classworkId, setClassworkId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDue, setEditDue] = useState("");
+  const [editMax, setEditMax] = useState("100");
+  const [editDesc, setEditDesc] = useState("");
   const classwork = state.assignments.find((a) => a.id === classworkId);
 
   const myCohorts = useMemo(() => {
@@ -53,6 +58,42 @@ export default function AssignmentInbox() {
       await addAssignment({ cohortId, title: title.trim(), dueDate: due, maxMarks: Math.max(1, Number(max) || 100), description: desc.trim() || "See lesson brief." });
       toast.success("Assignment published to the cohort");
       setTitle(""); setDue(""); setDesc(""); setMax("100");
+    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
+    finally { setBusy(""); }
+  };
+
+  const openEdit = (id: string) => {
+    const found = state.assignments.find((x) => x.id === id);
+    if (!found) return;
+    setEditingId(id);
+    setEditTitle(found.title);
+    setEditDue(found.dueDate);
+    setEditMax(String(found.maxMarks));
+    setEditDesc(found.description);
+    setOpenId(id);
+  };
+
+  const saveEdit = async () => {
+    if (busy || !editingId) return;
+    if (!editTitle.trim() || !editDue) { toast.error("Title and due date are required"); return; }
+    const maxMarks = Math.max(1, Number(editMax) || 100);
+    setBusy(`edit-${editingId}`);
+    try {
+      await updateAssignment(editingId, { title: editTitle.trim(), dueDate: editDue, maxMarks, description: editDesc.trim() || "See lesson brief." });
+      toast.success("Assignment updated");
+      setEditingId(null);
+    } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
+    finally { setBusy(""); }
+  };
+
+  const removeAssignment = async (id: string, title: string) => {
+    if (busy) return;
+    if (!window.confirm(`Delete assignment "${title}"? Student hand-ins for this brief are removed as well.`)) return;
+    setBusy(`delete-${id}`);
+    try {
+      await deleteAssignment(id);
+      if (editingId === id) setEditingId(null);
+      toast.success("Assignment deleted");
     } catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
     finally { setBusy(""); }
   };
@@ -164,6 +205,33 @@ export default function AssignmentInbox() {
                   </span>
                 </button>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{a.description}</p>
+
+                {canManage && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editingId === a.id ? (
+                      <>
+                        <Button size="sm" disabled={Boolean(busy)} onClick={() => void saveEdit()} className="bg-emerald-700 hover:bg-emerald-800">Save changes</Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => openEdit(a.id)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
+                        <Button size="sm" variant="outline" className="text-rose-700 hover:text-rose-800" onClick={() => void removeAssignment(a.id, a.title)}><Trash2 className="mr-1 h-3.5 w-3.5" /> Delete</Button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {canManage && editingId === a.id && (
+                  <div className="mt-3 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:bg-slate-900/60">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1.5"><Label>Title</Label><Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} /></div>
+                      <div className="space-y-1.5"><Label>Due date</Label><Input type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} /></div>
+                    </div>
+                    <div className="space-y-1.5"><Label>Max marks</Label><Input type="number" min={1} value={editMax} onChange={(e) => setEditMax(e.target.value)} className="max-w-[160px]" /></div>
+                    <div className="space-y-1.5"><Label>Brief</Label><Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={2} /></div>
+                  </div>
+                )}
 
                 {!canManage && (
                   <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-900/60 p-3">

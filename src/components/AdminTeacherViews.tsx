@@ -767,8 +767,9 @@ export function ProgramBuilder() {
 const emptyCohort = { name: "", programId: "", teacherId: "", startDate: "", endDate: "", room: "" };
 
 export function CohortCoordinator() {
-  const { state, addCohort } = useApp();
+  const { state, addCohort, updateCohort, deleteCohort } = useApp();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyCohort);
   const [roster, setRoster] = useState<string[]>([]);
   const teachers = state.users.filter((u) => u.role === "Teacher");
@@ -776,12 +777,42 @@ export function CohortCoordinator() {
   const toggleStudent = (id: string) =>
     setRoster((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));
 
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyCohort);
+    setRoster([]);
+    setOpen(true);
+  };
+
+  const openEdit = (id: string) => {
+    const c = state.cohorts.find((x) => x.id === id);
+    if (!c) return;
+    setEditingId(id);
+    setForm({
+      name: c.name,
+      programId: c.programId,
+      teacherId: c.teacherId,
+      startDate: c.startDate,
+      endDate: c.endDate,
+      room: c.room,
+    });
+    setRoster([...c.studentIds]);
+    setOpen(true);
+  };
+
+  const removeCohort = (id: string) => {
+    const c = state.cohorts.find((x) => x.id === id);
+    if (!window.confirm(`Delete cohort "${c?.name ?? "this cohort"}"? Enrolled learners keep their accounts but lose this batch placement.`)) return;
+    deleteCohort(id);
+    toast.success("Cohort deleted");
+  };
+
   const submit = () => {
     if (!form.name.trim() || !form.programId || !form.teacherId) {
       toast.error("Cohort name, program and instructor are required");
       return;
     }
-    addCohort({
+    const payload = {
       name: form.name.trim(),
       programId: form.programId,
       teacherId: form.teacherId,
@@ -789,11 +820,18 @@ export function CohortCoordinator() {
       endDate: form.endDate || new Date().toISOString().slice(0, 10),
       room: form.room || "Unassigned",
       studentIds: roster,
-    });
-    const teacher = state.users.find((u) => u.id === form.teacherId);
-    toast.success(`Cohort created and assigned to ${teacher?.name ?? "instructor"}`);
+    };
+    if (editingId) {
+      updateCohort(editingId, payload);
+      toast.success("Cohort updated");
+    } else {
+      addCohort(payload);
+      const teacher = state.users.find((u) => u.id === form.teacherId);
+      toast.success(`Cohort created and assigned to ${teacher?.name ?? "instructor"}`);
+    }
     setForm(emptyCohort);
     setRoster([]);
+    setEditingId(null);
     setOpen(false);
   };
 
@@ -803,7 +841,7 @@ export function CohortCoordinator() {
         title="Cohort Coordinator"
         subtitle="Batch learners, assign instructors and schedule training rooms"
         action={
-          <Button onClick={() => setOpen(true)} className="bg-emerald-700 hover:bg-emerald-800">
+          <Button onClick={openCreate} className="bg-emerald-700 hover:bg-emerald-800">
             <Plus className="mr-1 h-4 w-4" /> New cohort
           </Button>
         }
@@ -837,16 +875,24 @@ export function CohortCoordinator() {
                   );
                 })}
               </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => openEdit(c.id)}>
+                  <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" className="text-rose-700 hover:text-rose-800" onClick={() => removeCohort(c.id)}>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
+                </Button>
+              </div>
             </Reveal>
           );
         })}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditingId(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create a cohort</DialogTitle>
-            <DialogDescription>Assign a program, instructor and student roster.</DialogDescription>
+            <DialogTitle>{editingId ? "Edit cohort" : "Create a cohort"}</DialogTitle>
+            <DialogDescription>{editingId ? "Update program, instructor, dates, room and roster." : "Assign a program, instructor and student roster."}</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
@@ -898,8 +944,8 @@ export function CohortCoordinator() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} className="bg-emerald-700 hover:bg-emerald-800">Create cohort</Button>
+            <Button variant="outline" onClick={() => { setOpen(false); setEditingId(null); }}>Cancel</Button>
+            <Button onClick={submit} className="bg-emerald-700 hover:bg-emerald-800">{editingId ? "Save changes" : "Create cohort"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
