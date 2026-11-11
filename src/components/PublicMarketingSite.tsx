@@ -337,7 +337,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
         first.focus();
       }
     };
-    const desktop = window.matchMedia("(min-width: 1024px)");
+    const desktop = window.matchMedia("(min-width: 768px)");
     const onDesktop = () => setMenu(false);
     // Lock both the root and body: with `overflow-x: clip` the page scrolls on
     // <html>, so locking <body> alone would no longer freeze the background.
@@ -414,7 +414,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           <div className="sr-only" aria-live="polite">
             {bannerItems.join(". ")}
           </div>
-          <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2" aria-hidden="true">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 md:px-6 lg:px-8 py-2" aria-hidden="true">
             <Sparkles className="h-3.5 w-3.5 shrink-0" />
             <Marquee
               repeat={2}
@@ -435,11 +435,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
       <motion.header
         animate={{ boxShadow: scrolled ? "0 10px 30px -12px rgba(2,44,34,0.45)" : "0 0px 0px rgba(2,44,34,0)" }}
         transition={{ duration: 0.25 }}
-        className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md"
+        className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 text-white backdrop-blur-md pt-[env(safe-area-inset-top)]"
         data-aoh-sticky-header=""
       >
-        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-2 px-3 py-2 sm:gap-2 sm:px-5 lg:gap-1.5">
-          <a href="/" onClick={goHomeTop} className="flex min-w-0 items-center">
+        <div className="mx-auto flex h-16 md:h-[72px] max-w-7xl items-center gap-2 px-4 md:gap-3 md:px-6 lg:px-8">
+          <a href="/" onClick={goHomeTop} className="flex min-w-0 shrink-0 items-center" aria-label="Africa of Hope — home">
             <BrandLockup
               logoUrl={w.logos?.header || w.logoUrl}
               academyName={displayName}
@@ -447,16 +447,16 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               tone="dark"
               size="md"
               showTagline={false}
-              nameClassName="hidden sm:block"
+              nameClassName="hidden lg:block"
             />
           </a>
-          <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} />
-          <div className="ml-auto flex shrink-0 items-center gap-[0.15rem] lg:ml-1 lg:gap-0">
+          <PublicNav links={navLinks} programs={publicPrograms} onHomeTop={goHomeTop} maxDirect={4} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 md:flex" />
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0 md:gap-2">
             <motion.button
               type="button"
               onClick={openLogin}
               {...buttonMotionProps}
-              className="btn-sheen inline-flex h-11 items-center whitespace-nowrap rounded-xl bg-amber-400 px-3 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
+              className="btn-sheen inline-flex h-10 items-center whitespace-nowrap rounded-xl bg-amber-400 px-3.5 text-[13px] font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] md:px-4"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
               <LogIn className="mr-1 h-4 w-4" /> MY PORTAL
@@ -469,7 +469,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               aria-haspopup="dialog"
               aria-expanded={menu}
               aria-controls="public-mobile-menu"
-              className="grid h-11 w-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 lg:hidden"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-emerald-100 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300/70 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -483,7 +483,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 lg:hidden"
+            className="fixed inset-0 z-50 md:hidden"
           >
             <div className="absolute inset-0 bg-slate-950/60" onClick={() => setMenu(false)} />
             <motion.div

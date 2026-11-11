@@ -14,14 +14,17 @@ export interface PublicNavLink {
   label: string;
 }
 
-const HOME_RE = /^#(home)?$/i;
-const PROGRAMMES_RE = /^#(programmes|programs)$/i;
+const HOME_RE = /^(#home|#|\/(\?.*)?)$/i;
+const PROGRAMMES_RE = /^(#(programmes|programs)|\/(programmes|programs)\/?)$/i;
 
 interface PublicNavProps {
   links: PublicNavLink[];
   programs: Program[];
   onHomeTop: (e: MouseEvent) => void;
   maxDirect?: number;
+  className?: string;
+  /** Suffix for menu ids so tablet + desktop instances can coexist without duplicate ids. */
+  idSuffix?: string;
 }
 
 /**
@@ -31,7 +34,7 @@ interface PublicNavProps {
  * a "More" dropdown. Hover, click, touch and keyboard all work; the panel
  * closes on outside click, Escape, or navigation.
  */
-export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }: PublicNavProps) {
+export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5, className, idSuffix }: PublicNavProps) {
   const { t } = useLocale();
   const reduceMotion = useReducedMotion();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -61,6 +64,8 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
     setOpenId(null);
     if (restoreFocus && id) triggerRefs.current[id]?.focus();
   };
+
+  const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
 
   // Move focus into the panel when it was opened from the keyboard.
   useEffect(() => {
@@ -128,7 +133,8 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
   const direct = rest.slice(0, Math.max(0, maxDirect - (programmesLink ? 1 : 0)));
   const overflow = rest.slice(direct.length);
 
-  const toggle = (id: string) => (openId === id ? closeMenu(false) : openMenu(id));
+  const moreMenuId = idSuffix ? `public-nav-more-menu-${idSuffix}` : "public-nav-more-menu";
+  const programmesMenuId = idSuffix ? `public-nav-programmes-menu-${idSuffix}` : "public-nav-programmes-menu";
 
   const panelMotion = reduceMotion
     ? {}
@@ -140,7 +146,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
       };
 
   const linkCls =
-    "aoh-nav-link rounded-xl px-2 py-2 text-sm font-medium text-emerald-100/90 transition hover:bg-white/10 hover:text-white";
+    "inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-lg px-2.5 text-[13.5px] font-medium text-emerald-100/90 transition outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:px-3";
 
   const renderOverflow = () => {
     if (overflow.length === 0) return null;
@@ -154,7 +160,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
           type="button"
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-controls="public-nav-more-menu"
+          aria-controls={moreMenuId}
           onClick={() => toggle("more")}
           onKeyDown={(e) => {
             if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !open) {
@@ -172,7 +178,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
             <motion.div
               {...panelMotion}
               role="menu"
-              id="public-nav-more-menu"
+              id={moreMenuId}
               aria-label={t("More")}
               data-menu-panel="more"
               className="absolute right-0 top-full z-50 w-56 pt-2"
@@ -217,7 +223,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
           type="button"
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-controls="public-nav-programmes-menu"
+          aria-controls={programmesMenuId}
           onClick={() => toggle("programmes")}
           onKeyDown={(e) => {
             if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !open) {
@@ -235,7 +241,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
             <motion.div
               {...panelMotion}
               role="menu"
-              id="public-nav-programmes-menu"
+              id={programmesMenuId}
               aria-label={t(programmesLink.label)}
               data-menu-panel="programmes"
               className="absolute left-1/2 top-full z-50 w-[22rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2"
@@ -299,7 +305,7 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5 }:
   return (
     <div
       ref={rootRef}
-      className="ml-auto hidden items-center gap-1 lg:flex"
+      className={cn("min-w-0 flex-1 items-center justify-center gap-0.5", className ?? "hidden md:flex")}
       onBlur={(e) => {
         if (!rootRef.current?.contains(e.relatedTarget as Node | null)) setOpenId(null);
       }}
