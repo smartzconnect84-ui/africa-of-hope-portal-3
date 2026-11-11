@@ -20,7 +20,7 @@ export default function CtaBand({
         <div className="aoh-glass-dark grid gap-8 rounded-[2rem] border border-white/15 bg-white/5 p-6 sm:p-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <Reveal className="max-w-xl">
             <p className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-200">Join our mission</p>
-            {copy.title && <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">{copy.title}</h2>}
+            {copy.title && <h2 className="mt-4 text-3xl font-bold tracking-tight text-amber-300 sm:text-4xl">{copy.title}</h2>}
             {copy.subtitle && <p className="mt-3 text-sm leading-7 text-emerald-100/85 sm:text-base">{copy.subtitle}</p>}
             <p className="mt-3 text-xs leading-6 text-emerald-100/60">A not-for-profit learning community · Every application is reviewed by our registrar · Financial support options available.</p>
           </Reveal>
@@ -29,7 +29,7 @@ export default function CtaBand({
               {copy.ctaText || "Apply online"} <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
             <Button onClick={onLogin} variant="outline" className="h-12 rounded-2xl border-white/25 bg-white/5 px-6 text-sm font-semibold text-white hover:bg-white/10 hover:text-white">
-              <LogIn className="mr-1.5 h-4 w-4" /> Portal login
+              <LogIn className="mr-1.5 h-4 w-4" /> MY PORTAL
             </Button>
           </Reveal>
         </div>

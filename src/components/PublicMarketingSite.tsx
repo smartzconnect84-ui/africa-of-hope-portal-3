@@ -459,7 +459,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               className="btn-sheen inline-flex h-10 items-center rounded-xl bg-amber-400 px-1.5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:shadow-[0_8px_24px_-8px_rgba(251,191,36,0.7)] sm:px-4"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
-              <LogIn className="mr-1 h-4 w-4" /> {w.header.loginText || t("School Portal")}
+              <LogIn className="mr-1 h-4 w-4" /> MY PORTAL
             </motion.button>
             <button
               ref={menuButtonRef}
@@ -674,22 +674,22 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
       <footer className="aoh-site-footer">
         <div className="border-b border-white/10">
-          <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 sm:grid-cols-2 lg:grid-cols-4">
-            <p className="flex items-start gap-2.5 text-sm text-white/85">
+          <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 text-white sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+            <p className="flex items-start gap-2.5 text-sm text-white">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><MapPin className="h-4 w-4 text-amber-400" /></span><span>{w.address || settings.address}</span>
             </p>
             {(w.contactPhone || settings.contactPhone) && (
-              <a href={`tel:${(w.contactPhone || settings.contactPhone).replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-sm text-white/85 transition hover:underline">
+              <a href={`tel:${(w.contactPhone || settings.contactPhone).replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-sm text-white transition hover:underline">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Phone className="h-4 w-4 text-amber-400" /></span><span>{w.contactPhone || settings.contactPhone}</span>
               </a>
             )}
             {(w.contactEmail || settings.contactEmail) && (
-              <a href={`mailto:${w.contactEmail || settings.contactEmail}`} className="flex items-center gap-2.5 text-sm text-white/85 transition hover:underline">
+              <a href={`mailto:${w.contactEmail || settings.contactEmail}`} className="flex items-center gap-2.5 text-sm text-white transition hover:underline">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Mail className="h-4 w-4 text-amber-400" /></span><span className="break-all">{w.contactEmail || settings.contactEmail}</span>
               </a>
             )}
             {w.officeHours && (
-              <p className="flex items-center gap-2.5 text-sm text-white/85">
+              <p className="flex items-center gap-2.5 text-sm text-white">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-400/15"><Globe className="h-4 w-4 text-amber-400" /></span><span>{w.officeHours}</span>
               </p>
             )}
@@ -738,9 +738,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-[11px] leading-snug text-white/60">
-            <p>{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
-            <p className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-4 text-center text-[11px] leading-relaxed text-white/60 sm:flex-row sm:gap-x-6 sm:gap-y-2 sm:px-6 sm:py-5 sm:text-left sm:text-xs md:gap-x-8">
+            <p className="max-w-full sm:max-w-[60%]">{w.footerCopyright || `© ${new Date().getFullYear()} ${displayName}. Accreditation ${settings.accreditationNo}.`}</p>
+            <p className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-end">
               <a href="/cookies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Cookies</a>
               <a href="/policies" className="underline decoration-white/20 underline-offset-2 transition hover:text-amber-300">Policies</a>
               <span className="inline-flex items-center gap-1.5"><Globe className="h-3.5 w-3.5 text-amber-400" /> {settings.academicYear} / {settings.semester}</span>

@@ -1,4 +1,4 @@
-import { ArrowRight, HeartHandshake, Lightbulb, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, HeartHandshake, Sparkles, TrendingUp } from "lucide-react";
 import type { SectionCopy, SystemSettings, WebsiteSettings } from "@/types";
 import { ABOUT_MISSION } from "@/data/aboutContent";
 import { DEFAULT_ABOUT, cleanAboutParagraphs } from "@/data/publicPresentation";
@@ -23,11 +23,9 @@ export default function InstitutionSummarySection({
   const headline = summary || who;
   void settings;
   const mission = ABOUT_MISSION.find((m) => m.id === "mission");
-  const vision = ABOUT_MISSION.find((m) => m.id === "vision");
   const paragraphs = cleanAboutParagraphs(headline?.body || "").slice(0, 2);
   const cards = [
     { icon: TrendingUp, eyebrow: mission?.eyebrow || "Our mission", title: "Heal · Educate · Empower", body: mission?.body?.[0] || "" },
-    { icon: Lightbulb, eyebrow: vision?.eyebrow || "Our vision", title: "Where we are going", body: vision?.body?.[0] || "" },
   ];
   return (
     <section id="summary" aria-labelledby="mission-heading" className="scroll-mt-24 bg-white">
@@ -57,14 +55,14 @@ export default function InstitutionSummarySection({
                 <button
                   type="button"
                   onClick={onApply}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-800/25 bg-white px-5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400 bg-amber-400 px-5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:border-amber-300"
                 >
                   <HeartHandshake className="h-4 w-4" aria-hidden="true" /> Get involved
                 </button>
               ) : (
                 <a
                   href="/?section=support"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-800/25 bg-white px-5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-50"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-400 bg-amber-400 px-5 text-sm font-semibold text-emerald-950 shadow-sm transition hover:bg-amber-300 hover:border-amber-300"
                 >
                   <HeartHandshake className="h-4 w-4" aria-hidden="true" /> Get involved
                 </a>
