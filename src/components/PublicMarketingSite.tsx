@@ -351,6 +351,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     : w.announcementText.trim() ? [w.announcementText.trim()] : [];
 
   const [blogPreview, setBlogPreview] = useState<BlogPost[] | null>(null);
+  const [blogExpanded, setBlogExpanded] = useState(false);
   useEffect(() => {
     let active = true;
     listPublishedPosts({ limit: 3 }).then((posts) => {
@@ -567,8 +568,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   </ScrollReveal>
 
                   {blogPreview && blogPreview.length > 0 ? (
+                    <>
                     <StaggerGroup className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                      {blogPreview.map((post) => (
+                      {(blogExpanded ? blogPreview : blogPreview.slice(0, 1)).map((post) => (
                         <motion.a
                           key={post.id}
                           href={`/blog/${post.slug}`}
@@ -590,6 +592,19 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                         </motion.a>
                       ))}
                     </StaggerGroup>
+                    {blogPreview.length > 1 && (
+                      <div className="mt-6 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setBlogExpanded((v) => !v)}
+                          aria-expanded={blogExpanded}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-800/20 bg-white px-5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+                        >
+                          {blogExpanded ? "Show less" : `View more stories (${blogPreview.length - 1} more)`}
+                        </button>
+                      </div>
+                    )}
+                    </>
                   ) : (
                     <ScrollReveal delay={0.08} className="mt-8 rounded-2xl border border-dashed border-emerald-900/20 bg-white/60 p-8 text-center">
                       <BookOpen className="mx-auto h-6 w-6 text-emerald-700" aria-hidden="true" />
