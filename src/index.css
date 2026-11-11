@@ -1009,6 +1009,11 @@ html:has(.aoh-public[data-visual-mode="dark"]) { color-scheme: light !important;
 @media (min-width: 1024px) {
   .aoh-hero { text-wrap: pretty; }
 }
+@keyframes aoh-hero-kenburns {
+  0% { transform: scale(1.02); }
+  100% { transform: scale(1.1); }
+}
+.aoh-hero-kenburns { animation: aoh-hero-kenburns 7s ease-out forwards; transform-origin: center; }
 @media (prefers-reduced-motion: reduce) {
   .aoh-public *, .aoh-public *::before, .aoh-public *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
