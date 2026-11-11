@@ -195,7 +195,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="relative overflow-hidden bg-emerald-950 text-white"
+      className="aoh-hero relative overflow-hidden bg-emerald-950 text-white"
     >
       {/* Backdrop: deep emerald + gold glow + faint grid + bottom fade into page */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
@@ -213,9 +213,9 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
       </div>
 
-      <div className="relative mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-12 sm:pt-16 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-12 lg:pb-20 lg:pt-20">
+      <div className="relative mx-auto grid w-full max-w-6xl gap-8 px-4 pb-16 pt-10 sm:px-6 sm:pt-14 md:gap-10 md:pt-16 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-12 lg:pb-24 lg:pt-20">
         {/* ——— Copy column ——— */}
-        <div className="min-w-0">
+        <div className="aoh-hero-copy min-w-0">
           {/* Trust eyebrow row */}
           <div className="flex flex-wrap items-center gap-2">
             {slide.eyebrow ? (
@@ -242,7 +242,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                 exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -14 }}
                 transition={{ duration: prefersReducedMotion ? 0.2 : 0.45, ease: "easeOut" }}
               >
-                <h1 className="text-balance text-4xl font-extrabold leading-[1.04] tracking-tight text-white sm:text-5xl lg:text-[3.6rem]">
+                <h1 className="text-balance text-[2rem] font-extrabold leading-[1.08] tracking-tight text-white min-[480px]:text-4xl sm:text-5xl md:text-[3.25rem] md:leading-[1.04] lg:text-[3.6rem]">
                   {slide.title}
                   {slide.highlight ? (
                     <>
@@ -294,19 +294,19 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             </a>
           </div>
 
-          {/* CTAs */}
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          {/* CTAs — full-width stacked tap targets on phones, inline row on tablet/desktop */}
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               type="button"
               onClick={onOpenApply}
-              className="group inline-flex h-12 items-center gap-2 rounded-2xl bg-amber-400 px-6 text-sm font-bold text-emerald-950 shadow-[0_16px_40px_-12px_rgba(251,191,36,0.7)] transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 active:scale-[0.98]"
+              className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-6 text-sm font-bold text-emerald-950 shadow-[0_16px_40px_-12px_rgba(251,191,36,0.7)] transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 active:scale-[0.98] sm:w-auto"
             >
               {applyLabel}
               <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
             </button>
             <a
               href="#programmes"
-              className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-white/40 hover:bg-white/10 active:scale-[0.98]"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-white/40 hover:bg-white/10 active:scale-[0.98] sm:w-auto"
             >
               Explore programmes
               <ArrowUpRight className="h-4 w-4 text-amber-300" aria-hidden="true" />
@@ -321,8 +321,8 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             </button>
           </div>
 
-          {/* Proof points */}
-          <dl className="mt-8 grid gap-3 sm:grid-cols-3">
+          {/* Proof points — 1 col phones, 3 cols from small tablets up */}
+          <dl className="mt-8 grid grid-cols-1 gap-3 min-[560px]:grid-cols-3 md:gap-4">
             {PROOF_POINTS.map((p) => (
               <div
                 key={p.title}
@@ -339,10 +339,10 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
             ))}
           </dl>
 
-          {/* Slide selector */}
+          {/* Slide selector — swipeable strip on phones/tablets, grid on desktop */}
           {safeSlides.length > 1 ? (
             <div className="mt-7" role="tablist" aria-label="Choose a highlight">
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-3 lg:overflow-visible">
                 {safeSlides.slice(0, 5).map((s, i) => {
                   const active = i === current % safeSlides.length;
                   return (
@@ -354,7 +354,7 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
                       aria-label={`Show highlight ${i + 1}: ${s.title} ${s.highlight}`.trim()}
                       onClick={() => goTo(i)}
                       className={cn(
-                        "group relative overflow-hidden rounded-2xl border p-3 text-left transition active:scale-[0.98]",
+                        "group relative w-[72%] shrink-0 snap-start overflow-hidden rounded-2xl border p-3 text-left transition active:scale-[0.98] sm:w-auto",
                         active
                           ? "border-amber-300/50 bg-white/10 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.7)]"
                           : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.07]",
@@ -387,14 +387,14 @@ export default function HeroSlider({ onOpenApply, onEnterPortal }: HeroSliderPro
           ) : null}
         </div>
 
-        {/* ——— Visual column ——— */}
-        <div className="relative mx-auto w-full max-w-[520px] lg:max-w-none">
+        {/* ——— Visual column: stacked below copy on mobile/tablet, side-by-side on desktop ——— */}
+        <div className="relative mx-auto w-full max-w-[520px] md:max-w-[640px] lg:mx-0 lg:max-w-none">
           {/* Offset gold frame */}
           <div aria-hidden="true" className="absolute -inset-3 rounded-[2.2rem] bg-gradient-to-br from-amber-300/25 via-transparent to-emerald-400/20 blur-[1px]" />
           <div aria-hidden="true" className="absolute -right-5 -top-5 hidden h-28 w-28 rounded-3xl border border-amber-300/30 sm:block" />
 
           <div className="relative overflow-hidden rounded-[2rem] bg-emerald-900 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.8)] ring-1 ring-white/15">
-            <div className="relative aspect-[4/4.4] w-full sm:aspect-[4/3.4] lg:aspect-[4/4.5]">
+            <div className="relative aspect-[4/3.1] w-full min-[480px]:aspect-[4/3.2] md:aspect-[16/10] lg:aspect-[4/4.5]">
               <AnimatePresence mode="popLayout">
                 <motion.img
                   key={slide.image + current}

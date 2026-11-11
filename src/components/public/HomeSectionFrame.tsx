@@ -24,7 +24,7 @@ export default function HomeSectionFrame({
     <div
       data-home-block={sectionKey}
       className={cn(
-        "home-block relative scroll-mt-24",
+        "home-block relative min-w-0 scroll-mt-20 overflow-x-clip md:scroll-mt-24",
         elevated && "home-block--elevated",
         dark && "home-block--dark",
       )}

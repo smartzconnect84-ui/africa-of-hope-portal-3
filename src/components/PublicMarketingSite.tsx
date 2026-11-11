@@ -52,6 +52,7 @@ import { useLocale } from "@/lib/locale";
 import { isPublicPageEnabled } from "@/lib/publicPages";
 import { format } from "date-fns";
 import { applyPublicSeo } from "@/lib/publicSeo";
+import { useDevice } from "@/hooks/useDevice";
 
 function pageKeyForHref(href: string): string | null {
   const h = normalizePublicHref(href).toLowerCase();
@@ -222,6 +223,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     } catch { /* ignore */ }
   }, []);
   const reduceMotion = useReducedMotion();
+  const { device } = useDevice();
   const openApply = (programId?: string) => {
     // Generic CTA buttons pass this directly as onClick, so React would hand a
     // MouseEvent in as the first argument — only persist real string ids.
@@ -405,7 +407,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
   return (
     <MotionConfig reducedMotion="user">
-    <div id="top" data-visual-mode="light" data-public-font={presentation.font} data-icon-weight={presentation.iconWeight} className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
+    <div id="top" data-visual-mode="light" data-device={device} data-public-font={presentation.font} data-icon-weight={presentation.iconWeight} className="aoh-public min-h-[100dvh] scroll-smooth bg-[#f6f8f7] text-slate-900">
       {w.announcementEnabled && bannerItems.length > 0 && (
         <div className="overflow-hidden bg-amber-400 text-emerald-950" role="region" aria-label="Announcements">
           <div className="sr-only" aria-live="polite">
