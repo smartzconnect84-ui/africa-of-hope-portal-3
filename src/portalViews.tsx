@@ -417,10 +417,64 @@ export function usePortalViewContext(): PortalViewContext {
   return { ...perms, currentUser };
 }
 
+/**
+ * Relevance order for the sidebar nav (most-used first, system last).
+ * Dashboard stays first, My Profile stays last. `useVisiblePortalViews` sorts
+ * the filtered views by this list so the drawer reads in journey order:
+ * learn → people/admissions → money → support/comms → system.
+ */
+const NAV_RELEVANCE_ORDER = [
+  "dashboard",
+  "course-player",
+  "academic-planning",
+  "study-plan",
+  "study-calendar",
+  "assignments",
+  "quizzes",
+  "discussions",
+  "training-library",
+  "entrance-test",
+  "entrance-prep",
+  "entrance-control",
+  "people",
+  "admissions-inbox",
+  "attendance",
+  "insights",
+  "programs",
+  "cohorts",
+  "fees",
+  "payments",
+  "payment-review",
+  "certificates",
+  "verification",
+  "helpdesk",
+  "grade-appeals",
+  "reference-letters",
+  "announcements",
+  "policies",
+  "blog",
+  "transparency",
+  "opportunities",
+  "donate",
+  "my-files",
+  "operations",
+  "website",
+  "email-outbox",
+  "settings",
+  "roles",
+  "profile",
+];
+
+const NAV_RELEVANCE_RANK = new Map(NAV_RELEVANCE_ORDER.map((key, i) => [key, i]));
+
 /** The sidebar/router list, filtered and ordered for the signed-in user. */
 export function useVisiblePortalViews(): { ctx: PortalViewContext; views: PortalView[] } {
   const ctx = usePortalViewContext();
-  const views = PORTAL_VIEWS.filter((v) => v.visible(ctx));
+  const views = PORTAL_VIEWS.filter((v) => v.visible(ctx)).sort((a, b) => {
+    const ra = NAV_RELEVANCE_RANK.get(a.key) ?? 999;
+    const rb = NAV_RELEVANCE_RANK.get(b.key) ?? 999;
+    return ra - rb;
+  });
   return { ctx, views };
 }
 

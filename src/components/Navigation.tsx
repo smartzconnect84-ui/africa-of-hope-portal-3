@@ -380,7 +380,7 @@ export default function Navigation({
       className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
-      <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-900/75 dark:text-emerald-100/80">
+      <p className="px-3 pb-1 pt-2 text-[13px] font-semibold uppercase tracking-widest text-emerald-900/75 dark:text-emerald-100/80">
         {sidebarGroupLabel(ctx.role)}
       </p>
       {views.map((v) => {
@@ -394,7 +394,7 @@ export default function Navigation({
             onClick={() => go(v.key)}
             data-component-id={`nav-${v.key}`}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-lg font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
               active
                 ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
                 : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
@@ -410,7 +410,7 @@ export default function Navigation({
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-emerald-800 transition hover:bg-emerald-50"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-lg font-medium text-emerald-800 transition hover:bg-emerald-50"
           >
             <Globe className="h-4.5 w-4.5" />
             View public website
@@ -419,7 +419,7 @@ export default function Navigation({
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-lg font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
         >
           <RefreshCw className="h-4.5 w-4.5" />
           Reload live data
@@ -615,6 +615,7 @@ export default function Navigation({
                 <BrandLockup
                   logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
                   academyName={state.websiteSettings.academyName || state.settings.academyName}
+                  displayName="AOH-PORTAL"
                   tone="light"
                   size="sm"
                   showTagline={false}
