@@ -1003,17 +1003,18 @@ export default function AuthPortal({
           ) : <span />}
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-8">
+        <div className="flex flex-1 items-center justify-center px-2 py-5 sm:px-4 sm:py-6">
             <div className={cn("w-full min-w-0 transition-[max-width]", tab === "register" ? "max-w-[34rem]" : "max-w-[26rem]")}>
             <div className="mb-3 text-center">
               <BrandLockup
                 logoUrl={state.websiteSettings.logos?.auth || state.websiteSettings.logoUrl}
                 academyName={state.websiteSettings.academyName || state.settings.academyName}
+                displayName="AfroHope, INC"
                 tone="light"
                 size="lg"
                 showTagline={false}
-                className="mx-auto flex-col gap-1 [&_img]:origin-center [&_img]:scale-[1.2]"
-                nameClassName="text-center text-lg font-black sm:text-xl"
+                className="mx-auto flex-col gap-1.5 [&_img]:origin-center [&_img]:scale-[1.4]"
+                nameClassName="text-center text-lg font-black normal-case tracking-normal sm:text-xl"
               />
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
             </div>
