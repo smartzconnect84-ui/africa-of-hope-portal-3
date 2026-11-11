@@ -22,6 +22,7 @@ export default function WhatsAppEnquiry({
   const [program, setProgram] = useState("General enquiry");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [whatsAppUrl, setWhatsAppUrl] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,24 +39,36 @@ export default function WhatsAppEnquiry({
     }
   }, [open ]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!name.trim() || !contact.trim() || !message.trim()) {
       toast.error("Please add your name, contact and message.");
       return;
     }
     setSending(true);
+    setWhatsAppUrl(null);
     const payload = { name: name.trim(), contact: contact.trim(), program, message: message.trim() };
-    saveEnquiry(payload);
-    const number = schoolWhatsAppNumber(contactPhone);
-    const url = buildWhatsAppLink(number, enquiryMessage(payload));
-    toast.success("Enquiry saved. Opening WhatsApp…");
-    setName("");
-    setContact("");
-    setProgram("General enquiry");
-    setMessage("");
-    setOpen(false);
-    setSending(false);
-    window.open(url, "_blank", "noopener");
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.opener = null;
+
+    try {
+      await saveEnquiry({ ...payload, source: "whatsapp" });
+      const url = buildWhatsAppLink(schoolWhatsAppNumber(contactPhone), enquiryMessage(payload));
+      setWhatsAppUrl(url);
+      toast.success("Enquiry saved. Continue to WhatsApp to send your message.");
+      setName("");
+      setContact("");
+      setProgram("General enquiry");
+      setMessage("");
+      if (popup) {
+        popup.location.assign(url);
+        setOpen(false);
+      }
+    } catch {
+      popup?.close();
+      toast.error("We couldn’t save your enquiry. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -146,8 +159,14 @@ export default function WhatsAppEnquiry({
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-sm font-semibold text-white transition hover:bg-[#1fb857] disabled:opacity-60"
               >
                 <Send className="h-4 w-4" aria-hidden="true" /> {sending ? "Sending…" : "Send via WhatsApp"}
-              </button>
-              <p className="text-center text-[11px] text-slate-500">
+  </button>
+  {whatsAppUrl ? (
+    <a href={whatsAppUrl} target="_blank" rel="noreferrer" className="block text-center text-sm font-semibold text-emerald-800 underline underline-offset-4">
+      Continue to WhatsApp
+    </a>
+  ) : null}
+  <p className="text-center text-[11px] text-slate-500">
+
                 Your message is saved for our staff and opens in WhatsApp pre-filled.
               </p>
             </div>

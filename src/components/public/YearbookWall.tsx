@@ -1,319 +1,97 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Quote, ImagePlus, Search } from "lucide-react";
-import ExpandableImage from "./PageImage";
-import { ScrollReveal } from "./motion";
-import { SUPPLIED_PHOTOS } from "@/data/suppliedMedia";
-import { loadYearbook, submitYearbookEntry, uploadYearbookPhoto } from "@/lib/yearbook";
-import type { YearbookEntry } from "@/lib/yearbook";
+import useSWR, { mutate } from "swr";
+import { supabase } from "@/integrations/supabase/client";
+import { loadYearbook, submitYearbookEntry } from "@/lib/yearbook";
 
-const inputCls =
-  "h-11 w-full rounded-xl border border-emerald-900/20 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-700";
-const labelCls = "mb-1 block text-xs font-semibold uppercase tracking-wider text-emerald-900";
-const cardCls = "aoh-card rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm";
-
-const COHORTS = ["Class of 2026", "Class of 2025", "Class of 2024", "Class of 2023"];
-const PROGRAMMES = ["General Studies", "ICT & Computer Skills", "Entrepreneurship", "Health Support", "Education Support", "Other"];
-
-interface LocalEntry extends YearbookEntry {}
-
-function seedEntries(): LocalEntry[] {
-  const now = new Date().toISOString();
-  const grads = [
-    { name: "Massa K.", cohort: "Class of 2026", programme: "Entrepreneurship", note: "Thank you to my lecturers and my study group — we lifted each other to the finish line.", photo: 0 },
-    { name: "Emmanuel T.", cohort: "Class of 2026", programme: "ICT & Computer Skills", note: "From zero computer skills to building my first website. Grateful for this free training.", photo: 1 },
-    { name: "Korto S.", cohort: "Class of 2025", programme: "Health Support", note: "The field outreach changed me. I now volunteer at my community clinic every weekend.", photo: 2 },
-    { name: "Abraham D.", cohort: "Class of 2025", programme: "General Studies", note: "To the Class of 2025: we started with hope, we finished with proof. Keep going.", photo: 3 },
-    { name: "Fatu B.", cohort: "Class of 2024", programme: "Education Support", note: "My certificate opened a classroom assistant job. Thank you Africa of Hope!", photo: 4 },
-  ];
-  return grads.map((g, i) => ({
-    id: `seed-yearbook-${i}`,
-    graduate_name: g.name,
-    cohort: g.cohort,
-    programme: g.programme,
-    note: g.note,
-    photo_url: SUPPLIED_PHOTOS[g.photo % SUPPLIED_PHOTOS.length].src,
-    is_approved: true,
-    created_at: now,
-  }));
-}
-
-function useLocal<T>(key: string, initial: T): [T, (v: T) => void] {
-  const [val, setVal] = useState<T>(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : initial;
-    } catch {
-      return initial;
-    }
-  });
-  const save = (v: T) => {
-    setVal(v);
-    try {
-      localStorage.setItem(key, JSON.stringify(v));
-    } catch {
-      /* storage optional */
-    }
-  };
-  return [val, save];
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("Could not read photo."));
-    r.readAsDataURL(file);
-  });
-}
+const QUERY_KEY = "public-yearbook";
+const inputClass = "h-11 w-full rounded-xl border border-emerald-950/20 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-700";
 
 export default function YearbookWall() {
-  const [local, setLocal] = useLocal<LocalEntry[]>("aoh-yearbook", seedEntries());
-  const [remote, setRemote] = useState<YearbookEntry[]>([]);
-  const [backendLive, setBackendLive] = useState(false);
+  const { data, error: loadError, isLoading } = useSWR(QUERY_KEY, loadYearbook, { revalidateOnFocus: true });
+  const rows = data?.rows ?? [];
+  const [search, setSearch] = useState("");
   const [cohort, setCohort] = useState("All");
-  const [q, setQ] = useState("");
-  const [f, setF] = useState({ name: "", cohort: COHORTS[0], programme: PROGRAMMES[0], note: "" });
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [err, setErr] = useState("");
-  const [ok, setOk] = useState("");
+  const [form, setForm] = useState({ name: "", cohort: "", programme: "", note: "" });
+  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
-    let on = true;
-    loadYearbook()
-      .then(({ rows, backend }) => {
-        if (on) {
-          setRemote(rows);
-          setBackendLive(backend);
-        }
+    const channel = supabase
+      .channel("public-yearbook-entries")
+      .on("postgres_changes", { event: "*", schema: "public", table: "yearbook_entries" }, () => {
+        void mutate(QUERY_KEY);
       })
-      .catch(() => {});
-    return () => {
-      on = false;
-    };
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
   }, []);
 
-  const cohorts = useMemo(() => {
-    const set = new Set<string>(["All"]);
-    [...remote, ...local].forEach((e) => {
-      if (e.cohort.trim()) set.add(e.cohort.trim());
-    });
-    COHORTS.forEach((c) => set.add(c));
-    return [...set];
-  }, [remote, local]);
-
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const merged = [...remote, ...local];
-    return merged.filter(
-      (e) =>
-        (cohort === "All" || e.cohort === cohort) &&
-        (!needle || `${e.graduate_name} ${e.programme} ${e.note}`.toLowerCase().includes(needle)),
-    );
-  }, [remote, local, cohort, q]);
+  const cohorts = useMemo(() => ["All", ...new Set(rows.map((entry) => entry.cohort).filter(Boolean))], [rows]);
+  const visibleRows = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return rows.filter((entry) => (cohort === "All" || entry.cohort === cohort) && (!needle || `${entry.graduate_name} ${entry.programme} ${entry.note}`.toLowerCase().includes(needle)));
+  }, [rows, search, cohort]);
 
   const submit = async () => {
-    if (f.name.trim().length < 2) return setErr("Enter your full name as it should appear on the wall.");
-    if (!f.cohort.trim()) return setErr("Choose your graduating cohort.");
-    if (!f.programme.trim()) return setErr("Choose your programme.");
-    if (f.note.trim().length < 10) return setErr("Write a thank-you note of at least 10 characters (max 280).");
-    if (f.note.trim().length > 280) return setErr("Keep your thank-you note to 280 characters or fewer.");
-    if (photoFile && photoFile.size > 5 * 1024 * 1024) return setErr("Photo must be 5MB or smaller.");
-    setErr("");
+    setSubmitError("");
+    setStatus("");
+    if (!consent) return setSubmitError("Please confirm that your entry may be reviewed for publication.");
+    if (form.name.trim().length < 2) return setSubmitError("Enter your name as you would like it reviewed.");
+    if (form.cohort.trim().length < 1) return setSubmitError("Enter your graduation cohort.");
+    if (form.note.trim().length > 500) return setSubmitError("Keep your note to 500 characters or fewer.");
     setBusy(true);
     try {
-      let photo_url: string | null = null;
-      if (photoFile) {
-        try {
-          photo_url = await uploadYearbookPhoto(photoFile);
-        } catch {
-          photo_url = await fileToDataUrl(photoFile);
-        }
-      }
-      const res = await submitYearbookEntry({
-        graduate_name: f.name.trim(),
-        cohort: f.cohort.trim(),
-        programme: f.programme.trim(),
-        note: f.note.trim(),
-        photo_url,
-      });
-      if (res.backend) {
-        setOk("Received — staff will review it and publish it to the wall.");
-      } else {
-        setLocal(
-          [
-            {
-              id: `yb-${Date.now()}`,
-              graduate_name: f.name.trim(),
-              cohort: f.cohort.trim(),
-              programme: f.programme.trim(),
-              note: f.note.trim(),
-              photo_url,
-              is_approved: true,
-              created_at: new Date().toISOString(),
-            },
-            ...local,
-          ].slice(0, 120),
-        );
-        setOk("Published — your photo is live on the wall on this device.");
-      }
-      setF({ name: "", cohort: COHORTS[0], programme: PROGRAMMES[0], note: "" });
-      setPhotoFile(null);
-      window.setTimeout(() => setOk(""), 6000);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Could not publish your entry.");
+      await submitYearbookEntry({ graduate_name: form.name, cohort: form.cohort, programme: form.programme, note: form.note });
+      setForm({ name: "", cohort: "", programme: "", note: "" });
+      setConsent(false);
+      setStatus("Your entry was submitted for review. It will appear here after school staff approve it.");
+    } catch {
+      setSubmitError("We could not submit your entry. Please try again later.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search graduates"
-              aria-label="Search graduates"
-              className={`${inputCls} max-w-xs pl-9`}
-            />
-          </div>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by cohort">
-            {cohorts.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCohort(c)}
-                aria-pressed={cohort === c}
-                className={`h-10 rounded-xl px-3 text-xs font-bold ${
-                  cohort === c ? "bg-emerald-800 text-white" : "bg-white text-emerald-900 ring-1 ring-emerald-900/15 hover:bg-emerald-50"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-        {backendLive && (
-          <p className="mt-3 text-xs font-semibold text-emerald-700">Live from the backend — new entries appear after staff review.</p>
-        )}
-        {list.length === 0 ? (
-          <p className="mt-4 rounded-2xl border border-dashed border-emerald-900/20 bg-white p-8 text-center text-sm text-slate-600">
-            No graduates on this wall yet. Be the first to share your photo and thank-you note.
-          </p>
-        ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {list.map((e, i) => (
-              <ScrollReveal key={e.id} delay={Math.min(i * 0.04, 0.2)}>
-                <figure className="aoh-card group overflow-hidden rounded-2xl bg-white">
-                  {e.photo_url ? (
-                    <ExpandableImage
-                      src={e.photo_url}
-                      alt={`${e.graduate_name} graduation photo`}
-                      className="h-60"
-                      imgClassName="aoh-photo h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-40 flex-col items-center justify-center gap-2 bg-emerald-950 text-amber-300">
-                      <GraduationCap className="h-8 w-8" aria-hidden="true" />
-                      <span className="text-xs font-bold uppercase tracking-widest">{e.cohort}</span>
-                    </div>
-                  )}
-                  <figcaption className="p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-bold text-emerald-950">{e.graduate_name}</h3>
-                      <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-900">{e.cohort}</span>
-                    </div>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">{e.programme}</p>
-                    <p className="mt-2 flex gap-1.5 text-sm leading-6 text-slate-600">
-                      <Quote className="mt-1 h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
-                      <span>{e.note}</span>
-                    </p>
-                  </figcaption>
-                </figure>
-              </ScrollReveal>
-            ))}
-          </div>
-        )}
+    <section aria-labelledby="yearbook-heading">
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Graduation memories</p>
+        <h2 id="yearbook-heading" className="mt-2 text-2xl font-bold text-emerald-950">Graduate yearbook</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Approved graduate entries are shown below. New submissions are private until reviewed by school staff.</p>
       </div>
-      <div className={cardCls}>
-        <h3 className="flex items-center gap-2 font-bold text-emerald-950">
-          <GraduationCap className="h-5 w-5 text-amber-600" aria-hidden="true" /> Add your photo to the wall
-        </h3>
-        <p className="mt-1 text-sm text-slate-600">Finished your programme? Publish your photo, name and a short thank-you note for your cohort.</p>
-        <div className="mt-4 space-y-3">
-          <div>
-            <label className={labelCls} htmlFor="yb-name">Graduate name</label>
-            <input id="yb-name" className={inputCls} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="e.g. Massa K." autoComplete="name" aria-invalid={!!err} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls} htmlFor="yb-cohort">Cohort</label>
-              <select id="yb-cohort" className={inputCls} value={f.cohort} onChange={(e) => setF({ ...f, cohort: e.target.value })}>
-                {COHORTS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="yb-prog">Programme</label>
-              <select id="yb-prog" className={inputCls} value={f.programme} onChange={(e) => setF({ ...f, programme: e.target.value })}>
-                {PROGRAMMES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className={labelCls} htmlFor="yb-note">Thank-you note (max 280)</label>
-            <textarea
-              id="yb-note"
-              rows={3}
-              maxLength={300}
-              className="w-full rounded-xl border border-emerald-900/20 px-3 py-2.5 text-sm"
-              value={f.note}
-              onChange={(e) => setF({ ...f, note: e.target.value })}
-              placeholder="Who helped you finish strong?"
-            />
-            <p className="mt-1 text-right text-[11px] text-slate-500">{f.note.trim().length}/280</p>
-            {err && (
-              <p role="alert" className="mt-1 text-xs font-medium text-red-700">
-                {err}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className={labelCls} htmlFor="yb-photo">
-              <span className="inline-flex items-center gap-1.5">
-                <ImagePlus className="h-4 w-4" aria-hidden="true" /> Graduation photo (optional, 5MB max)
-              </span>
-            </label>
-            <input
-              id="yb-photo"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full text-sm text-slate-600"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={busy}
-            className="inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-60"
-          >
-            {busy ? "Publishing…" : "Publish to yearbook"}
-          </button>
-          {ok && (
-            <p role="status" className="text-sm font-medium text-emerald-700">
-              {ok}
-            </p>
-          )}
+
+      {loadError ? <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">The yearbook is temporarily unavailable. Please try again later.</p> : null}
+      {isLoading ? <p className="rounded-2xl border border-emerald-950/10 bg-white p-6 text-sm text-slate-600">Loading approved entries…</p> : null}
+      {!isLoading && !loadError && rows.length === 0 ? <p className="rounded-2xl border border-dashed border-emerald-950/20 bg-white p-6 text-sm text-slate-600">No approved graduate entries have been published yet.</p> : null}
+
+      {rows.length > 0 ? <>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <label className="sr-only" htmlFor="yearbook-search">Search graduates</label>
+          <input id="yearbook-search" className={inputClass} placeholder="Search graduates" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <label className="sr-only" htmlFor="yearbook-cohort">Filter by cohort</label>
+          <select id="yearbook-cohort" className={`${inputClass} sm:max-w-56`} value={cohort} onChange={(event) => setCohort(event.target.value)}>{cohorts.map((item) => <option key={item}>{item}</option>)}</select>
         </div>
+        {visibleRows.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{visibleRows.map((entry) => <article key={entry.id} className="overflow-hidden rounded-2xl border border-emerald-950/10 bg-white shadow-sm">
+          {entry.photo_url ? <img src={entry.photo_url} alt={`Photo submitted by ${entry.graduate_name}`} loading="lazy" className="aspect-[4/3] w-full object-cover" /> : null}
+          <div className="p-4"><p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{entry.cohort}</p><h3 className="mt-1 font-bold text-emerald-950">{entry.graduate_name}</h3>{entry.programme ? <p className="mt-1 text-sm text-slate-600">{entry.programme}</p> : null}{entry.note ? <p className="mt-3 text-sm leading-6 text-slate-600">{entry.note}</p> : null}</div>
+        </article>)}</div> : <p className="mt-5 rounded-2xl border border-emerald-950/10 bg-white p-5 text-sm text-slate-600">No approved entries match your search.</p>}
+      </> : null}
+
+      <div className="mt-8 rounded-2xl border border-emerald-950/10 bg-white p-5 sm:p-7">
+        <h3 className="text-lg font-bold text-emerald-950">Submit a yearbook entry</h3>
+        <p className="mt-1 text-sm text-slate-600">Your text entry is submitted privately to the school for review; nothing is published automatically.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div><label className="mb-1 block text-xs font-semibold text-slate-700" htmlFor="yearbook-name">Name</label><input id="yearbook-name" className={inputClass} autoComplete="name" maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
+          <div><label className="mb-1 block text-xs font-semibold text-slate-700" htmlFor="yearbook-cohort-entry">Graduation cohort</label><input id="yearbook-cohort-entry" className={inputClass} maxLength={40} placeholder="e.g. Class of 2026" value={form.cohort} onChange={(event) => setForm({ ...form, cohort: event.target.value })} /></div>
+          <div><label className="mb-1 block text-xs font-semibold text-slate-700" htmlFor="yearbook-programme">Programme (optional)</label><input id="yearbook-programme" className={inputClass} maxLength={120} value={form.programme} onChange={(event) => setForm({ ...form, programme: event.target.value })} /></div>
+          <div className="sm:col-span-2"><label className="mb-1 block text-xs font-semibold text-slate-700" htmlFor="yearbook-note">Message (optional)</label><textarea id="yearbook-note" className="w-full rounded-xl border border-emerald-950/20 px-3 py-2.5 text-sm text-slate-900" rows={3} maxLength={500} value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} /></div>
+        </div>
+        <label className="mt-4 flex items-start gap-2 text-sm text-slate-700"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-emerald-800" /><span>I confirm that the school may review this entry and publish it publicly if approved.</span></label>
+        {submitError ? <p role="alert" className="mt-3 text-sm text-red-700">{submitError}</p> : null}
+        {status ? <p role="status" className="mt-3 text-sm font-medium text-emerald-800">{status}</p> : null}
+        <button type="button" disabled={busy || isLoading || !!loadError} onClick={submit} className="mt-4 inline-flex h-11 items-center rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60">{busy ? "Submitting…" : "Submit for review"}</button>
       </div>
-    </div>
+    </section>
   );
 }

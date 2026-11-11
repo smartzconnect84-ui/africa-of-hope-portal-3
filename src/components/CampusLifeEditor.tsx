@@ -1,7 +1,65 @@
+import { useState } from "react";
+import useSWR from "swr";
 import { CAMPUS_TABS, DEFAULT_CAMPUS_LIFE, type CampusLifeSettings } from "@/data/publicPresentation";
 import type { WebsiteSettings } from "@/types";
 import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitives";
 import { panelClass } from "./Navigation";
+import { listYearbookAdmin, setYearbookApproved, type YearbookEntry } from "@/lib/yearbook";
+
+function YearbookModeration() {
+  const { data, error, isLoading, mutate } = useSWR("admin-yearbook-entries", async () => {
+    const result = await listYearbookAdmin();
+    return result.items;
+  });
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+
+  const setApproval = async (entry: YearbookEntry) => {
+    setBusyId(entry.id);
+    setMessage("");
+    try {
+      await setYearbookApproved(entry.id, !entry.is_approved);
+      await mutate();
+      setMessage(entry.is_approved ? "Entry removed from the public wall." : "Entry approved and published.");
+    } catch {
+      setMessage("The entry could not be updated. Please try again.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <section className="border-t border-slate-100 pt-5" aria-labelledby="yearbook-review-heading">
+      <h3 id="yearbook-review-heading" className="text-sm font-semibold text-slate-900">Yearbook submissions</h3>
+      <p className="mt-1 text-xs text-slate-500">Review private submissions here. Only approved entries appear on the public wall.</p>
+      {message ? <p role="status" aria-live="polite" className="mt-3 text-sm text-emerald-800">{message}</p> : null}
+      {error ? <p role="alert" className="mt-3 text-sm text-red-700">Submissions could not be loaded.</p> : null}
+      {isLoading ? <p className="mt-3 text-sm text-slate-500">Loading submissions…</p> : null}
+      {!isLoading && !error && (data?.length ?? 0) === 0 ? <p className="mt-3 text-sm text-slate-500">There are no yearbook submissions to review.</p> : null}
+      {data?.length ? (
+        <ul className="mt-3 space-y-3">
+          {data.map((entry) => (
+            <li key={entry.id} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-900">{entry.graduate_name}</p>
+                  <p className="text-xs text-slate-500">{entry.cohort}{entry.programme ? ` · ${entry.programme}` : ""}</p>
+                  {entry.note ? <p className="mt-2 text-sm leading-6 text-slate-700">{entry.note}</p> : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{entry.is_approved ? "Published" : "Needs review"}</span>
+                  <button type="button" disabled={busyId === entry.id} onClick={() => void setApproval(entry)} className="min-h-10 rounded-lg bg-emerald-800 px-3 text-xs font-semibold text-white hover:bg-emerald-900 disabled:opacity-60">
+                    {busyId === entry.id ? "Saving…" : entry.is_approved ? "Remove from wall" : "Approve entry"}
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
 
 export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSettings; patch: (f: Partial<WebsiteSettings>) => void }) {
   const campus: CampusLifeSettings = { ...DEFAULT_CAMPUS_LIFE, ...(draft.campusLife ?? {}) };
@@ -32,15 +90,15 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
 
       <div className="border-t border-slate-100 pt-5">
         <h3 className="text-sm font-semibold text-slate-900">Gallery photos ({campus.gallery.length})</h3>
-        <p className="mt-1 text-xs text-slate-500">Upload, retitle, retag, reorder or delete. Empty slots fall back to the supplied campus photos on the live page.</p>
+        <p className="mt-1 text-xs text-slate-500">Upload, retitle, retag, reorder or delete published photos. Empty slots stay hidden on the public page.</p>
         <div className="mt-3">
           <ListEditor
             title="Photo"
             items={campus.gallery}
             onChange={(gallery) => set({ gallery })}
             addLabel="Add photo"
-            emptyHint="No custom photos yet — the live page shows the supplied campus photos."
-            newItem={() => ({ id: genId("photo"), caption: "New campus photo", tag: "Campus", image: "" })}
+            emptyHint="No campus photos have been published yet."
+            newItem={() => ({ id: genId("photo"), caption: "", tag: "", image: "" })}
             renderItem={(item, update) => (
               <div className="grid gap-4 md:grid-cols-[220px_1fr]">
                 <ImageBox label="Photo" folder="pages/campus-life" value={item.image} onChange={(image) => update({ image })} />
@@ -66,7 +124,7 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
             onChange={(events) => set({ events })}
             addLabel="Add event"
             emptyHint="No events published — the live page shows an empty state."
-            newItem={() => ({ id: genId("event"), title: "New event", date: new Date().toISOString().slice(0, 16), venue: "Main campus", note: "" })}
+            newItem={() => ({ id: genId("event"), title: "", date: "", venue: "", note: "" })}
             renderItem={(item, update) => (
               <>
                 <Field label="Title" value={item.title} onChange={(v) => update({ title: v })} />
@@ -93,7 +151,7 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
             onChange={(jobs) => set({ jobs })}
             addLabel="Add job"
             emptyHint="No jobs published — the live page shows an empty state."
-            newItem={() => ({ id: genId("job"), title: "New role", org: "", type: "Internship", pay: "", applyNote: "" })}
+            newItem={() => ({ id: genId("job"), title: "", org: "", type: "", pay: "", applyNote: "" })}
             renderItem={(item, update) => (
               <>
                 <Field label="Job title" value={item.title} onChange={(v) => update({ title: v })} />
@@ -117,7 +175,7 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
               onChange={(spotlights) => set({ spotlights })}
               addLabel="Add spotlight"
               emptyHint="No spotlights published yet."
-              newItem={() => ({ id: genId("spot"), name: "Graduate name", role: "Current role", text: "" })}
+              newItem={() => ({ id: genId("spot"), name: "", role: "", text: "" })}
               renderItem={(item, update) => (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -152,7 +210,7 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
             onChange={(aid) => set({ aid })}
             addLabel="Add scholarship / sponsor"
             emptyHint="No aid published — the live page shows an empty state."
-            newItem={() => ({ id: genId("aid"), title: "New scholarship", cover: "", who: "" })}
+            newItem={() => ({ id: genId("aid"), title: "", cover: "", who: "" })}
             renderItem={(item, update) => (
               <>
                 <Field label="Title" value={item.title} onChange={(v) => update({ title: v })} />
@@ -184,7 +242,7 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
             onChange={(resources) => set({ resources })}
             addLabel="Add resource"
             emptyHint="No downloads published — the live page shows an empty state."
-            newItem={() => ({ id: genId("res"), title: "New download", meta: "", href: "" })}
+            newItem={() => ({ id: genId("res"), title: "", meta: "", href: "" })}
             renderItem={(item, update) => (
               <>
                 <Field label="Title" value={item.title} onChange={(v) => update({ title: v })} />
@@ -209,7 +267,7 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
             onChange={(feePlans) => set({ feePlans })}
             addLabel="Add payment plan"
             emptyHint="No payment plans published — the live page shows an empty state."
-            newItem={() => ({ id: genId("plan"), title: "New plan", amount: "", note: "" })}
+            newItem={() => ({ id: genId("plan"), title: "", amount: "", note: "" })}
             renderItem={(item, update) => (
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -235,6 +293,8 @@ export default function CampusLifeEditor({ draft, patch }: { draft: WebsiteSetti
           ))}
         </div>
       </div>
+
+      <YearbookModeration />
 
       <div className="border-t border-slate-100 pt-5">
         <h3 className="text-sm font-semibold text-slate-900">Visible tabs</h3>

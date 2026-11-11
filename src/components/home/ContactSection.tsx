@@ -11,19 +11,28 @@ import { saveEnquiry } from "@/lib/enquiries";
 
 function VisitForm() {
   const [form, setForm] = useState({ name: "", contact: "", date: "", group: "" });
-  const submit = () => {
+  const [sending, setSending] = useState(false);
+  const submit = async () => {
     if (!form.name.trim() || !form.contact.trim() || !form.date.trim()) {
       toast.error("Name, contact and preferred date are required");
       return;
     }
-    saveEnquiry({
-      name: form.name.trim(),
-      contact: form.contact.trim(),
-      program: "Campus visit request",
-      message: `Preferred visit date: ${form.date.trim()}${form.group.trim() ? ` · Group size: ${form.group.trim()}` : ""}. Please confirm my campus visit.`,
-    });
-    toast.success("Visit request sent. We will confirm your campus visit shortly.");
-    setForm({ name: "", contact: "", date: "", group: "" });
+    setSending(true);
+    try {
+      await saveEnquiry({
+        name: form.name,
+        contact: form.contact,
+        program: "Campus visit request",
+        message: `Preferred visit date: ${form.date.trim()}${form.group.trim() ? ` · Group size: ${form.group.trim()}` : ""}. Please confirm my campus visit.`,
+        source: "contact",
+      });
+      toast.success("Visit request sent. We will confirm your campus visit shortly.");
+      setForm({ name: "", contact: "", date: "", group: "" });
+    } catch {
+      toast.error("We couldn’t save your visit request. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
   return (
     <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 sm:p-6">
@@ -51,8 +60,8 @@ function VisitForm() {
           <Label htmlFor="visit-group">Group size (optional)</Label>
           <Input id="visit-group" value={form.group} onChange={(e) => setForm({ ...form, group: e.target.value })} placeholder="e.g. 3 people" />
         </div>
-        <Button onClick={submit} className="w-full bg-amber-400 text-emerald-950 hover:bg-amber-300">
-          Request visit
+        <Button onClick={submit} disabled={sending} className="w-full bg-amber-400 text-emerald-950 hover:bg-amber-300">
+          {sending ? "Sending…" : "Request visit"}
         </Button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 -- DEPLOY-12: Opportunity boards backend (vacancies, applications, alumni businesses, admission drafts).
 -- Additive only. Run after 20261105000000_certificate_types_audit.sql. Safe to re-run.
--- Public can read open vacancies + approved businesses and submit applications/listings/drafts.
+-- Public can read open vacancies + approved businesses and submit applications/listings.
 -- Staff with cms.manage get full add/edit/delete/upload control. No existing data touched.
 begin;
 
@@ -70,10 +70,9 @@ revoke all on public.application_drafts from anon, authenticated;
 
 grant select on public.staff_vacancies to anon, authenticated;
 grant select on public.alumni_businesses to anon, authenticated;
-grant insert on public.vacancy_applications to anon, authenticated;
+grant insert (vacancy_id, role_title, name, contact, cover_note, cv_url) on public.vacancy_applications to anon;
 grant select on public.vacancy_applications to authenticated;
-grant insert on public.alumni_businesses to anon, authenticated;
-grant insert on public.application_drafts to anon, authenticated;
+grant insert (name, owner_name, category, location, contact, description, logo_url) on public.alumni_businesses to anon;
 grant select, insert, update, delete on public.staff_vacancies to authenticated;
 grant select, insert, update, delete on public.vacancy_applications to authenticated;
 grant select, insert, update, delete on public.alumni_businesses to authenticated;
@@ -89,11 +88,24 @@ create policy staff_vacancies_staff_all on public.staff_vacancies
   for all to authenticated using (public.has_permission('cms.manage'))
   with check (public.has_permission('cms.manage'));
 
--- Anyone (guest included) may apply; only staff may read/update/delete queue.
+-- Anyone may apply to an open role; only staff may read/update/delete the queue.
 drop policy if exists vacancy_apps_public_insert on public.vacancy_applications;
 create policy vacancy_apps_public_insert on public.vacancy_applications
   for insert to anon, authenticated with check (
-    btrim(name) <> '' and btrim(contact) <> '' and btrim(cover_note) <> ''
+    length(btrim(name)) between 2 and 120
+    and length(btrim(role_title)) between 1 and 160
+    and length(btrim(contact)) between 3 and 180
+    and length(btrim(cover_note)) between 1 and 5000
+    and status = 'new'
+    and cv_url is null
+    and (
+      vacancy_id is null
+      or exists (
+        select 1
+        from public.staff_vacancies v
+        where v.id = vacancy_id and v.is_open = true
+      )
+    )
   );
 
 drop policy if exists vacancy_apps_staff_all on public.vacancy_applications;
@@ -109,7 +121,14 @@ create policy alumni_biz_public_approved on public.alumni_businesses
 drop policy if exists alumni_biz_public_insert on public.alumni_businesses;
 create policy alumni_biz_public_insert on public.alumni_businesses
   for insert to anon, authenticated with check (
-    btrim(name) <> '' and btrim(contact) <> '' and btrim(description) <> ''
+    length(btrim(name)) between 2 and 120
+    and length(btrim(owner_name)) <= 120
+    and length(btrim(category)) between 1 and 80
+    and length(btrim(location)) <= 160
+    and length(btrim(contact)) between 3 and 180
+    and length(btrim(description)) between 10 and 2000
+    and is_approved = false
+    and created_by is null
   );
 
 drop policy if exists alumni_biz_staff_all on public.alumni_businesses;
@@ -117,39 +136,15 @@ create policy alumni_biz_staff_all on public.alumni_businesses
   for all to authenticated using (public.has_permission('cms.manage'))
   with check (public.has_permission('cms.manage'));
 
--- Admission drafts: guests save/resume by email; staff manage all.
+-- Admission drafts contain applicant PII; only CMS-authorized staff may manage them.
 drop policy if exists app_drafts_public_upsert on public.application_drafts;
-create policy app_drafts_public_upsert on public.application_drafts
-  for insert to anon, authenticated with check (btrim(email) <> '');
-
 drop policy if exists app_drafts_public_read on public.application_drafts;
-create policy app_drafts_public_read on public.application_drafts
-  for select to anon, authenticated using (true);
-
 drop policy if exists app_drafts_public_update on public.application_drafts;
-create policy app_drafts_public_update on public.application_drafts
-  for update to anon, authenticated using (true) with check (btrim(email) <> '');
-
 drop policy if exists app_drafts_staff_all on public.application_drafts;
 create policy app_drafts_staff_all on public.application_drafts
   for all to authenticated using (public.has_permission('cms.manage'))
   with check (public.has_permission('cms.manage'));
 
--- Seed open vacancies + approved sample businesses once (keeps public page useful pre-admin).
-insert into public.staff_vacancies (title, dept, location, description, requirements, closing_date, is_open)
-select * from (values
-  ('ICT Tutor (part-time)','Teaching','Monrovia + online','Teach practical computer studies two evenings a week.','Diploma in ICT or related field plus 1 year hands-on experience.','2027-02-15'::date,true),
-  ('Nursing Assistant Instructor','Teaching','Main campus','Lead lab demos and supervise internship logbooks.','Licensed practitioner with teaching or mentoring experience.','2027-02-28'::date,true),
-  ('Admissions & Records Officer','Support','Monrovia','Handle applications, records and certificate queues.','Strong admin skills; spreadsheet and record-keeping experience.','2027-03-10'::date,true)
-) as v(title, dept, location, description, requirements, closing_date, is_open)
-where not exists (select 1 from public.staff_vacancies);
 
-insert into public.alumni_businesses (name, owner_name, category, location, contact, description, is_approved)
-select * from (values
-  ('Hope Tech Repair','Alumni ''24','ICT services','Monrovia','+231 770 111 222','Phone & laptop repair with student discount.',true),
-  ('Massa Catering','Alumni ''23','Food','Paynesville','+231 775 333 444','Events catering for graduations and open days.',true),
-  ('Bright Stitches','Alumni ''25','Fashion','Congo Town','+231 777 555 666','Uniforms and graduation gowns made to order.',true)
-) as b(name, owner_name, category, location, contact, description, is_approved)
-where not exists (select 1 from public.alumni_businesses);
 
 commit;

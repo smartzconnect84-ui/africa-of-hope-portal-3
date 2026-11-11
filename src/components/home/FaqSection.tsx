@@ -13,14 +13,22 @@ import { saveEnquiry } from "@/lib/enquiries";
 export function EnquiryForm({ settings }: { settings: SystemSettings }) {
   const [inquiry, setInquiry] = useState({ name: "", contact: "", message: "" });
 
-  const submit = () => {
+  const [sending, setSending] = useState(false);
+  const submit = async () => {
     if (!inquiry.name.trim() || !inquiry.contact.trim() || !inquiry.message.trim()) {
       toast.error("Name, contact and message are required");
       return;
     }
-    saveEnquiry({ name: inquiry.name.trim(), contact: inquiry.contact.trim(), program: "General enquiry", message: inquiry.message.trim() });
-    toast.success("Enquiry sent. Our admissions team will reply within two working days.");
-    setInquiry({ name: "", contact: "", message: "" });
+    setSending(true);
+    try {
+      await saveEnquiry({ name: inquiry.name, contact: inquiry.contact, program: "General enquiry", message: inquiry.message, source: "faq" });
+      toast.success("Enquiry sent. Our admissions team will reply within two working days.");
+      setInquiry({ name: "", contact: "", message: "" });
+    } catch {
+      toast.error("We couldn’t save your enquiry. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -51,9 +59,10 @@ export function EnquiryForm({ settings }: { settings: SystemSettings }) {
             placeholder="Tell us which programme interests you"
           />
         </div>
-        <Button onClick={submit} className="w-full bg-emerald-700 hover:bg-emerald-800">
-          Send enquiry
-        </Button>
+      <Button onClick={submit} disabled={sending} className="w-full bg-emerald-700 hover:bg-emerald-800">
+        {sending ? "Sending…" : "Send enquiry"}
+      </Button>
+
         <p className="text-center text-[11px] text-slate-500">
           Or call {settings.contactPhone} / email {settings.contactEmail}
         </p>
@@ -65,11 +74,9 @@ export function EnquiryForm({ settings }: { settings: SystemSettings }) {
 export default function FaqSection({
   copy,
   w,
-  settings,
 }: {
   copy: SectionCopy;
   w: WebsiteSettings;
-  settings: SystemSettings;
 }) {
   if (w.faqs.length === 0) return null;
   return (
