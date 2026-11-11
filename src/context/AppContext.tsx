@@ -115,11 +115,17 @@ interface AppContextValue {
   updateProgram: (id: string, patch: Partial<Program> & { modulesRaw?: string }) => void;
   deleteProgram: (id: string) => void;
   addCohort: (payload: Omit<Cohort, "id">) => void;
+  updateCohort: (id: string, payload: Partial<Omit<Cohort, "id">>) => void;
+  deleteCohort: (id: string) => void;
   markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => void;
   addAssignment: (payload: Omit<Assignment, "id">) => Promise<void>;
+  updateAssignment: (id: string, payload: Partial<Omit<Assignment, "id">>) => Promise<void>;
+  deleteAssignment: (id: string) => Promise<void>;  
   gradeSubmission: (assignmentId: string, studentId: string, marks: number, feedback: string) => Promise<void>;
   submitSubmission: (assignmentId: string, studentId: string, text: string, attachment: string) => Promise<void>;
   addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => void;
+  updateFeeTransaction: (id: string, payload: Partial<Omit<FeeTransaction, "id">>) => Promise<string | null>;
+  deleteFeeTransaction: (id: string) => Promise<string | null>;
   /** Issues (or returns the existing) certificate through the database function; rejects with an actionable message. */
   issueCertificate: (
     studentId: string,
@@ -665,6 +671,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
           );
         }
       },
+      updateCohort: (id, payload) => {
+        setState((s) => ({
+          ...s,
+          cohorts: s.cohorts.map((c) => (c.id === id ? { ...c, ...payload } : c)),
+        }));
+        push(
+          "Cohort update",
+          (async () => {
+            const row: Record<string, unknown> = {};
+            if (payload.name !== undefined) row.name = payload.name;
+            if (payload.programId !== undefined) row.program_id = payload.programId;
+            if (payload.teacherId !== undefined) row.teacher_id = payload.teacherId || null;
+            if (payload.startDate !== undefined) row.start_date = payload.startDate;
+            if (payload.endDate !== undefined) row.end_date = payload.endDate;
+            if (payload.room !== undefined) row.room = payload.room;
+            if (Object.keys(row).length) {
+              const updated = await supabase.from("cohorts").update(row).eq("id", id);
+              if (updated.error) return updated;
+            }
+            if (payload.studentIds !== undefined) {
+              await supabase.from("cohort_students").delete().eq("cohort_id", id);
+              if (payload.studentIds.length) {
+                return supabase.from("cohort_students").insert(
+                  payload.studentIds.map((student_id) => ({ cohort_id: id, student_id })),
+                );
+              }
+            }
+            return { error: null };
+          })(),
+        );
+      },
+      deleteCohort: (id) => {
+        setState((s) => ({ ...s, cohorts: s.cohorts.filter((c) => c.id !== id) }));
+        push(
+          "Cohort delete",
+          (async () => {
+            await supabase.from("cohort_students").delete().eq("cohort_id", id);
+            return supabase.from("cohorts").delete().eq("id", id);
+          })(),
+        );
+      },
       markAttendance: (cohortId, date, statuses) => {
         const rows = Object.entries(statuses).map(([studentId, status]) => ({
           id: uid(),
@@ -714,6 +761,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error || !data) throw new Error(error?.message ?? "Assignment was not saved.");
         await refresh();
       },
+      updateAssignment: async (id, payload) => {
+        const row: Record<string, unknown> = {};
+        if (payload.cohortId !== undefined) row.cohort_id = payload.cohortId;
+        if (payload.title !== undefined) row.title = payload.title;
+        if (payload.dueDate !== undefined) row.due_date = payload.dueDate;
+        if (payload.maxMarks !== undefined) row.max_marks = payload.maxMarks;
+        if (payload.description !== undefined) row.description = payload.description;
+        if (payload.timeLimitMinutes !== undefined) row.time_limit_minutes = payload.timeLimitMinutes;
+        const { error } = await supabase.from("assignments").update(row).eq("id", id);
+        if (error) throw new Error(migrationHint(error.message, "Assignments"));
+        setState((s) => ({ ...s, assignments: s.assignments.map((a) => (a.id === id ? { ...a, ...payload } : a)) }));
+        await refresh();
+      },
+      deleteAssignment: async (id) => {
+        await supabase.from("submissions").delete().eq("assignment_id", id);
+        const { error } = await supabase.from("assignments").delete().eq("id", id);
+        if (error) throw new Error(migrationHint(error.message, "Assignments"));
+        setState((s) => ({ ...s, assignments: s.assignments.filter((a) => a.id !== id), submissions: s.submissions.filter((x) => x.assignmentId !== id) }));
+        await refresh();
+      },
       gradeSubmission: async (assignmentId, studentId, marks, feedback) => {
         const assignment = state.assignments.find((a) => a.id === assignmentId);
         if (!assignment || !Number.isFinite(marks) || marks < 0 || marks > assignment.maxMarks) {
@@ -750,6 +817,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
             reference: payload.reference,
           }),
         );
+      },
+      updateFeeTransaction: async (id, payload) => {
+        const row: Record<string, unknown> = {};
+        if (payload.studentId !== undefined) row.student_id = payload.studentId;
+        if (payload.category !== undefined) row.category = payload.category;
+        if (payload.amount !== undefined) row.amount = payload.amount;
+        if (payload.date !== undefined) row.transaction_date = payload.date;
+        if (payload.method !== undefined) row.method = payload.method;
+        if (payload.reference !== undefined) row.reference = payload.reference;
+        const { error } = await supabase.from("fee_transactions").update(row).eq("id", id);
+        if (error) return migrationHint(error.message, "Fee transactions");
+        setState((s) => ({ ...s, fees: s.fees.map((f) => (f.id === id ? { ...f, ...payload } : f)) }));
+        await refresh();
+        return null;
+      },
+      deleteFeeTransaction: async (id) => {
+        const { error } = await supabase.from("fee_transactions").delete().eq("id", id);
+        if (error) return migrationHint(error.message, "Fee transactions");
+        setState((s) => ({ ...s, fees: s.fees.filter((f) => f.id !== id) }));
+        await refresh();
+        return null;
       },
       issueCertificate: async (studentId, programId, honors, certificateType, completionDate) => {
         // The database assigns the serial and enforces completion/authorization, so the
