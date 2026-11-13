@@ -54,6 +54,24 @@ begin
 end;
 $$;
 
+-- Admin predicate used by the RPCs below. Defined here so this migration does
+-- not depend on a helper that may not exist on older projects.
+create or replace function public.is_admin_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid()
+      and p.role in ('Super Admin', 'School Admin', 'Administrator', 'Admin')
+  );
+$$;
+
+grant execute on function public.is_admin_user() to authenticated;
+
 drop trigger if exists generated_exports_touch on public.generated_exports;
 create trigger generated_exports_touch
   before update on public.generated_exports
