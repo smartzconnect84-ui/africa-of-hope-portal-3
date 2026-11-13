@@ -370,6 +370,14 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
   // cannot turn every boot into a multi-MB `select *`. Catalogues stay
   // uncapped (tens of rows); transactional slices keep the most recent
   // 1000 rows and preserve the previous slice when a read fails.
+
+  // The certificate register is private. 20261030000000_production_access_hardening.sql
+  // revokes anon SELECT on public.certificates, and public serial verification goes
+  // through the verifyCertificate Edge Function instead. Reading it while signed out
+  // only produced a 401 on every anonymous boot, so skip that read entirely.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const signedIn = Boolean(sessionData?.session);
+
   const [
     profiles,
     programs,
@@ -395,7 +403,15 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     supabase.from("assignments").select("*").limit(1000),
     supabase.from("submissions").select("*").order("submitted_at", { ascending: false }).limit(1000),
     supabase.from("fee_transactions").select("*").order("transaction_date", { ascending: false }).limit(1000),
-    supabase.from("certificates").select("*").limit(2000),
+    signedIn
+      ? supabase.from("certificates").select("*").limit(2000)
+      : Promise.resolve({
+          data: [] as never[],
+          error: null,
+          count: null,
+          status: 200,
+          statusText: "OK",
+        }),
     supabase.from("announcements").select("*").order("published_date", { ascending: false }).limit(200),
     supabase.from("system_settings").select("*").limit(1).maybeSingle(),
     supabase.from("permissions").select("*"),
