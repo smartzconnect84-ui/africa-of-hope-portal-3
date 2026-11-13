@@ -53,6 +53,7 @@ import { useLocale } from "@/lib/locale";
 import { isPublicPageEnabled } from "@/lib/publicPages";
 import { format } from "date-fns";
 import { applyPublicSeo } from "@/lib/publicSeo";
+import { publicContact } from "@/lib/publicContact";
 import { useDevice } from "@/hooks/useDevice";
 
 function pageKeyForHref(href: string): string | null {
@@ -295,8 +296,8 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
 
   // Keep titles, descriptions, social cards, canonical URLs and page schema in sync with the public view.
   useEffect(() => {
-    applyPublicSeo({ view, displayName });
-  }, [view, displayName]);
+    applyPublicSeo({ view, displayName, contact: publicContact(state.websiteSettings) });
+  }, [view, displayName, state.websiteSettings]);
 
   // Animated header shadow once the page scrolls past the hero area.
   useEffect(() => {
