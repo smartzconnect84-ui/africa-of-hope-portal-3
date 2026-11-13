@@ -180,7 +180,7 @@ export default function HopeAssistant() {
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-3 z-40 flex h-[min(420px,calc(100dvh-2rem))] w-[min(320px,calc(100vw-1.5rem))] max-w-[92vw] flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl sm:bottom-5 sm:right-5 sm:h-[420px] sm:w-[266px]">
+        <div className="fixed bottom-4 right-3 z-40 flex h-[min(460px,calc(100dvh-2rem))] w-[min(360px,calc(100vw-1.5rem))] max-w-[94vw] min-w-0 flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl sm:bottom-5 sm:right-5 sm:h-[min(560px,calc(100dvh-3rem))] sm:w-[380px]">
           <div className="flex items-center gap-2 bg-gradient-to-br from-emerald-900 to-[#022c22] p-[11px] text-white">
             <span className="relative grid h-7 w-7 flex-shrink-0 place-items-center rounded-xl bg-amber-400 text-[#022c22]">
               <Bot className="h-[14px] w-[14px]" />
@@ -200,7 +200,7 @@ export default function HopeAssistant() {
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-[11px]">
+          <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-[11px]">
             {bubbles.length === 0 && (
               <div className="space-y-2">
                 <p className="text-xs text-slate-600">
@@ -222,17 +222,17 @@ export default function HopeAssistant() {
             {bubbles.map((b) => (
               <div key={b.id} className={cn("flex", b.role === "user" ? "justify-end" : "justify-start")}>
                 {b.role === "error" ? (
-                  <p className="max-w-[85%] rounded-xl bg-rose-50 px-[10px] py-[7px] text-xs text-rose-700">{b.content}</p>
+                  <p className="max-w-[85%] min-w-0 rounded-xl bg-rose-50 px-[10px] py-[7px] text-left text-xs text-rose-700 break-words [overflow-wrap:anywhere]">{b.content}</p>
                 ) : (
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-xl px-[10px] py-[7px] text-xs leading-relaxed",
+                      "max-w-[88%] min-w-0 rounded-xl px-[10px] py-[7px] text-left text-xs leading-relaxed break-words [overflow-wrap:anywhere]",
                       b.role === "user" ? "bg-emerald-700 text-white" : "bg-slate-100 text-slate-800",
                     )}
                   >
                     {b.content ? (
                       <div>
-                      <div className="prose-sm [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-4">
+                      <div className="prose-sm max-w-none min-w-0 text-left [&_*]:break-words [&_*]:[overflow-wrap:anywhere] [&_h1]:mt-2 [&_h1]:mb-1 [&_h1]:text-sm [&_h1]:font-bold [&_h2]:mt-2 [&_h2]:mb-1 [&_h2]:text-[13px] [&_h2]:font-bold [&_h3]:mt-1.5 [&_h3]:mb-1 [&_h3]:text-xs [&_h3]:font-semibold [&_h4]:mt-1 [&_h4]:mb-0.5 [&_h4]:text-xs [&_h4]:font-semibold [&_p]:my-1 [&_p]:leading-snug [&_ul]:my-1 [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:pl-4 [&_li]:my-0.5 [&_li]:leading-snug [&_pre]:my-1 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:whitespace-pre-wrap [&_pre]:rounded-md [&_pre]:bg-slate-900/5 [&_pre]:p-1.5 [&_pre]:text-[10px] [&_code]:break-all [&_code]:text-[11px] [&_a]:break-all [&_a]:text-emerald-700 [&_a]:underline [&_blockquote]:my-1 [&_blockquote]:border-l-2 [&_blockquote]:border-emerald-300 [&_blockquote]:pl-2 [&_blockquote]:text-slate-600 [&_hr]:my-2 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:text-[10px] [&_strong]:font-semibold">
                         <ReactMarkdown>{b.content}</ReactMarkdown>
                       </div>
                       {b.role === "assistant" && b.complete && canSaveMaterial && (

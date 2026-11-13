@@ -212,6 +212,14 @@ export interface NavLink {
   id: string;
   label: string;
   href: string;
+  /** CMS visibility — a disabled link is kept in settings but never rendered. */
+  enabled?: boolean;
+  /** Open external URLs in a new browser tab. */
+  newTab?: boolean;
+  /** Optional uploaded icon/image (site-media URL) shown before the label. */
+  image?: string;
+  /** Small trailing badge, e.g. "New". */
+  badge?: string;
 }
 
 /** A short bullet of text, used for requirement/trust-point lists. */
