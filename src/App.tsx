@@ -1,3 +1,4 @@
+import PresenceHeartbeat from "./components/portal/PresenceHeartbeat";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";

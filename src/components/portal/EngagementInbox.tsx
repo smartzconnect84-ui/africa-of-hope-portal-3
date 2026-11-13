@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, HeartHandshake, Loader2, RefreshCw, Users2 } from "lucide-react";
+import EngagementDetail from "./EngagementDetail";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -220,7 +221,12 @@ export default function EngagementInbox() {
                 {p.phone && <a href={`tel:${p.phone}`} className="text-emerald-700 hover:underline">{p.phone}</a>}
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium">{p.status}</span>
               </p>
-              {statusSelect(p)}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {statusSelect(p)}
+                <Button size="sm" variant="outline" className="h-8 rounded-xl" onClick={() => setDetail(p)}>
+                  View details
+                </Button>
+              </div>
             </article>
           ))}
         </div>
@@ -259,6 +265,9 @@ export default function EngagementInbox() {
                       {fmtDate(p.createdAt)}
                       <span className="mt-1 block rounded-full bg-slate-100 px-2 py-0.5 text-center font-medium">{p.synced ? p.status : "device only"}</span>
                       {statusSelect(p)}
+                      <Button size="sm" variant="ghost" className="mt-1 h-7 px-2 text-xs" onClick={() => setDetail(p)}>
+                        View details
+                      </Button>
                     </td>
                   </tr>
                 ))}
