@@ -154,6 +154,7 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
   const [q, setQ] = useState("");
   const [role, setRole] = useState<"All" | Role>("All");
   const [addOpen, setAddOpen] = useState(false);
+  const [profileFor, setProfileFor] = useState<User | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const canManage = can("staff.manage");
@@ -230,11 +231,22 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
                   <tr key={u.id} className="border-b border-slate-50 last:border-0 hover:bg-emerald-50/40">
                     <td className={TD}>
                       <div className="flex items-center gap-3">
-                        <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
-                          {initials(u.name)}
+                        <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt={u.name} className="h-full w-full object-cover" />
+                          ) : (
+                            initials(u.name)
+                          )}
                         </span>
                         <div>
-                          <p className="font-medium text-slate-800">{u.name}</p>
+                          <button
+                            type="button"
+                            onClick={() => setProfileFor(u)}
+                            data-component-id={`people-profile-${rowSlug}`}
+                            className="text-left font-medium text-slate-800 underline-offset-2 hover:text-emerald-800 hover:underline"
+                          >
+                            {u.name}
+                          </button>
                           <p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p>
                           {u.title && <p className="text-[11px] text-slate-500">{u.title}</p>}
                         </div>
@@ -290,8 +302,94 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
         </div>
       </div>
 
+      {profileFor && (
+        <StaffProfileDialog user={profileFor} onOpenChange={(o) => !o && setProfileFor(null)} />
+      )}
       {canManage && <AddStaffDialog open={addOpen} onOpenChange={setAddOpen} isSuperAdmin={isSuperAdmin} />}
     </div>
+  );
+}
+
+function StaffProfileDialog({ user, onOpenChange }: { user: User; onOpenChange: (open: boolean) => void }) {
+  const { state } = useApp();
+  const cohorts = state.cohorts.filter((c) => c.teacherId === user.id);
+  const fields: { label: string; value?: string }[] = [
+    { label: "Account ID", value: accountId(user) },
+    { label: "Email", value: user.email },
+    { label: "Phone", value: user.phone },
+    { label: "Title", value: user.title },
+    { label: "Joined", value: user.joinedDate },
+    { label: "Highest education", value: user.educationLevel },
+    { label: "Address", value: user.address },
+    { label: "Date of birth", value: user.dateOfBirth },
+  ].filter((f) => Boolean(f.value));
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto" data-component-id="staff-profile-dialog">
+        <DialogHeader>
+          <DialogTitle>Staff profile</DialogTitle>
+          <DialogDescription>Role, contact details and teaching assignments for this account.</DialogDescription>
+        </DialogHeader>
+        <div className="flex items-start gap-4">
+          <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-950 text-lg font-semibold text-amber-400">
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+            ) : (
+              initials(user.name)
+            )}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-lg font-semibold text-slate-900">{user.name}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="bg-emerald-50 text-emerald-800">{user.role}</Badge>
+              {statusBadge(user.status)}
+            </div>
+            {user.bio && <p className="mt-2 text-sm text-slate-600">{user.bio}</p>}
+          </div>
+        </div>
+
+        <dl className="grid gap-3 sm:grid-cols-2">
+          {fields.map((f) => (
+            <div key={f.label} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+              <dt className="text-[11px] uppercase tracking-wide text-slate-500">{f.label}</dt>
+              <dd className="break-words text-sm font-medium text-slate-800">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="rounded-xl border border-slate-100 p-3">
+          <p className="text-[11px] uppercase tracking-wide text-slate-500">Cohorts / classes</p>
+          {cohorts.length === 0 ? (
+            <p className="text-sm text-slate-500">No cohort is assigned to this staff member yet.</p>
+          ) : (
+            <ul className="mt-1 space-y-1">
+              {cohorts.map((c) => (
+                <li key={c.id} className="text-sm text-slate-700">
+                  {c.name}
+                  <span className="text-slate-400"> — {state.programs.find((p) => p.id === c.programId)?.title ?? "Programme"}, {c.studentIds.length} student(s)</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {(user.note || user.documents) && (
+          <div className="space-y-2 rounded-xl border border-slate-100 p-3">
+            {user.note && (
+              <p className="text-sm text-slate-700"><span className="font-medium text-slate-900">Note: </span>{user.note}</p>
+            )}
+            {user.documents && (
+              <p className="break-all text-sm text-slate-700"><span className="font-medium text-slate-900">Documents: </span>{user.documents}</p>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} data-component-id="staff-profile-close">Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
