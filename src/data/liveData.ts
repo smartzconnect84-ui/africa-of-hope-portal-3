@@ -539,7 +539,7 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
       cohortId: txt(a.cohort_id),
       title: txt(a.title),
       dueDate: txt(a.due_date).slice(0, 10),
-      maxMarks: num(a, "max_marks", 100),
+      maxMarks: num(a, "max_marks", num(a, "max_score", 100)),
       description: txt(a.description),
       timeLimitMinutes: a.time_limit_minutes === null || a.time_limit_minutes === undefined ? null : Number(a.time_limit_minutes),
     })),
@@ -548,7 +548,14 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
       assignmentId: txt(s.assignment_id),
       studentId: txt(s.student_id),
       submittedAt: s.submitted_at ? txt(s.submitted_at) : null,
-      marks: s.marks === null || s.marks === undefined ? null : Number(s.marks),
+      // Production rows written before the reconciliation migration carry the grade in
+      // submissions.score; read both so past tasks always show the recorded mark.
+      marks:
+        s.marks === null || s.marks === undefined
+          ? s.score === null || s.score === undefined
+            ? null
+            : Number(s.score)
+          : Number(s.marks),
       feedback: txt(s.feedback),
       status: (txt(s.status, "Missing") as "In Progress" | "Submitted" | "Graded" | "Missing") || "Missing",
       responseText: txt(s.response_text),
