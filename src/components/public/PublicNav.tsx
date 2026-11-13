@@ -12,6 +12,14 @@ export interface PublicNavLink {
   id: string;
   href: string;
   label: string;
+  /** CMS visibility — hidden links are filtered out before this component. */
+  enabled?: boolean;
+  /** Open external links in a new tab. */
+  newTab?: boolean;
+  /** Optional uploaded icon shown before the label. */
+  image?: string;
+  /** Optional trailing badge, e.g. "New". */
+  badge?: string;
 }
 
 const HOME_RE = /^(#home|#|\/(\?.*)?)$/i;

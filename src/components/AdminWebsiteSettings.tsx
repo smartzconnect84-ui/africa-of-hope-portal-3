@@ -709,11 +709,24 @@ export default function AdminWebsiteSettings() {
               items={list("navLinks")}
               onChange={(items) => setList("navLinks", items)}
               addLabel="Add nav link"
-              newItem={() => ({ id: genId("nav"), label: "New link", href: "#" })}
+              newItem={() => ({ id: genId("nav"), label: "New link", href: "#", enabled: true })}
               renderItem={(l: WebsiteSettings["navLinks"][number], update) => (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Label" value={l.label} onChange={(v) => update({ label: v })} />
-                  <Field label="Link (# anchor or URL)" value={l.href} onChange={(v) => update({ href: v })} />
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Label" value={l.label} onChange={(v) => update({ label: v })} />
+                    <Field label="Link (# anchor or URL)" value={l.href} onChange={(v) => update({ href: v })} />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Badge (optional, e.g. New)" value={l.badge ?? ""} onChange={(v) => update({ badge: v })} />
+                    <div className="flex flex-col justify-end gap-2 pb-1">
+                      <Toggle label="Show in navbar" checked={l.enabled !== false} onChange={(v) => update({ enabled: v })} />
+                      <Toggle label="Open in a new tab" checked={l.newTab === true} onChange={(v) => update({ newTab: v })} />
+                    </div>
+                  </div>
+                  <ImageBox label="Link icon (optional)" folder="nav" value={l.image ?? ""} onChange={(v) => update({ image: v })} />
+                  <p className="text-xs leading-5 text-slate-500">
+                    Order here is the navbar order. Hidden links stay saved — switch them back on any time.
+                  </p>
                 </div>
               )}
             />
