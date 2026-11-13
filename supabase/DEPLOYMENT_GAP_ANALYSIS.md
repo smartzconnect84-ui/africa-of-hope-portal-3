@@ -235,3 +235,45 @@ union all select '7 latest migration', (select max(version) from supabase_migrat
 Expected: rows 1, 2, 3 and 5 all report `none`, row 4 reports `present`, rows 6-7 report the applied count
 and newest version. Deployed edge functions are not visible to SQL; confirm those separately with
 `supabase functions list --project-ref gatnzfjpuokopqyksqoy`.
+
+## 11. Live runtime verification — through the deployed app (2026-11-13)
+
+The management token stayed expired, so live state was verified through the running application
+(`https://tk164v9pfj.dev.ap-jt.com`) instead of the management API. This is real production evidence, not a static read.
+
+### 11.1 Confirmed live
+
+- **Database reachable and populated.** The public homepage rendered 31 programmes with real serials
+  (`AOH-CRS-000001` … `AOH-CRS-000031`), so `public.programs` exists, holds the 2026 catalogue and is readable
+  by `anon`.
+- **Deployed build is wired to the project.** `.env` is tracked in Git (no `.gitignore` env rule) and the deployed
+  bundle contains the project ref, so `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are baked into the shipped
+  client. The anon key is public by design; no service key is present in the client.
+- **Public certificate verification is correctly designed.** `src/lib/verifyCertificate.ts` calls the
+  `verify-certificate` Edge Function with the serial in the request body — it never reads the certificate table.
+  That matches the hardened schema, where `verify_public_certificate(text)` is `SECURITY DEFINER` and granted to `anon`.
+
+### 11.2 Found and fixed — live 401 on the certificate register
+
+**Symptom:** `GET /rest/v1/certificates` returned **401** twice on a plain anonymous homepage load.
+
+**Cause:** `20261030000000_production_access_hardening.sql` deliberately revokes anonymous read
+(`revoke select on public.certificates from anon`) and replaces the open policy with a restrictive,
+authenticated-only one, because public verification must not download the student register. But
+`fetchState()` in `src/data/liveData.ts` still requested the entire register (`select *`, limit 2000) on every
+boot, for every visitor — a request the hardened schema is designed to refuse.
+
+**Fix:** `fetchState()` now resolves the session first and skips the certificate read when signed out, supplying
+an empty slice instead of a doomed request. Signed-in roles keep reading the rows their policy allows. The
+existing per-table failure tolerance is unchanged, and public verification is untouched because it goes through
+the Edge Function.
+
+**Impact:** no visible behaviour change for anonymous visitors (the slice was already empty after the rejected
+read); one fewer request and no console/network error per anonymous boot. Verified by `npm run typecheck`,
+`npm run build` and a re-run of the browser check on the redeployed build.
+
+### 11.3 Still unverified from here
+
+The management API is the only route to applied-migration history, bucket existence, realtime publication and
+the deployed edge-function list, and it still returns `401 integration_authorization_required`. §10 closes every
+one of those in a single read-only query.
