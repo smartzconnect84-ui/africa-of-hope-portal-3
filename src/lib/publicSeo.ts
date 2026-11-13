@@ -1,7 +1,8 @@
 import { CANONICAL_ORIGIN, OG_IMAGE, OG_IMAGE_ALT, SITE_DESCRIPTION, SITE_NAME, SEO_FAQS } from "./seo";
+import { publicContact, type PublicContact } from "./publicContact";
 import { viewToPath, type PublicView } from "./publicRoutes";
 
-type SeoInput = { view: PublicView; displayName?: string };
+type SeoInput = { view: PublicView; displayName?: string; contact?: PublicContact };
 
 const PAGE_COPY: Record<PublicView["type"], { title: string; description: string }> = {
   home: { title: `${SITE_NAME} | Certificates that open doors`, description: SITE_DESCRIPTION },
@@ -41,7 +42,8 @@ function setCanonical(href: string) {
   link.href = href;
 }
 
-export function applyPublicSeo({ view, displayName }: SeoInput) {
+export function applyPublicSeo({ view, displayName, contact }: SeoInput) {
+  const c = contact ?? publicContact();
   const copy = PAGE_COPY[view.type];
   const title = displayName && view.type === "home" ? `${displayName} | Certificates that open doors` : copy.title;
   const path = viewToPath(view).split("?")[0] || "/";
@@ -67,9 +69,9 @@ export function applyPublicSeo({ view, displayName }: SeoInput) {
     url: canonical,
     isPartOf: { "@type": "WebSite", name: SITE_NAME, url: CANONICAL_ORIGIN },
     ...(view.type === "home" ? {
-      telephone: "+231776679963",
-      email: "afrohope033@gmail.com",
-      address: { "@type": "PostalAddress", streetAddress: "Boystown Junction", addressLocality: "Lower Margibi", addressCountry: "LR" },
+      telephone: c.phone,
+      email: c.email,
+      address: { "@type": "PostalAddress", streetAddress: c.address, addressLocality: c.locality, addressCountry: "LR" },
       image: OG_IMAGE,
     } : {}),
     ...(view.type === "home" ? { mainEntity: SEO_FAQS.map((faq) => ({ "@type": "Question", name: faq.q, acceptedAnswer: { "@type": "Answer", text: faq.a } })) } : {}),
