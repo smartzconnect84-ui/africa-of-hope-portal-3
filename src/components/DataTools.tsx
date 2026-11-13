@@ -1,38 +1,41 @@
 import { useRef, useState } from "react";
-import { Download, Upload, WifiOff } from "lucide-react";
+import { Upload, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { downloadCsv, parseCsv, useOnline } from "@/lib/dataTools";
+import ExportMenu from "@/components/ExportMenu";
+import { parseCsv, useOnline } from "@/lib/dataTools";
+import type { CalendarEvent, ExportColumn } from "@/lib/exportFormats";
 import { cn } from "@/lib/utils";
 
 /**
  * Generic Export / Import bar: drop it above any admin list (people,
- * programmes, fees, certificates…) to get CSV export, CSV import and an
- * offline notice. Offline edits stay in localStorage via AppContext and
- * sync to Supabase when the connection returns.
+ * programmes, fees, certificates, attendance, reports…) to get Excel/Google
+ * Sheets, CSV, PDF, Word and calendar export plus CSV import and an offline
+ * notice. Generated files are registered so they can be trashed or revoked.
+ * Offline edits stay in localStorage via AppContext and sync to Supabase when
+ * the connection returns.
  */
 export default function DataTools<T extends object>({
   name,
   rows,
   columns,
   onImport,
+  events,
+  subtitle,
   className,
 }: {
   name: string;
   rows: T[];
-  columns: { key: keyof T; label: string }[];
+  columns: ExportColumn<T>[];
   onImport?: (rows: Record<string, string>[]) => void;
+  /** Optional calendar events so the same list can be exported as an .ics file. */
+  events?: CalendarEvent[];
+  subtitle?: string;
   className?: string;
 }) {
   const online = useOnline();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-
-  const doExport = () => {
-    if (!rows.length) { toast.info(`No ${name} to export yet.`); return; }
-    downloadCsv(`${name}-${new Date().toISOString().slice(0, 10)}.csv`, rows, columns);
-    toast.success(`${rows.length} ${name} exported to CSV.`);
-  };
 
   const doImport = async (file: File) => {
     if (!onImport) return;
@@ -61,9 +64,7 @@ export default function DataTools<T extends object>({
           <WifiOff className="h-3 w-3" /> Offline — changes are saved on this device and sync later
         </span>
       )}
-      <Button type="button" size="sm" variant="outline" onClick={doExport}>
-        <Download className="mr-1.5 h-3.5 w-3.5" /> Export {name}
-      </Button>
+      <ExportMenu name={name} rows={rows} columns={columns} events={events} subtitle={subtitle} />
       {onImport && (
         <>
           <input
