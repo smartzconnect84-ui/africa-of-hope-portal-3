@@ -339,9 +339,11 @@ export function toIcs(events: CalendarEvent[], calendarName = "AFRICA OF HOPE"):
     const start = icsDate(event.start, Boolean(event.allDay));
     if (!start) continue;
     const end = icsDate(event.end ?? event.start, Boolean(event.allDay)) || start;
+    const uidSource = event.uid || `${start}-${event.title}`;
+    const uid = `${uidSource.replace(/[^A-Za-z0-9@.-]/g, "").slice(0, 90)}@africaofhope`;
     lines.push(
       "BEGIN:VEVENT",
-      `UID:${icsText(event.uid || `${start}-${event.title}`.replace(/[^A-Za-z0-9@.-]/g, "").slice(0, 90)}@africaofhope`,
+      `UID:${icsText(uid)}`,
       `DTSTAMP:${now}`,
       event.allDay ? `DTSTART;VALUE=DATE:${start}` : `DTSTART:${start}`,
       event.allDay ? `DTEND;VALUE=DATE:${end}` : `DTEND:${end}`,
