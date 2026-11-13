@@ -1,5 +1,5 @@
 import { useApp } from "@/context/AppContext";
-import { usePresenceHeartbeat } from "../Navigation";
+import { usePresenceHeartbeat } from "@/lib/portalOps";
 
 /**
  * Item 4 — keeps the signed-in user's online/away presence fresh for the whole
