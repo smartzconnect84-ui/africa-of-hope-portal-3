@@ -10,6 +10,7 @@ FROM python:3-alpine
 RUN echo "os-refresh 2026-11-13" && apk upgrade --no-cache
 WORKDIR /app
 COPY --from=build /app/dist ./
+COPY server.py ./
 ENV PORT=3000
 EXPOSE 3000
-CMD python3 -m http.server "$PORT" --bind 0.0.0.0
+CMD ["python3", "server.py"]
