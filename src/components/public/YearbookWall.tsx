@@ -8,7 +8,9 @@ const inputClass = "h-11 w-full rounded-xl border border-emerald-950/20 bg-white
 
 export default function YearbookWall() {
   const { data, error: loadError, isLoading } = useSWR(QUERY_KEY, loadYearbook, { revalidateOnFocus: true });
-  const rows = data?.rows ?? [];
+  // Keep the row array referentially stable between renders so the filters
+  // below do not re-run on every keystroke elsewhere in the form.
+  const rows = useMemo(() => data?.rows ?? [], [data]);
   const [search, setSearch] = useState("");
   const [cohort, setCohort] = useState("All");
   const [form, setForm] = useState({ name: "", cohort: "", programme: "", note: "" });

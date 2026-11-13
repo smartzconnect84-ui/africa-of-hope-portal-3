@@ -64,8 +64,16 @@ export function PoliciesReader({ filterAcceptanceOnly = false }: { filterAccepta
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
-    listPolicies().then((r) => { setPolicies(r.data); setLive(r.live); });
-    if (currentUser) getMyAcceptances(currentUser.id).then(setAccept);
+    let active = true;
+    listPolicies()
+      .then((r) => { if (!active) return; setPolicies(r.data); setLive(r.live); })
+      .catch(() => { if (active) setLive(false); });
+    if (currentUser) {
+      getMyAcceptances(currentUser.id)
+        .then((rows) => { if (active) setAccept(rows); })
+        .catch(() => { /* acceptances stay empty; the reader still renders */ });
+    }
+    return () => { active = false; };
   }, [currentUser?.id]);
 
   const required = useMemo(() => policies.filter((p) => !filterAcceptanceOnly || p.requiresAcceptance), [policies, filterAcceptanceOnly]);

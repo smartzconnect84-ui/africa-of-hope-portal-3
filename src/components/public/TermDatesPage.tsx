@@ -26,7 +26,10 @@ function useCountdown(target: string | null): { days: number; hours: number; min
 /** f35: public 2026/2027 term-dates page with intake countdown + Add-to-calendar, fed from live portal dates. */
 export default function TermDatesPage({ onApply }: { onApply: () => void }) {
   const { state } = useApp();
-  const entries = useMemo(() => buildTermDates(state), [state.cohorts, state.assignments, state.programs, state.settings.academicYear]);
+  // buildTermDates() also reads state.settings.semester for its fallback
+  // terms, so key the memo on the whole state rather than a partial field
+  // list — otherwise a CMS semester rename left the page showing old dates.
+  const entries = useMemo(() => buildTermDates(state), [state]);
   const next = nextUpcoming(entries);
   const count = useCountdown(next?.start ?? null);
 
