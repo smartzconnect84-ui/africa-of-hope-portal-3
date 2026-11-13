@@ -171,3 +171,67 @@ supabase functions list --project-ref gatnzfjpuokopqyksqoy
 - **Annotated** `live_backend_config.sql`, `profile_uploads_program_images.sql`,
   `roles_permissions_cms.sql` with a superseded header (comments only; SQL unchanged).
 - No application code, dependency manifest or timestamped migration was modified.
+
+---
+
+## 9. Live verification status — second attempt (2026-11-13)
+
+The integration was reconnected, so the live checks were retried. Outcome:
+
+**Confirmed live**
+
+| Check | Result |
+|---|---|
+| Project status | `ACTIVE_HEALTHY` — database, auth, storage, functions, realtime all enabled |
+| Connection record | refreshed, `connected_at` 2026-11-13T12:42:03Z |
+| Anon key in `.env` | **valid and correct project** — claims `iss=supabase`, `ref=gatnzfjpuokopqyksqoy`, `role=anon`, `exp=2107836217` (2036-10-17). Not stale. |
+
+**Still blocked — management token**
+
+`get_supabase_schema` → `401 integration_authorization_required: Supabase access token expired`
+`sync_supabase_schema` / `generate_supabase_types` → `500 integration_request_failed`
+
+The connection record was refreshed but the stored access token is still the expired one, so applied
+migrations, deployed edge functions, bucket existence and realtime publication **remain unverified**.
+Re-authorizing the integration (disconnect → reconnect in Settings → Integrations) is required to mint
+a fresh token.
+
+**Why the anon key could not be used instead**
+
+`GET /rest/v1/` with the anon key returns:
+`401 {"message":"Invalid API key","hint":"Only the `service_role` API key can be used for this endpoint."}`
+
+That is a privilege response, not an invalid key: PostgREST restricts the OpenAPI introspection route to
+`service_role`. The anon key therefore cannot enumerate the schema, and per-table probing was not used
+because it is indistinguishable from a request burst.
+
+## 10. One-shot verification query
+
+Paste this into the Supabase SQL editor (read-only; single result set). It closes every remaining gap in
+this report in one execution.
+
+```sql
+with req_tables(t) as (values ('alumni_businesses'),('announcements'),('application_drafts'),('assignments'),('attendance'),('blog_posts'),('certificates'),('class_sessions'),('cohort_students'),('cohorts'),('discussion_replies'),('discussion_threads'),('email_outbox'),('email_templates'),('entrance_settings'),('entrance_test_results'),('fee_transactions'),('grade_appeals'),('helpdesk_messages'),('helpdesk_tickets'),('learning_memory'),('newsletter_campaigns'),('newsletter_subscribers'),('notification_outbox'),('notifications'),('payment_channels'),('payment_submissions'),('permissions'),('policy_acceptances'),('profiles'),('program_modules'),('programs'),('push_subscriptions'),('quiz_attempts'),('quiz_questions'),('quizzes'),('reminder_items'),('reminder_settings'),('role_permissions'),('school_policies'),('staff_vacancies'),('study_plans'),('submissions'),('support_pledges'),('system_settings'),('teacher_course_plans'),('training_materials'),('transparency_reports'),('vacancy_applications'),('website_enquiries'),('yearbook_entries')),
+req_rpcs(r) as (values ('adjust_quiz_answer_points'),('create_academic_lesson_bundle'),('create_grade_appeal'),('create_helpdesk_ticket'),('decide_grade_appeal'),('finalize_expired_quiz_attempts'),('get_quiz_review'),('issue_certificate'),('list_appealable_work'),('my_course_status'),('preview_course_enrollment'),('queue_account_congratulations'),('queue_newsletter_campaign'),('record_learning_progress'),('regrade_quiz'),('reply_helpdesk_ticket'),('retry_failed_emails'),('review_academic_submission'),('review_payment'),('revoke_certificate'),('save_quiz_answer'),('set_helpdesk_status'),('start_classwork'),('start_quiz_attempt'),('submit_academic_item'),('submit_classwork'),('submit_course_enrollment'),('submit_payment'),('submit_quiz_attempt')),
+req_buckets(b) as (values ('avatars'),('blog-covers'),('certificates'),('classwork-submissions'),('documents'),('program-images'),('site-assets'),('training-materials'),('transparency-reports'))
+select '1 missing tables' as check, coalesce((select string_agg(t, ', ') from req_tables
+         where to_regclass('public.' || t) is null), 'none') as result
+union all select '2 missing rpcs', coalesce((select string_agg(r, ', ') from req_rpcs
+         where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                           where n.nspname = 'public' and p.proname = r)), 'none')
+union all select '3 missing buckets', coalesce((select string_agg(b, ', ') from req_buckets
+         where not exists (select 1 from storage.buckets where id = b)), 'none')
+union all select '4 realtime yearbook_entries', case when exists (
+         select 1 from pg_publication_tables
+         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'yearbook_entries')
+         then 'present' else 'MISSING' end
+union all select '5 tables without RLS', coalesce((select string_agg(c.relname, ', ') from pg_class c
+         join pg_namespace n on n.oid = c.relnamespace
+         where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity), 'none')
+union all select '6 migrations applied', (select count(*)::text from supabase_migrations.schema_migrations)
+union all select '7 latest migration', (select max(version) from supabase_migrations.schema_migrations);
+```
+
+Expected: rows 1, 2, 3 and 5 all report `none`, row 4 reports `present`, rows 6-7 report the applied count
+and newest version. Deployed edge functions are not visible to SQL; confirm those separately with
+`supabase functions list --project-ref gatnzfjpuokopqyksqoy`.
