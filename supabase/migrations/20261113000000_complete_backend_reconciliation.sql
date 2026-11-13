@@ -16,6 +16,19 @@
 --   * Safe to re-run. Apply with `supabase db push` or paste in the SQL editor.
 --   * This file generates schema only; it does not claim data was migrated.
 
+-- ⚠ SECURITY — read before applying this file:
+--   This is a *fresh-project* baseline. On the live project it is intentionally NOT
+--   recorded in supabase_migrations.schema_migrations (verified 2026-11-13: 82
+--   migrations applied, max version 20261111114514; every table, RPC, bucket and
+--   realtime publication it creates already exists).
+--   Do not `supabase db push` this file onto a project that has already run
+--   20261030000000_production_access_hardening.sql without reviewing the two: it
+--   sorts AFTER the hardening and an earlier revision granted anon SELECT on
+--   public.certificates, which the hardening deliberately revokes. Public serial
+--   verification must keep going through the verify-certificate Edge Function and
+--   verify_public_certificate(text). certificates is therefore excluded from the
+--   anonymous read policy and the anonymous grant below.
+
 create extension if not exists pgcrypto;
 create extension if not exists pg_trgm;
 
@@ -482,7 +495,9 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['programs','program_modules','announcements','certificates','blog_posts','transparency_reports','staff_vacancies','alumni_businesses','crash_programs'] loop
+  -- certificates is intentionally absent: the register is private (see the header
+  -- note and 20261030000000_production_access_hardening.sql).
+  foreach t in array array['programs','program_modules','announcements','blog_posts','transparency_reports','staff_vacancies','alumni_businesses','crash_programs'] loop
     begin
       execute format('drop policy if exists reconciled_%I_public_read on public.%I', t, t);
       execute format('create policy reconciled_%I_public_read on public.%I for select to anon using (true)', t, t);
@@ -532,7 +547,8 @@ begin
     exception when undefined_table then null;
     end;
   end loop;
-  foreach t in array array['programs','program_modules','announcements','certificates','blog_posts','transparency_reports','staff_vacancies','alumni_businesses','crash_programs'] loop
+  -- certificates is intentionally absent: anon must not read the student register.
+  foreach t in array array['programs','program_modules','announcements','blog_posts','transparency_reports','staff_vacancies','alumni_businesses','crash_programs'] loop
     begin
       execute format('grant select on public.%I to anon', t);
     exception when undefined_table then null;
