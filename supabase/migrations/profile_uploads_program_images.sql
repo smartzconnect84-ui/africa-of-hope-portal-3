@@ -1,3 +1,9 @@
+-- [SUPERSEDED — DO NOT RUN]
+-- This file does NOT match the Supabase CLI pattern ^[0-9]{14}_ and is never applied by `db push`.
+-- It is an older draft of 20261014000000_profile_uploads_program_images.sql (the authoritative version).
+-- Kept in place because this migration set references this filename.
+-- See supabase/DEPLOYMENT_GAP_ANALYSIS.md §7.2.
+
 alter table public.profiles
   add column if not exists avatar_url text,
   add column if not exists bio text,

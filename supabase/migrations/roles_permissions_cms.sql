@@ -1,3 +1,9 @@
+-- [SUPERSEDED — DO NOT RUN]
+-- This file does NOT match the Supabase CLI pattern ^[0-9]{14}_ and is never applied by `db push`.
+-- It is an older draft of 20261014010000_roles_permissions_cms.sql (the authoritative version).
+-- Kept in place because src/lib/permissions.ts references this filename.
+-- See supabase/DEPLOYMENT_GAP_ANALYSIS.md §7.2.
+
 create table if not exists public.roles (
   name text primary key,
   label text not null,
