@@ -116,7 +116,7 @@ declare
   pol record;
   fixed_using text;
   fixed_check text;
-  cmd text;
+  stmt text;
 begin
   for pol in
     select schemaname, tablename, policyname, permissive, roles, cmd as policy_cmd, qual, with_check
@@ -136,7 +136,7 @@ begin
         '''Public Relation Officer''', '''Public Relations Officer''');
 
       execute format('drop policy if exists %I on %I.%I', pol.policyname, pol.schemaname, pol.tablename);
-      cmd := format(
+      stmt := format(
         'create policy %I on %I.%I as %s for %s to %s',
         pol.policyname, pol.schemaname, pol.tablename,
         case when pol.permissive = 'RESTRICTIVE' then 'restrictive' else 'permissive' end,
@@ -147,12 +147,12 @@ begin
         array_to_string(pol.roles, ', ')
       );
       if coalesce(fixed_using, '') <> '' then
-        cmd := cmd || format(' using (%s)', fixed_using);
+        stmt := stmt || format(' using (%s)', fixed_using);
       end if;
       if coalesce(fixed_check, '') <> '' then
-        cmd := cmd || format(' with check (%s)', fixed_check);
+        stmt := stmt || format(' with check (%s)', fixed_check);
       end if;
-      execute cmd;
+      execute stmt;
       raise notice 'Rewrote policy %.% with the corrected role names', pol.tablename, pol.policyname;
     exception when others then
       raise notice 'Skipped policy %.% (%): %', pol.tablename, pol.policyname, pol.policy_cmd, sqlerrm;
