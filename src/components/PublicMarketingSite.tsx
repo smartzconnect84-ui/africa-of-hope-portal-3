@@ -167,7 +167,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   const { t } = useLocale();
   const { settings, websiteSettings: w } = state;
   const publicPrograms = useMemo(() => state.programs.filter(p => p.published !== false), [state.programs]);
-  const saved = w.navLinks.length > 0 ? w.navLinks : NAV_LINKS.map(([href, label]) => ({ id: href, href, label }));
+  const saved = (w.navLinks.length > 0 ? w.navLinks : NAV_LINKS.map(([href, label]) => ({ id: href, href, label })))
+    // CMS visibility: a link switched off in the backend stays saved but is never rendered.
+    .filter((l) => l.enabled !== false);
   const navLinks = useMemo(() => {
     let links = saved;
     if (!links.some((l) => HOME_RE.test(l.href.trim()) && l.href.trim() !== "#"))
@@ -514,10 +516,14 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <a
                     key={l.id}
                     href={l.href}
+                    target={l.newTab ? "_blank" : undefined}
+                    rel={l.newTab ? "noopener noreferrer" : undefined}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="flex min-h-10 items-center rounded-lg px-2.5 py-2 text-[15px] font-medium text-emerald-100 transition hover:bg-white/10"
+                    className="flex min-h-10 items-center gap-2 rounded-lg px-2.5 py-2 text-[15px] font-medium text-emerald-100 transition hover:bg-white/10"
                   >
-                    {t(l.label)}
+                    {l.image && <img src={l.image} alt="" aria-hidden className="h-4 w-4 shrink-0 rounded object-cover" />}
+                    <span className="min-w-0 truncate">{t(l.label)}</span>
+                    {l.badge && <span className="ml-auto shrink-0 rounded-full bg-amber-400/90 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-950">{l.badge}</span>}
                   </a>
                 ))}
               </nav>
@@ -713,7 +719,18 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
             <p className="text-sm font-bold uppercase tracking-widest text-amber-400">{w.publicCopy["footer.explore"]}</p>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-600">
               {navLinks.map((l) => (
-                <li key={l.id}><a href={l.href} className="transition hover:text-amber-300">{t(l.label)}</a></li>
+                <li key={l.id}>
+                  <a
+                    href={l.href}
+                    target={l.newTab ? "_blank" : undefined}
+                    rel={l.newTab ? "noopener noreferrer" : undefined}
+                    className="inline-flex items-center gap-1.5 transition hover:text-amber-300"
+                  >
+                    {l.image && <img src={l.image} alt="" aria-hidden className="h-3.5 w-3.5 shrink-0 rounded object-cover" />}
+                    {t(l.label)}
+                    {l.badge && <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-950">{l.badge}</span>}
+                  </a>
+                </li>
               ))}
             </ul>
           </div>
