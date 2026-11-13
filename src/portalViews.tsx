@@ -66,6 +66,8 @@ import ReportsCenter from "./components/portal/ReportsCenter";
 import AttendanceSign from "./components/portal/AttendanceSign";
 import MaterialDispatch from "./components/portal/MaterialDispatch";
 import CourseCalendar from "./components/portal/CourseCalendar";
+import MyCourses from "./components/portal/MyCourses";
+import PolicyDesk from "./components/portal/PolicyDesk";
 import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
@@ -379,6 +381,20 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: () => <CourseCalendar />,
   },
   {
+    key: "my-courses",
+    label: "My courses",
+    icon: BookOpen,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <MyCourses />,
+  },
+  {
+    key: "policy-desk",
+    label: "Policy forwarding",
+    icon: ShieldCheck,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <PolicyDesk />,
+  },
+  {
     key: "transparency",
     label: "Transparency reports",
     icon: LibraryBig,
@@ -461,6 +477,8 @@ const NAV_RELEVANCE_ORDER = [
   "reports",
   "live-attendance",
   "course-calendar",
+  "my-courses",
+  "policy-desk",
   "entrance-test",
   "entrance-prep",
   "entrance-control",

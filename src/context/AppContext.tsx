@@ -1,3 +1,4 @@
+import { queueAcceptanceEmail } from "@/lib/acceptanceNotice";
 import {
   createContext,
   useCallback,
@@ -518,6 +519,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (error) return `Approval failed: ${error.message}`;
           if (!data || data.status !== 'Active') return 'Approval was not saved. Refresh the account and retry.';
           setState((s) => ({ ...s, users: s.users.map((u) => u.id === id ? { ...u, status: 'Active', note: 'Approved by registrar' } : u) }));
+          // Item 7: tell the applicant automatically that they are accepted and
+          // should sign in. Queued through the email outbox; approval itself must
+          // not fail if the mail queue is unavailable.
+          const accepted = state.users.find((u) => u.id === id);
+          if (accepted) {
+            void queueAcceptanceEmail({
+              id: accepted.id,
+              name: accepted.name,
+              email: accepted.email,
+              phone: accepted.phone,
+            });
+          }
           return null;
         } catch (err) { return err instanceof Error ? err.message : 'Approval could not be saved. Please retry.'; }
       },

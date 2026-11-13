@@ -120,6 +120,7 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 
   return (
     <Navigation view={activeKey} onNavigate={setView} onExitToPublic={onExitToPublic}>
+      <PresenceHeartbeat />
       <div key={currentUser.id}>{activeView?.render(ctx)}</div>
     </Navigation>
   );
