@@ -277,3 +277,73 @@ read); one fewer request and no console/network error per anonymous boot. Verifi
 The management API is the only route to applied-migration history, bucket existence, realtime publication and
 the deployed edge-function list, and it still returns `401 integration_authorization_required`. §10 closes every
 one of those in a single read-only query.
+
+## 12. Live verification completed (2026-11-13) — read-only SQL against production
+
+The management API still returns `401 integration_authorization_required`, but `execute_supabase_sql` reaches the
+project through a different credential path, so every open question in §11.3 was answered directly against
+production with read-only `select`s. No writes, no DDL.
+
+### 12.1 Schema completion: complete
+
+| Check | Result |
+| --- | --- |
+| Required tables missing | none — all 51 present |
+| Required RPCs missing | none — all 29 present |
+| Storage buckets missing | none — all 9 present |
+| Realtime `yearbook_entries` | present in `supabase_realtime` |
+| Tables without RLS | none |
+| Migrations recorded | 82, latest `20261111114514` |
+
+Certificate access matches the design: `anon` has no `select` on `public.certificates`, and
+`verify_public_certificate` exists with an explicit ACL.
+
+### 12.2 The one real gap: an unapplied reconciliation migration
+
+`20261113000000_complete_backend_reconciliation.sql` is **not** recorded in `supabase_migrations.schema_migrations`.
+Evidence it was never applied:
+
+- 6 of the 7 indexes it creates are absent live — `profiles_role_idx`, `profiles_status_idx`,
+  `programs_category_idx`, `programs_title_trgm_idx`, `program_modules_program_idx`, `cohorts_program_idx`
+  (only `profiles_email_idx` exists);
+- zero `_reconciled_*` policies exist.
+
+It is a fresh-project baseline, and everything it would create for the portal's tables already exists, so the app
+is not broken by its absence — only those six indexes are missing.
+
+### 12.3 Security hazard found and neutralized
+
+The file is timestamped **after** `20261030000000_production_access_hardening.sql`, so `supabase db push` would run
+it *after* the hardening. In its previous form it would have:
+
+- created `reconciled_certificates_public_read` — `for select to anon using (true)`, and
+- executed `grant select on public.certificates to anon`,
+
+restoring exactly the anonymous access to the student register that the hardening removes, and that produced the
+401 fixed in §11. It is now edited so `certificates` is excluded from both anonymous loops, with a header warning
+explaining why. The authenticated portal policy still covers `certificates`.
+
+### 12.4 Edge functions
+
+- `verify-certificate` — **deployed**. One request with an empty body returned
+  `400 {"error":"Enter a certificate serial (1–80 characters)"}`, i.e. live input validation rather than a 404.
+- `admin-users`, `newsletter`, `onesignal-send`, `send-email` — invoked by the client; deployment status not
+  established, because listing needs the CLI or the management token.
+- `assistant`, `send-deadline-reminders` — present in the repo but not invoked anywhere in `src/`; `assistant`
+  appears only as permission keys and labels. Candidates for removal, not deployment.
+
+### 12.5 Optional follow-up — the six missing indexes
+
+To add them without touching policies or grants:
+
+```sql
+create index if not exists profiles_role_idx on public.profiles (role);
+create index if not exists profiles_status_idx on public.profiles (status);
+create index if not exists programs_category_idx on public.programs (category);
+create index if not exists programs_title_trgm_idx on public.programs using gin (title gin_trgm_ops);
+create index if not exists program_modules_program_idx on public.program_modules (program_id);
+create index if not exists cohorts_program_idx on public.cohorts (program_id);
+```
+
+Not applied here: this pass was authorized for read-only verification, and DDL on production is your call.
+
