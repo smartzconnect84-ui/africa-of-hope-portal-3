@@ -5,7 +5,9 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-    "baseUrl": ".",
+    // TypeScript 6 removed the `baseUrl` requirement for `paths`; alias targets
+    // resolve relative to this file. Keeping `baseUrl` fails the typecheck
+    // script with TS5101, so it is intentionally omitted.
     "paths": {
       "@/*": ["./src/*"]
     }

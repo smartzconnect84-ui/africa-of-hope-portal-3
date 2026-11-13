@@ -31,8 +31,8 @@
     "noImplicitThis": false,
     "noImplicitOverride": false,
 
-    /* Path mapping */
-    "baseUrl": ".",
+    /* Path mapping — TS6 resolves these relative to this config file, so
+       `baseUrl` is not needed (and triggers TS5101). */
     "paths": {
       "@/*": ["./src/*"]
     }
