@@ -181,6 +181,43 @@ function loadCache(): AppState {
 }
 
 /** Fire-and-forget write-through helper: local state stays optimistic, DB errors surface as toasts. */
+/**
+ * supabase.functions.invoke resolves with data: null for every non-2xx response, so the
+ * function's own JSON error ({ error: "..." }) has to be read from the response context.
+ * Without this the UI can only show "Edge Function returned a non-2xx status code".
+ */
+async function functionErrorMessage(error: unknown): Promise<string | null> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    try {
+      const body = (await context.clone().json()) as { error?: string; message?: string } | null;
+      const text = body?.error ?? body?.message;
+      if (text) return text;
+    } catch {
+      /* response body was not JSON */
+    }
+  }
+  const message = (error as { message?: string } | null)?.message;
+  return message && !/non-2xx/i.test(message) ? message : null;
+}
+
+/**
+ * Role and status changes are also covered by the profiles_update RLS policy
+ * (has_permission('staff.manage')), so they can be applied without the account function.
+ * RLS stays authoritative: a caller without the permission gets the database's own refusal.
+ */
+async function updateProfileAccess(body: Record<string, unknown>): Promise<string | null> {
+  const id = typeof body.user_id === "string" ? body.user_id : "";
+  const patch: { role?: string; status?: string } = {};
+  if (typeof body.role === "string" && body.role) patch.role = body.role;
+  if (typeof body.status === "string" && body.status) patch.status = body.status;
+  if (!id || !Object.keys(patch).length) return "This change needs the account service.";
+  const { data, error } = await supabase.from("profiles").update(patch).eq("id", id).select("id");
+  if (error) return error.message;
+  if (!data?.length) return "Your account is not allowed to change this account.";
+  return null;
+}
+
 function push(label: string, task: PromiseLike<unknown>) {
   void Promise.resolve(task)
     .then((res) => {
@@ -909,12 +946,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast.info("Refreshing portal data from the live database…");
       },
       adminUsers: async (action, body) => {
-        const { data, error } = await supabase.functions.invoke("admin-users", {
-          body: { action, ...body },
-        });
-        const payload = data as { error?: string; user_id?: string } | null;
+        const call = () => supabase.functions.invoke("admin-users", { body: { action, ...body } });
+        let { data, error } = await call();
+        let payload = data as { error?: string; user_id?: string } | null;
+
+        // A stale access token makes the function answer 401 for every action, which the
+        // client would otherwise report as a generic non-2xx failure. Refresh once, retry once.
+        if (error && error.context instanceof Response && error.context.status === 401) {
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError) {
+            ({ data, error } = await call());
+            payload = data as { error?: string; user_id?: string } | null;
+          }
+        }
+
         if (error || payload?.error) {
-          const message = payload?.error ?? error?.message ?? "Request failed";
+          // Role/status changes are still permitted directly by the profiles RLS policy,
+          // so an unavailable or stale account function must not block them.
+          if (action === "update" && !payload?.error) {
+            const fallbackError = await updateProfileAccess(body);
+            if (!fallbackError) {
+              toast.success("Access updated.");
+              await refresh();
+              return null;
+            }
+          }
+          const message =
+            payload?.error ??
+            (await functionErrorMessage(error)) ??
+            "The account service could not complete this request. Please try again.";
           toast.error(message);
           return message;
         }
