@@ -1,4 +1,6 @@
 import { Cookie, ShieldCheck, Settings2 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
+import { publicContact } from "@/lib/publicContact";
 import { ScrollReveal } from "./motion";
 
 const SECTIONS = [
@@ -29,6 +31,19 @@ const SECTIONS = [
 ];
 
 export default function CookiesPage() {
+  const { state } = useApp();
+  const contact = publicContact(state.websiteSettings);
+  const academicYear = state.settings.academicYear || "2026/2027";
+  // Section 6 is generated from Admin → Website contact settings instead of
+  // hardcoding the registrar's phone, e-mail and campus address.
+  const sections = SECTIONS.map((s) =>
+    s.title.startsWith("6.")
+      ? {
+          ...s,
+          body: `Questions about cookies or personal data? Contact the registrar: ${contact.phone} or ${contact.email}, ${contact.address}. We review this policy each academic year; the current version applies from the ${academicYear} session.`,
+        }
+      : s,
+  );
   return (
     <section className="bg-[#f6f8f7] py-14 sm:py-20">
       <div className="mx-auto max-w-4xl px-4">
@@ -54,7 +69,7 @@ export default function CookiesPage() {
         </ScrollReveal>
 
         <div className="mt-8 space-y-4">
-          {SECTIONS.map((s) => (
+          {sections.map((s) => (
             <article
               key={s.title}
               className="aoh-card aoh-glass rounded-2xl p-6 shadow-sm sm:p-7"

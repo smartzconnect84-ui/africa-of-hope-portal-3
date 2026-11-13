@@ -4,6 +4,7 @@ import { CalendarDays, CalendarPlus, Clock3, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/context/AppContext";
 import { buildTermDates, downloadIcs, googleCalendarUrl, nextUpcoming } from "@/lib/termDates";
+import { publicContact } from "@/lib/publicContact";
 import { PageHeroImage } from "./PageImage";
 
 function useCountdown(target: string | null): { days: number; hours: number; mins: number; secs: number } {
@@ -26,6 +27,9 @@ function useCountdown(target: string | null): { days: number; hours: number; min
 /** f35: public 2026/2027 term-dates page with intake countdown + Add-to-calendar, fed from live portal dates. */
 export default function TermDatesPage({ onApply }: { onApply: () => void }) {
   const { state } = useApp();
+  // Contact details come from Admin → Website settings, so the phone/address on
+  // this page never drift from the rest of the public site.
+  const contact = publicContact(state.websiteSettings);
   // buildTermDates() also reads state.settings.semester for its fallback
   // terms, so key the memo on the whole state rather than a partial field
   // list — otherwise a CMS semester rename left the page showing old dates.
@@ -59,7 +63,7 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
             transition={{ duration: 0.5, delay: 0.16 }}
             className="mt-4 max-w-2xl text-sm leading-6 text-emerald-100/90 sm:text-base"
           >
-            Our school offers both online and onsite training. Online training enrolment is open to every student at any time once the admission requirements are met — pick your 3 training days and begin. Onsite cohorts meet at Boystown Junction, Lower Margibi; the next onsite intake dates are published below, or contact us on +231776679963 to reserve a seat.
+            Our school offers both online and onsite training. Online training enrolment is open to every student at any time once the admission requirements are met — pick your 3 training days and begin. Onsite cohorts meet at {contact.locality}; the next onsite intake dates are published below, or contact us on {contact.phone} to reserve a seat.
           </motion.p>
           {next && (
             <div className="mt-8 max-w-xl rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md" role="timer" aria-label={`Countdown to ${next.label}`}>
@@ -101,7 +105,7 @@ export default function TermDatesPage({ onApply }: { onApply: () => void }) {
           </div>
           <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-900/10">
             <p className="text-xs font-bold uppercase tracking-widest text-amber-700">Onsite training — published intakes below</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Onsite cohorts meet at Boystown Junction, Lower Margibi. The next onsite intake dates are listed on this page — online students can enrol at any time. Contact us on +231776679963 to reserve a seat.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Onsite cohorts meet at {contact.locality}. The next onsite intake dates are listed on this page — online students can enrol at any time. Contact us on {contact.phone} to reserve a seat.</p>
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
