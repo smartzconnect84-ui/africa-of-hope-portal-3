@@ -197,6 +197,8 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5, c
                     key={l.id}
                     role="menuitem"
                     href={l.href}
+                    target={l.newTab ? "_blank" : undefined}
+                    rel={l.newTab ? "noopener noreferrer" : undefined}
                     onClick={(e) => {
                       setOpenId(null);
                       if (HOME_RE.test(l.href.trim())) onHomeTop(e);
@@ -323,10 +325,18 @@ export default function PublicNav({ links, programs, onHomeTop, maxDirect = 5, c
           <a
             key={l.id}
             href={l.href}
+            target={l.newTab ? "_blank" : undefined}
+            rel={l.newTab ? "noopener noreferrer" : undefined}
             onClick={HOME_RE.test(l.href.trim()) ? onHomeTop : undefined}
             className={linkCls}
           >
+            {l.image && <img src={l.image} alt="" aria-hidden="true" className="mr-1.5 inline-block h-3.5 w-3.5 shrink-0 rounded object-cover align-[-2px]" />}
             {t(l.label)}
+            {l.badge && (
+              <span className="ml-1 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-950">
+                {l.badge}
+              </span>
+            )}
           </a>
         ),
       )}
