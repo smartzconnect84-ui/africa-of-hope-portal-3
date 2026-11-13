@@ -7,7 +7,7 @@ import { DEFAULT_LAYOUT } from '@/data/publicPresentation';
 import { toast } from "sonner";
 import {
   Globe, LayoutTemplate, Star, Quote, HelpCircle, Link2, Building2, Award,
-  Save, RotateCcw, Lock, GripVertical, Eye, EyeOff, LogIn as LogInIcon, Plus,
+  Save, RotateCcw, Lock, GripVertical, Eye, EyeOff, LogIn as LogInIcon, Plus, Download,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
@@ -19,11 +19,12 @@ import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
 import { copySuppliedBrandAssets, builtInBrandAssets } from "../lib/brandSetup";
 import CampusLifeEditor from './CampusLifeEditor';
 import SiteModulesManager from './SiteModulesManager';
+import DataExportCenter from './DataExportCenter';
 import { FOUNDER_PROFILE } from "../data/teamContent";
 
 const TABS: { key: string; label: string; icon: typeof Globe; hint: string }[] = [
   { key: "modules", label: "Modules & downloads", icon: Globe, hint: "Edit, hide/delete and download every public feature" },
-  { key: "branding", label: "Branding & header", icon: Building2, hint: "Logo, favicon, announcement bar" },
+  { key: "exports", label: "Data exports & trash", icon: Download, hint: "Export any table as Excel, PDF, Word or calendar; trash or revoke files" },
   { key: "presentation", label: "Public design & About page", icon: Globe, hint: "Fonts, icons, complete section order and About content" },
   { key: "pwa", label: "PWA & favicon", icon: Globe, hint: "Install icons, app name, launch screen and favicon" },
   { key: "hero", label: "Hero slides", icon: LayoutTemplate, hint: "Rotating hero banner" },
@@ -498,6 +499,8 @@ export default function AdminWebsiteSettings() {
           )}
         />
       )}
+
+      {tab === "exports" && <DataExportCenter />}
 
       {tab === "features" && (
         <ListEditor
