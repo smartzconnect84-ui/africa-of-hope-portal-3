@@ -324,6 +324,9 @@ export default function Navigation({
     document.addEventListener("keydown", onKeyDown);
     desktop.addEventListener("change", onDesktop);
     const raf = window.requestAnimationFrame(() => focusables()[0]?.focus());
+    // Capture the trigger now: by the time the cleanup runs the ref may point
+    // at a different node (or null), which would move focus to the wrong place.
+    const trigger = menuButtonRef.current;
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
@@ -331,7 +334,7 @@ export default function Navigation({
       window.cancelAnimationFrame(raf);
       document.body.style.overflow = previousBody;
       root.style.overflow = previousRoot;
-      menuButtonRef.current?.focus();
+      trigger?.focus();
     };
   }, [drawer]);
 
