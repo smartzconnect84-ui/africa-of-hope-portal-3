@@ -19,6 +19,7 @@ import {
   FileQuestion,
   CalendarRange,
   CalendarDays,
+  Clock,
   GraduationCap,
   Gavel,
   MessagesSquare,
@@ -61,7 +62,10 @@ import AcademicPlanning from "./components/AcademicPlanning";
 import AnnouncementManager from "./components/AnnouncementManager";
 import BlogManager from "./components/portal/BlogManager";
 import SchoolPolicies from "./components/policies/SchoolPolicies";
-import RecommendedTraining from "./components/portal/RecommendedTraining";
+import ReportsCenter from "./components/portal/ReportsCenter";
+import AttendanceSign from "./components/portal/AttendanceSign";
+import MaterialDispatch from "./components/portal/MaterialDispatch";
+import CourseCalendar from "./components/portal/CourseCalendar";
 import StudentPayments from "./components/portal/StudentPayments";
 import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
@@ -347,11 +351,32 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: () => <SchoolPolicies />,
   },
   {
-    key: "training-library",
-    label: "Training Library",
+    key: "materials",
+    label: "Course materials",
     icon: LibraryBig,
-    visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
-    render: () => <RecommendedTraining />,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <MaterialDispatch />,
+  },
+  {
+    key: "reports",
+    label: "Reports & approvals",
+    icon: ClipboardCheck,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <ReportsCenter />,
+  },
+  {
+    key: "live-attendance",
+    label: "Live attendance",
+    icon: Clock,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <AttendanceSign />,
+  },
+  {
+    key: "course-calendar",
+    label: "Course calendar",
+    icon: CalendarRange,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <CourseCalendar />,
   },
   {
     key: "transparency",
@@ -432,7 +457,10 @@ const NAV_RELEVANCE_ORDER = [
   "assignments",
   "quizzes",
   "discussions",
-  "training-library",
+  "materials",
+  "reports",
+  "live-attendance",
+  "course-calendar",
   "entrance-test",
   "entrance-prep",
   "entrance-control",

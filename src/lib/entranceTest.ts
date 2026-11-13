@@ -37,7 +37,7 @@ export interface EntranceSettings {
 
 export const DEFAULT_ENTRANCE_SETTINGS: EntranceSettings = {
   requirePass: true,
-  passMark: 50,
+  passMark: 60,
   timeMinutes: 15,
   maxAttempts: 3,
 };
@@ -49,7 +49,7 @@ export function loadEntranceSettings(): EntranceSettings {
     const p = JSON.parse(raw) as Partial<EntranceSettings>;
     return {
       requirePass: p.requirePass ?? true,
-      passMark: typeof p.passMark === "number" ? p.passMark : 50,
+      passMark: typeof p.passMark === "number" ? p.passMark : 60,
       timeMinutes: typeof p.timeMinutes === "number" ? p.timeMinutes : 15,
       maxAttempts: typeof p.maxAttempts === "number" ? p.maxAttempts : 3,
     };
@@ -169,7 +169,7 @@ export async function fetchEntranceQuizzes(): Promise<{ id: string; title: strin
       id: String((r as Record<string, unknown>).id),
       title: String((r as Record<string, unknown>).title ?? "Entrance test"),
       description: String((r as Record<string, unknown>).description ?? ""),
-      passMark: Number((r as Record<string, unknown>).pass_mark ?? 50),
+      passMark: Number((r as Record<string, unknown>).pass_mark ?? 60),
       timeLimitMinutes: (r as Record<string, unknown>).time_limit_minutes == null ? null : Number((r as Record<string, unknown>).time_limit_minutes),
       questionCount: Number((r as Record<string, unknown>).question_count ?? 0),
     }));

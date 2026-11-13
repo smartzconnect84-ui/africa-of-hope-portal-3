@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
 import { durationLabel } from "@/lib/programDelivery";
+import { AptitudeGate } from "@/components/academic/AptitudeGate";
+import { clearedForProgram, requiresAptitude } from "@/lib/portalOps";
 
 import { useLocale } from "@/lib/locale";
 const LOW_DATA_KEY = "aoh-course-player-low-data";
@@ -48,6 +50,7 @@ export default function CoursePlayer() {
   const [activeUnitId, setActiveUnitId] = useState("");
   const [lowData, setLowData] = useState(() => { try { return localStorage.getItem(LOW_DATA_KEY) === "1"; } catch { return false; } });
   const [busy, setBusy] = useState("");
+  const [gateTick, setGateTick] = useState(0);
   const memory = useLearningMemory(currentUser?.id);
   const restoredUser = useRef<string | null>(null);
   const videoSavedAt = useRef(0);
@@ -147,6 +150,17 @@ export default function CoursePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.id, memory.ready]);
   const activeMaterials = useMemo(() => materials.filter((m) => active && m.learning_unit_id === active.id), [materials, active]);
+  const gateProgram = state.programs.find((p) => p.id === programId);
+  // 1, 3 and 6 month tracks require a 60% entrance score before lessons open.
+  const aptitudeCleared = useMemo(
+    () =>
+      !currentUser ||
+      !gateProgram ||
+      !requiresAptitude(gateProgram) ||
+      clearedForProgram(currentUser.id, gateProgram.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUser?.id, gateProgram?.id, gateTick],
+  );
 
   const markComplete = async (unit: LearningUnit) => {
     setBusy(unit.id);
@@ -182,6 +196,16 @@ export default function CoursePlayer() {
   if (error) return <div className={cn(panelClass, "p-6")}><p className="text-sm text-rose-700">{error}</p><Button variant="outline" className="mt-3" onClick={() => window.location.reload()}>Retry</Button></div>;
 
   const program = state.programs.find((p) => p.id === programId);
+
+  if (currentUser?.role === "Student" && gateProgram && requiresAptitude(gateProgram) && !aptitudeCleared) {
+    return (
+      <AptitudeGate
+        program={gateProgram}
+        user={{ id: currentUser.id, name: currentUser.name }}
+        onCleared={() => setGateTick((v) => v + 1)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
