@@ -46,6 +46,7 @@ export default function EngagementInbox() {
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [savingId, setSavingId] = useState("");
+  const [detail, setDetail] = useState<SupportPledge | StudyPlanRequest | null>(null);
 
   async function changeStatus(row: SupportPledge | StudyPlanRequest, status: SupportStatus) {
     setSavingId(row.id);
@@ -275,6 +276,15 @@ export default function EngagementInbox() {
             </table>
           </div>
         </div>
+      )}
+
+      {detail && (
+        <EngagementDetail
+          kind={kind as "support" | "plans"}
+          row={detail}
+          onClose={() => setDetail(null)}
+          onSaved={() => { setDetail(null); setReloadKey((k) => k + 1); }}
+        />
       )}
     </div>
   );
