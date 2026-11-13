@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ACCOUNT_STATUSES, ADMIN_ROLES, STAFF_ROLES } from "../_shared/roles.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -8,9 +9,7 @@ const cors = {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
-const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher", "Registrar", "Admission Officer", "Finance Officer"];
-const ADMIN_ROLES = ["Super Admin", "School Admin"];
-const STATUSES = ["Active", "Suspended", "Pending Approval", "Rejected"];
+const STATUSES = ACCOUNT_STATUSES;
 const randomPassword = () => crypto.randomUUID().replace(/-/g, "") + "Aa1!";
 
 Deno.serve(async (req: Request) => {
