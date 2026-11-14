@@ -3,13 +3,14 @@ import { Loader2, Send, History, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/context/AppContext";
+import { newId } from "@/lib/ids";
 
 type OutboxRow = { id: string; title: string; body: string; audience: string; status: string; created_at: string };
 
 const SENDERS = ["admin", "super_admin", "registrar"];
 
 function newDraftKey() {
-  return `admin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return newId("admin");
 }
 
 function senderRole(role: string) {

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { compressImage } from "./imagePerf";
+import { newId } from "./ids";
 
 const MB = 1024 * 1024;
 
@@ -59,6 +60,9 @@ function extension(file: File): string {
   return (fromName || file.type.split("/")[1] || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+/** Random id that works on http://, older browsers and Safari (no crypto.randomUUID). */
+const newStorageId = newId;
+
 function safeName(name: string): string {
   return name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-").slice(0, 80) || "file";
 }
@@ -80,7 +84,7 @@ async function uploadPublicImage(bucket: string, folder: string, file: File): Pr
   const optimized = await compressImage(file);
   const invalid = validateFile(optimized, IMAGE_TYPES, MAX_IMAGE_BYTES);
   if (invalid) throw new Error(invalid);
-  const path = `${folder}/${crypto.randomUUID()}.${extension(optimized)}`;
+  const path = `${folder}/${newStorageId()}.${extension(optimized)}`;
   const { error } = await supabase.storage
     .from(bucket)
     .upload(path, optimized, { cacheControl: "31536000", upsert: false, contentType: optimized.type });
@@ -95,7 +99,11 @@ async function pruneFolder(bucket: string, folder: string, keepUrl?: string) {
     const stale = (data ?? [])
       .map((o) => `${folder}/${o.name}`)
       .filter((path) => !keepUrl || !keepUrl.endsWith(path));
-    if (stale.length) await supabase.storage.from(bucket).remove(stale);
+    // Remove in small batches so a full folder never trips provider limits.
+    for (let i = 0; i < stale.length; i += 50) {
+      const batch = stale.slice(i, i + 50);
+      if (batch.length) await supabase.storage.from(bucket).remove(batch);
+    }
   } catch {
     /* stale files are harmless */
   }
@@ -162,7 +170,7 @@ export async function uploadDocument(
 ): Promise<void> {
   const invalid = validateFile(file, DOCUMENT_TYPES, MAX_DOCUMENT_BYTES);
   if (invalid) throw new Error(invalid);
-  const path = `${docFolder(userId)}/${Date.now()}${SEP}${safeName(category)}${SEP}${crypto.randomUUID()}-${safeName(file.name)}`;
+  const path = `${docFolder(userId)}/${Date.now()}${SEP}${safeName(category)}${SEP}${newStorageId()}-${safeName(file.name)}`;
   const { error } = await supabase.storage
     .from(DOCUMENT_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });

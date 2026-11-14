@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState, SectionHeader, panelClass } from '@/components/Navigation';
 import { cn } from '@/lib/utils';
+import { newId } from '@/lib/ids';
 import { TICKET_CATEGORIES, TICKET_PAGE_SIZE, listTickets, getTicketThread, createTicket, replyToTicket, changeTicketStatus, type TicketCategory } from '@/lib/helpdesk';
 
 const selectClass = 'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900';
@@ -53,7 +54,7 @@ function TicketThread({ id, manage, onChanged }: { id: string; manage: boolean; 
   const loader = useCallback(() => getTicketThread(id, limit), [id, limit]);
   const { data, loading, error, reload } = useRemote(loader, 15000);
   const [body, setBody] = useState('');
-  const replyId = useRef(crypto.randomUUID());
+  const replyId = useRef(newId());
   const [busy, setBusy] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -65,7 +66,7 @@ function TicketThread({ id, manage, onChanged }: { id: string; manage: boolean; 
     setBusy(true);
     try {
       await replyToTicket(replyId.current, id, body);
-      setBody(''); replyId.current = crypto.randomUUID(); toast.success('Reply sent.');
+      setBody(''); replyId.current = newId(); toast.success('Reply sent.');
       await reload(); onChanged();
     } catch (err) { toast.error(message(err)); }
     finally { setBusy(false); }
@@ -102,7 +103,7 @@ function TicketThread({ id, manage, onChanged }: { id: string; manage: boolean; 
       </div>
       {data.ticket.status === 'open' ? <form onSubmit={reply} className="space-y-3">
         <Label htmlFor="helpdesk-reply">Your reply</Label>
-        <Textarea id="helpdesk-reply" rows={4} required maxLength={10000} disabled={busy} value={body} onChange={e => { setBody(e.target.value); replyId.current = crypto.randomUUID(); }} placeholder="Add information or reply to the school…" />
+        <Textarea id="helpdesk-reply" rows={4} required maxLength={10000} disabled={busy} value={body} onChange={e => { setBody(e.target.value); replyId.current = newId(); }} placeholder="Add information or reply to the school…" />
         <p className="text-xs text-slate-500">Replies are visible to the student and authorized helpdesk staff. Never include passwords, payment PINs or private financial credentials.</p>
         <Button type="submit" disabled={busy || !body.trim() || loading}><Send className="mr-2 h-4 w-4" />{busy ? 'Sending…' : 'Send reply'}</Button>
       </form> : <p className="rounded-xl bg-slate-100 p-4 text-sm text-slate-700">This ticket is closed. {manage ? 'Reopen it to continue the conversation.' : 'If you still need help, open a new ticket and include this ticket ID.'}</p>}
@@ -135,7 +136,7 @@ function HelpdeskWorkspace({ student, manage }: { student: boolean; manage: bool
     return 'Study';
   });
   const [body, setBody] = useState('');
-  const ticketId = useRef(crypto.randomUUID());
+  const ticketId = useRef(newId());
   const [busy, setBusy] = useState(false);
   useEffect(() => { const timer = window.setTimeout(() => { setTerm(search); setPage(0); }, 300); return () => window.clearTimeout(timer); }, [search]);
   const loader = useCallback(() => listTickets({ search: term, status, category, page }), [term, status, category, page, reloadKey]);
@@ -147,7 +148,7 @@ function HelpdeskWorkspace({ student, manage }: { student: boolean; manage: bool
     try {
       const id = await createTicket(ticketId.current, subject, ticketCategory, body);
       toast.success('Ticket submitted to the school helpdesk.');
-      setSubject(''); setBody(''); setTicketCategory('Study'); ticketId.current = crypto.randomUUID(); setCreateOpen(false);
+      setSubject(''); setBody(''); setTicketCategory('Study'); ticketId.current = newId(); setCreateOpen(false);
       setSelected(id); setSearch(''); setTerm(''); setStatus('all'); setCategory('all'); setPage(0); await reload();
     } catch (err) { toast.error(message(err)); }
     finally { setBusy(false); }
@@ -177,9 +178,9 @@ function HelpdeskWorkspace({ student, manage }: { student: boolean; manage: bool
     </div>
     <Dialog open={createOpen} onOpenChange={open => { if (!busy) setCreateOpen(open); }}><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>New helpdesk ticket</DialogTitle><DialogDescription>Describe one issue clearly. Your student name is supplied by your verified account. Do not include passwords or payment PINs.</DialogDescription></DialogHeader>
       <form onSubmit={create} className="space-y-4">
-        <div className="space-y-2"><Label htmlFor="helpdesk-subject">Subject</Label><Input id="helpdesk-subject" required maxLength={200} disabled={busy} value={subject} onChange={e => { setSubject(e.target.value); ticketId.current = crypto.randomUUID(); }} /></div>
-        <div className="space-y-2"><Label htmlFor="helpdesk-category">Category</Label><select id="helpdesk-category" className={selectClass} disabled={busy} value={ticketCategory} onChange={e => { setTicketCategory(e.target.value as TicketCategory); ticketId.current = crypto.randomUUID(); }}>{TICKET_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
-        <div className="space-y-2"><Label htmlFor="helpdesk-body">What do you need help with?</Label><Textarea id="helpdesk-body" rows={6} required maxLength={10000} disabled={busy} value={body} onChange={e => { setBody(e.target.value); ticketId.current = crypto.randomUUID(); }} /></div>
+        <div className="space-y-2"><Label htmlFor="helpdesk-subject">Subject</Label><Input id="helpdesk-subject" required maxLength={200} disabled={busy} value={subject} onChange={e => { setSubject(e.target.value); ticketId.current = newId(); }} /></div>
+        <div className="space-y-2"><Label htmlFor="helpdesk-category">Category</Label><select id="helpdesk-category" className={selectClass} disabled={busy} value={ticketCategory} onChange={e => { setTicketCategory(e.target.value as TicketCategory); ticketId.current = newId(); }}>{TICKET_CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
+        <div className="space-y-2"><Label htmlFor="helpdesk-body">What do you need help with?</Label><Textarea id="helpdesk-body" rows={6} required maxLength={10000} disabled={busy} value={body} onChange={e => { setBody(e.target.value); ticketId.current = newId(); }} /></div>
         <p className="text-xs text-slate-500">Submitting requires an internet connection. If it fails, your text stays here so you can retry.</p>
         <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={() => setCreateOpen(false)}>Keep draft & close</Button><Button type="submit" disabled={busy || !body.trim() || !subject.trim()}>{busy ? 'Submitting…' : 'Submit ticket'}</Button></DialogFooter>
       </form>

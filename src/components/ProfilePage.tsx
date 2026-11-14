@@ -9,7 +9,7 @@ import { useApp } from "@/context/AppContext";
 import type { User } from "@/types";
 import { cn } from "@/lib/utils";
 import {
-  DOCUMENT_CATEGORIES, DOCUMENT_TYPES, IMAGE_TYPES, MAX_DOCUMENT_BYTES, MAX_IMAGE_BYTES,
+  DOCUMENT_CATEGORIES, DOCUMENT_TYPES, IMAGE_TYPES, MAX_DOCUMENT_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_INPUT_BYTES,
   deleteDocument, documentUrl, formatBytes, listDocuments, pruneAvatars, uploadAvatar, uploadDocument,
   validateFile, type DocumentCategory, type ProfileDocument,
 } from "@/lib/storage";
@@ -105,8 +105,9 @@ function ProfileHeader({ user }: { user: User }) {
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   const pick = async (file: File | undefined) => {
-    if (!file) return;
-    const invalid = validateFile(file, IMAGE_TYPES, MAX_IMAGE_BYTES);
+    if (!file || busy) return;
+    // Allow up to 15MB inputs — the pipeline compresses phone photos to 5MB.
+    const invalid = validateFile(file, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES);
     if (invalid) {
       toast.error(invalid);
       return;
@@ -197,7 +198,7 @@ function ProfileHeader({ user }: { user: User }) {
         </div>
       </div>
       <p className="border-t border-emerald-900/5 bg-slate-50/60 px-6 py-2.5 text-xs text-slate-500">
-        <ImageIcon className="mr-1 inline h-3.5 w-3.5" /> JPG, PNG, WebP or GIF, up to {formatBytes(MAX_IMAGE_BYTES)}. A square photo looks best.
+        <ImageIcon className="mr-1 inline h-3.5 w-3.5" /> JPG, PNG, WebP or GIF, up to {formatBytes(MAX_IMAGE_INPUT_BYTES)} (compressed to {formatBytes(MAX_IMAGE_BYTES)}). A square photo looks best.
       </p>
     </div>
   );

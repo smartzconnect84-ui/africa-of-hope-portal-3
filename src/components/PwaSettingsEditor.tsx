@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { WebsiteSettings } from '@/types';
 import { DEFAULT_PWA } from '@/data/publicPresentation';
 import type { PublicSettingsErrors } from '@/lib/publicSettingsValidation';
-import { uploadSiteAsset, validateFile, IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/lib/storage';
+import { uploadSiteAsset, validateFile, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES } from '@/lib/storage';
 import { Area, Field, ImageBox } from './CmsPrimitives';
 
 type Pwa = typeof DEFAULT_PWA;
@@ -29,8 +29,9 @@ export default function PwaSettingsEditor({ draft, patch, errors = {} }: { draft
   const upload = async (file?: File) => {
     if (!file || busy) return;
     setError('');
-    const invalid = validateFile(file, IMAGE_TYPES, MAX_IMAGE_BYTES);
-    if (invalid) { setError(invalid); if (input.current) input.current.value = ''; return; }
+    const typeError = validateFile(file, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES);
+    // Type is always enforced; oversize phone photos are shrunk to the PWA sizes before upload.
+    if (typeError && !typeError.includes("larger than")) { setError(typeError); if (input.current) input.current.value = ''; return; }
     setBusy(true);
     const objectUrl = URL.createObjectURL(file);
     try {
@@ -42,7 +43,7 @@ export default function PwaSettingsEditor({ draft, patch, errors = {} }: { draft
         generated[key] = await uploadSiteAsset(`pwa/${key}`, await iconFile(image, size, maskable));
       }
       change(generated);
-    } catch { setError('Icons could not be prepared or uploaded. Your previous icons are unchanged. Choose a readable image under 40 megapixels and check your connection and storage access before trying again.'); }
+    } catch (err) { setError(err instanceof Error ? err.message : 'Icons could not be prepared or uploaded. Your previous icons are unchanged. Check your connection and storage access before trying again.'); }
     finally { URL.revokeObjectURL(objectUrl); setBusy(false); if (input.current) input.current.value = ''; }
   };
   const manifestPreview = useMemo(() => JSON.stringify({ name: pwa.name, short_name: pwa.shortName, description: pwa.description, start_url: '/', scope: '/', display: pwa.display, orientation: pwa.orientation, background_color: pwa.backgroundColor, theme_color: pwa.themeColor }, null, 2), [pwa]);

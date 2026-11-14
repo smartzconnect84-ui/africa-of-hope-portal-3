@@ -7,6 +7,7 @@ import { streamAssistant, AssistantError, type AssistantMessage } from "../../li
 import { answerLocally } from "../../lib/assistantOffline";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { newId } from "@/lib/ids";
 
 interface ChatBubble {
   id: string;
@@ -81,7 +82,7 @@ export default function HopeAssistant() {
       const key = "aoh-assistant-material-queue";
       const existing = JSON.parse(localStorage.getItem(key) ?? "[]");
       const queue = Array.isArray(existing) ? existing : [];
-      queue.push({ id: crypto.randomUUID(), title: text.split("\n")[0].slice(0, 80) || "AOH AI resource", body: text, savedAt: new Date().toISOString(), savedBy: currentUser?.id ?? null, programId: program?.id ?? null, cohortId: cohort?.id ?? null, programTitle: program?.title ?? null, cohortName: cohort?.name ?? null });
+      queue.push({ id: newId(), title: text.split("\n")[0].slice(0, 80) || "AOH AI resource", body: text, savedAt: new Date().toISOString(), savedBy: currentUser?.id ?? null, programId: program?.id ?? null, cohortId: cohort?.id ?? null, programTitle: program?.title ?? null, cohortName: cohort?.name ?? null });
       localStorage.setItem(key, JSON.stringify(queue.slice(-20)));
       window.dispatchEvent(new CustomEvent("aoh:assistant-material", { detail: { count: queue.length, programId: program?.id ?? null, cohortId: cohort?.id ?? null } }));
       setSavedIds((prev) => (prev.includes(bubbleId) ? prev : [...prev, bubbleId]));
@@ -95,11 +96,11 @@ export default function HopeAssistant() {
       ...bubbles.filter((b) => b.role === "user" || (b.role === "assistant" && b.complete)).map((b) => ({ role: b.role as "user" | "assistant", content: b.content })),
       { role: "user", content },
     ];
-    setBubbles((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content }]);
+    setBubbles((prev) => [...prev, { id: newId(), role: "user", content }]);
     setDraft("");
     setSending(true);
 
-    const assistantId = crypto.randomUUID();
+    const assistantId = newId();
     setBubbles((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     const controller = new AbortController();
@@ -138,14 +139,14 @@ export default function HopeAssistant() {
         if (local) {
           setBubbles((prev) => [
             ...prev.map((b) => (b.id === assistantId ? { ...b, content: `**Limited local response — not an AI answer**\n\n${local}` } : b)),
-            { id: crypto.randomUUID(), role: "error", content: message },
+            { id: newId(), role: "error", content: message },
           ]);
           return;
         }
       }
       setBubbles((prev) => {
         const withoutEmptyDraft = prev.filter((b) => !(b.id === assistantId && b.content === ""));
-        return [...withoutEmptyDraft, { id: crypto.randomUUID(), role: "error", content: message }];
+        return [...withoutEmptyDraft, { id: newId(), role: "error", content: message }];
       });
     } finally {
       if (abortRef.current === controller) {

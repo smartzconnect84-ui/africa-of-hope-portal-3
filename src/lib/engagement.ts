@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { newId } from "@/lib/ids";
 
 /**
  * Donations, volunteer sign-ups, partnership requests and applicant study
@@ -47,8 +48,6 @@ export interface StudyPlanRequest {
 
 const SUPPORT_KEY = "aoh-support-pledges-v1";
 const PLAN_KEY = "aoh-study-plans-v1";
-
-const newId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 function readLocal<T>(key: string): T[] {
   try {

@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Field, Area } from '../CmsPrimitives';
 import { panelClass } from '../Navigation';
 import { loadNewsletterAdmin, saveEmailTemplate, queueNewsletter, type EmailTemplate } from '@/lib/newsletter';
+import { newId } from '@/lib/ids';
 
 const blank = { id: '', name: '', subject: '', body: '' };
 export default function NewsletterManager() {
   const [data, setData] = useState<Awaited<ReturnType<typeof loadNewsletterAdmin>> | null>(null);
   const [form, setForm] = useState(blank);
   const [saved, setSaved] = useState('');
-  const [campaignId, setCampaignId] = useState(() => crypto.randomUUID());
+  const [campaignId, setCampaignId] = useState(() => newId());
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,7 +24,7 @@ export default function NewsletterManager() {
   };
   useEffect(() => { void load(); }, []);
   const change = (key: keyof typeof blank, value: string) => { setForm(previous => ({ ...previous, [key]: value })); setSaved(''); };
-  const select = (template?: EmailTemplate) => { setForm(template ? { id: template.id, name: template.name, subject: template.subject, body: template.body } : blank); setSaved(template?.id ?? ''); setCampaignId(crypto.randomUUID()); setReceipt(''); };
+  const select = (template?: EmailTemplate) => { setForm(template ? { id: template.id, name: template.name, subject: template.subject, body: template.body } : blank); setSaved(template?.id ?? ''); setCampaignId(newId()); setReceipt(''); };
   const save = async () => {
     setBusy(true); setError('');
     try {
@@ -55,7 +56,7 @@ export default function NewsletterManager() {
           <Field label="Template name (max 120 characters)" value={form.name} onChange={value => change('name', value.slice(0, 120))} />
           <Field label="Email subject (max 200 characters)" value={form.subject} onChange={value => change('subject', value.slice(0, 200))} />
           <Area label="Message — use {{name}} for the recipient's name" value={form.body} onChange={value => change('body', value.slice(0, 20000))} rows={9} />
-          <div className="flex flex-wrap gap-2"><Button onClick={() => void save()} disabled={busy}>Save template</Button><Button variant="outline" onClick={() => void queue()} disabled={busy || !saved || !data.counts.active}>Queue newsletter</Button><Button variant="outline" disabled={busy} onClick={() => { setCampaignId(crypto.randomUUID()); setReceipt('Ready to queue a new campaign.'); }}>Start new campaign</Button></div>
+          <div className="flex flex-wrap gap-2"><Button onClick={() => void save()} disabled={busy}>Save template</Button><Button variant="outline" onClick={() => void queue()} disabled={busy || !saved || !data.counts.active}>Queue newsletter</Button><Button variant="outline" disabled={busy} onClick={() => { setCampaignId(newId()); setReceipt('Ready to queue a new campaign.'); }}>Start new campaign</Button></div>
           <p className="text-xs text-slate-500">Save edits before queueing. Repeated queue attempts use the same campaign ID to avoid duplicates. Start a new campaign only to intentionally send again.</p>
           {receipt && <p role="status" className="text-sm text-emerald-800">{receipt}</p>}
         </div>

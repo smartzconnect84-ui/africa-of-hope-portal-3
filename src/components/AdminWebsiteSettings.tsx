@@ -140,7 +140,20 @@ export default function AdminWebsiteSettings() {
     const nextErrors = validatePublicSettings(draft);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
-      setTab(Object.keys(nextErrors).some(key => key.startsWith('pwa.') || key === 'faviconUrl') ? 'pwa' : 'presentation');
+      const first = Object.keys(nextErrors)[0] ?? '';
+      const prefix = first.split('.')[0];
+      const tabByError: Record<string, string> = {
+        pwa: 'pwa',
+        faviconUrl: 'pwa',
+        presentation: 'presentation',
+        publicLayout: 'presentation',
+        campusLife: 'campus',
+        aboutPage: 'about',
+      };
+      const target = tabByError[prefix] ?? tabByError[first] ?? 'presentation';
+      setTab(target);
+      const firstMessage = Object.values(nextErrors)[0];
+      if (firstMessage) toast.error(firstMessage);
       return;
     }
     if (draft.team.enabled && draft.team.members.some((member) => !member.name.trim() || !member.role.trim())) {

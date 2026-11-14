@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState, SectionHeader, panelClass } from '@/components/Navigation';
 import { cn } from '@/lib/utils';
+import { newId } from '@/lib/ids';
 import {
   APPEAL_PAGE_SIZE,
   createAppeal,
@@ -155,7 +156,7 @@ function NewAppealDialog({ onCreated }: { onCreated: (reason: string) => void })
   const [choice, setChoice] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const appealId = useRef(crypto.randomUUID());
+  const appealId = useRef(newId());
   const work = data?.find((item) => `${item.kind}:${item.ref_id}` === choice);
 
   const submit = async (event: FormEvent) => {
@@ -166,7 +167,7 @@ function NewAppealDialog({ onCreated }: { onCreated: (reason: string) => void })
       await createAppeal(appealId.current, work.kind, work.ref_id, reason);
       toast.success('Appeal submitted. Staff will review the mark.');
       const submitted = reason;
-      setReason(''); setChoice(''); appealId.current = crypto.randomUUID(); setOpen(false);
+      setReason(''); setChoice(''); appealId.current = newId(); setOpen(false);
       await reload(); onCreated(submitted);
     } catch (err) { toast.error(message(err)); }
     finally { setBusy(false); }
@@ -186,7 +187,7 @@ function NewAppealDialog({ onCreated }: { onCreated: (reason: string) => void })
           {data && !data.length && <p className="rounded-xl bg-slate-100 p-4 text-sm text-slate-700">You have no marked work yet. Once an assignment or quiz is marked, it appears here.</p>}
           <div className="space-y-2">
             <Label htmlFor="appeal-work">Marked work</Label>
-            <select id="appeal-work" className={selectClass} required disabled={busy || !data?.length} value={choice} onChange={(e) => { setChoice(e.target.value); appealId.current = crypto.randomUUID(); }}>
+            <select id="appeal-work" className={selectClass} required disabled={busy || !data?.length} value={choice} onChange={(e) => { setChoice(e.target.value); appealId.current = newId(); }}>
               <option value="">Choose the work you want reviewed…</option>
               {data?.map((item: AppealableWork) => {
                 const key = `${item.kind}:${item.ref_id}`;
@@ -199,7 +200,7 @@ function NewAppealDialog({ onCreated }: { onCreated: (reason: string) => void })
           </div>
           <div className="space-y-2">
             <Label htmlFor="appeal-reason">Why should the mark be reconsidered?</Label>
-            <Textarea id="appeal-reason" rows={6} required maxLength={4000} disabled={busy} value={reason} onChange={(e) => { setReason(e.target.value); appealId.current = crypto.randomUUID(); }} placeholder="Point to the question or criterion you believe was marked unfairly and what you expected." />
+            <Textarea id="appeal-reason" rows={6} required maxLength={4000} disabled={busy} value={reason} onChange={(e) => { setReason(e.target.value); appealId.current = newId(); }} placeholder="Point to the question or criterion you believe was marked unfairly and what you expected." />
           </div>
           <p className="text-xs text-slate-500">Submitting needs an internet connection. If it fails, your reason stays here so you can retry. Maximum 5 appeals per day.</p>
           <DialogFooter>

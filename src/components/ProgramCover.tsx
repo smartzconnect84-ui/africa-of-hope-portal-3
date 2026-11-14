@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 import type { Program } from "@/types";
 import { DEFAULT_PROGRAM_IMAGE, programImage } from "@/lib/programImages";
 import {
-  IMAGE_TYPES, MAX_IMAGE_BYTES, pruneProgramImages, uploadProgramImage, validateFile,
+  IMAGE_TYPES, MAX_IMAGE_BYTES, MAX_IMAGE_INPUT_BYTES, pruneProgramImages, uploadProgramImage, validateFile,
 } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,8 @@ export default function ProgramCover({
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
-    const invalid = validateFile(file, COVER_TYPES, MAX_IMAGE_BYTES);
+    // Allow up to 15MB inputs — the pipeline compresses phone photos to 5MB.
+    const invalid = validateFile(file, COVER_TYPES, MAX_IMAGE_INPUT_BYTES);
     if (invalid) {
       toast.error(invalid);
       return;

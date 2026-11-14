@@ -419,18 +419,26 @@ export function ProgramBuilder() {
     setOpen(true);
   };
 
-  const removeProgram = (id: string) => {
+  const removeProgram = async (id: string) => {
     const p = state.programs.find((x) => x.id === id);
     if (!window.confirm(`Delete "${p?.title ?? "this program"}"? Learners will no longer see it in the catalogue.`)) return;
-    deleteProgram(id);
+    const error = await deleteProgram(id);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     toast.success("Program deleted");
   };
 
-  const togglePublish = (id: string) => {
+  const togglePublish = async (id: string) => {
     const p = state.programs.find((x) => x.id === id);
     if (!p) return;
     const next = !(p.published ?? true);
-    updateProgram(id, { published: next });
+    const error = await updateProgram(id, { published: next });
+    if (error) {
+      toast.error(error);
+      return;
+    }
     toast.success(next ? "Program published to the catalogue" : "Program hidden as a draft");
   };
 
@@ -473,7 +481,7 @@ export function ProgramBuilder() {
     if (!err) setStep((s) => Math.min(s + 1, BUILDER_STEPS.length - 1));
   };
 
-  const submit = () => {
+  const submit = async () => {
     for (let s = 0; s < BUILDER_STEPS.length - 1; s++) {
       const err = validateStep(s);
       if (err) {
@@ -497,10 +505,20 @@ export function ProgramBuilder() {
       published: form.published,
     };
     if (editingId) {
-      updateProgram(editingId, payload);
+      const error = await updateProgram(editingId, payload);
+      if (error) {
+        setError(error);
+        toast.error(error);
+        return;
+      }
       toast.success(form.published ? "Program updated and published" : "Program updated and kept as draft");
     } else {
-      addProgram(payload);
+      const error = await addProgram(payload);
+      if (error) {
+        setError(error);
+        toast.error(error);
+        return;
+      }
       toast.success(form.published ? "Program published to the catalogue" : "Program saved as draft");
     }
     setEditingId(null);
@@ -800,14 +818,18 @@ export function CohortCoordinator() {
     setOpen(true);
   };
 
-  const removeCohort = (id: string) => {
+  const removeCohort = async (id: string) => {
     const c = state.cohorts.find((x) => x.id === id);
     if (!window.confirm(`Delete cohort "${c?.name ?? "this cohort"}"? Enrolled learners keep their accounts but lose this batch placement.`)) return;
-    deleteCohort(id);
+    const error = await deleteCohort(id);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     toast.success("Cohort deleted");
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.name.trim() || !form.programId || !form.teacherId) {
       toast.error("Cohort name, program and instructor are required");
       return;
@@ -822,10 +844,18 @@ export function CohortCoordinator() {
       studentIds: roster,
     };
     if (editingId) {
-      updateCohort(editingId, payload);
+      const error = await updateCohort(editingId, payload);
+      if (error) {
+        toast.error(error);
+        return;
+      }
       toast.success("Cohort updated");
     } else {
-      addCohort(payload);
+      const error = await addCohort(payload);
+      if (error) {
+        toast.error(error);
+        return;
+      }
       const teacher = state.users.find((u) => u.id === form.teacherId);
       toast.success(`Cohort created and assigned to ${teacher?.name ?? "instructor"}`);
     }
@@ -1023,9 +1053,13 @@ export function AttendanceSheet() {
     setStatuses(map);
   }, [cohort, date, state.attendance]);
 
-  const save = () => {
+  const save = async () => {
     if (!cohort) return;
-    markAttendance(cohort.id, date, statuses);
+    const error = await markAttendance(cohort.id, date, statuses);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     toast.success("Attendance register saved");
   };
 

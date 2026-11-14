@@ -395,7 +395,7 @@ export function FeeRegister() {
         if (error) throw new Error(error);
         toast.success("Payment updated in the ledger");
       } else {
-        addFeeTransaction({
+        const error = await addFeeTransaction({
           studentId: form.studentId,
           category: form.category,
           amount,
@@ -403,6 +403,7 @@ export function FeeRegister() {
           method: form.method,
           reference: form.reference || `AOH-${form.category.slice(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 89999)}`,
         });
+        if (error) throw new Error(error);
         toast.success("Payment recorded to the ledger");
       }
       setForm(emptyTxn);
@@ -613,17 +614,21 @@ export function AnnouncementBoard() {
     [state.announcements, filter],
   );
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.title.trim() || !form.body.trim()) {
       toast.error("Title and message are required");
       return;
     }
-    addAnnouncement({
+    const error = await addAnnouncement({
       title: form.title.trim(),
       body: form.body.trim(),
       category: form.category,
       author: currentUser?.name ?? "Administration",
     });
+    if (error) {
+      toast.error(error);
+      return;
+    }
     toast.success("Bulletin published");
     setForm(emptyAnnouncement);
     setOpen(false);

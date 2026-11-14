@@ -23,7 +23,9 @@ import { DEFAULT_CAMPUS_LIFE } from "./publicPresentation";
 
 export type Row = Record<string, unknown>;
 
-export const uid = () => crypto.randomUUID();
+import { newId } from "@/lib/ids";
+
+export const uid = newId;
 export const today = () => new Date().toISOString().slice(0, 10);
 
 const txt = (v: unknown, fallback = "") => (v === null || v === undefined ? fallback : String(v));
@@ -198,9 +200,19 @@ export function mergeWebsiteSettings(
   if ((revision ?? 0) < 3) {
     const logo = "/logo/aoh-logo.png";
     merged.brandRevision = 3;
-    merged.logoUrl = logo;
-    merged.faviconUrl = "/favicon.png";
-    merged.logos = { header: logo, footer: logo, portal: logo, auth: logo, certificate: logo, brochure: logo };
+    const saved = raw && typeof raw === "object" ? (raw as Partial<WebsiteSettings>) : {};
+    // Never clobber a published custom brand: only fill assets the site never set.
+    if (!saved.logoUrl) merged.logoUrl = logo;
+    if (!saved.faviconUrl) merged.faviconUrl = "/favicon.png";
+    const savedLogos = saved.logos as WebsiteSettings["logos"] | undefined;
+    merged.logos = {
+      header: savedLogos?.header || logo,
+      footer: savedLogos?.footer || logo,
+      portal: savedLogos?.portal || logo,
+      auth: savedLogos?.auth || logo,
+      certificate: savedLogos?.certificate || logo,
+      brochure: savedLogos?.brochure || logo,
+    };
   }
   // Seed the owner-approved founder once, preserving other published profiles.
   // Publishing records the revision so subsequent deletes/visibility edits stick.
@@ -215,7 +227,7 @@ export function mergeWebsiteSettings(
       enabled: true,
       title: merged.team.title === "Meet our staff" ? defaults.team.title : merged.team.title,
       description: merged.team.description || defaults.team.description,
-      members: founder ? (existing < 0 ? [founder, ...members] : members.map((member, index) => index === existing ? { ...member, ...founder } : member)) : members,
+      members: founder ? (existing < 0 ? [founder, ...members] : members.map((member, index) => index === existing ? { ...founder, ...member, id: founder.id } : member)) : members,
     };
   }
   // Certificate wording/signatories are saved inside the same settings blob.

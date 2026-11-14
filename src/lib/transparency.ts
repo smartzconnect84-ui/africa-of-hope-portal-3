@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { validateFile, MAX_DOCUMENT_BYTES } from './storage';
+import { newId } from './ids';
 
 export const REPORT_CATEGORIES = ['Registration papers', 'Audited accounts', 'Annual reports'] as const;
 export type ReportCategory = typeof REPORT_CATEGORIES[number];
@@ -27,7 +28,7 @@ export async function createReport(input: ReportInput, file: File): Promise<void
   if (invalid) throw new Error(invalid);
   const signature = await file.slice(0, 5).text();
   if (signature !== '%PDF-') throw new Error('Please choose a genuine PDF document.');
-  const id = crypto.randomUUID();
+  const id = newId("doc");
   const path = `${id}.pdf`;
   const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { contentType: 'application/pdf', upsert: false });
   if (uploadError) throw new Error(uploadError.message);

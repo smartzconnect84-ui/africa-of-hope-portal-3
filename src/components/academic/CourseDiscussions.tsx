@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, SectionHeader, panelClass } from "../Navigation";
 import { cn } from "@/lib/utils";
+import { newId } from "@/lib/ids";
 
 /** Cohort-scoped Supabase Q&A with per-user offline drafts and retry on reconnect. */
 export default function CourseDiscussions() {
@@ -98,7 +99,7 @@ export default function CourseDiscussions() {
     savingRef.current = true; setSaving(true);
     try {
       const thread: Thread = {
-        id: crypto.randomUUID(), cohortId, unitId: unitId === "general" ? null : unitId,
+        id: newId("t"), cohortId, unitId: unitId === "general" ? null : unitId,
         title: title.trim(), body: body.trim(), authorId: currentUser.id,
         authorName: currentUser.name, role: currentUser.role, createdAt: new Date().toISOString(), replies: [],
       };
@@ -115,7 +116,7 @@ export default function CourseDiscussions() {
     if (savingRef.current || !replyBody.trim() || !currentUser) return;
     savingRef.current = true; setSaving(true);
     try {
-      const reply: ReplyRow = { id: crypto.randomUUID(), authorId: currentUser.id, authorName: currentUser.name, role: currentUser.role, body: replyBody.trim(), createdAt: new Date().toISOString(), isAnswer: false };
+      const reply: ReplyRow = { id: newId("r"), authorId: currentUser.id, authorName: currentUser.name, role: currentUser.role, body: replyBody.trim(), createdAt: new Date().toISOString(), isAnswer: false };
       queueReply(currentUser.id, threadId, reply);
       setThreads(cachedDiscussions(currentUser.id, allowedCohortIds));
       setReplyDrafts((d) => ({ ...d, [threadId]: "" }));

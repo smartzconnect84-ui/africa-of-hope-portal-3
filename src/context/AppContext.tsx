@@ -111,19 +111,19 @@ interface AppContextValue {
   approveApplicant: (id: string) => Promise<string | null>;
   rejectApplicant: (id: string) => void;
   toggleStudentStatus: (id: string) => void;
-  addProgram: (payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => void;
-  updateProgram: (id: string, patch: Partial<Program> & { modulesRaw?: string }) => void;
-  deleteProgram: (id: string) => void;
-  addCohort: (payload: Omit<Cohort, "id">) => void;
-  updateCohort: (id: string, payload: Partial<Omit<Cohort, "id">>) => void;
-  deleteCohort: (id: string) => void;
-  markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => void;
+  addProgram: (payload: Omit<Program, "id" | "modules"> & { modulesRaw: string }) => Promise<string | null>;
+  updateProgram: (id: string, patch: Partial<Program> & { modulesRaw?: string }) => Promise<string | null>;
+  deleteProgram: (id: string) => Promise<string | null>;
+  addCohort: (payload: Omit<Cohort, "id">) => Promise<string | null>;
+  updateCohort: (id: string, payload: Partial<Omit<Cohort, "id">>) => Promise<string | null>;
+  deleteCohort: (id: string) => Promise<string | null>;
+  markAttendance: (cohortId: string, date: string, statuses: Record<string, AttendanceStatus>) => Promise<string | null>;
   addAssignment: (payload: Omit<Assignment, "id">) => Promise<void>;
   updateAssignment: (id: string, payload: Partial<Omit<Assignment, "id">>) => Promise<void>;
   deleteAssignment: (id: string) => Promise<void>;  
   gradeSubmission: (assignmentId: string, studentId: string, marks: number, feedback: string) => Promise<void>;
   submitSubmission: (assignmentId: string, studentId: string, text: string, attachment: string) => Promise<void>;
-  addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => void;
+  addFeeTransaction: (payload: Omit<FeeTransaction, "id">) => Promise<string | null>;
   updateFeeTransaction: (id: string, payload: Partial<Omit<FeeTransaction, "id">>) => Promise<string | null>;
   deleteFeeTransaction: (id: string) => Promise<string | null>;
   /** Issues (or returns the existing) certificate through the database function; rejects with an actionable message. */
@@ -136,7 +136,7 @@ interface AppContextValue {
   ) => Promise<Certificate>;
   /** Administrator-only revocation of an issued certificate, recorded with actor, time and reason. */
   revokeCertificate: (certificateId: string, reason: string) => Promise<Certificate>;
-  addAnnouncement: (payload: Omit<Announcement, "id" | "date">) => void;
+  addAnnouncement: (payload: Omit<Announcement, "id" | "date">) => Promise<string | null>;
   updateSystemSettings: (patch: Partial<SystemSettings>) => Promise<string | null>;
   /** Publishes a whole settings object live (the CMS editor's "Publish changes" button). */
   publishWebsiteSettings: (next: WebsiteSettings) => Promise<string | null>;
@@ -533,7 +533,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const status: User["status"] = user?.status === "Active" ? "Suspended" : "Active";
         patchUser(id, { status }, (u) => ({ ...u, status }), "Student status");
       },
-      addProgram: (payload) => {
+      addProgram: async (payload) => {
         const { modulesRaw, ...rest } = payload;
         const id = uid();
         const modules = modulesRaw
@@ -550,39 +550,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
             };
           });
         const program: Program = { ...rest, id, modules };
-        setState((s) => ({ ...s, programs: [...s.programs, program] }));
-        push(
-          "Programme",
-          (async () => {
-            // Full-setup columns (delivery_modes, study_plan, image_url,
-            // published) ride along when the table has them; older table
-            // shapes fall back to the base columns, same as seedCatalogue.
-            const full = {
-              id,
-              title: program.title,
-              category: program.category,
-              duration_weeks: program.durationWeeks,
-              tuition: program.tuition,
-              certification: program.certification,
-              description: program.description,
-              entry_requirements: program.entryRequirements,
-              delivery_modes: program.deliveryModes?.length ? program.deliveryModes : null,
-              study_plan: program.studyPlan || null,
-              image_url: program.imageUrl || null,
-              published: program.published ?? true,
-            };
-            const first = await supabase.from("programs").insert(full);
-            if (first.error && /delivery_modes|study_plan|image_url|published/i.test(first.error.message)) {
-              const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = full;
-              return supabase.from("programs").insert(base);
-            }
-            return first;
-          })(),
-        );
-        if (modules.length) {
-          push(
-            "Programme modules",
-            supabase.from("program_modules").insert(
+        try {
+          const full = {
+            id,
+            title: program.title,
+            category: program.category,
+            duration_weeks: program.durationWeeks,
+            tuition: program.tuition,
+            certification: program.certification,
+            description: program.description,
+            entry_requirements: program.entryRequirements,
+            delivery_modes: program.deliveryModes?.length ? program.deliveryModes : null,
+            study_plan: program.studyPlan || null,
+            image_url: program.imageUrl || null,
+            published: program.published ?? true,
+          };
+          let res = await supabase.from("programs").insert(full);
+          if (res.error && /delivery_modes|study_plan|image_url|published/i.test(res.error.message)) {
+            const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = full;
+            res = await supabase.from("programs").insert(base);
+          }
+          if (res.error) return migrationHint(res.error.message, "Programme catalogue");
+          if (modules.length) {
+            const { error: modError } = await supabase.from("program_modules").insert(
               modules.map((m, index) => ({
                 id: m.id,
                 program_id: id,
@@ -591,11 +581,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 summary: m.summary,
                 position: index,
               })),
-            ),
-          );
+            );
+            if (modError) {
+              setState((s) => ({ ...s, programs: [...s.programs, program] }));
+              await refresh();
+              return migrationHint(modError.message, "Programme modules");
+            }
+          }
+          setState((s) => ({ ...s, programs: [...s.programs, program] }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Programme could not be saved. Please retry.";
         }
       },
-      updateProgram: (id, patch) => {
+      updateProgram: async (id, patch) => {
         const { modulesRaw, ...rest } = patch;
         const nextModules = modulesRaw === undefined
           ? undefined
@@ -607,52 +607,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 const [title, weeks, ...summary] = line.split("|").map((part) => part.trim());
                 return { id: uid(), title: title || "Module", weeks: Number.parseInt(weeks ?? "2", 10) || 2, summary: summary.join(" | ") };
               });
-        setState((s) => ({
-          ...s,
-          programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(nextModules ? { modules: nextModules } : null) } : p)),
-        }));
-        push(
-          "Programme update",
-          (async () => {
-            const row: Record<string, unknown> = {};
-            if (rest.title !== undefined) row.title = rest.title;
-            if (rest.category !== undefined) row.category = rest.category;
-            if (rest.durationWeeks !== undefined) row.duration_weeks = rest.durationWeeks;
-            if (rest.tuition !== undefined) row.tuition = rest.tuition;
-            if (rest.certification !== undefined) row.certification = rest.certification;
-            if (rest.description !== undefined) row.description = rest.description;
-            if (rest.entryRequirements !== undefined) row.entry_requirements = rest.entryRequirements;
-            if (rest.deliveryModes !== undefined) row.delivery_modes = rest.deliveryModes?.length ? rest.deliveryModes : null;
-            if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
-            if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
-            if (rest.published !== undefined) row.published = rest.published;
-            if (!Object.keys(row).length && !nextModules) return { error: null };
-            if (Object.keys(row).length) {
-              const first = await supabase.from("programs").update(row).eq("id", id);
-              if (first.error && /delivery_modes|study_plan|image_url|published/i.test(first.error.message)) {
-                const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = row;
-                if (Object.keys(base).length) return supabase.from("programs").update(base).eq("id", id);
-              } else if (first.error) return first;
+        try {
+          const row: Record<string, unknown> = {};
+          if (rest.title !== undefined) row.title = rest.title;
+          if (rest.category !== undefined) row.category = rest.category;
+          if (rest.durationWeeks !== undefined) row.duration_weeks = rest.durationWeeks;
+          if (rest.tuition !== undefined) row.tuition = rest.tuition;
+          if (rest.certification !== undefined) row.certification = rest.certification;
+          if (rest.description !== undefined) row.description = rest.description;
+          if (rest.entryRequirements !== undefined) row.entry_requirements = rest.entryRequirements;
+          if (rest.deliveryModes !== undefined) row.delivery_modes = rest.deliveryModes?.length ? rest.deliveryModes : null;
+          if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
+          if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
+          if (rest.published !== undefined) row.published = rest.published;
+          if (!Object.keys(row).length && !nextModules) return null;
+          if (Object.keys(row).length) {
+            let res = await supabase.from("programs").update(row).eq("id", id);
+            if (res.error && /delivery_modes|study_plan|image_url|published/i.test(res.error.message)) {
+              const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = row;
+              if (Object.keys(base).length) res = await supabase.from("programs").update(base).eq("id", id);
+              else res = { error: null } as typeof res;
             }
-            if (nextModules) {
-              await supabase.from("program_modules").delete().eq("program_id", id);
-              return supabase.from("program_modules").insert(nextModules.map((m, index) => ({ id: m.id, program_id: id, title: m.title, weeks: m.weeks, summary: m.summary, position: index })));
-            }
-            return { error: null };
-          })(),
-        );
+            if (res.error) return migrationHint(res.error.message, "Programme catalogue");
+          }
+          if (nextModules) {
+            const { error: delError } = await supabase.from("program_modules").delete().eq("program_id", id);
+            if (delError) return migrationHint(delError.message, "Programme modules");
+            const { error: insError } = await supabase.from("program_modules").insert(nextModules.map((m, index) => ({ id: m.id, program_id: id, title: m.title, weeks: m.weeks, summary: m.summary, position: index })));
+            if (insError) return migrationHint(insError.message, "Programme modules");
+          }
+          setState((s) => ({
+            ...s,
+            programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(nextModules ? { modules: nextModules } : null) } : p)),
+          }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Programme update could not be saved. Please retry.";
+        }
       },
-      deleteProgram: (id) => {
-        setState((s) => ({ ...s, programs: s.programs.filter((p) => p.id !== id) }));
-        push("Programme delete", supabase.from("programs").delete().eq("id", id));
+      deleteProgram: async (id) => {
+        try {
+          const { error } = await supabase.from("programs").delete().eq("id", id);
+          if (error) return migrationHint(error.message, "Programme catalogue");
+          setState((s) => ({ ...s, programs: s.programs.filter((p) => p.id !== id) }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Programme could not be deleted. Please retry.";
+        }
       },
-      addCohort: (payload) => {
+      addCohort: async (payload) => {
         const id = uid();
         const cohort: Cohort = { ...payload, id };
-        setState((s) => ({ ...s, cohorts: [...s.cohorts, cohort] }));
-        push(
-          "Cohort",
-          supabase.from("cohorts").insert({
+        try {
+          const { error } = await supabase.from("cohorts").insert({
             id,
             name: cohort.name,
             program_id: cohort.programId,
@@ -660,59 +669,72 @@ export function AppProvider({ children }: { children: ReactNode }) {
             start_date: cohort.startDate,
             end_date: cohort.endDate,
             room: cohort.room,
-          }),
-        );
-        if (cohort.studentIds.length) {
-          push(
-            "Enrolment",
-            supabase.from("cohort_students").insert(
+          });
+          if (error) return migrationHint(error.message, "Cohorts");
+          if (cohort.studentIds.length) {
+            const { error: enrolError } = await supabase.from("cohort_students").insert(
               cohort.studentIds.map((studentId) => ({ cohort_id: id, student_id: studentId })),
-            ),
-          );
+            );
+            if (enrolError) {
+              setState((s) => ({ ...s, cohorts: [...s.cohorts, cohort] }));
+              await refresh();
+              return migrationHint(enrolError.message, "Enrolment");
+            }
+          }
+          setState((s) => ({ ...s, cohorts: [...s.cohorts, cohort] }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Cohort could not be saved. Please retry.";
         }
       },
-      updateCohort: (id, payload) => {
-        setState((s) => ({
-          ...s,
-          cohorts: s.cohorts.map((c) => (c.id === id ? { ...c, ...payload } : c)),
-        }));
-        push(
-          "Cohort update",
-          (async () => {
-            const row: Record<string, unknown> = {};
-            if (payload.name !== undefined) row.name = payload.name;
-            if (payload.programId !== undefined) row.program_id = payload.programId;
-            if (payload.teacherId !== undefined) row.teacher_id = payload.teacherId || null;
-            if (payload.startDate !== undefined) row.start_date = payload.startDate;
-            if (payload.endDate !== undefined) row.end_date = payload.endDate;
-            if (payload.room !== undefined) row.room = payload.room;
-            if (Object.keys(row).length) {
-              const updated = await supabase.from("cohorts").update(row).eq("id", id);
-              if (updated.error) return updated;
+      updateCohort: async (id, payload) => {
+        try {
+          const row: Record<string, unknown> = {};
+          if (payload.name !== undefined) row.name = payload.name;
+          if (payload.programId !== undefined) row.program_id = payload.programId;
+          if (payload.teacherId !== undefined) row.teacher_id = payload.teacherId || null;
+          if (payload.startDate !== undefined) row.start_date = payload.startDate;
+          if (payload.endDate !== undefined) row.end_date = payload.endDate;
+          if (payload.room !== undefined) row.room = payload.room;
+          if (Object.keys(row).length) {
+            const { error } = await supabase.from("cohorts").update(row).eq("id", id);
+            if (error) return migrationHint(error.message, "Cohorts");
+          }
+          if (payload.studentIds !== undefined) {
+            const { error: delError } = await supabase.from("cohort_students").delete().eq("cohort_id", id);
+            if (delError) return migrationHint(delError.message, "Enrolment");
+            if (payload.studentIds.length) {
+              const { error: insError } = await supabase.from("cohort_students").insert(
+                payload.studentIds.map((student_id) => ({ cohort_id: id, student_id })),
+              );
+              if (insError) return migrationHint(insError.message, "Enrolment");
             }
-            if (payload.studentIds !== undefined) {
-              await supabase.from("cohort_students").delete().eq("cohort_id", id);
-              if (payload.studentIds.length) {
-                return supabase.from("cohort_students").insert(
-                  payload.studentIds.map((student_id) => ({ cohort_id: id, student_id })),
-                );
-              }
-            }
-            return { error: null };
-          })(),
-        );
+          }
+          setState((s) => ({
+            ...s,
+            cohorts: s.cohorts.map((c) => (c.id === id ? { ...c, ...payload } : c)),
+          }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Cohort update could not be saved. Please retry.";
+        }
       },
-      deleteCohort: (id) => {
-        setState((s) => ({ ...s, cohorts: s.cohorts.filter((c) => c.id !== id) }));
-        push(
-          "Cohort delete",
-          (async () => {
-            await supabase.from("cohort_students").delete().eq("cohort_id", id);
-            return supabase.from("cohorts").delete().eq("id", id);
-          })(),
-        );
+      deleteCohort: async (id) => {
+        try {
+          const { error: linkError } = await supabase.from("cohort_students").delete().eq("cohort_id", id);
+          if (linkError) return migrationHint(linkError.message, "Enrolment");
+          const { error } = await supabase.from("cohorts").delete().eq("id", id);
+          if (error) return migrationHint(error.message, "Cohorts");
+          setState((s) => ({ ...s, cohorts: s.cohorts.filter((c) => c.id !== id) }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Cohort could not be deleted. Please retry.";
+        }
       },
-      markAttendance: (cohortId, date, statuses) => {
+      markAttendance: async (cohortId, date, statuses) => {
         const rows = Object.entries(statuses).map(([studentId, status]) => ({
           id: uid(),
           cohortId,
@@ -721,35 +743,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status,
         }));
         const keptStudentIds = Object.keys(statuses);
-        setState((s) => ({
-          ...s,
-          attendance: [
-            ...s.attendance.filter((a) => !(a.cohortId === cohortId && a.date === date)),
-            ...rows,
-          ],
-        }));
-        push(
-          "Attendance",
-          (async () => {
-            // Upsert so existing rows keep their id (cohort_id, student_id, attendance_date is unique);
-            // only students no longer in `statuses` get their row removed.
-            if (rows.length) {
-              const upserted = await supabase.from("attendance").upsert(
-                rows.map((r) => ({
-                  cohort_id: cohortId,
-                  student_id: r.studentId,
-                  attendance_date: date,
-                  status: r.status,
-                })),
-                { onConflict: "cohort_id,student_id,attendance_date" },
-              );
-              if (upserted.error) return upserted;
-            }
-            let clear = supabase.from("attendance").delete().eq("cohort_id", cohortId).eq("attendance_date", date);
-            if (keptStudentIds.length) clear = clear.not("student_id", "in", `(${keptStudentIds.join(",")})`);
-            return await clear;
-          })(),
-        );
+        try {
+          if (rows.length) {
+            const { error: upsertError } = await supabase.from("attendance").upsert(
+              rows.map((r) => ({
+                cohort_id: cohortId,
+                student_id: r.studentId,
+                attendance_date: date,
+                status: r.status,
+              })),
+              { onConflict: "cohort_id,student_id,attendance_date" },
+            );
+            if (upsertError) return migrationHint(upsertError.message, "Attendance");
+          }
+          let clear = supabase.from("attendance").delete().eq("cohort_id", cohortId).eq("attendance_date", date);
+          if (keptStudentIds.length) clear = clear.not("student_id", "in", `(${keptStudentIds.join(",")})`);
+          const { error: clearError } = await clear;
+          if (clearError) return migrationHint(clearError.message, "Attendance");
+          setState((s) => ({
+            ...s,
+            attendance: [
+              ...s.attendance.filter((a) => !(a.cohortId === cohortId && a.date === date)),
+              ...rows,
+            ],
+          }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Attendance could not be saved. Please retry.";
+        }
       },
       addAssignment: async (payload) => {
         const id = uid();
@@ -802,12 +824,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await academicApi.submitClasswork(assignmentId, response, null);
         await refresh();
       },
-      addFeeTransaction: (payload) => {
+      addFeeTransaction: async (payload) => {
         const id = uid();
-        setState((s) => ({ ...s, fees: [...s.fees, { ...payload, id }] }));
-        push(
-          "Payment",
-          supabase.from("fee_transactions").insert({
+        try {
+          const { error } = await supabase.from("fee_transactions").insert({
             id,
             student_id: payload.studentId,
             category: payload.category,
@@ -815,8 +835,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             transaction_date: payload.date,
             method: payload.method,
             reference: payload.reference,
-          }),
-        );
+          });
+          if (error) return migrationHint(error.message, "Fee transactions");
+          setState((s) => ({ ...s, fees: [...s.fees, { ...payload, id }] }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Payment could not be recorded. Please retry.";
+        }
       },
       updateFeeTransaction: async (id, payload) => {
         const row: Record<string, unknown> = {};
@@ -859,21 +885,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
         return certificate;
       },
-      addAnnouncement: (payload) => {
+      addAnnouncement: async (payload) => {
         const id = uid();
         const date = today();
-        setState((s) => ({ ...s, announcements: [{ ...payload, id, date }, ...s.announcements] }));
-        push(
-          "Announcement",
-          supabase.from("announcements").insert({
+        try {
+          const { error } = await supabase.from("announcements").insert({
             id,
             title: payload.title,
             body: payload.body,
             category: payload.category,
             published_date: date,
             author_id: currentUser?.id ?? null,
-          }),
-        );
+          });
+          if (error) return migrationHint(error.message, "Bulletins");
+          setState((s) => ({ ...s, announcements: [{ ...payload, id, date }, ...s.announcements] }));
+          await refresh();
+          return null;
+        } catch (err) {
+          return err instanceof Error ? err.message : "Bulletin could not be published. Please retry.";
+        }
       },
       updateSystemSettings: async (patch) => {
         const settings = { ...stateRef.current.settings, ...patch };

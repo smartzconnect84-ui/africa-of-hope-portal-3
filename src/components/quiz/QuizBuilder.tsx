@@ -12,6 +12,7 @@ import {
   type QuestionDraft, type QuizDraft, updateQuestion, updateQuiz,
 } from "../../lib/quizzes";
 import { academicApi, type LearningUnit } from "@/lib/academics";
+import { newId } from "@/lib/ids";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,7 @@ const SHOW_ANSWERS: { value: QuizShowAnswers; label: string }[] = [
 ];
 
 function uid() {
-  return crypto.randomUUID();
+  return newId("q");
 }
 
 /** A question card's editable state. `id` is a real DB id once saved, or a `new:` prefix before. */

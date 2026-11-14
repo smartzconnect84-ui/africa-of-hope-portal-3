@@ -2,11 +2,12 @@ import { useId, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Image as ImageIcon, Plus, Trash2, ArrowUp, ArrowDown, Upload, X, Loader2 } from "lucide-react";
 import { uploadSiteAsset } from "@/lib/storage";
-import { validateFile, IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/storage";
+import { validateFile, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES } from "@/lib/storage";
 
-/* ---------- tiny id helper ---------- */
-let seq = 0;
-export const genId = (p: string) => `${p}-${Date.now().toString(36)}-${(seq++).toString(36)}`;
+import { newId } from "@/lib/ids";
+
+/* ---------- tiny id helper (centralized, collision-safe) ---------- */
+export const genId = newId;
 
 export function Field({
   label,
@@ -146,7 +147,7 @@ export function ImageBox({
   const urlPlaceholder = preserveFull ? "…or paste an image URL (shown in full, not cropped)" : "…or paste an image URL (cropped to fill its frame)";
   const handleFile = async (file?: File) => {
     if (!file) return;
-    const err = validateFile(file, IMAGE_TYPES, MAX_IMAGE_BYTES);
+    const err = validateFile(file, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES);
     if (err) {
       toast.error(err);
       return;
@@ -156,8 +157,8 @@ export function ImageBox({
       const url = await uploadSiteAsset(folder, file);
       onChange(url);
       toast.success("Image uploaded. Click Publish changes to make it live.");
-    } catch {
-      toast.error('Upload could not be confirmed. Check storage access and your connection. Your previous image is unchanged.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Upload could not be confirmed. Check storage access and your connection. Your previous image is unchanged.');
     } finally {
       setBusy(false);
       if (ref.current) ref.current.value = '';
