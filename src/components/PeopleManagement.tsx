@@ -384,10 +384,12 @@ function AddStaffDialog({
   const [role, setRole] = useState<Role>("Teacher");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const roleOptions = ROLES.filter((r) => r !== "Student" && (isSuperAdmin || r !== "Super Admin"));
 
   function reset() {
+    setSubmitError(null);
     setName("");
     setEmail("");
     setPhone("");
@@ -397,18 +399,25 @@ function AddStaffDialog({
   }
 
   async function submit() {
+    setSubmitError(null);
     if (!name.trim() || !email.trim()) {
-      toast.error("Name and email are required.");
+      const msg = "Name and email are required.";
+      setSubmitError(msg);
+      toast.error(msg);
       return;
     }
     const normalized = email.trim().toLowerCase();
     const clash = state.users.find((u) => u.email.trim().toLowerCase() === normalized);
     if (clash) {
-      toast.error(`An account with this email already exists (${clash.role}). One email can only be used for one account (User, Admin or Staff) — ask the holder to sign in instead. Email changes only at the user's request via the school office.`);
+      const msg = `An account with this email already exists (${clash.role}). One email can only be used for one account (User, Admin or Staff) — ask the holder to sign in instead. Email changes only at the user's request via the school office.`;
+      setSubmitError(msg);
+      toast.error(msg);
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error("Enter a valid email address.");
+      const msg = "Enter a valid email address.";
+      setSubmitError(msg);
+      toast.error(msg);
       return;
     }
     setSubmitting(true);
@@ -424,6 +433,10 @@ function AddStaffDialog({
     if (!err) {
       reset();
       onOpenChange(false);
+    } else {
+      // Keep the dialog open with values preserved so the real server
+      // reason stays visible instead of a disappearing toast.
+      setSubmitError(err);
     }
   }
 
@@ -485,6 +498,9 @@ function AddStaffDialog({
             />
           </div>
         </div>
+        {submitError && (
+          <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{submitError}</p>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-component-id="add-staff-cancel">
             Cancel

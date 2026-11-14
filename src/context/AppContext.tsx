@@ -899,19 +899,68 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.functions.invoke("admin-users", {
           body: { action, ...body },
         });
-        const payload = data as { error?: string; user_id?: string } | null;
-        if (error || payload?.error) {
-          const message = payload?.error ?? error?.message ?? "Request failed";
-          toast.error(message);
-          return message;
+        const payload = data as { error?: string; code?: string; temporary_password?: string } | null;
+        let serverMessage: string | undefined = payload?.error;
+        let serverCode: string | undefined = payload?.code;
+        // supabase-js surfaces Edge Function 4xx/5xx as a generic
+        // "Edge Function returned a non-2xx status code" error. The real
+        // reason lives in the response body, so extract it before toasting.
+        if (error && !serverMessage) {
+          try {
+            const ctx = (error as unknown as { context?: unknown }).context as
+              | { json?: unknown; text?: unknown }
+              | Response
+              | undefined;
+            const asJson = typeof (ctx as { json?: unknown })?.json === "function"
+              ? await ((ctx as Response).clone?.() ?? (ctx as Response)).json().catch(() => null)
+              : null;
+            const parsed = (asJson ?? (typeof ctx === "object" && ctx !== null && "error" in ctx ? ctx : null)) as {
+              error?: unknown;
+              code?: unknown;
+              msg?: unknown;
+              message?: unknown;
+            } | null;
+            if (parsed && typeof parsed.error === "string") serverMessage = parsed.error;
+            else if (parsed && typeof parsed.message === "string") serverMessage = parsed.message;
+            else if (parsed && typeof parsed.msg === "string") serverMessage = parsed.msg;
+            if (parsed && typeof parsed.code === "string") serverCode = parsed.code;
+            if (!serverMessage && typeof (ctx as { text?: unknown })?.text === "function") {
+              const text = await ((ctx as Response).clone?.() ?? (ctx as Response)).text().catch(() => "");
+              if (text) {
+                try {
+                  const j = JSON.parse(text) as { error?: unknown; message?: unknown; code?: unknown };
+                  if (typeof j.error === "string") serverMessage = j.error;
+                  else if (typeof j.message === "string") serverMessage = j.message;
+                  if (typeof j.code === "string") serverCode = j.code;
+                } catch {
+                  serverMessage = text.slice(0, 300);
+                }
+              }
+            }
+          } catch {
+            /* fall through to the generic message below */
+          }
         }
-        const labels: Record<string, string> = {
-          create: "Staff account created.",
-          update: "Account updated.",
-          reset_password: "Password reset started.",
-          delete: "Account deleted.",
-        };
-        toast.success(labels[action] ?? "Done.");
+        if (error || payload?.error) {
+          const message = serverMessage ?? error?.message ?? "Request failed";
+          const hint = serverCode && serverCode !== "internal" ? ` (${serverCode})` : "";
+          const friendly = /non-2xx/i.test(message) && !serverMessage
+            ? "The account service returned an error without details. Open the Supabase dashboard → Edge Functions → admin-users → Logs, then retry. If it persists, redeploy the admin-users function."
+            : `${message}${/\([a-z_]+\)$/.test(message) ? "" : hint}`;
+          toast.error(friendly);
+          return friendly;
+        }
+        if (payload?.temporary_password) {
+          toast.success(`Staff account created. Temporary password: ${payload.temporary_password} — share it with the new staff member.`);
+        } else {
+          const labels: Record<string, string> = {
+            create: "Staff account created.",
+            update: "Account updated.",
+            reset_password: "Password reset started.",
+            delete: "Account deleted.",
+          };
+          toast.success(labels[action] ?? "Done.");
+        }
         await refresh();
         return null;
       },
