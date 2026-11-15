@@ -1,0 +1,165 @@
+/* Africa of Hope: ivory paper, forest ink and brass details.
+   Source-driven, static-first layout; no reveal-dependent visibility. */
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #234435;
+  background: #f8f7f1;
+  font-synthesis: none;
+  --paper: #f8f7f1;
+  --forest: #194c3c;
+  --muted: #626e65;
+  --line: #d9ded2;
+  --brass: #c9ad76;
+  --gutter: clamp(20px, 5.2vw, 76px);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; min-width: 280px; }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+button:focus-visible, a:focus-visible { outline: 3px solid #a57828; outline-offset: 5px; }
+svg { display: block; flex-shrink: 0; }
+p, h1, h2, h3 { margin-top: 0; }
+.aoh-site { width: 100%; }
+.aoh-container { width: min(100%, 1440px); margin-inline: auto; padding-inline: var(--gutter); }
+.aoh-skip { position: fixed; top: -80px; left: 20px; z-index: 20; padding: 15px; background: white; }
+.aoh-skip:focus { top: 10px; }
+.aoh-header { border-bottom: 1px solid var(--line); }
+.aoh-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 25px; min-height: 106px; }
+.aoh-brand { display: inline-flex; align-items: center; gap: 11px; min-height: 44px; flex-shrink: 0; }
+.aoh-brand > svg { width: 43px; height: 43px; }
+.aoh-brand > span { font: 19px Georgia, serif; letter-spacing: 1.1px; }
+.aoh-brand small { display: block; margin-top: 7px; font: 7px Arial, sans-serif; letter-spacing: 1px; }
+.aoh-nav { display: flex; align-items: center; gap: clamp(20px, 2.4vw, 36px); font-size: 12px; }
+.aoh-nav > a { display: flex; align-items: center; min-height: 46px; }
+.aoh-nav-cta { border: 1px solid var(--forest); padding: 0 18px; gap: 25px; }
+.aoh-arrow { width: 21px; height: 21px; }
+.aoh-arrow-diagonal { transform: rotate(-40deg); }
+.aoh-arrow-left { transform: rotate(180deg); }
+.aoh-menu-toggle { display: none; }
+.aoh-hero { display: grid; grid-template-columns: 1.05fr 1fr; column-gap: 5%; padding-top: 30px; }
+.aoh-hero-copy { align-self: center; min-width: 0; padding: 42px 0 25px; }
+.aoh-eyebrow { display: flex; align-items: center; gap: 9px; font-size: 9px; font-weight: 700; line-height: 1.8; letter-spacing: 1.8px; margin-bottom: 22px; }
+.aoh-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--brass); }
+.aoh-site h1, .aoh-site h2, .aoh-site h3 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
+.aoh-site h1 { font-size: clamp(40px, 4.8vw, 73px); line-height: 1.08; letter-spacing: -2.7px; margin-bottom: 27px; }
+.aoh-site h1 em { display: block; font-weight: 400; }
+.aoh-intro { color: var(--muted); max-width: 390px; font-size: 14px; line-height: 1.9; }
+.aoh-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; margin-top: 32px; }
+.aoh-button { min-height: 50px; padding: 13px 20px; display: inline-flex; align-items: center; justify-content: center; gap: 23px; border: 1px solid var(--forest); background: var(--forest); color: white; font-size: 12px; }
+.aoh-button:hover { background: #103c2e; }
+.aoh-simple-link { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; min-height: 46px; }
+.aoh-discover { display: inline-flex; align-items: center; gap: 12px; margin-top: 48px; min-height: 44px; font-size: 10px; color: var(--muted); }
+.aoh-discover > span { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font-size: 17px; }
+.aoh-hero-image { position: relative; min-width: 0; min-height: 515px; background: #dce2d6; overflow: hidden; }
+.aoh-hero-image > img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.aoh-image-label { position: absolute; top: 23px; left: 23px; right: 23px; width: fit-content; padding: 10px 12px; background: var(--paper); font-size: 8px; letter-spacing: 1.4px; line-height: 1.5; }
+.aoh-image-note { position: absolute; left: 22px; right: 22px; bottom: 22px; background: var(--forest); color: var(--paper); display: flex; align-items: center; gap: 20px; padding: 22px; }
+.aoh-image-note svg { width: 38px; height: 38px; color: #dcc38e; }
+.aoh-image-note p { font: 25px/1.2 Georgia, serif; max-width: 280px; margin: 0; }
+.aoh-slider-toolbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 23px; padding-block: 17px; }
+.aoh-slide-number { white-space: nowrap; font-size: 12px; font-weight: 700; }
+.aoh-slide-number > span { color: var(--muted); margin-left: 8px; font-weight: 400; }
+.aoh-slide-tabs { display: flex; }
+.aoh-slide-tabs button { width: 43px; height: 44px; background: none; border: 0; padding: 0 4px; }
+.aoh-slide-tabs button span { display: block; height: 2px; background: var(--line); }
+.aoh-slide-tabs button[aria-pressed="true"] span { background: var(--forest); }
+.aoh-slide-controls { display: flex; margin-left: auto; gap: 5px; }
+.aoh-slide-controls button { width: 44px; height: 44px; border: 1px solid var(--line); background: transparent; color: var(--forest); display: grid; place-items: center; font-size: 18px; }
+.aoh-slide-controls button:hover { background: #e7ebdf; }
+.aoh-values { background: #e9ecdf; }
+.aoh-values-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 25px; }
+.aoh-values-row > span { font-size: 9px; letter-spacing: 1.8px; line-height: 1.7; }
+.aoh-values-row p { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; font: 22px Georgia, serif; margin: 0; }
+.aoh-values-row i { width: 4px; height: 4px; background: #819373; border-radius: 50%; }
+.aoh-section { padding-top: clamp(50px, 6.5vw, 94px); padding-bottom: clamp(50px, 6.5vw, 94px); }
+.aoh-site h2 { font-size: clamp(34px, 3.6vw, 53px); line-height: 1.15; letter-spacing: -1.4px; margin-bottom: 25px; }
+.aoh-approach { display: grid; grid-template-columns: 1fr 1fr; gap: 9%; }
+.aoh-body-copy { padding-top: 20px; }
+.aoh-body-copy p, .aoh-service-note p { color: var(--muted); font-size: 14px; line-height: 1.9; }
+.aoh-underlined-link { min-height: 45px; display: inline-flex; align-items: center; gap: 25px; border-bottom: 1px solid currentColor; font-size: 12px; line-height: 1.5; }
+.aoh-community { background: var(--forest); color: var(--paper); }
+.aoh-community h2, .aoh-community h3 { color: var(--paper); }
+.aoh-community .aoh-eyebrow, .aoh-community h2 em { color: #dfc58e; }
+.aoh-principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 45px; margin-top: 50px; }
+.aoh-principles article { border-top: 1px solid #658273; padding-top: 24px; }
+.aoh-principles article > span { font-size: 9px; letter-spacing: 1.5px; color: #dfc58e; }
+.aoh-principles h3 { font-size: 29px; margin: 25px 0 14px; }
+.aoh-principles p { color: #d5e0d6; font-size: 13px; line-height: 1.9; max-width: 280px; }
+.aoh-admissions { display: grid; grid-template-columns: 1fr 1fr; gap: 10%; align-items: center; }
+.aoh-service-note { padding: 32px; border: 1px solid var(--line); min-width: 0; }
+.aoh-service-note .aoh-eyebrow { color: #796027; font-size: 8px; }
+.aoh-service-note h3 { font-size: 28px; margin-bottom: 15px; }
+.aoh-footer { border-top: 1px solid var(--line); }
+.aoh-footer-row { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding-block: 30px; }
+.aoh-footer-row > p, .aoh-footer-row > a { margin: 0; font-size: 11px; }
+.aoh-footer-row > a { min-height: 44px; display: flex; align-items: center; }
+@media (max-width: 1000px) {
+  .aoh-nav { gap: 18px; }
+  .aoh-brand > span { font-size: 16px; }
+  .aoh-brand small { font-size: 6px; }
+  .aoh-nav-cta { padding-inline: 12px; gap: 12px; }
+  .aoh-hero { column-gap: 25px; }
+  .aoh-hero-image { min-height: 490px; }
+  .aoh-site h1 { letter-spacing: -1.8px; }
+  .aoh-actions { gap: 10px; }
+  .aoh-image-note { padding: 17px; gap: 14px; }
+  .aoh-image-note p { font-size: 22px; }
+  .aoh-values-row p { font-size: 19px; gap: 12px; }
+}
+@media (max-width: 720px) {
+  .aoh-nav-row { min-height: 86px; flex-wrap: wrap; column-gap: 12px; row-gap: 0; padding-top: 14px; padding-bottom: 14px; }
+  .aoh-brand { gap: 8px; }
+  .aoh-brand > svg { width: 34px; height: 38px; }
+  .aoh-brand > span { font-size: 15px; letter-spacing: .7px; }
+  .aoh-brand small { font-size: 5.5px; letter-spacing: .65px; }
+  .aoh-menu-toggle { display: inline-flex; gap: 9px; align-items: center; justify-content: center; min-width: 56px; min-height: 44px; background: none; border: 0; padding: 0; color: var(--forest); font-size: 12px; }
+  .aoh-menu-toggle span { font-size: 18px; }
+  .aoh-nav { display: none; flex: 1 0 100%; padding-block: 14px 3px; flex-direction: column; align-items: stretch; gap: 2px; }
+  .aoh-nav.is-open { display: flex; }
+  .aoh-nav > a { min-height: 48px; }
+  .aoh-nav-cta { justify-content: space-between; margin-top: 7px; }
+  .aoh-hero { grid-template-columns: minmax(0, 1fr); padding-top: 0; }
+  .aoh-hero-copy { padding: 35px 0 24px; }
+  .aoh-eyebrow { font-size: 8px; letter-spacing: 1.5px; margin-bottom: 19px; }
+  .aoh-site h1 { font-size: clamp(36px, 9vw, 61px); letter-spacing: -1.5px; margin-bottom: 23px; }
+  .aoh-intro { font-size: 14px; max-width: 490px; }
+  .aoh-actions { margin-top: 22px; gap: 18px; }
+  .aoh-discover { margin-top: 22px; font-size: 10px; }
+  .aoh-hero-image { min-height: 0; aspect-ratio: 1.12; }
+  .aoh-image-label { left: 16px; top: 16px; right: 16px; font-size: 7px; letter-spacing: 1px; }
+  .aoh-image-note { bottom: 16px; left: 16px; right: 16px; padding: 16px; gap: 14px; }
+  .aoh-image-note svg { width: 31px; height: 31px; }
+  .aoh-image-note p { font-size: 21px; }
+  .aoh-slider-toolbar { gap: 12px; padding-block: 13px; }
+  .aoh-slide-tabs button { width: 25px; }
+  .aoh-slide-controls { gap: 3px; }
+  .aoh-values-row { align-items: flex-start; flex-direction: column; gap: 13px; padding-block: 23px; }
+  .aoh-values-row p { font-size: 20px; gap: 14px; }
+  .aoh-approach, .aoh-admissions { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .aoh-body-copy { padding-top: 0; }
+  .aoh-site h2 { font-size: 37px; }
+  .aoh-principles { grid-template-columns: minmax(0, 1fr); gap: 23px; margin-top: 35px; }
+  .aoh-principles h3 { margin-top: 17px; }
+  .aoh-principles p { max-width: 440px; }
+  .aoh-service-note { padding: 24px; }
+  .aoh-footer-row { flex-wrap: wrap; gap: 18px; }
+  .aoh-footer-row > p { order: 3; flex-basis: 100%; }
+}
+@media (max-width: 360px) {
+  :root { --gutter: 16px; }
+  .aoh-brand > span { font-size: 13px; }
+  .aoh-brand small { font-size: 4.8px; }
+  .aoh-brand > svg { width: 29px; }
+  .aoh-menu-toggle { gap: 6px; min-width: 50px; }
+  .aoh-slide-tabs button { width: 19px; }
+  .aoh-slider-toolbar { gap: 7px; }
+  .aoh-slide-controls { gap: 0; }
+  .aoh-actions { align-items: stretch; flex-direction: column; gap: 4px; }
+  .aoh-simple-link { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

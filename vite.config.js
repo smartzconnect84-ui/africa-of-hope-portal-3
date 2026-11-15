@@ -2,7 +2,11 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   esbuild: {
-    jsx: "automatic"
+    jsx: "automatic",
+    jsxImportSource: "react"
+  },
+  resolve: {
+    dedupe: ["react", "react-dom"]
   },
   server: {
     host: "0.0.0.0",
