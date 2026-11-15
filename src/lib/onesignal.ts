@@ -35,13 +35,11 @@ declare global {
 }
 
 export function oneSignalAppId(): string {
-  const fromEnv = (import.meta.env.VITE_ONESIGNAL_APP_ID as string | undefined)?.trim() ?? "";
-  return fromEnv || DEFAULT_APP_ID;
+  return DEFAULT_APP_ID;
 }
 
 export function oneSignalSafariWebId(): string {
-  const fromEnv = (import.meta.env.VITE_ONESIGNAL_SAFARI_WEB_ID as string | undefined)?.trim() ?? "";
-  return fromEnv || DEFAULT_SAFARI_WEB_ID;
+  return DEFAULT_SAFARI_WEB_ID;
 }
 
 export function isOneSignalConfigured(): boolean {
