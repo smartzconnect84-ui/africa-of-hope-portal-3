@@ -34,12 +34,21 @@ declare global {
   }
 }
 
+function readEnv(name: string): string {
+  try {
+    const value = (import.meta as unknown as { env?: Record<string, string> }).env?.[name];
+    return typeof value === "string" ? value.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 export function oneSignalAppId(): string {
-  return DEFAULT_APP_ID;
+  return readEnv("VITE_ONESIGNAL_APP_ID") || DEFAULT_APP_ID;
 }
 
 export function oneSignalSafariWebId(): string {
-  return DEFAULT_SAFARI_WEB_ID;
+  return readEnv("VITE_ONESIGNAL_SAFARI_WEB_ID") || DEFAULT_SAFARI_WEB_ID;
 }
 
 export function isOneSignalConfigured(): boolean {
