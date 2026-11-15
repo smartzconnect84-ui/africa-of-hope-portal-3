@@ -38,5 +38,7 @@ No environment files were provided in the available snapshot.
 
 ## Change log
 
+- Replaced compiled-snapshot serving with Vite's React source entry, explicitly imported the global stylesheet, and declared React runtime dependencies; the recovery snapshot remains untouched. Build and visual verification are pending.
+
 - Memory file added to an existing project; pending reconstruction.
 - Reconstructed memory from the available documentation snapshot and added a standalone React/Vite public homepage and build manifest.
