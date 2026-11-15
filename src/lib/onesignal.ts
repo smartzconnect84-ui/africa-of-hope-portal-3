@@ -18,8 +18,7 @@ import { dispatchPushNavigate, pushPlatformTag } from "./androidPush";
 import { isNativeWrapper } from "./nativeOneSignal";
 
 const PAGE_SDK_URL = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
-const APP_ID_KEY = "VITE_ONESIGNAL_APP_ID";
-const SAFARI_WEB_ID_KEY = "VITE_ONESIGNAL_SAFARI_WEB_ID";
+
 // Owner-supplied production OneSignal app (public IDs only — safe for frontend).
 // Env vars override these when set; the REST API key is NEVER placed here.
 const DEFAULT_APP_ID = "1c7444cf-8299-48c3-adf7-0d1b32dbed7b";
@@ -36,12 +35,12 @@ declare global {
 }
 
 export function oneSignalAppId(): string {
-  const fromEnv = ((import.meta as any)?.env?.[APP_ID_KEY] as string | undefined)?.trim() ?? "";
+  const fromEnv = (import.meta.env.VITE_ONESIGNAL_APP_ID as string | undefined)?.trim() ?? "";
   return fromEnv || DEFAULT_APP_ID;
 }
 
 export function oneSignalSafariWebId(): string {
-  const fromEnv = ((import.meta as any)?.env?.[SAFARI_WEB_ID_KEY] as string | undefined)?.trim() ?? "";
+  const fromEnv = (import.meta.env.VITE_ONESIGNAL_SAFARI_WEB_ID as string | undefined)?.trim() ?? "";
   return fromEnv || DEFAULT_SAFARI_WEB_ID;
 }
 

@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import type { AuthTab } from "./AuthPortal";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   legacyHashToPath,
   normalizePublicHref,
