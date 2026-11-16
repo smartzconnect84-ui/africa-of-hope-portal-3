@@ -19,7 +19,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "build:watch": "node src/build/prepareBrandAssets.mjs; vite build --watch > build.log 2>&1",
     "watch:errors": "node dala-internal-watch-build-errors.js",
-    "preview:dev": "concurrently \"npm run watch:errors\""
+    "preview:dev": "concurrently \"npm run watch:errors\"",
+    "check:recovery": "node scripts/recovery-snapshot.mjs || true"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
