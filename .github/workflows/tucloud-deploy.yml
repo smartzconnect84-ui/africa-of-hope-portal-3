@@ -1,0 +1,240 @@
+name: TuCloud Deploy
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: tucloud-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TUCLOUD_INSTALL_COMMAND_B64: ""
+      TUCLOUD_BUILD_COMMAND_B64: ""
+      TUCLOUD_OUTPUT_DIRECTORY: ""
+      TUCLOUD_RUNTIME: "react-static"
+      TUCLOUD_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Authenticate with TuCloud
+        id: tucloud-auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --fail-with-body --show-error --silent --header "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=tucloud.app")"
+          token="$(node -e 'const input=JSON.parse(process.argv[1]);if(!input.value)process.exit(1);process.stdout.write(input.value)' "$response")"
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+      - name: Notify TuCloud - building
+        continue-on-error: true
+        env:
+          CALLBACK_URL: ${{ secrets.TUCLOUD_CALLBACK_URL }}
+          CALLBACK_TOKEN: ${{ secrets.TUCLOUD_CALLBACK_TOKEN }}
+          OIDC_TOKEN: ${{ steps.tucloud-auth.outputs.token }}
+          PROJECT_ID: ${{ secrets.TUCLOUD_PROJECT_ID }}
+          DEPLOYMENT_STATUS: building
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'Deployment manual' }}
+        run: |
+          node -e 'const body={projectId:process.env.PROJECT_ID,status:process.env.DEPLOYMENT_STATUS,runId:process.env.RUN_ID,repository:process.env.REPOSITORY,branch:process.env.GITHUB_REF_NAME,environment:process.env.TUCLOUD_ENVIRONMENT,commitSha:process.env.GITHUB_SHA,commitMessage:process.env.COMMIT_MESSAGE};fetch(process.env.CALLBACK_URL,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+process.env.CALLBACK_TOKEN,"x-tucloud-oidc":process.env.OIDC_TOKEN},body:JSON.stringify(body)}).then(async response=>{const detail=(await response.text()).slice(0,500);if(!response.ok)throw new Error("Callback HTTP "+response.status+": "+detail)})'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        if: startsWith(env.TUCLOUD_RUNTIME, 'python-')
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$TUCLOUD_INSTALL_COMMAND_B64" ]]; then
+            bash -eo pipefail -c "$(printf '%s' "$TUCLOUD_INSTALL_COMMAND_B64" | base64 --decode)"
+          elif [[ ! -f package.json ]]; then
+            echo "Static project without package.json; dependency installation is not required."
+          elif [[ -f pnpm-lock.yaml ]]; then
+            corepack enable
+            pnpm install --frozen-lockfile
+          elif [[ -f yarn.lock ]]; then
+            corepack enable
+            yarn install --immutable || yarn install --frozen-lockfile
+          elif [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            npm ci
+          else
+            npm install
+          fi
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$TUCLOUD_RUNTIME" == "nextjs-node" ]]; then
+            export NEXT_PRIVATE_STANDALONE=true
+          fi
+          if [[ -n "$TUCLOUD_BUILD_COMMAND_B64" ]]; then
+            bash -eo pipefail -c "$(printf '%s' "$TUCLOUD_BUILD_COMMAND_B64" | base64 --decode)"
+            exit 0
+          elif [[ ! -f package.json ]]; then
+            echo "Static project; build step is not required."
+            exit 0
+          fi
+          if ! node -e 'const p=require("./package.json"); process.exit(p.scripts?.build ? 0 : 1)'; then
+            echo "No build script found; TuCloud will validate the static output next."
+            exit 0
+          fi
+          if [[ -f pnpm-lock.yaml ]]; then
+            pnpm run build
+          elif [[ -f yarn.lock ]]; then
+            yarn build
+          else
+            npm run build
+          fi
+      - name: Bundle Python dependencies
+        if: startsWith(env.TUCLOUD_RUNTIME, 'python-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/tucloud-python-vendor
+          mkdir -p /tmp/tucloud-python-vendor
+          python -m pip install --disable-pip-version-check --no-compile --target /tmp/tucloud-python-vendor "gunicorn==23.0.0" "uvicorn==0.35.0"
+          if [[ -f requirements.txt ]]; then
+            python -m pip install --disable-pip-version-check --no-compile --target /tmp/tucloud-python-vendor -r requirements.txt
+          elif [[ -f pyproject.toml ]]; then
+            python -m pip install --disable-pip-version-check --no-compile --target /tmp/tucloud-python-vendor .
+          fi
+      - name: Prepare safe web output
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/tucloud-output
+          mkdir -p /tmp/tucloud-output
+          if [[ "$TUCLOUD_RUNTIME" == python-* ]]; then
+            tar --exclude-vcs --exclude='.github' --exclude='.tucloud' --exclude='.env*' --exclude='.venv' --exclude='venv'               --exclude='__pycache__' --exclude='.pytest_cache' --exclude='.mypy_cache'               -cf - . | tar -xf - -C /tmp/tucloud-output
+            mkdir -p /tmp/tucloud-output/.tucloud/vendor
+            cp -a /tmp/tucloud-python-vendor/. /tmp/tucloud-output/.tucloud/vendor/
+            cat > /tmp/tucloud-output/.tucloud/bootstrap.py <<'PYTHON'
+          import importlib
+          import os
+          import sys
+          from pathlib import Path
+
+          root = Path("/workspace")
+          vendor = root / ".tucloud" / "vendor"
+          runtime_paths = [str(vendor), str(root)]
+          sys.path[:0] = runtime_paths
+          # os.execv starts a fresh interpreter. Preserve bundled packages for
+          # python -m uvicorn and python -m gunicorn through that boundary.
+          inherited_pythonpath = os.environ.get("PYTHONPATH")
+          os.environ["PYTHONPATH"] = os.pathsep.join(
+              runtime_paths + ([inherited_pythonpath] if inherited_pythonpath else [])
+          )
+          port = os.environ.get("PORT", "8080")
+
+          def module_name(path):
+              return ".".join(path.relative_to(root).with_suffix("").parts)
+
+          wsgi = next((path for path in root.rglob("wsgi.py") if ".tucloud" not in path.parts), None)
+          if wsgi:
+              target = module_name(wsgi) + ":application"
+              os.execv(sys.executable, [sys.executable, "-m", "gunicorn", target, "--bind", "0.0.0.0:" + port, "--workers", "2", "--threads", "2", "--timeout", "55", "--access-logfile", "-"])
+
+          candidates = [root / "main.py", root / "app.py", root / "api" / "index.py"]
+          for path in candidates:
+              if not path.is_file():
+                  continue
+              module = module_name(path)
+              loaded = importlib.import_module(module)
+              app = getattr(loaded, "app", None)
+              if app is None:
+                  continue
+              package = app.__class__.__module__
+              if package.startswith("fastapi") or package.startswith("starlette"):
+                  import uvicorn
+                  uvicorn.run(app, host="0.0.0.0", port=int(port), server_header=False)
+                  raise SystemExit("Uvicorn stopped")
+              os.execv(sys.executable, [sys.executable, "-m", "gunicorn", module + ":app", "--bind", "0.0.0.0:" + port, "--workers", "2", "--threads", "2", "--timeout", "55", "--access-logfile", "-"])
+
+          raise SystemExit("TuCloud could not find a Django WSGI application or app in main.py, app.py, or api/index.py")
+          PYTHON
+            chmod 0555 /tmp/tucloud-output/.tucloud/bootstrap.py
+            test -f /tmp/tucloud-output/.tucloud/bootstrap.py
+            exit 0
+          fi
+          if [[ "$TUCLOUD_RUNTIME" == "nextjs-node" ]]; then
+            if [[ ! -f .next/standalone/server.js ]]; then
+              echo "Next.js no produjo .next/standalone/server.js. Verifica que el build use una versión compatible de Next.js." >&2
+              exit 1
+            fi
+            cp -a .next/standalone/. /tmp/tucloud-output/
+            mkdir -p /tmp/tucloud-output/.next
+            cp -a .next/static /tmp/tucloud-output/.next/static
+            [[ ! -d public ]] || cp -a public /tmp/tucloud-output/public
+            test -f /tmp/tucloud-output/server.js
+            exit 0
+          fi
+          if [[ "$TUCLOUD_RUNTIME" == "node-server" ]]; then
+            output="${TUCLOUD_OUTPUT_DIRECTORY:-dist}"
+            if [[ ! -f "$output/server.js" ]]; then
+              echo "El runtime Node necesita un artefacto empaquetado en $output/server.js." >&2
+              echo "Incluye todas las dependencias en el bundle; Tucloud no instala paquetes en producción." >&2
+              exit 1
+            fi
+            cp -a "$output/." /tmp/tucloud-output/
+            test -f /tmp/tucloud-output/server.js
+            exit 0
+          fi
+          output=""
+          if [[ -n "$TUCLOUD_OUTPUT_DIRECTORY" && -f "$TUCLOUD_OUTPUT_DIRECTORY/index.html" ]]; then
+            output="$TUCLOUD_OUTPUT_DIRECTORY"
+          fi
+          for candidate in out dist build; do
+            [[ -n "$output" ]] && break
+            if [[ -f "$candidate/index.html" ]]; then
+              output="$candidate"
+              break
+            fi
+          done
+          if [[ -n "$output" ]]; then
+            cp -a "$output/." /tmp/tucloud-output/
+          elif [[ ! -f package.json && -f index.html ]]; then
+            tar --exclude-vcs --exclude='.github' --exclude='.env*' --exclude='node_modules'               --exclude='*.md' --exclude='package*.json' --exclude='pnpm-lock.yaml' --exclude='yarn.lock'               -cf - . | tar -xf - -C /tmp/tucloud-output
+          else
+            echo "No deployable static output found. Expected out/, dist/ or build/ with index.html." >&2
+            echo "Selecciona Next.js SSR o Node.js si el proyecto necesita un servidor persistente." >&2
+            exit 1
+          fi
+          test -f /tmp/tucloud-output/index.html
+      - name: Package immutable release
+        run: tar --dereference -C /tmp/tucloud-output -czf /tmp/tucloud-release.tgz .
+      - name: Upload and activate
+        env:
+          UPLOAD_URL: ${{ secrets.TUCLOUD_UPLOAD_URL }}
+          CALLBACK_TOKEN: ${{ secrets.TUCLOUD_CALLBACK_TOKEN }}
+          PROJECT_ID: ${{ secrets.TUCLOUD_PROJECT_ID }}
+          OIDC_TOKEN: ${{ steps.tucloud-auth.outputs.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          curl --fail-with-body --show-error --silent --request POST             --header "Authorization: Bearer $CALLBACK_TOKEN"             --header "Content-Type: application/gzip"             --header "X-Tucloud-Commit-Sha: $GITHUB_SHA"             --header "X-Tucloud-Environment: $TUCLOUD_ENVIRONMENT"             --header "X-Tucloud-Branch: $GITHUB_REF_NAME"             --header "X-Tucloud-Run-Id: $RUN_ID"             --header "X-Tucloud-OIDC: $OIDC_TOKEN"             --data-binary @/tmp/tucloud-release.tgz             "$UPLOAD_URL?projectId=$PROJECT_ID"
+      - name: Notify TuCloud - completed
+        if: always()
+        continue-on-error: true
+        env:
+          CALLBACK_URL: ${{ secrets.TUCLOUD_CALLBACK_URL }}
+          CALLBACK_TOKEN: ${{ secrets.TUCLOUD_CALLBACK_TOKEN }}
+          OIDC_TOKEN: ${{ steps.tucloud-auth.outputs.token }}
+          PROJECT_ID: ${{ secrets.TUCLOUD_PROJECT_ID }}
+          DEPLOYMENT_STATUS: ${{ job.status }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'Deployment manual' }}
+        run: |
+          node -e 'const body={projectId:process.env.PROJECT_ID,status:process.env.DEPLOYMENT_STATUS,runId:process.env.RUN_ID,repository:process.env.REPOSITORY,branch:process.env.GITHUB_REF_NAME,environment:process.env.TUCLOUD_ENVIRONMENT,commitSha:process.env.GITHUB_SHA,commitMessage:process.env.COMMIT_MESSAGE};const send=async()=>{let last;for(let attempt=1;attempt<=4;attempt++){try{const response=await fetch(process.env.CALLBACK_URL,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+process.env.CALLBACK_TOKEN,"x-tucloud-oidc":process.env.OIDC_TOKEN},body:JSON.stringify(body)});const detail=(await response.text()).slice(0,500);if(response.ok)return;last=new Error("Callback HTTP "+response.status+": "+detail)}catch(error){last=error}await new Promise(resolve=>setTimeout(resolve,attempt*1500))}throw last};send()'

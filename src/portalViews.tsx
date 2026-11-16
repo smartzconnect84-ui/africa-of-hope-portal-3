@@ -1,0 +1,487 @@
+import type { ReactNode } from "react";
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  Boxes,
+  Award,
+  ShieldQuestion,
+  ShieldCheck,
+  Scale,
+  LibraryBig,
+  Megaphone,
+  ClipboardCheck,
+  NotebookPen,
+  Banknote,
+  Settings,
+  Globe,
+  UserCircle,
+  FileQuestion,
+  CalendarRange,
+  CalendarDays,
+  GraduationCap,
+  Gavel,
+  MessagesSquare,
+  Newspaper,
+  Smartphone,
+  Mail,
+  Activity,
+  TrendingUp,
+  HeartHandshake,
+  Briefcase,
+  type LucideIcon,
+} from "lucide-react";
+import { useApp } from "./context/AppContext";
+import { usePermissions, type PermissionsApi } from "./hooks/usePermission";
+import type { PermissionKey } from "./lib/permissions";
+import type { Role, User } from "./types";
+import {
+  AdminDashboard,
+  ProgramBuilder,
+  CohortCoordinator,
+  TeacherDashboard,
+  AttendanceSheet,
+  Gradebook,
+} from "./components/AdminTeacherViews";
+import {
+  StudentPortal,
+  StudentAssignments,
+  FeeRegister,
+} from "./components/StudentFinancialViews";
+import { CertificateStudio, VerificationPortal } from "./components/CertificateVerification";
+import AdminOpportunities from "./components/AdminOpportunities";
+import AdminSystemSettings from "./components/AdminSystemSettings";
+import AdminWebsiteSettings from "./components/AdminWebsiteSettings";
+import ProfilePage from "./components/ProfilePage";
+import RolesPermissions from "./components/RolesPermissions";
+import PeopleManagement from "./components/PeopleManagement";
+import QuizBuilder from "./components/quiz/QuizBuilder";
+import StudentQuizzes from "./components/quiz/StudentQuizzes";
+import AcademicPlanning from "./components/AcademicPlanning";
+import AnnouncementManager from "./components/AnnouncementManager";
+import BlogManager from "./components/portal/BlogManager";
+import SchoolPolicies from "./components/policies/SchoolPolicies";
+import RecommendedTraining from "./components/portal/RecommendedTraining";
+import StudentPayments from "./components/portal/StudentPayments";
+import PaymentsReview from "./components/portal/PaymentsReview";
+import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
+import EngagementInbox from "./components/portal/EngagementInbox";
+import OperationsHub from "./components/OperationsHub";
+import CoursePlayer from "./components/academic/CoursePlayer";
+import CourseDiscussions from "./components/academic/CourseDiscussions";
+import StudentCalendar from "./components/academic/StudentCalendar";
+import StudyPlanner from "./components/academic/StudyPlanner";
+import AssignmentInbox from "./components/academic/AssignmentInbox";
+import CompletionCertificates from "./components/academic/CompletionCertificates";
+import TeacherInsights from "./components/academic/TeacherInsights";
+import TransparencyLibrary from "./components/public/TransparencyLibrary";
+import Helpdesk from "./components/portal/Helpdesk";
+import GradeAppeals from "./components/portal/GradeAppeals";
+import ReferenceLetters from "./components/portal/ReferenceLetters";
+import EntranceTest from "./components/portal/EntranceTest";
+import EntranceTestAdmin from "./components/admin/EntranceTestAdmin";
+import EntrancePrepPack from "./components/public/EntrancePrepPack";
+import DonatePage from "./components/public/DonatePage";
+
+/** Everything a view's `visible`/`render` function needs, computed once per render. */
+export interface PortalViewContext extends PermissionsApi {
+  currentUser: User | null;
+}
+
+export interface PortalView {
+  key: string;
+  /** Static label, or computed from context (used by "dashboard" per role). */
+  label: string | ((ctx: PortalViewContext) => string);
+  icon: LucideIcon;
+  visible: (ctx: PortalViewContext) => boolean;
+  render: (ctx: PortalViewContext) => ReactNode;
+}
+
+function DashboardView({ role }: { role: Role | null }) {
+  if (role === "Student") return <StudentPortal />;
+  if (role === "Teacher") return <TeacherDashboard />;
+  if (role === "Admission Officer") return <PeopleManagement initialTab="applicants" />;
+  if (role === "Customer Care Officer") return <Helpdesk key="dashboard-helpdesk" />;
+  if (role === "Data Entry Officer") return <PeopleManagement />;
+  if (role === "Public Relations Officer") return <AdminWebsiteSettings />;
+  return <AdminDashboard />;
+}
+
+function AssignmentsView() {
+  return <AssignmentInbox />;
+}
+
+function QuizzesView({ role }: { role: Role | null }) {
+  return role === "Student" ? <StudentQuizzes /> : <QuizBuilder />;
+}
+
+const QUIZ_PERMISSIONS: PermissionKey[] = [
+  "quizzes.manage",
+  "quizzes.manage_all",
+  "quizzes.take",
+  "quizzes.view_results",
+];
+
+/**
+ * Single registry driving both the sidebar (Navigation.tsx) and the portal
+ * router (App.tsx). Order here is the sidebar order. Each item is gated by
+ * `visible`; `Portal` falls back to "dashboard" once the current view is
+ * no longer visible (role switch, permission revoked, etc.).
+ */
+export const PORTAL_VIEWS: PortalView[] = [
+  {
+    key: "dashboard",
+    label: (ctx) =>
+      ctx.role === "Student" ? "My Portal" : ctx.role === "Teacher" ? "My Workspace" : "Dashboard",
+    icon: LayoutDashboard,
+    visible: () => true,
+    render: (ctx) => <DashboardView role={ctx.role} />,
+  },
+  {
+    key: "people",
+    label: "Staff & Students",
+    icon: Users,
+    visible: (ctx) => ctx.canAny("people.view", "students.manage", "staff.manage"),
+    render: () => <PeopleManagement />,
+  },
+  {
+    key: "admissions-inbox",
+    label: "Admissions & Support",
+    icon: Users,
+    visible: (ctx) => ctx.canAny("students.manage", "fees.manage"),
+    render: () => <EngagementInbox />,
+  },
+  {
+    key: "roles",
+    label: "Roles & Permissions",
+    icon: ShieldCheck,
+    visible: (ctx) => ctx.isSuperAdmin,
+    render: () => <RolesPermissions />,
+  },
+  {
+    key: "academic-planning",
+    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : ctx.role === "Teacher" ? "Course Planning" : "Academic Approvals",
+    icon: CalendarRange,
+    visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve"),
+    render: () => <AcademicPlanning />,
+  },
+  {
+    key: "course-player",
+    label: (ctx) => (ctx.role === "Student" ? "My Courses" : "Course Player"),
+    icon: GraduationCap,
+    visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve", "lessons.manage"),
+    render: () => <CoursePlayer />,
+  },
+  {
+    key: "discussions",
+    label: "Class Discussions",
+    icon: MessagesSquare,
+    visible: () => true,
+    render: () => <CourseDiscussions />,
+  },
+  {
+    key: "helpdesk",
+    label: "Student helpdesk",
+    icon: MessagesSquare,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("helpdesk.manage")),
+    render: (ctx) => <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
+    key: "grade-appeals",
+    label: (ctx) => (ctx.role === "Student" ? "Grade appeals" : "Appeal & remark desk"),
+    icon: Gavel,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("grades.review_appeals")),
+    render: (ctx) => <GradeAppeals key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
+    key: "reference-letters",
+    label: (ctx) => (ctx.role === "Student" ? "Reference letters" : "Reference letter desk"),
+    icon: Award,
+    visible: (ctx) =>
+      ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("helpdesk.manage", "students.manage")),
+    render: (ctx) => <ReferenceLetters key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+  },
+  {
+    key: "entrance-test",
+    label: "Entrance test",
+    icon: ClipboardCheck,
+    visible: () => true,
+    render: () => <EntranceTest />,
+  },
+  {
+    key: "entrance-control",
+    label: (ctx) => (ctx.role === "Student" ? "My entrance result" : "Entrance test control"),
+    icon: ShieldCheck,
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results")),
+    render: (ctx) => (ctx.role === "Student" ? <EntranceTest /> : <EntranceTestAdmin />),
+  },
+  {
+    key: "entrance-prep",
+    label: "Entrance prep pack",
+    icon: GraduationCap,
+    visible: () => true,
+    render: () => <EntrancePrepPack />,
+  },
+  {
+    key: "study-calendar",
+    label: "Study Calendar",
+    icon: CalendarDays,
+    visible: () => true,
+    render: () => <StudentCalendar />,
+  },
+  {
+    key: "study-plan",
+    label: "My Study Plan",
+    icon: CalendarRange,
+    visible: (ctx) => ctx.role === "Student",
+    render: () => <StudyPlanner />,
+  },
+  {
+    key: "quizzes",
+    label: "Quizzes",
+    icon: FileQuestion,
+    visible: (ctx) => ctx.canAny(...QUIZ_PERMISSIONS),
+    render: (ctx) => <QuizzesView role={ctx.role} />,
+  },
+  {
+    key: "programs",
+    label: "Program Builder",
+    icon: BookOpen,
+    visible: (ctx) => ctx.can("programs.manage"),
+    render: () => <ProgramBuilder />,
+  },
+  {
+    key: "cohorts",
+    label: "Cohort Coordinator",
+    icon: Boxes,
+    visible: (ctx) => ctx.can("cohorts.manage"),
+    render: () => <CohortCoordinator />,
+  },
+  {
+    key: "attendance",
+    label: "Attendance Sheet",
+    icon: ClipboardCheck,
+    visible: (ctx) => ctx.canAny("attendance.manage", "attendance.own"),
+    render: () => <AttendanceSheet />,
+  },
+  {
+    key: "insights",
+    label: "Progress Insights",
+    icon: TrendingUp,
+    visible: (ctx) =>
+      ctx.role === "Teacher" ||
+      ctx.role === "School Admin" ||
+      ctx.role === "Super Admin" ||
+      ctx.role === "Director of Education" ||
+      ctx.role === "Research Officer",
+    render: () => <TeacherInsights />,
+  },
+  {
+    key: "assignments",
+    label: (ctx) => (ctx.role === "Student" ? "Assignments" : "Gradebook"),
+    icon: NotebookPen,
+    visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
+    render: () => <AssignmentsView />,
+  },
+  {
+    key: "fees",
+    label: (ctx) => (ctx.role === "Student" ? "Fees & Receipts" : "Finance Ledger"),
+    icon: Banknote,
+    visible: (ctx) => ctx.canAny("fees.view", "fees.manage") || ctx.role === "Student",
+    render: () => <FeeRegister />,
+  },
+  {
+    key: "payments",
+    label: "Pay fees",
+    icon: Smartphone,
+    visible: (ctx) => ctx.can("payments.submit") && !ctx.can("payments.confirm"),
+    render: () => <StudentPayments />,
+  },
+  {
+    key: "payment-review",
+    label: "Payment confirmations",
+    icon: ClipboardCheck,
+    visible: (ctx) => ctx.can("payments.confirm"),
+    render: () => <PaymentsReview />,
+  },
+  {
+    key: "donate",
+    label: "Donate",
+    icon: HeartHandshake,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <DonatePage onLogin={() => window.dispatchEvent(new Event("aoh-open-donate"))} />,
+  },
+  {
+    key: "certificates",
+    label: (ctx) => (ctx.role === "Student" ? "My Certificates" : "Certificates"),
+    icon: Award,
+    visible: (ctx) => ctx.can("certificates.manage") || ctx.role === "Student",
+    render: (ctx) => (ctx.role === "Student" ? <CompletionCertificates /> : <CertificateStudio />),
+  },
+  {
+    key: "verification",
+    label: "Verification Hub",
+    icon: ShieldQuestion,
+    visible: () => true,
+    render: () => <VerificationPortal />,
+  },
+  {
+    key: "announcements",
+    label: "Bulletin Board",
+    icon: Megaphone,
+    visible: () => true,
+    render: () => <AnnouncementManager />,
+  },
+  {
+    key: "blog",
+    label: "Blog",
+    icon: Newspaper,
+    visible: (ctx) => ctx.can("blog.manage"),
+    render: () => <BlogManager />,
+  },
+  {
+    key: "policies",
+    label: "School Policies",
+    icon: Scale,
+    visible: () => true,
+    render: () => <SchoolPolicies />,
+  },
+  {
+    key: "training-library",
+    label: "Training Library",
+    icon: LibraryBig,
+    visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
+    render: () => <RecommendedTraining />,
+  },
+  {
+    key: "transparency",
+    label: "Transparency reports",
+    icon: LibraryBig,
+    visible: (ctx) => ctx.can("cms.manage"),
+    render: (ctx) => <TransparencyLibrary key={ctx.currentUser?.id} management />,
+  },
+  {
+    key: "opportunities",
+    label: "Vacancies & Businesses",
+    icon: Briefcase,
+    visible: (ctx) => ctx.can("cms.manage"),
+    render: () => <AdminOpportunities />,
+  },
+  {
+    key: "website",
+    label: "Website CMS",
+    icon: Globe,
+    visible: (ctx) => ctx.can("cms.manage"),
+    render: () => <AdminWebsiteSettings />,
+  },
+  {
+    key: "settings",
+    label: "System Settings",
+    icon: Settings,
+    visible: (ctx) => ctx.can("settings.manage"),
+    render: () => <AdminSystemSettings />,
+  },
+  {
+    key: "my-files",
+    label: "My files",
+    icon: LibraryBig,
+    visible: () => true,
+    render: () => <OperationsHub personalOnly />,
+  },
+  {
+    key: "operations",
+    label: "Operations Centre",
+    icon: Activity,
+    visible: (ctx) => ctx.canAny("settings.manage", "materials.approve"),
+    render: () => <OperationsHub />,
+  },
+  {
+    key: "email-outbox",
+    label: "Email delivery",
+    icon: Mail,
+    visible: (ctx) => ctx.can("settings.manage"),
+    render: () => <EmailOutboxPanel />,
+  },
+  {
+    key: "profile",
+    label: "My Profile",
+    icon: UserCircle,
+    visible: () => true,
+    render: () => <ProfilePage />,
+  },
+];
+
+export function usePortalViewContext(): PortalViewContext {
+  const { currentUser } = useApp();
+  const perms = usePermissions();
+  return { ...perms, currentUser };
+}
+
+/**
+ * Relevance order for the sidebar nav (most-used first, system last).
+ * Dashboard stays first, My Profile stays last. `useVisiblePortalViews` sorts
+ * the filtered views by this list so the drawer reads in journey order:
+ * learn → people/admissions → money → support/comms → system.
+ */
+const NAV_RELEVANCE_ORDER = [
+  "dashboard",
+  "course-player",
+  "academic-planning",
+  "study-plan",
+  "study-calendar",
+  "assignments",
+  "quizzes",
+  "discussions",
+  "training-library",
+  "entrance-test",
+  "entrance-prep",
+  "entrance-control",
+  "people",
+  "admissions-inbox",
+  "attendance",
+  "insights",
+  "programs",
+  "cohorts",
+  "fees",
+  "payments",
+  "payment-review",
+  "certificates",
+  "verification",
+  "helpdesk",
+  "grade-appeals",
+  "reference-letters",
+  "announcements",
+  "policies",
+  "blog",
+  "transparency",
+  "opportunities",
+  "donate",
+  "my-files",
+  "operations",
+  "website",
+  "email-outbox",
+  "settings",
+  "roles",
+  "profile",
+];
+
+const NAV_RELEVANCE_RANK = new Map(NAV_RELEVANCE_ORDER.map((key, i) => [key, i]));
+
+/** The sidebar/router list, filtered and ordered for the signed-in user. */
+export function useVisiblePortalViews(): { ctx: PortalViewContext; views: PortalView[] } {
+  const ctx = usePortalViewContext();
+  const views = PORTAL_VIEWS.filter((v) => v.visible(ctx)).sort((a, b) => {
+    const ra = NAV_RELEVANCE_RANK.get(a.key) ?? 999;
+    const rb = NAV_RELEVANCE_RANK.get(b.key) ?? 999;
+    return ra - rb;
+  });
+  return { ctx, views };
+}
+
+export function getPortalView(key: string): PortalView | undefined {
+  return PORTAL_VIEWS.find((v) => v.key === key);
+}
+
+export function portalViewLabel(view: PortalView, ctx: PortalViewContext): string {
+  return typeof view.label === "function" ? view.label(ctx) : view.label;
+}

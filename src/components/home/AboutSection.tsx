@@ -1,0 +1,70 @@
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import type { WebsiteSettings, SectionCopy, SystemSettings } from "@/types";
+import { Reveal } from "../Navigation";
+import { resolveIcon } from "./icons";
+
+export default function AboutSection({
+  copy,
+  w,
+}: {
+  copy: SectionCopy;
+  w: WebsiteSettings;
+  settings: SystemSettings;
+}) {
+  return (
+    <section id="about" className="scroll-mt-24 bg-white py-8 sm:py-10">
+      <div className="mx-auto grid max-w-6xl items-center gap-6 px-4 lg:grid-cols-2">
+        {copy.image && (
+          <Reveal>
+            <div className="relative">
+              <img
+                src={copy.image}
+                alt="Africa of Hope community"
+                className="aoh-photo h-80 w-full rounded-3xl object-cover object-center shadow-lg shadow-emerald-900/10 sm:h-[28rem]"
+              />
+              {w.partners.length > 0 && <div className="aoh-card aoh-glass absolute -bottom-5 left-5 rounded-2xl p-4">
+                <p className="text-2xl font-semibold text-amber-600">{w.partners.length}</p>
+                <p className="text-[11px] uppercase tracking-wide text-slate-500">Partners</p>
+              </div>}
+            </div>
+          </Reveal>
+        )}
+
+        <Reveal delay={0.08}>
+          {copy.eyebrow && (
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-[11px] font-semibold text-emerald-900">
+              <ShieldCheck className="h-3.5 w-3.5" /> {copy.eyebrow}
+            </p>
+          )}
+          {copy.title && (
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-amber-600 sm:text-4xl">
+              {copy.title}
+            </h2>
+          )}
+          {copy.body && <p className="mt-4 text-sm text-black sm:text-base">{copy.body}</p>}
+          {w.aboutPoints.length > 0 && (
+            <div className="mt-5 space-y-2.5">
+              {w.aboutPoints.map((p) => {
+                const Icon = resolveIcon(p.icon);
+                return (
+                  <div key={p.id} className="flex gap-3.5">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-amber-300">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <p className="self-center text-sm font-semibold text-slate-800">{p.title}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <a
+            href="/about"
+            className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300"
+          >
+            {w.publicCopy['about.story'] || 'Read our full story'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
