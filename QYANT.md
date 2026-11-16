@@ -7,14 +7,26 @@ The supplied snapshot contained documentation only. A standalone Africa of Hope 
 
 ## Stack
 
-React 18, Vite 6, JavaScript and plain CSS.
-Entry points: index.html and src/main.jsx.
+React 18, Vite 5, JavaScript and plain CSS, @supabase/supabase-js 2.
+Entry points: index.html and src/main.jsx (public homepage renders through the same SPA and stays at #/).
 Commands: npm run dev, npm run build, npm run preview.
-No custom Vite configuration, server, database client or service worker.
+Hash routing (#/programs, #/login, #/signup, #/verify, #/vacancies, #/yearbook,
+#/transparency, #/contact, #/support, #/newsletter, #/portal, #/admin,
+#/admin/login).
 
 ## Data model
 
-No database schema, migrations, persistent application data or backend is present in the supplied snapshot or this restoration.
+Live backend: Supabase project gatnzfjpuokopqyksqoy (afrohopeschool_database) —
+72 RLS tables, realtime on 43, 9 storage buckets, 8 edge functions, 2 cron jobs.
+Frontend wires: programs, applications, enquiries, pledges, vacancies,
+yearbook, transparency, newsletter (edge), certificate verification (edge),
+student portal (profile, notifications realtime, announcements realtime,
+enrollments, assignments, quizzes, payment submissions with proof upload,
+helpdesk, avatar upload), staff/admin console (announcements, vacancies,
+payments review, helpdesk, yearbook moderation, people, enquiries,
+applications, certificates). See AUDIT.md.
+Repository still contains no SQL migrations; the live database is the source
+of truth until a migrations export is added.
 
 ## Pages and routes
 
@@ -24,8 +36,9 @@ No database schema, migrations, persistent application data or backend is presen
 
 ## Environment
 
-No environment variables are required by the restored public frontend.
-No environment files were provided in the available snapshot.
+Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (anon key only; no
+secret keys in the frontend). A local .env exists for development and is
+git-ignored.
 
 ## Decisions
 
@@ -37,6 +50,16 @@ No environment files were provided in the available snapshot.
 - Disk inspection, Git history, dependency installation, production build and browser verification remain unconfirmed until tool or platform results are available.
 
 ## Change log
+
+- Wired the restored homepage to the live Supabase backend: added
+  @supabase/supabase-js, password sign-in/sign-up with email confirmation
+  note, separate staff sign-in, hash-routed public pages (programs,
+  vacancies, yearbook, transparency, contact, support, newsletter,
+  certificate verification), student portal with realtime notifications
+  and announcements plus avatar/proof uploads, and a role-gated admin
+  console. Added AUDIT.md (repo-vs-Supabase reconciliation), .env.example
+  placeholder, .gitignore. Verified in browser against the live project,
+  including a temporary QA account that was deleted after the run.
 
 - Replaced compiled-snapshot serving with Vite's React source entry, explicitly imported the global stylesheet, and declared React runtime dependencies; the recovery snapshot remains untouched. Build and visual verification are pending.
 
