@@ -967,6 +967,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }
         if (error || payload?.error) {
+          if (serverCode === "delete_disabled") {
+            const preserved = `${serverMessage ?? "Permanent deletion is disabled to preserve school records."} Use Suspend to deactivate the account — records are preserved.`;
+            toast.info(preserved);
+            return preserved;
+          }
           const message = serverMessage ?? error?.message ?? "Request failed";
           const hint = serverCode && serverCode !== "internal" ? ` (${serverCode})` : "";
           const friendly = /non-2xx/i.test(message) && !serverMessage
@@ -982,7 +987,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             create: "Staff account created.",
             update: "Account updated.",
             reset_password: "Password reset started.",
-            delete: "Account deleted.",
+            delete: "Permanent deletion is disabled — use Suspend instead.",
           };
           toast.success(labels[action] ?? "Done.");
         }

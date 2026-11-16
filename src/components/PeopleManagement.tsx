@@ -10,7 +10,6 @@ import {
   Mail,
   Phone,
   KeyRound,
-  Trash2,
   UserCheck,
   UserX,
   Loader2,
@@ -32,17 +31,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -284,7 +272,6 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
                           rowSlug={rowSlug}
                           onSuspend={() => run(u.id, "update", { status: u.status === "Active" ? "Suspended" : "Active" })}
                           onResetEmail={() => run(u.id, "reset_password", { mode: "email" })}
-                          onDelete={() => run(u.id, "delete", {})}
                         />
                       ) : (
                         <span className="text-xs text-slate-400">{isSelf ? "This is you" : "Locked"}</span>
@@ -311,14 +298,12 @@ function StaffActions({
   rowSlug,
   onSuspend,
   onResetEmail,
-  onDelete,
 }: {
   user: User;
   busy: boolean;
   rowSlug: string;
   onSuspend: () => void;
   onResetEmail: () => void;
-  onDelete: () => void;
 }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -352,27 +337,9 @@ function StaffActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button size="sm" variant="outline" className="text-rose-600">
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes their account. If they have fee or certificate records, suspend them instead.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete} className="bg-rose-600 hover:bg-rose-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <span className="hidden text-[11px] text-slate-400 sm:inline" title="Permanent deletion is disabled to preserve school records">
+        Deletion disabled — use Suspend
+      </span>
     </div>
   );
 }
