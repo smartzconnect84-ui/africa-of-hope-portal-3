@@ -8,7 +8,7 @@ const cors = {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
-const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher", "Registrar", "Admission Officer", "Finance Officer"];
+const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher", "Registrar", "Admission Officer", "Finance Officer", "Public Relations Officer", "Data Entry Officer", "Executive Assistant", "Research Officer", "Customer Care Officer", "Director of Education"];
 const ADMIN_ROLES = ["Super Admin", "School Admin"];
 const STATUSES = ["Active", "Suspended", "Pending Approval", "Rejected"];
 const randomPassword = () => crypto.randomUUID().replace(/-/g, "") + "Aa1!";

@@ -239,9 +239,9 @@ function Type({
   const total = smooth ? words.length : text.length;
   const stepMs = Math.max(1, delay ?? 32);
   const caret = Math.min(Math.max(index, 0), total);
-  if (index !== caret) {
-    setIndex(caret);
-  }
+  useEffect(() => {
+    if (index !== caret) setIndex(caret);
+  }, [index, caret]);
   const isComplete = caret === total && !repeat;
   const atEnd = caret >= total;
   const atStart = caret <= 0;

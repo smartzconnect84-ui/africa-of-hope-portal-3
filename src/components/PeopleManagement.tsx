@@ -58,6 +58,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState, SectionHeader, panelClass } from "./Navigation";
 import DataTools from "./DataTools";
+import { UserProfileDialog, DirectMessageDialog, PresenceDot } from "./DirectoryMessaging";
+import { usePresence } from "@/lib/presence";
 import CongratulationsAction from './CongratulationsAction';
 import { supabase } from "@/integrations/supabase/client";
 import { loadEntrancePasses, loadRequirePass } from "@/lib/entranceTest";
@@ -155,6 +157,9 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
   const [role, setRole] = useState<"All" | Role>("All");
   const [addOpen, setAddOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [chatUser, setChatUser] = useState<User | null>(null);
+  const { isOnline } = usePresence(currentUser?.id ?? null);
 
   const canManage = can("staff.manage");
   const staff = state.users.filter((u) => STAFF_ROLES.includes(u.role));
@@ -234,7 +239,10 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
                           {initials(u.name)}
                         </span>
                         <div>
-                          <p className="font-medium text-slate-800">{u.name}</p>
+                          <button type="button" onClick={() => setViewUser(u)} title={`View ${u.name}'s profile`} className="flex items-center gap-1.5 text-left font-medium text-slate-800 underline-offset-2 hover:text-emerald-800 hover:underline">
+                            <PresenceDot online={isOnline(u.id)} />
+                            {u.name}
+                          </button>
                           <p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p>
                           {u.title && <p className="text-[11px] text-slate-500">{u.title}</p>}
                         </div>
@@ -291,6 +299,8 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
       </div>
 
       {canManage && <AddStaffDialog open={addOpen} onOpenChange={setAddOpen} isSuperAdmin={isSuperAdmin} />}
+      <UserProfileDialog user={viewUser} online={viewUser ? isOnline(viewUser.id) : false} onClose={() => setViewUser(null)} onMessage={(v) => { setViewUser(null); setChatUser(v); }} />
+      <DirectMessageDialog meId={currentUser?.id ?? null} meName={currentUser?.name ?? "You"} peer={chatUser} onClose={() => setChatUser(null)} />
     </div>
   );
 }
@@ -518,12 +528,15 @@ function AddStaffDialog({
 /* --------------------------- Students tab ---------------------------- */
 
 function StudentsTab() {
-  const { state, toggleStudentStatus, adminUsers } = useApp();
+  const { state, toggleStudentStatus, adminUsers, currentUser } = useApp();
   const { can } = usePermissions();
   const [q, setQ] = useState("");
   const [program, setProgram] = useState("All");
   const [status, setStatus] = useState("All");
   const [assignFor, setAssignFor] = useState<User | null>(null);
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [chatUser, setChatUser] = useState<User | null>(null);
+  const { isOnline } = usePresence(currentUser?.id ?? null);
 
   const canManage = can("students.manage");
   const students = state.users.filter((u) => u.role === "Student" && u.status !== "Pending Approval");
@@ -599,7 +612,7 @@ function StudentsTab() {
                         <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
                           {initials(u.name)}
                         </span>
-                        <div><span className="font-medium text-slate-800">{u.name}</span><p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p></div>
+                        <div><button type="button" onClick={() => setViewUser(u)} title={`View ${u.name}'s profile`} className="flex items-center gap-1.5 text-left font-medium text-slate-800 underline-offset-2 hover:text-emerald-800 hover:underline"><PresenceDot online={isOnline(u.id)} />{u.name}</button><p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p></div>
                       </div>
                     </td>
                     <td className={TD}>
@@ -654,6 +667,8 @@ function StudentsTab() {
       </div>
 
       {assignFor && <AssignDialog user={assignFor} onOpenChange={(o) => !o && setAssignFor(null)} />}
+      <UserProfileDialog user={viewUser} online={viewUser ? isOnline(viewUser.id) : false} onClose={() => setViewUser(null)} onMessage={(v) => { setViewUser(null); setChatUser(v); }} />
+      <DirectMessageDialog meId={currentUser?.id ?? null} meName={currentUser?.name ?? "You"} peer={chatUser} onClose={() => setChatUser(null)} />
     </div>
   );
 }
@@ -737,7 +752,10 @@ function AssignDialog({ user, onOpenChange }: { user: User; onOpenChange: (open:
 /* -------------------------- Applicants tab ---------------------------- */
 
 function ApplicantsTab() {
-  const { state, approveApplicant, rejectApplicant } = useApp();
+  const { state, approveApplicant, rejectApplicant, currentUser } = useApp();
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [chatUser, setChatUser] = useState<User | null>(null);
+  const { isOnline } = usePresence(currentUser?.id ?? null);
   const pending = state.users.filter((u) => u.role === "Student" && u.status === "Pending Approval");
   const [assignFor, setAssignFor] = useState<User | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
@@ -795,7 +813,7 @@ function ApplicantsTab() {
                       {initials(u.name)}
                     </span>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{u.name} {hasPass(u) ? <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Entrance passed</span> : <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">No entrance pass</span>}</p>
+                      <p className="text-sm font-medium text-slate-800"><button type="button" onClick={() => setViewUser(u)} title={`View ${u.name}'s profile`} className="underline-offset-2 hover:text-emerald-800 hover:underline">{u.name}</button> {hasPass(u) ? <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Entrance passed</span> : <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">No entrance pass</span>}</p>
                       <p className="flex items-center gap-2 text-[11px] text-slate-500">
                         <Mail className="h-3 w-3" /> {u.email}
                         <Phone className="h-3 w-3" /> {u.phone}
@@ -828,6 +846,8 @@ function ApplicantsTab() {
       </div>
 
       {assignFor && <AssignDialog user={assignFor} onOpenChange={(o) => !o && setAssignFor(null)} />}
+      <UserProfileDialog user={viewUser} online={viewUser ? isOnline(viewUser.id) : false} onClose={() => setViewUser(null)} onMessage={(v) => { setViewUser(null); setChatUser(v); }} />
+      <DirectMessageDialog meId={currentUser?.id ?? null} meName={currentUser?.name ?? "You"} peer={chatUser} onClose={() => setChatUser(null)} />
     </div>
   );
 }
