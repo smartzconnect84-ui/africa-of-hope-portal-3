@@ -87,7 +87,6 @@ function HeroSlider({ onApply }) {
           alt={slide.alt}
           width="1000"
           height="1100"
-          fetchPriority="high"
         />
         <span className="aoh-image-label">THE FUTURE STARTS WITH LEARNING</span>
         <div className="aoh-image-note">
@@ -116,7 +115,7 @@ function HeroSlider({ onApply }) {
   );
 }
 
-function App() {
+export default function PublicHomepage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
   const exploreAdmissions = () => {
@@ -137,6 +136,8 @@ function App() {
           <nav id="main-navigation" className={menuOpen ? "aoh-nav is-open" : "aoh-nav"} aria-label="Main navigation">
             <a href="#approach" onClick={closeMenu}>Our approach</a>
             <a href="#community" onClick={closeMenu}>Our community</a>
+            <a href="#/programs" onClick={closeMenu}>Programs</a>
+            <a href="#/login" onClick={closeMenu}>Sign in</a>
             <a className="aoh-nav-cta" href="#admissions" onClick={closeMenu}>Your next chapter <Arrow direction="diagonal" /></a>
           </nav>
         </div>
@@ -178,10 +179,13 @@ function App() {
             <p className="aoh-intro">Get to know Africa of Hope and the ideas at the heart of our learning community.</p>
           </div>
           <aside className="aoh-service-note">
-            <span className="aoh-eyebrow">ONLINE SERVICES · RESTORATION UPDATE</span>
-            <h3>A note about admissions</h3>
-            <p>Online applications and student sign-in are not connected in this restored public version. This page does not collect applications or personal information.</p>
-            <a className="aoh-underlined-link" href="#approach">Explore our approach <Arrow /></a>
+            <span className="aoh-eyebrow">ONLINE SERVICES · OPEN NOW</span>
+            <h3>Your next chapter starts here</h3>
+            <p>Browse the live program catalog, apply online and reach the school through the enquiry form. Students and staff sign in from the portal.</p>
+            <div className="aoh-actions">
+              <button className="aoh-button" type="button" onClick={() => { window.location.hash = "#/programs"; }}>Browse programs <Arrow /></button>
+              <a className="aoh-simple-link" href="#/login">Student sign-in <Arrow direction="diagonal" /></a>
+            </div>
           </aside>
         </section>
       </main>
@@ -221,11 +225,4 @@ class HomepageBoundary extends React.Component {
   }
 }
 
-const root = document.getElementById("root");
-if (!root) throw new Error("Missing #root application container.");
-
-createRoot(root).render(
-  <React.StrictMode>
-    <HomepageBoundary><App /></HomepageBoundary>
-  </React.StrictMode>
-);
+export { HomepageBoundary };
