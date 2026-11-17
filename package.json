@@ -15,6 +15,7 @@
     "test:academic:db": "bash supabase/tests/run-academic-contract.sh",
     "typecheck": "tsc --noEmit",
     "check:roles": "node scripts/checkStaffRoles.mjs",
+    "probe:live": "node scripts/liveSchemaProbe.mjs",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0",
     "build:watch": "node src/build/prepareBrandAssets.mjs; vite build --watch > build.log 2>&1",
