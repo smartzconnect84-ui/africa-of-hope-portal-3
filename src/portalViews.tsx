@@ -47,7 +47,7 @@ import {
   CohortCoordinator,
   TeacherDashboard,
   AttendanceSheet,
-  Gradebook,
+  GradeEvaluation,
 } from "./components/AdminTeacherViews";
 import {
   StudentPortal,
@@ -220,7 +220,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: ShieldCheck,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results")),
     render: (ctx) => (ctx.role === "Student" ? <EntranceTest /> : <EntranceTestAdmin />),
-  },,
+  },
   {
     key: "entrance-prep",
     label: "Entrance prep pack",
@@ -287,8 +287,8 @@ export const PORTAL_VIEWS: PortalView[] = [
     label: (ctx) => (ctx.role === "Student" ? "Assignments" : "Grade Evaluation"),
     icon: NotebookPen,
     visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
-    render: () => <AssignmentsView />,
-  },,
+    render: (ctx) => (ctx.role === "Student" ? <AssignmentsView /> : <GradeEvaluation />),
+  },
   {
     key: "fees",
     label: (ctx) => (ctx.role === "Student" ? "Fees & Receipts" : "Finance Ledger"),

@@ -25,7 +25,7 @@ export const NEW_BACK_OFFICE_ROLES: StaffRoleGuide[] = [
       "Academic Approvals",
       "Program Builder",
       "Cohort Coordinator",
-      "Gradebook",
+      "Grade Evaluation",
       "Appeal & remark desk",
       "Finance Ledger (view)",
       "Certificates",

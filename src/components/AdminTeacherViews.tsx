@@ -26,10 +26,12 @@ import {
 } from "@/components/ui/select";
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navigation";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DEFAULT_GRADE_EVAL_SETTINGS,
-  GRADE_EVAL_KEY,
   loadGradeEvalSettings,
+  saveGradeEvalSettings,
+  validateGradeEvalSettings,
   type GradeEvalSettings,
 } from "@/lib/gradeEvaluation";
 import ProgramCover from "./ProgramCover";
@@ -1317,7 +1319,7 @@ export function GradeEvaluation() {
             <Button type="button" className="bg-emerald-800 hover:bg-emerald-700" onClick={async () => {
               if (!examDraft.title.trim()) { toast.error("Enter an exam title."); return; }
               try {
-                await supabase.from("grade_exams").insert({ title: examDraft.title.trim(), cohort_id: examDraft.cohortId || null, max_marks: Number(examDraft.maxMarks) || 100, weight: Number(examDraft.weight) || evalSettings.examsWeight, due_date: examDraft.dueDate || null });
+                await supabase.from("grade_assessments").insert({ kind: "exam", title: examDraft.title.trim(), cohort_id: examDraft.cohortId || null, max_marks: Number(examDraft.maxMarks) || 100, weight: Number(examDraft.weight) || evalSettings.examsWeight, due_date: examDraft.dueDate || null, published: false });
                 toast.success("Exam saved to Grade Evaluation.");
                 setExamDraft({ title: "", cohortId: "", maxMarks: "100", weight: "40", dueDate: "" });
               } catch { toast.success("Exam kept locally — backend table appears after migration."); }
