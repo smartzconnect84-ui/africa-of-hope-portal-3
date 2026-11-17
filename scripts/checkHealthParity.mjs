@@ -25,9 +25,64 @@ if (!fs.existsSync(healthPath)) {
 const health = fs.readFileSync(healthPath, "utf8");
 
 function cardList(name) {
-  const m = health.match(new RegExp(`${name}\\s*=\\s*\\[([\\s\\S]*?)\\]`));
-  if (!m) return new Set();
-  return new Set([...m[1].matchAll(/["'`]([a-z0-9_-]+)["'`]/gi)].map((x) => x[1]));
+  // Bracket-scan the real array literal: a plain /\[([\s\S]*?)\]/ stops at the first
+  // bracket and silently swallowed unrelated strings (it reported a phantom "connected"
+  // entry), which would let genuine drift hide behind an inflated card size.
+  const decl = health.search(new RegExp(`${name}\\s*=\\s*\\[`));
+  if (decl === -1) return new Set();
+  const open = health.indexOf("[", decl);
+  let depth = 0;
+  let quote = null;
+  let lineComment = false;
+  let blockComment = false;
+  let end = open;
+  for (let i = open; i < health.length; i++) {
+    const ch = health[i];
+    const next = health[i + 1];
+    if (lineComment) {
+      if (ch === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (ch === "*" && next === "/") {
+        blockComment = false;
+        i++;
+      }
+      continue;
+    }
+    if (quote) {
+      if (ch === "\\") {
+        i++;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "/" && next === "/") {
+      lineComment = true;
+      i++;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      blockComment = true;
+      i++;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      continue;
+    }
+    if (ch === "[") depth++;
+    else if (ch === "]") {
+      depth--;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  const body = health.slice(open + 1, end);
+  return new Set([...body.matchAll(/["'`]([a-z0-9_-]+)["'`]/gi)].map((x) => x[1]));
 }
 
 const cardTables = cardList("REQUIRED_TABLES");
