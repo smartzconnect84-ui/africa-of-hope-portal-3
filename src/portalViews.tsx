@@ -29,6 +29,12 @@ import {
   TrendingUp,
   HeartHandshake,
   Briefcase,
+  Inbox,
+  LifeBuoy,
+  ReceiptText,
+  FolderOpen,
+  FileText,
+  Lightbulb,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -147,7 +153,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "admissions-inbox",
     label: "Admissions & Support",
-    icon: Users,
+    icon: Inbox,
     visible: (ctx) => ctx.canAny("students.manage", "fees.manage"),
     render: () => <EngagementInbox />,
   },
@@ -182,7 +188,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "helpdesk",
     label: "Student helpdesk",
-    icon: MessagesSquare,
+    icon: LifeBuoy,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("helpdesk.manage")),
     render: (ctx) => <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} />,
   },
@@ -218,7 +224,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "entrance-prep",
     label: "Entrance prep pack",
-    icon: GraduationCap,
+    icon: Lightbulb,
     visible: () => true,
     render: () => <EntrancePrepPack />,
   },
@@ -300,7 +306,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "payment-review",
     label: "Payment confirmations",
-    icon: ClipboardCheck,
+    icon: ReceiptText,
     visible: (ctx) => ctx.can("payments.confirm"),
     render: () => <PaymentsReview />,
   },
@@ -356,7 +362,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "transparency",
     label: "Transparency reports",
-    icon: LibraryBig,
+    icon: FileText,
     visible: (ctx) => ctx.can("cms.manage"),
     render: (ctx) => <TransparencyLibrary key={ctx.currentUser?.id} management />,
   },
@@ -384,7 +390,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "my-files",
     label: "My files",
-    icon: LibraryBig,
+    icon: FolderOpen,
     visible: () => true,
     render: () => <OperationsHub personalOnly />,
   },
@@ -420,11 +426,19 @@ export function usePortalViewContext(): PortalViewContext {
 /**
  * Relevance order for the sidebar nav (most-used first, system last).
  * Dashboard stays first, My Profile stays last. `useVisiblePortalViews` sorts
- * the filtered views by this list so the drawer reads in journey order:
- * learn → people/admissions → money → support/comms → system.
+ * the filtered views by this list so the drawer reads in workflow order:
+ * administration (people, admissions, cohorts) → learning → money →
+ * support/comms → system. Staff see their daily management tools first;
+ * students only see the learning subset, already in journey order.
  */
 const NAV_RELEVANCE_ORDER = [
   "dashboard",
+  "people",
+  "admissions-inbox",
+  "cohorts",
+  "programs",
+  "attendance",
+  "insights",
   "course-player",
   "academic-planning",
   "study-plan",
@@ -434,23 +448,17 @@ const NAV_RELEVANCE_ORDER = [
   "discussions",
   "training-library",
   "entrance-test",
-  "entrance-prep",
   "entrance-control",
-  "people",
-  "admissions-inbox",
-  "attendance",
-  "insights",
-  "programs",
-  "cohorts",
+  "entrance-prep",
   "fees",
   "payments",
   "payment-review",
   "certificates",
   "verification",
+  "announcements",
   "helpdesk",
   "grade-appeals",
   "reference-letters",
-  "announcements",
   "policies",
   "blog",
   "transparency",

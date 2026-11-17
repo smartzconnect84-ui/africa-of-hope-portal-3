@@ -183,7 +183,7 @@ function Pop({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             className={cn(
-              "fixed inset-x-3 top-full z-50 mt-2 max-h-[70vh] overflow-auto rounded-2xl border border-emerald-900/10 bg-white p-2 shadow-xl sm:absolute sm:inset-x-auto sm:w-72",
+              "fixed inset-x-3 top-16 z-50 mt-2 max-h-[70vh] overflow-auto rounded-2xl border border-emerald-900/10 bg-white p-2 shadow-xl sm:absolute sm:inset-x-auto sm:top-full sm:w-72",
               align === "right" ? "sm:right-0" : "sm:left-0",
             )}
           >
@@ -377,10 +377,11 @@ export default function Navigation({
 
   const sidebar = (
     <nav
-      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain p-3 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
-      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      aria-label="Portal sections"
+      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-0.5 overflow-y-auto overscroll-contain px-2 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
+      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
-      <p className="px-3 pb-1 pt-2 text-[13px] font-semibold uppercase tracking-widest text-emerald-900/75 dark:text-emerald-100/80">
+      <p className="px-2 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-900/70 dark:text-emerald-100/80">
         {sidebarGroupLabel(ctx.role)}
       </p>
       {views.map((v) => {
@@ -394,34 +395,34 @@ export default function Navigation({
             onClick={() => go(v.key)}
             data-component-id={`nav-${v.key}`}
             className={cn(
-              "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+              "flex min-h-[40px] items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
               active
                 ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
                 : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
             )}
           >
-            <Icon className={cn("h-4.5 w-4.5", active ? "text-amber-400" : "text-emerald-700/70")} />
+            <Icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-amber-400" : "text-emerald-700/70")} />
             {t(label)}
           </button>
         );
       })}
-      <div className="mt-2 space-y-1 border-t border-slate-100 pt-2 dark:border-white/10">
+      <div className="mt-1.5 border-t border-slate-100 pt-1.5 dark:border-white/10">
         {onExitToPublic && (
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-emerald-800 transition hover:bg-emerald-50"
+            className="flex min-h-[40px] w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-emerald-800 transition hover:bg-emerald-50"
           >
-            <Globe className="h-4.5 w-4.5" />
+            <Globe className="h-[18px] w-[18px] shrink-0" />
             View public website
           </button>
         )}
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-3 text-[15px] font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="flex min-h-[40px] w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
         >
-          <RefreshCw className="h-4.5 w-4.5" />
+          <RefreshCw className="h-[18px] w-[18px] shrink-0" />
           Reload live data
         </button>
       </div>
@@ -463,7 +464,7 @@ export default function Navigation({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search people, programs, records"
+              placeholder="Search people"
               className="h-10 w-64 rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15 lg:w-80"
             />
             {results.length > 0 && (
@@ -502,7 +503,7 @@ export default function Navigation({
                 <span className="relative grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10" role="img" aria-label={bellCount > 0 ? `Bulletin board, ${bellCount} new notices` : "Bulletin board"}>
                   <Bell className="h-5 w-5" />
                   {bellCount > 0 && (
-                    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[11px] font-bold text-emerald-950 ring-2 ring-white">
+                    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-amber-400 px-1 text-[11px] font-bold text-emerald-950 ring-2 ring-white">
                       {bellCount > 9 ? "9+" : bellCount}
                     </span>
                   )}
@@ -563,7 +564,7 @@ export default function Navigation({
               className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60"
               aria-label="Sign out"
             >
-              <LogOut className="h-4.5 w-4.5" />
+              <LogOut className="h-[18px] w-[18px]" />
             </button>
           </div>
         </div>
@@ -588,7 +589,7 @@ export default function Navigation({
         >
           <div className="flex h-full min-h-0 flex-col">
             <div className="shrink-0 border-b border-slate-100 p-3">
-              <BrandLockup logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl} academyName={state.websiteSettings.academyName} size="sm" showTagline={false} nameClassName="hidden" />
+              <BrandLockup logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl} academyName={state.websiteSettings.academyName} displayName="AOH-PORTAL" size="sm" showTagline={false} className="w-full min-w-0 items-center gap-2" logoClassName="h-7 w-auto shrink-0" nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-xs leading-none tracking-[0.12em]" />
             </div>
             {sidebar}
           </div>
@@ -608,9 +609,9 @@ export default function Navigation({
             role="dialog"
             aria-modal="true"
             aria-label="Portal navigation"
-            className="aoh-drawer absolute left-0 top-0 flex w-[min(20rem,92vw)] flex-col border-r-[3px] border-[#D4AF37] bg-white shadow-2xl"
+            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(20rem,92vw)] flex-col border-r-[3px] border-[#D4AF37] bg-white shadow-2xl"
           >
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 p-4">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 p-3">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                 <BrandLockup
                   logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
@@ -619,15 +620,15 @@ export default function Navigation({
                   tone="light"
                   size="sm"
                   showTagline={false}
-                  className="min-w-0 max-w-full items-center gap-2 overflow-hidden"
-                  logoClassName="h-7 w-auto max-w-[112px] shrink-0"
+                  className="w-full min-w-0 max-w-full items-center gap-2 overflow-hidden"
+                  logoClassName="h-8 w-auto max-w-full shrink-0"
                   nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-sm leading-none tracking-[0.12em] self-center"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => setDrawer(false)}
-                className="grid h-11 w-11 place-items-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                 aria-label="Close navigation"
               >
                 <X className="h-5 w-5" />
