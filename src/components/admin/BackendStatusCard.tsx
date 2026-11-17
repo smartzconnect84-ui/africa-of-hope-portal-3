@@ -176,7 +176,11 @@ export default function BackendStatusCard() {
                       <StatusDot ok={t.ok} /> {t.table}
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      {t.ok ? (t.rows ?? 0).toLocaleString() + " rows" : t.error}
+                      {t.ok
+                        ? t.secured
+                          ? "Secured (RLS)"
+                          : (t.rows ?? 0).toLocaleString() + " rows"
+                        : t.error}
                     </span>
                   </li>
                 ))}

@@ -12,6 +12,8 @@ export interface TableCheck {
   ok: boolean;
   rows: number | null;
   error: string | null;
+  /** Table exists but RLS correctly denies the anon key — healthy, not broken. */
+  secured?: boolean;
 }
 
 export interface HealthResult {
@@ -28,25 +30,93 @@ export interface HealthResult {
   checkedAt: string;
 }
 
+/**
+ * Every table the client queries directly, so this card cannot report
+ * "connected" while most of the contract is still unchecked.
+ * Keep in sync with: rg -o 'from\("([a-z_]+)"\)' -r '$1' src | sort -u
+ */
 export const REQUIRED_TABLES = [
-  "profiles",
-  "programs",
-  "program_modules",
-  "cohorts",
-  "cohort_students",
-  "attendance",
-  "assignments",
-  "submissions",
-  "fee_transactions",
-  "certificates",
+  "alumni_businesses",
   "announcements",
-  "system_settings",
+  "application_drafts",
+  "assignments",
+  "attendance",
+  "blog_posts",
+  "certificates",
+  "class_sessions",
+  "cohort_students",
+  "cohorts",
+  "discussion_replies",
+  "discussion_threads",
+  "email_outbox",
+  "entrance_settings",
+  "entrance_test_results",
+  "fee_transactions",
+  "learning_memory",
+  "notification_outbox",
+  "notifications",
+  "payment_channels",
+  "payment_submissions",
+  "permissions",
+  "policy_acceptances",
+  "profiles",
+  "program_modules",
+  "programs",
+  "push_subscriptions",
+  "quiz_attempts",
+  "quiz_questions",
+  "quizzes",
+  "reminder_items",
+  "reminder_settings",
   "role_permissions",
   "school_policies",
-  "policy_acceptances",
+  "staff_vacancies",
+  "study_plans",
+  "submissions",
+  "support_pledges",
+  "system_settings",
+  "teacher_course_plans",
+  "training_materials",
+  "vacancy_applications",
+  "website_enquiries",
+  "yearbook_entries",
 ] as const;
 
-const REQUIRED_BUCKETS = ["avatars", "program-images", "documents", "site-assets"];
+const REQUIRED_BUCKETS = [
+  "avatars",
+  "blog-covers",
+  "certificates",
+  "classwork-submissions",
+  "documents",
+  "program-images",
+  "site-assets",
+  "site-media",
+  "training-materials",
+  "transparency-reports",
+];
+
+/**
+ * Distinguishes an unapplied migration from a correctly secured table.
+ * A table that exists but denies the anon key is healthy: RLS is doing its job.
+ * A "not found / schema cache" error means the migration never ran — a real gap.
+ */
+function classifyProbe(table: string, message: string): TableCheck {
+  const missing =
+    /could not find the table|does not exist|schema cache|pgrst205|undefined table|relation .* not found/i.test(
+      message,
+    );
+  if (missing) {
+    return { table, ok: false, rows: null, error: "Missing — migration not applied" };
+  }
+  const secured =
+    /row-level security|permission denied|not authorized|42501|unauthori[sz]ed|\b401\b|\b403\b/i.test(
+      message,
+    );
+  if (secured) {
+    return { table, ok: true, rows: null, secured: true, error: null };
+  }
+  return { table, ok: false, rows: null, error: message };
+}
 
 function previewKey(key: string): string {
   if (key.length <= 16) return "••••";
@@ -87,26 +157,19 @@ export async function checkSupabaseHealth(): Promise<HealthResult> {
   }
 
   // 2. Per-table probes (count only, never downloads rows).
-  const tables: TableCheck[] = [];
-  for (const table of REQUIRED_TABLES) {
-    try {
-      const { count, error } = await supabase
-        .from(table)
-        .select("*", { count: "exact", head: true });
-      if (error) {
-        tables.push({ table, ok: false, rows: null, error: error.message });
-      } else {
-        tables.push({ table, ok: true, rows: count ?? 0, error: null });
+  const tables: TableCheck[] = await Promise.all(
+    REQUIRED_TABLES.map(async (table) => {
+      try {
+        const { count, error } = await supabase
+          .from(table)
+          .select("*", { count: "exact", head: true });
+        if (error) return classifyProbe(table, error.message);
+        return { table, ok: true, rows: count ?? 0, error: null };
+      } catch (err) {
+        return classifyProbe(table, err instanceof Error ? err.message : "Probe failed");
       }
-    } catch (err) {
-      tables.push({
-        table,
-        ok: false,
-        rows: null,
-        error: err instanceof Error ? err.message : "Probe failed",
-      });
-    }
-  }
+    }),
+  );
 
   // 3. Storage buckets. listBuckets() is service-role only and returns an empty
   // list for the anon key even when the buckets exist, so probe each bucket.
@@ -130,9 +193,15 @@ VITE_SUPABASE_ANON_KEY=your-anon-public-key`;
 export const STORAGE_BUCKET_SQL = `insert into storage.buckets (id, name, public)
 values
   ('avatars', 'avatars', true),
-  ('program-images', 'program-images', true),
+  ('blog-covers', 'blog-covers', true),
+  ('certificates', 'certificates', false),
+  ('classwork-submissions', 'classwork-submissions', false),
   ('documents', 'documents', false),
-  ('site-assets', 'site-assets', true)
+  ('program-images', 'program-images', true),
+  ('site-assets', 'site-assets', true),
+  ('site-media', 'site-media', true),
+  ('training-materials', 'training-materials', false),
+  ('transparency-reports', 'transparency-reports', false)
 on conflict (id) do update set public = excluded.public;
 
 drop policy if exists avatars_public_read on storage.objects;
