@@ -513,19 +513,19 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain py-2 pr-1">
+              <nav className="-mr-1 mt-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain py-1 pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
                     href={l.href}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="flex min-h-11 items-center rounded-xl px-3.5 py-2.5 text-[15px] font-medium leading-6 text-emerald-100 transition hover:bg-white/10"
+                    className="flex min-h-10 items-center rounded-lg px-3 py-2 text-[14px] font-medium leading-6 text-emerald-100 transition hover:bg-white/10"
                   >
                     {t(l.label)}
                   </a>
                 ))}
               </nav>
-              <div className="mt-2 border-t border-white/10 pt-3">
+              <div className="mt-1 border-t border-white/10 pt-2">
                 <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
                   {t("School Portal")}
                 </button>
