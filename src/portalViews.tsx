@@ -142,7 +142,7 @@ function AptitudeControlHub({ ctx }: { ctx: PortalViewContext }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Aptitude Control sections">
-        {([ ["control", "Aptitude Control"], ["test", "Entrance test preview"], ["prep", "Entrance prep pack"] ] as const).map(([k, label]) => (
+        {([ ["control", "Aptitude Test Control"], ["test", "Test Preview"], ["prep", "Test Samples"] ] as const).map(([k, label]) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={tab === k ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>{label}</button>
         ))}
       </div>

@@ -216,7 +216,7 @@ export default function EntranceTest({ compact = false }: { compact?: boolean })
       ) : null}
       <div className={`mt-4 flex flex-wrap gap-2 ${compact ? "" : ""}`}>
         <Button type="button" onClick={startForm} className="bg-amber-400 text-emerald-950 hover:bg-amber-300">Take the entrance test now</Button>
-        <a href="#prep-pack" className="inline-flex h-10 items-center rounded-xl border border-emerald-900/15 px-4 text-sm font-medium text-emerald-900 hover:bg-emerald-50">Revise with the prep pack first</a>
+        <a href="#prep-pack" className="inline-flex h-10 items-center rounded-xl border border-emerald-900/15 px-4 text-sm font-medium text-emerald-900 hover:bg-emerald-50">Revise the test pack first</a>
       </div>
     </div>
   );
