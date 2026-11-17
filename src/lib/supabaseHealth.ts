@@ -36,6 +36,16 @@ export interface HealthResult {
  * Keep in sync with: rg -o 'from\("([a-z_]+)"\)' -r '$1' src | sort -u
  */
 export const REQUIRED_TABLES = [
+  // Tables the client queries that were missing from this list, so the card could
+  // report "connected" while seven real tables went unchecked.
+  // Guarded by: npm run check:health-parity
+  "email_templates",
+  "grade_appeals",
+  "helpdesk_messages",
+  "helpdesk_tickets",
+  "newsletter_campaigns",
+  "newsletter_subscribers",
+  "transparency_reports",
   "alumni_businesses",
   "announcements",
   "application_drafts",

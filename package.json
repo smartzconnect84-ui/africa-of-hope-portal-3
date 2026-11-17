@@ -17,6 +17,7 @@
     "check:roles": "node scripts/checkStaffRoles.mjs",
     "check:live-schema": "node scripts/liveSchemaProbe.mjs",
     "check:edge-functions": "node scripts/checkEdgeFunctions.mjs",
+    "check:health-parity": "node scripts/checkHealthParity.mjs",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0",
     "build:watch": "node src/build/prepareBrandAssets.mjs; vite build --watch > build.log 2>&1",
