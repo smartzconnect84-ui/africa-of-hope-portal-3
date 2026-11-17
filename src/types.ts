@@ -299,7 +299,7 @@ export interface AuthSettings {
   pendingBody: string;
 }
 
-export type LogoPlacement = "header" | "footer" | "portal" | "auth" | "certificate" | "brochure";
+export type LogoPlacement = "header" | "footer" | "portal" | "auth" | "certificate" | "brochure" | "splash";
 
 /** One authorised signature area. Names, titles and signature images come from settings only. */
 export interface CertificateSignatory {

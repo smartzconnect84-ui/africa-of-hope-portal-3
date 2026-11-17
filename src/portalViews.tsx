@@ -285,7 +285,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "entrance-control",
     label: (ctx) => (ctx.role === "Student" ? "My entrance result" : "Aptitude Control"),
     icon: ShieldCheck,
-    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results")),
+    visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results", "aptitude.manage")),
     render: (ctx) => <AptitudeControlHub ctx={ctx} />,
   },
   {
@@ -353,14 +353,14 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "timetable",
     label: "Timetable",
     icon: CalendarDays,
-    visible: () => true,
+    visible: (ctx) => ctx.role === "Student" || ctx.canAny("timetable.manage", "cohorts.manage", "attendance.manage", "attendance.own", "programs.manage", "academic_plans.manage"),
     render: () => <CohortTimetable />,
   },
   {
     key: "report-cards",
     label: (ctx) => (ctx.role === "Student" ? "My Report Card" : "Report Cards"),
     icon: Award,
-    visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
+    visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own", "reports.manage") || ctx.role === "Student",
     render: () => <TermReportCards />,
   },
   {
@@ -437,14 +437,14 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "opportunities",
     label: "Vacancies & Businesses",
     icon: Briefcase,
-    visible: (ctx) => ctx.can("cms.manage"),
+    visible: (ctx) => ctx.canAny("cms.manage", "transparency.manage"),
     render: () => <AdminOpportunities />,
   },
   {
     key: "website",
     label: "Website CMS",
     icon: Globe,
-    visible: (ctx) => ctx.can("cms.manage"),
+    visible: (ctx) => ctx.canAny("cms.manage", "blog.manage", "transparency.manage", "policies.manage"),
     render: () => <AdminWebsiteSettings />,
   },
   {
@@ -465,7 +465,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "operations",
     label: "Operations Centre",
     icon: Activity,
-    visible: (ctx) => ctx.canAny("settings.manage", "materials.approve"),
+    visible: (ctx) => ctx.canAny("settings.manage", "materials.approve", "operations.manage"),
     render: () => <OperationsHub />,
   },
   {

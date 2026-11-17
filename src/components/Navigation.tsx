@@ -416,7 +416,7 @@ export default function Navigation({
         data-component-id={`nav-${v.key}`}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "group flex min-h-[48px] items-center gap-3 rounded-xl px-2.5 py-2.5 text-[18px] font-medium leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          "group flex min-h-[44px] items-center gap-2 rounded-xl px-2 py-2 text-[15px] font-medium leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
           active
             ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white shadow-md shadow-emerald-900/25 ring-1 ring-emerald-900/20"
             : "text-slate-700 hover:translate-x-[1px] hover:bg-gradient-to-r hover:from-emerald-50 hover:to-amber-50/70 hover:text-emerald-950 hover:shadow-sm dark:text-slate-100 dark:hover:from-white/10 dark:hover:to-white/5 dark:hover:text-white",
@@ -424,13 +424,13 @@ export default function Navigation({
       >
         <span
           className={cn(
-            "grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-all",
+            "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-all",
             active
               ? "bg-white/15 text-amber-300 ring-1 ring-white/25"
               : "bg-gradient-to-br from-emerald-600/10 to-amber-500/15 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white",
           )}
         >
-          <Icon className="h-[19px] w-[19px] shrink-0" />
+          <Icon className="h-[18px] w-[18px] shrink-0" />
         </span>
         <span className="min-w-0 flex-1 truncate">{t(label)}</span>
         {active && <span className="h-6 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
@@ -441,7 +441,7 @@ export default function Navigation({
   const sidebar = (
     <nav
       aria-label="Portal sections"
-      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1.5 overflow-y-auto overscroll-contain bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/40 px-2.5 pb-2 pt-2 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin] dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
+      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/40 px-2 pb-2 pt-2 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin] dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
       <p className="mx-1 mb-1 flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 px-3 py-2 text-[13px] font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-emerald-900/20">
@@ -451,13 +451,13 @@ export default function Navigation({
       {groupedNav.map((group) => {
         const isOpen = openGroups[group.id] !== false;
         return (
-          <div key={group.id} className="flex flex-col gap-[0.1rem] rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10">
+          <div key={group.id} className="flex flex-col gap-0.5 rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10">
             <button
               type="button"
               onClick={() => toggleGroup(group.id)}
               aria-expanded={isOpen}
               aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[48px] items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700/[0.07] via-teal-600/[0.05] to-amber-500/[0.08] px-2.5 py-2 text-left text-[15px] font-bold uppercase tracking-wider text-emerald-950 transition hover:from-emerald-700/[0.12] hover:to-amber-500/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
+              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700/[0.07] via-teal-600/[0.05] to-amber-500/[0.08] px-2 py-2 text-left text-[13px] font-bold uppercase tracking-wider text-emerald-950 transition hover:from-emerald-700/[0.12] hover:to-amber-500/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
             >
               <span className="flex-1">{group.label}</span>
               <span className="rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-white shadow-sm">
@@ -466,19 +466,19 @@ export default function Navigation({
               <ChevronDown className={cn("h-5 w-5 shrink-0 text-emerald-800 transition-transform dark:text-emerald-100", isOpen ? "rotate-180" : "rotate-0")} />
             </button>
             {isOpen && (
-              <div id={`portal-nav-group-${group.id}`} className="ml-3 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
+              <div id={`portal-nav-group-${group.id}`} className="ml-2 flex flex-col gap-0.5 border-l-2 border-emerald-600/20 py-1 pl-2">
                 {group.items.map((key) => renderNavButton(key))}
               </div>
             )}
           </div>
         );
       })}
-      <div className="mt-1.5 border-t border-slate-100 pt-1.5 dark:border-white/10">
+      <div className="mt-1 border-t border-slate-100 pt-1.5 dark:border-white/10">
         {onExitToPublic && (
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[18px] font-medium leading-snug text-white shadow-sm shadow-emerald-900/20 transition hover:brightness-110 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800"
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium leading-snug text-white shadow-sm shadow-emerald-900/20 transition hover:brightness-110 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800"
           >
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25">
               <Globe className="h-[20px] w-[20px] shrink-0" />
@@ -489,7 +489,7 @@ export default function Navigation({
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex min-h-[48px] w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2.5 text-[18px] font-medium leading-snug text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-slate-700"
+          className="flex min-h-[44px] w-full items-center gap-2 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-[15px] font-medium leading-snug text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-slate-700"
         >
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-slate-100 to-emerald-100/60 text-emerald-700 ring-1 ring-emerald-900/10">
             <RefreshCw className="h-[20px] w-[20px] shrink-0" />

@@ -14,8 +14,8 @@ export const BUILT_IN_FAVICON = "/favicon.png";
 export const BUILT_IN_PORTRAIT =
   "https://files.monstarx.app/54c3deukza/public/uploads/chat/1owwaae5m6/WhatsApp_Image_2026-04-04_at_1.19.06_AM.jpeg";
 
-export type BrandPlacement = "header" | "footer" | "portal" | "auth" | "certificate" | "brochure";
-export const BRAND_PLACEMENTS: BrandPlacement[] = ["header", "footer", "portal", "auth", "certificate", "brochure"];
+export type BrandPlacement = "header" | "footer" | "portal" | "auth" | "certificate" | "brochure" | "splash";
+export const BRAND_PLACEMENTS: BrandPlacement[] = ["header", "footer", "portal", "auth", "certificate", "brochure", "splash"];
 
 export interface BrandCopyResult {
   logoUrl: string;

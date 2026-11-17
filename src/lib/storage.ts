@@ -81,7 +81,12 @@ async function uploadPublicImage(bucket: string, folder: string, file: File): Pr
   const typeOk = validateFile(file, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES);
   // Type is always enforced; oversize phone photos get compressed before the final size check.
   if (typeOk && !typeOk.includes("larger than")) throw new Error(typeOk);
-  const optimized = await compressImage(file);
+  // Every brand mark in site-assets (logos, favicons, PWA/splash, seals,
+  // signatures) keeps its alpha channel: no white plate is ever baked in.
+  const folderKey = folder.toLowerCase();
+  const isBrandFolder = bucket === SITE_ASSETS_BUCKET && (/^(logo|favicon|pwa|splash|certificate|seal)/.test(folderKey) || folderKey.includes("logo") || folderKey.includes("favicon") || folderKey.includes("splash") || folderKey.includes("seal") || folderKey.includes("signature"));
+  const preserve = isBrandFolder || /logo|icon|splash|seal|favicon/i.test(file.name);
+  const optimized = await compressImage(file, preserve ? { preserveTransparency: true } : undefined);
   const invalid = validateFile(optimized, IMAGE_TYPES, MAX_IMAGE_BYTES);
   if (invalid) throw new Error(invalid);
   const path = `${folder}/${newStorageId()}.${extension(optimized)}`;

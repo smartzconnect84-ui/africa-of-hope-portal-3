@@ -276,9 +276,9 @@ export default function AdminWebsiteSettings() {
           </div>
           <div className="border-t border-slate-100 pt-5">
             <h2 className="text-base font-semibold text-slate-900">Logos by placement</h2>
-            <p className="mt-1 text-sm text-slate-500">Upload a different logo for each location. Empty locations use the default logo. Removing an override clears it from the site and trashes the retired upload so it cannot be reused.</p>
+            <p className="mt-1 text-sm text-slate-500">Upload a different transparent logo for each location. Empty locations use the default logo. PNG keeps its transparent background — no white plate is added. Removing an override clears it from the site and trashes the retired upload so it cannot be reused.</p>
             <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {([['header', 'Public header & mobile menu'], ['footer', 'Public footer'], ['portal', 'Portal header & mobile menu'], ['auth', 'Sign in & registration'], ['certificate', 'Completion certificates'], ['brochure', 'Programme brochures']] as const).map(([key, label]) => (
+              {([['header', 'Public header & mobile menu'], ['footer', 'Public footer'], ['portal', 'Portal header & mobile menu'], ['auth', 'Sign in & registration'], ['certificate', 'Completion certificates'], ['brochure', 'Programme brochures'], ['splash', 'Launch / splash screen']] as const).map(([key, label]) => (
                 <ImageBox key={key} label={label} folder={`logo/${key}`} value={draft.logos?.[key] || ''} onChange={(value) => patch({ logos: { ...draft.logos, [key]: value } })} />
               ))}
             </div>

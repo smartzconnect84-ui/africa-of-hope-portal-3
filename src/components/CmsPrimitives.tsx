@@ -141,7 +141,7 @@ export function ImageBox({
   const labelKey = label.toLowerCase();
   // Logos, favicons, PWA icons and splash marks must never be cropped:
   // their live placements use contain. Photos use crop-to-fill (cover).
-  const preserveFull = folderKey.startsWith("logo") || folderKey.startsWith("favicon") || folderKey.startsWith("pwa") || folderKey === "splash" || labelKey.includes("logo") || labelKey.includes("favicon") || labelKey.includes("icon") || labelKey.includes("splash") || labelKey.includes("seal");
+  const preserveFull = folderKey.startsWith("logo") || folderKey.startsWith("favicon") || folderKey.startsWith("pwa") || folderKey === "splash" || folderKey.startsWith("certificate") || labelKey.includes("logo") || labelKey.includes("favicon") || labelKey.includes("icon") || labelKey.includes("splash") || labelKey.includes("seal") || labelKey.includes("signature");
   const previewFit = preserveFull ? "object-contain" : "object-cover";
   const previewAlt = preserveFull ? `${label} preview — shown in full, not cropped` : `${label} preview — cropped to fill its frame`;
   const urlPlaceholder = preserveFull ? "…or paste an image URL (shown in full, not cropped)" : "…or paste an image URL (cropped to fill its frame)";
@@ -171,14 +171,18 @@ export function ImageBox({
       </span>
       <div className="flex items-center gap-3">
         <div
-          className={`grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-slate-200 bg-slate-50 ${
+          className={`grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-slate-200 ${
             round ? "rounded-xl p-1" : "rounded-xl"
           }`}
+          style={preserveFull
+            ? { backgroundColor: "transparent", backgroundImage: "linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%), linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%)", backgroundSize: "12px 12px", backgroundPosition: "0 0, 6px 6px" }
+            : { backgroundColor: "#f8fafc" }}
+          title={preserveFull ? "Transparent preview — no background is added" : undefined}
         >
           {busy ? (
             <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
           ) : value ? (
-            <img src={value} alt={previewAlt} className={`h-full w-full object-center ${previewFit} ${preserveFull ? "bg-white p-1" : "aoh-photo"}`} />
+            <img src={value} alt={previewAlt} loading="lazy" decoding="async" className={`h-full w-full bg-transparent object-center ${previewFit} ${preserveFull ? "p-1" : "aoh-photo"}`} style={{ backgroundColor: "transparent" }} />
           ) : (
             <ImageIcon className="h-6 w-6 text-slate-400" />
           )}
@@ -221,6 +225,7 @@ export function ImageBox({
         onChange={(e) => onChange(e.target.value)}
         className="mt-2 h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-emerald-500"
       />
+      {preserveFull && <p className="mt-1 text-[11px] leading-4 text-slate-500">Transparent PNG or WebP recommended — backgrounds are never added. Each placement uploads independently.</p>}
       {error && <p id={errorId} className="mt-1 text-xs text-rose-800">{error}</p>}
     </div>
   );
