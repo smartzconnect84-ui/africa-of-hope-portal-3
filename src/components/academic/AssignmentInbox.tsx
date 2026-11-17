@@ -185,7 +185,7 @@ export default function AssignmentInbox() {
       )}
 
       {assignments.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="No assignments yet" hint={canManage ? "Publish your first brief above." : "Your instructors have not published any briefs."} />
+        <EmptyState icon={ClipboardList} title="No assignments yet" hint={canManage ? "Publish your first brief above." : "Your Teachers-Instructors have not published any briefs."} />
       ) : (
         <div className="space-y-4">
           {assignments.map((a) => {

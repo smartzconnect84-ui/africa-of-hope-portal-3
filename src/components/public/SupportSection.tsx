@@ -17,12 +17,19 @@ import { normalizeCurrencyCode } from '@/lib/currency';
 const ICONS = { donation: HandHeart, volunteer: Users, partner: Handshake, staff: Users };
 const isKind = (id: string): id is SupportKind => id in ICONS;
 
-/** Footer and card links use #support-donation, #support-volunteer, #support-partner or #support-staff. */
-const kindFromHash = (): SupportKind | null => {
+/** Footer and card links use /?section=support&support=<kind> clean URLs (legacy #support-<kind> hashes still work). */
+const kindFromLocation = (): SupportKind | null => {
   if (typeof window === "undefined") return null;
-  const match = window.location.hash.match(/^#support-(donation|volunteer|partner|staff)$/i);
-  return match ? (match[1].toLowerCase() as SupportKind) : null;
+  const hash = window.location.hash.match(/^#support-(donation|volunteer|partner|staff)$/i);
+  if (hash) return hash[1].toLowerCase() as SupportKind;
+  try {
+    const param = new URLSearchParams(window.location.search).get("support");
+    if (param && isKind(param.toLowerCase())) return param.toLowerCase() as SupportKind;
+  } catch { /* ignore malformed query */ }
+  return null;
 };
+
+const kindFromHash = kindFromLocation;
 
 const AMOUNTS = [2000, 5000, 10000, 25000, 50000];
 const METHODS = ["MTN MoMo", "Orange Money", "Wave", "Bank / Card"];
@@ -43,12 +50,17 @@ export default function SupportSection({ onApply }: { onApply: () => void }) {
   const [localOnly, setLocalOnly] = useState(false);
 
   useEffect(() => {
-    const onHash = () => {
-      const next = kindFromHash();
+    const onChange = () => {
+      const next = kindFromLocation();
       if (next) { setKind(next); setDone(null); setError(null); }
     };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    onChange();
+    window.addEventListener("hashchange", onChange);
+    window.addEventListener("popstate", onChange);
+    return () => {
+      window.removeEventListener("hashchange", onChange);
+      window.removeEventListener("popstate", onChange);
+    };
   }, []);
   const copy = state.websiteSettings.support;
   const tabs = copy.cards.filter((card) => isKind(card.id)).map((card) => ({ ...card, key: card.id as SupportKind, icon: ICONS[card.id as SupportKind] }));

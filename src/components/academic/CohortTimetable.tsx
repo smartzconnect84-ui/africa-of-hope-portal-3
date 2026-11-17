@@ -268,7 +268,7 @@ export default function CohortTimetable() {
     <div className="space-y-5">
       <SectionHeader
         title="Cohort timetable"
-        subtitle={cohort ? `${cohort.name} · weekly classes with rooms, teachers and times` : "Weekly class timetable per cohort"}
+        subtitle={cohort ? `${cohort.name} · weekly classes with rooms, Teachers-Instructors and times` : "Weekly class timetable per cohort"}
         action={
           <div className="flex flex-wrap gap-2">
             {canEdit && (
@@ -294,7 +294,7 @@ export default function CohortTimetable() {
         </div>
         <div className="rounded-2xl border border-emerald-900/10 bg-white p-4 text-center shadow-sm">
           <p className="text-2xl font-bold text-emerald-950">{staffCount}</p>
-          <p className="text-xs font-medium text-slate-500">Teachers</p>
+          <p className="text-xs font-medium text-slate-500">Teachers-Instructors</p>
         </div>
       </div>
 
@@ -325,7 +325,7 @@ export default function CohortTimetable() {
         <EmptyState
           icon={CalendarDays}
           title="No classes scheduled yet"
-          hint={canEdit ? "Add the first class for this cohort — set the day, time, teacher and room." : "The timetable for this cohort has not been published yet. Check back soon."}
+          hint={canEdit ? "Add the first class for this cohort — set the day, time, Teachers-Instructors and room." : "The timetable for this cohort has not been published yet. Check back soon."}
         />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -387,7 +387,7 @@ export default function CohortTimetable() {
         <DialogContent className={cn("max-w-lg")}>
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit class" : "Add class"}</DialogTitle>
-            <DialogDescription>Set the day, time, teacher and room. Overlapping classes on the same day are blocked.</DialogDescription>
+            <DialogDescription>Set the day, time, Teachers-Instructors and room. Overlapping classes on the same day are blocked.</DialogDescription>
           </DialogHeader>
           {formError && (
             <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{formError}</p>
@@ -409,9 +409,9 @@ export default function CohortTimetable() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="tt-teacher">Teacher</Label>
+              <Label htmlFor="tt-teacher">Teachers-Instructors</Label>
               <Select value={form.teacher_id || "__tba__"} onValueChange={(v) => setForm((p) => ({ ...p, teacher_id: v }))}>
-                <SelectTrigger id="tt-teacher"><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                <SelectTrigger id="tt-teacher"><SelectValue placeholder="Select Teachers-Instructors" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__tba__">Room booking / TBA</SelectItem>
                   {teachers.map((t) => (

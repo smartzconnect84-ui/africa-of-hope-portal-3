@@ -15,3 +15,5 @@ https://www.africaofhopelr.org/* https://africaofhopelr.org/:splat 301!
 /campus-life /index.html 200
 /term-dates /index.html 200
 /cookies /index.html 200
+/newsletter/* /index.html 200
+/* /index.html 200

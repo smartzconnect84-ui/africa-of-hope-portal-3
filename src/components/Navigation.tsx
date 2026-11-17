@@ -12,6 +12,7 @@ import { useVisiblePortalViews, portalViewLabel, PORTAL_NAV_GROUPS } from "../po
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
+import { displayRole } from "@/lib/roleDisplay";
 import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
 
@@ -159,7 +160,6 @@ function sidebarGroupLabel(role: string | null): string {
   if (role === "Teacher") return "Teachers-Instructors";
   return "Administration";
 }
-
 function Pop({
   trigger,
   align = "right",
@@ -378,7 +378,7 @@ export default function Navigation({
     return state.users
       .filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
       .slice(0, 4)
-      .map((u) => ({ id: u.id, label: u.name, sub: u.role, avatarUrl: u.avatarUrl, go: "people" }));
+      .map((u) => ({ id: u.id, label: u.name, sub: displayRole(u.role), avatarUrl: u.avatarUrl, go: "people" }));
   }, [query, state.users]);
 
   const go = (v: string) => {
@@ -417,24 +417,24 @@ export default function Navigation({
         aria-current={active ? "page" : undefined}
         title={t(label)}
         className={cn(
-          "group flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[15px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          "group flex min-h-[36px] w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-[13px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
           active
-            ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white shadow-md shadow-emerald-900/25 ring-1 ring-emerald-900/20"
-            : "text-slate-700 hover:translate-x-[1px] hover:bg-gradient-to-r hover:from-emerald-50 hover:to-amber-50/70 hover:text-emerald-950 hover:shadow-sm dark:text-slate-100 dark:hover:from-white/10 dark:hover:to-white/5 dark:hover:text-white",
+            ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/25 ring-1 ring-emerald-900/20"
+            : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-950 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
         )}
       >
         <span
           className={cn(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-md transition-all",
+            "grid h-7 w-7 shrink-0 place-items-center rounded-md transition-all",
             active
-              ? "bg-white/15 text-amber-300 ring-1 ring-white/25"
-              : "bg-gradient-to-br from-emerald-600/10 to-amber-500/15 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white",
+              ? "bg-white/15 text-white ring-1 ring-white/25"
+              : "bg-emerald-800/10 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:bg-emerald-800 group-hover:text-white",
           )}
         >
-          <Icon className="h-[18px] w-[18px] shrink-0" />
+          <Icon className="h-4 w-4 shrink-0" />
         </span>
         <span className="min-w-0 flex-1 truncate">{t(label)}</span>
-        {active && <span className="h-5 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
+        {active && <span className="h-5 w-1 shrink-0 rounded-full bg-white/70" aria-hidden="true" />}
       </button>
     );
   };
@@ -458,10 +458,10 @@ export default function Navigation({
               onClick={() => toggleGroup(group.id)}
               aria-expanded={isOpen}
               aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[40px] items-center gap-2 rounded-xl bg-emerald-800 px-2.5 py-1.5 text-left text-[13px] font-bold uppercase tracking-wider text-white ring-1 ring-emerald-900/20 transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50"
+              className="flex min-h-[36px] items-center gap-1.5 rounded-xl bg-emerald-800 px-2 py-1 text-left text-[12px] font-bold uppercase tracking-wider text-white ring-1 ring-emerald-900/20 transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50"
             >
               <span className="flex-1 truncate">{group.label}</span>
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[12px] font-semibold normal-case tracking-normal text-white">
+              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-white">
                 {group.items.length}
               </span>
               <ChevronDown className={cn("h-4 w-4 shrink-0 text-white transition-transform", isOpen ? "rotate-180" : "rotate-0")} />
@@ -479,7 +479,7 @@ export default function Navigation({
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl px-3 py-2 text-[15px] font-medium leading-snug text-white shadow-sm shadow-emerald-900/20 transition hover:brightness-110 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800"
+            className="flex min-h-[40px] w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[13px] font-medium leading-snug text-white shadow-sm shadow-emerald-900/20 transition hover:brightness-110 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800"
           >
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25">
               <Globe className="h-[20px] w-[20px] shrink-0" />
@@ -490,7 +490,7 @@ export default function Navigation({
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex min-h-[44px] w-full items-center gap-2 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2 text-[15px] font-medium leading-snug text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-slate-700"
+          className="flex min-h-[40px] w-full items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/80 px-2.5 py-1.5 text-[13px] font-medium leading-snug text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-slate-700"
         >
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-slate-100 to-emerald-100/60 text-emerald-700 ring-1 ring-emerald-900/10">
             <RefreshCw className="h-[20px] w-[20px] shrink-0" />
@@ -682,7 +682,7 @@ export default function Navigation({
             role="dialog"
             aria-modal="true"
             aria-label="Portal navigation"
-            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(15rem,84vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
+            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(14rem,84vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
           >
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 p-3 shadow-md shadow-emerald-950/20">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">
