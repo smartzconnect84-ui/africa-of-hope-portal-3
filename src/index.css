@@ -1070,3 +1070,16 @@ img, video, svg { max-width: 100%; }
   .portal-content { max-width: 100%; }
   .aoh-table-scroll table { min-width: 620px; }
 }
+
+/* Global 15% module text uplift: every portal + public module reads larger.
+   rem-based utilities (text-xs/sm/base/lg/...) scale via the root size;
+   pixel-based utilities (text-[11px] etc.) are bumped explicitly below. */
+html { font-size: 115%; }
+.text-\[9px\] { font-size: 10.35px !important; }
+.text-\[10px\] { font-size: 11.5px !important; }
+.text-\[11px\] { font-size: 12.65px !important; }
+.text-\[12px\] { font-size: 13.8px !important; }
+.text-\[13px\] { font-size: 14.95px !important; }
+.text-\[14px\] { font-size: 16.1px !important; }
+.text-\[15px\] { font-size: 17.25px !important; }
+.text-\[16px\] { font-size: 18.4px !important; }
