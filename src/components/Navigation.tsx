@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle, Bell, ChevronDown, LogOut, Menu, Search, X,
-  RefreshCw, Globe, Megaphone, type LucideIcon,
+  RefreshCw, Globe, Megaphone, Sparkles, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
@@ -414,15 +414,26 @@ export default function Navigation({
         type="button"
         onClick={() => go(v.key)}
         data-component-id={`nav-${v.key}`}
+        aria-current={active ? "page" : undefined}
         className={cn(
-          "flex min-h-[48px] items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          "group flex min-h-[48px] items-center gap-3 rounded-xl px-2.5 py-2.5 text-[18px] font-medium leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
           active
-            ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
-            : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
+            ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white shadow-md shadow-emerald-900/25 ring-1 ring-emerald-900/20"
+            : "text-slate-700 hover:translate-x-[1px] hover:bg-gradient-to-r hover:from-emerald-50 hover:to-amber-50/70 hover:text-emerald-950 hover:shadow-sm dark:text-slate-100 dark:hover:from-white/10 dark:hover:to-white/5 dark:hover:text-white",
         )}
       >
-        <Icon className={cn("h-[23px] w-[23px] shrink-0", active ? "text-amber-400" : "text-emerald-700/70")} />
-        {t(label)}
+        <span
+          className={cn(
+            "grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-all",
+            active
+              ? "bg-white/15 text-amber-300 ring-1 ring-white/25"
+              : "bg-gradient-to-br from-emerald-600/10 to-amber-500/15 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white",
+          )}
+        >
+          <Icon className="h-[19px] w-[19px] shrink-0" />
+        </span>
+        <span className="min-w-0 flex-1 truncate">{t(label)}</span>
+        {active && <span className="h-6 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
       </button>
     );
   };
@@ -430,31 +441,32 @@ export default function Navigation({
   const sidebar = (
     <nav
       aria-label="Portal sections"
-      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
+      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1.5 overflow-y-auto overscroll-contain bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/40 px-2.5 pb-2 pt-2 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin] dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
-      <p className="px-2 pb-1 pt-1.5 text-[18px] font-semibold uppercase tracking-widest text-emerald-900/70 dark:text-emerald-100/80">
-        {sidebarGroupLabel(ctx.role)}
+      <p className="mx-1 mb-1 flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 px-3 py-2 text-[13px] font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-emerald-900/20">
+        <Sparkles className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+        <span className="truncate">{sidebarGroupLabel(ctx.role)}</span>
       </p>
       {groupedNav.map((group) => {
         const isOpen = openGroups[group.id] !== false;
         return (
-          <div key={group.id} className="flex flex-col gap-[0.1rem]">
+          <div key={group.id} className="flex flex-col gap-[0.1rem] rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10">
             <button
               type="button"
               onClick={() => toggleGroup(group.id)}
               aria-expanded={isOpen}
               aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[48px] items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[18px] font-bold uppercase tracking-wider text-emerald-950 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
+              className="flex min-h-[48px] items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700/[0.07] via-teal-600/[0.05] to-amber-500/[0.08] px-2.5 py-2 text-left text-[15px] font-bold uppercase tracking-wider text-emerald-950 transition hover:from-emerald-700/[0.12] hover:to-amber-500/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
             >
               <span className="flex-1">{group.label}</span>
-              <span className="rounded-full bg-emerald-800/10 px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-emerald-900 dark:text-emerald-100">
+              <span className="rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-white shadow-sm">
                 {group.items.length}
               </span>
               <ChevronDown className={cn("h-5 w-5 shrink-0 text-emerald-800 transition-transform dark:text-emerald-100", isOpen ? "rotate-180" : "rotate-0")} />
             </button>
             {isOpen && (
-              <div id={`portal-nav-group-${group.id}`} className="flex flex-col gap-[0.1rem] pl-1">
+              <div id={`portal-nav-group-${group.id}`} className="ml-3 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
                 {group.items.map((key) => renderNavButton(key))}
               </div>
             )}
@@ -466,18 +478,22 @@ export default function Navigation({
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug text-emerald-800 transition hover:bg-emerald-50"
+            className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[18px] font-medium leading-snug text-white shadow-sm shadow-emerald-900/20 transition hover:brightness-110 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800"
           >
-            <Globe className="h-[23px] w-[23px] shrink-0" />
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25">
+              <Globe className="h-[20px] w-[20px] shrink-0" />
+            </span>
             View public website
           </button>
         )}
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="flex min-h-[48px] w-full items-center gap-3 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-2.5 text-[18px] font-medium leading-snug text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-slate-700"
         >
-          <RefreshCw className="h-[23px] w-[23px] shrink-0" />
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-slate-100 to-emerald-100/60 text-emerald-700 ring-1 ring-emerald-900/10">
+            <RefreshCw className="h-[20px] w-[20px] shrink-0" />
+          </span>
           Reload live data
         </button>
       </div>
@@ -640,7 +656,7 @@ export default function Navigation({
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside
-          className="sticky hidden w-72 shrink-0 overflow-hidden border-r border-emerald-900/10 bg-white/70 lg:block print:hidden"
+          className="sticky hidden w-72 shrink-0 overflow-hidden border-r border-emerald-100/70 bg-gradient-to-b from-white via-emerald-50/50 to-amber-50/40 shadow-[4px_0_24px_-12px_rgba(6,78,59,0.25)] lg:block print:hidden dark:border-white/10 dark:from-slate-950 dark:via-emerald-950/30 dark:to-slate-950"
           style={{ top: topOffset, height: `calc(100dvh - ${topOffset}px)` }}
         >
           <div className="flex h-full min-h-0 flex-col">
@@ -665,26 +681,26 @@ export default function Navigation({
             role="dialog"
             aria-modal="true"
             aria-label="Portal navigation"
-            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(20rem,92vw)] flex-col border-r-[3px] border-[#D4AF37] bg-white shadow-2xl"
+            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(20rem,92vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
           >
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 p-3">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 p-3 shadow-md shadow-emerald-950/20">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                 <BrandLockup
                   logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
                   academyName={state.websiteSettings.academyName || state.settings.academyName}
                   displayName="AOH-PORTAL"
-                  tone="light"
+                  tone="dark"
                   size="sm"
                   showTagline={false}
                   className="w-full min-w-0 max-w-full items-center gap-2 overflow-hidden"
-                  logoClassName="h-8 w-auto max-w-full shrink-0"
+                  logoClassName="h-8 w-auto max-w-full shrink-0 rounded-md bg-white/95 px-1 py-0.5"
                   nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-sm leading-none tracking-[0.12em] self-center"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => setDrawer(false)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-white outline-none transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300/70"
                 aria-label="Close navigation"
               >
                 <X className="h-5 w-5" />
