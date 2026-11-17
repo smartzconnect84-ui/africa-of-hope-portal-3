@@ -16,7 +16,6 @@ export default function AboutPage() {
       <div className="mx-auto max-w-6xl px-4 py-14 sm:py-20">
         <ScrollReveal>
           <p className="text-xs font-semibold uppercase tracking-widest text-amber-300">{content.eyebrow}</p>
-          <h1 className="mt-5 max-w-3xl text-3xl font-bold leading-tight text-amber-300 sm:text-5xl">{content.title}</h1>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">{content.intro}</p>
           <div className="mt-8 flex flex-wrap gap-3">{content.ctas.map(cta => { const Icon = resolveIcon(cta.icon); return <a key={cta.id} href={publicDestination(cta.href)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-emerald-950 hover:bg-amber-300"><Icon className="h-4 w-4" aria-hidden="true" />{cta.label}</a>; })}</div>
           <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">{content.stats.map(stat => <div key={stat.id} className="aoh-glass-dark rounded-2xl p-4 text-center"><p className="text-3xl font-bold text-amber-300">{stat.value}</p><p className="mt-2 text-xs text-white/80">{stat.label}</p></div>)}</div>
