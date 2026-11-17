@@ -14,7 +14,6 @@ import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
 import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
-import ModuleToolbar from "./portal/ModuleToolbar";
 
 export const panelClass =
   "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5 dark:border-white/10 dark:bg-slate-900 dark:shadow-none";
@@ -653,13 +652,6 @@ export default function Navigation({
         </aside>
         <main className="min-w-0 max-w-full flex-1 overflow-x-clip p-4 sm:p-5 lg:p-6 xl:p-8">
           {view !== "announcements" && <PortalAnnouncementTicker onOpenBoard={() => go("announcements")} />}
-          <ModuleToolbar
-            viewKey={view}
-            viewLabel={(() => {
-              const found = views.find((item) => item.key === view);
-              return found ? String(portalViewLabel(found, ctx)) : view;
-            })()}
-          />
           {children}
         </main>
       </div>
