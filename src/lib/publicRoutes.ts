@@ -11,6 +11,7 @@
 export type PublicView =
   | { type: "home"; anchor: string | null }
   | { type: "programmes" }
+  | { type: "programmeDetail"; slug: string }
   | { type: "term-dates" }
   | { type: "admissions" }
   | { type: "impact" }
@@ -38,6 +39,8 @@ export function parsePublicPath(pathname: string, search = ""): PublicView {
     return { type: "home", anchor: section };
   }
   if (path === "/about" || path === "/about-us" || path === "/who-we-are") return { type: "about" };
+  const programmeDetail = /^\/programmes\/([a-z0-9-]+)\/?$/.exec(path);
+  if (programmeDetail) return { type: "programmeDetail", slug: decodeURIComponent(programmeDetail[1]).toLowerCase() };
   if (path === "/programmes" || path === "/programs") return { type: "programmes" };
   if (path === "/admissions" || path === "/apply" || path === "/apply-online") return { type: "admissions" };
   if (path === "/impact" || path === "/our-impact") return { type: "impact" };
@@ -104,6 +107,8 @@ export function viewToPath(view: PublicView): string {
       return view.serial ? `/verify?serial=${encodeURIComponent(view.serial)}` : "/verify";
     case "blogPost":
       return `/blog/${encodeURIComponent(view.slug)}`;
+    case "programmeDetail":
+      return `/programmes/${encodeURIComponent(view.slug)}`;
     case "newsletter":
       return `/newsletter/${view.action}${view.params ? `?${view.params}` : ""}`;
     default:

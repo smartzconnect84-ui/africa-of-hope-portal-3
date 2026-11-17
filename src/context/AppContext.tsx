@@ -159,6 +159,19 @@ function migrationHint(message: string, feature: string): string {
     : message;
 }
 
+/** Builds a non-empty `programs.code` value from a title (live table requires NOT NULL). */
+function programCodeFor(title: string, fallbackId: string): string {
+  const base = (title || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  const clean = base || "course";
+  // Short id suffix keeps codes unique when two programmes share a title.
+  const suffix = (fallbackId || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 4);
+  return suffix ? `${clean}-${suffix}` : clean;
+}
+
 const AppContext = createContext<AppContextValue | null>(null);
 
 function normalize(raw: Partial<AppState> | null): AppState {
@@ -469,6 +482,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         const rows = missing.map((p) => ({
           id: p.id,
+          code: programCodeFor(p.title, p.id),
           title: p.title,
           category: p.category,
           duration_weeks: p.durationWeeks,
@@ -481,12 +495,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
         const { error } = await supabase.from("programs").insert(rows);
         if (error) {
-          // Older table shapes have no delivery_modes / study_plan column yet.
-          const baseRows = rows.map(({ delivery_modes: _modes, study_plan: _plan, ...rest }) => rest);
-          const { error: retryError } = await supabase.from("programs").insert(baseRows);
-          if (retryError) return migrationHint(retryError.message, "Programme catalogue");
+          // Live table requires programs.code (NOT NULL); older shapes lack
+          // delivery_modes / study_plan / code. Retry keeping code first.
+          const msg = error.message ?? "";
+          if (/code/i.test(msg) && /does not exist|schema cache|Could not find/i.test(msg)) {
+            const noCodeRows = rows.map(({ code: _c, delivery_modes: _m, study_plan: _p, ...rest }) => rest);
+            const { error: retryError } = await supabase.from("programs").insert(noCodeRows);
+            if (retryError) return migrationHint(retryError.message, "Programme catalogue");
+          } else {
+            const baseRows = rows.map(({ delivery_modes: _modes, study_plan: _plan, ...rest }) => rest);
+            const { error: retryError } = await supabase.from("programs").insert(baseRows);
+            if (retryError) {
+              if (/code/i.test(retryError.message) && /does not exist|schema cache|Could not find/i.test(retryError.message)) {
+                const legacyRows = baseRows.map(({ code: _c, ...rest }) => rest);
+                const { error: legacyError } = await supabase.from("programs").insert(legacyRows);
+                if (legacyError) return migrationHint(legacyError.message, "Programme catalogue");
+                await refresh();
+                toast.success(`Imported ${legacyRows.length} courses into the live catalogue.`);
+                return null;
+              }
+              return migrationHint(retryError.message, "Programme catalogue");
+            }
+            await refresh();
+            toast.success(`Imported ${baseRows.length} courses into the live catalogue.`);
+            return null;
+          }
           await refresh();
-          toast.success(`Imported ${baseRows.length} courses into the live catalogue.`);
+          toast.success(`Imported ${rows.length} courses into the live catalogue.`);
           return null;
         }
         await refresh();
@@ -546,8 +581,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
         const program: Program = { ...rest, id, modules };
         try {
+          const programCode = programCodeFor(program.title, id);
           const full = {
             id,
+            code: programCode,
             title: program.title,
             category: program.category,
             duration_weeks: program.durationWeeks,
@@ -561,11 +598,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
             published: program.published ?? true,
           };
           let res = await supabase.from("programs").insert(full);
-          if (res.error && /delivery_modes|study_plan|image_url|published/i.test(res.error.message)) {
+          // Duplicate code (two programmes, same title): retry once with a unique suffix.
+          if (res.error && /duplicate|unique/i.test(res.error.message) && /code/i.test(res.error.message)) {
+            const retryCode = programCodeFor(`${program.title} ${id.slice(0, 8)}`, id);
+            res = await supabase.from("programs").insert({ ...full, code: retryCode });
+          }
+          if (res.error && /code/i.test(res.error.message) && /does not exist|schema cache|Could not find/i.test(res.error.message)) {
+            // Legacy table without a code column: drop code and the newest
+            // optional columns, then insert the legacy shape.
+            const { code: _c, delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...legacy } = full;
+            res = await supabase.from("programs").insert(legacy);
+          } else if (res.error && /delivery_modes|study_plan|image_url|published/i.test(res.error.message)) {
             const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = full;
             res = await supabase.from("programs").insert(base);
+            if (res.error && /code/i.test(res.error.message) && /does not exist|schema cache|Could not find/i.test(res.error.message)) {
+              const { code: _c, ...legacy } = base;
+              res = await supabase.from("programs").insert(legacy);
+            }
           }
-          if (res.error) return migrationHint(res.error.message, "Programme catalogue");
+          if (res.error) {
+            if (/null value.*code|violates not-null.*code|code.*not-null/i.test(res.error.message)) {
+              return "Programme code could not be generated. Please give the programme a title and try again.";
+            }
+            return migrationHint(res.error.message, "Programme catalogue");
+          }
           if (modules.length) {
             const { error: modError } = await supabase.from("program_modules").insert(
               modules.map((m, index) => ({
@@ -604,7 +660,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
               });
         try {
           const row: Record<string, unknown> = {};
-          if (rest.title !== undefined) row.title = rest.title;
+          if (rest.title !== undefined) {
+            row.title = rest.title;
+            // Keep the required programs.code in sync when a title is renamed.
+            row.code = programCodeFor(String(rest.title), id);
+          }
           if (rest.category !== undefined) row.category = rest.category;
           if (rest.durationWeeks !== undefined) row.duration_weeks = rest.durationWeeks;
           if (rest.tuition !== undefined) row.tuition = rest.tuition;
@@ -618,10 +678,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!Object.keys(row).length && !nextModules) return null;
           if (Object.keys(row).length) {
             let res = await supabase.from("programs").update(row).eq("id", id);
-            if (res.error && /delivery_modes|study_plan|image_url|published/i.test(res.error.message)) {
-              const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, ...base } = row;
-              if (Object.keys(base).length) res = await supabase.from("programs").update(base).eq("id", id);
+            if (res.error && /code/i.test(res.error.message) && /does not exist|schema cache|Could not find/i.test(res.error.message)) {
+              const { code: _c, ...legacy } = row;
+              if (Object.keys(legacy).length) res = await supabase.from("programs").update(legacy).eq("id", id);
               else res = { error: null } as typeof res;
+            } else if (res.error && /delivery_modes|study_plan|image_url|published/i.test(res.error.message)) {
+              const { delivery_modes: _dm, study_plan: _sp, image_url: _iu, published: _pub, code: _c, ...base } = row;
+              // Retry with code first (live table requires it), then without.
+              const { code: _keep, ...dropNew } = row;
+              void _keep;
+              if (Object.keys(base).length || row.code !== undefined) {
+                const withCode = { ...base, ...(row.code !== undefined ? { code: row.code } : {}) };
+                res = Object.keys(withCode).length
+                  ? await supabase.from("programs").update(withCode).eq("id", id)
+                  : ({ error: null } as typeof res);
+                if (res.error && /code/i.test(res.error.message) && /does not exist|schema cache|Could not find/i.test(res.error.message) && Object.keys(base).length) {
+                  res = await supabase.from("programs").update(base).eq("id", id);
+                }
+              } else if (Object.keys(dropNew).length) {
+                void dropNew;
+                res = { error: null } as typeof res;
+              } else res = { error: null } as typeof res;
             }
             if (res.error) return migrationHint(res.error.message, "Programme catalogue");
           }

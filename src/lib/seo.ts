@@ -11,7 +11,7 @@ export const SITE_KEYWORDS =
   "AFRICA OF HOPE, professional studies Liberia, certificate programmes Liberia, online admissions Liberia, verify certificate Liberia, vocational training Margibi, computer training Liberia";
 
 export const OG_IMAGE =
-  "https://africaofhopelr.org/og-card.svg";
+  "https://africaofhopelr.org/og-card.png";
 
 export const OG_IMAGE_ALT =
   "AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia";

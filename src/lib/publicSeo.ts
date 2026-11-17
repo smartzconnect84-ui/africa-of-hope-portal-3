@@ -1,4 +1,5 @@
-import { CANONICAL_ORIGIN, OG_IMAGE, OG_IMAGE_ALT, SITE_DESCRIPTION, SITE_NAME, SEO_FAQS } from "./seo";
+import { CANONICAL_ORIGIN, OG_IMAGE, OG_IMAGE_ALT, SAME_AS_PROFILES, SITE_DESCRIPTION, SITE_NAME, SEO_FAQS } from "./seo";
+import { COURSE_CATALOGUE } from "./programSlugs";
 import { viewToPath, type PublicView } from "./publicRoutes";
 
 type SeoInput = { view: PublicView; displayName?: string };
@@ -29,7 +30,16 @@ const PAGE_COPY: Record<PublicView["type"], { title: string; description: string
   cookies: { title: `Cookie Policy | ${SITE_NAME}`, description: "Read the cookie policy for the AFRICA OF HOPE School of Professional Studies website and learning portal." },
   newsletter: { title: `Newsletter | ${SITE_NAME}`, description: "Manage AFRICA OF HOPE School of Professional Studies newsletter preferences and subscriptions." },
   blogPost: { title: `News and Insights | ${SITE_NAME}`, description: "Read the latest practical education news and guidance from AFRICA OF HOPE School of Professional Studies in Liberia." },
+  programmeDetail: { title: `Certificate Courses in Liberia | ${SITE_NAME}`, description: "Course duration, study modes, registration fees and how to apply for a certificate course at AFRICA OF HOPE School of Professional Studies in Liberia." },
 };
+
+export function programmeDetailCopy(slug: string): { title: string; description: string; summary: string } {
+  const course = COURSE_CATALOGUE.find((c) => c.slug === slug);
+  if (!course) return { title: PAGE_COPY.programmeDetail.title, description: PAGE_COPY.programmeDetail.description, summary: PAGE_COPY.programmeDetail.description };
+  const title = `${course.title} Certificate in Liberia | ${SITE_NAME}`;
+  const description = `${course.title} certificate at AFRICA OF HOPE School of Professional Studies: ${course.blurb} Modes: ${course.modes.join(", ")}. Registration US$5 (two-week), US$10 (one-month), US$30 (three-month), US$45 (six-month). Apply online for 2026/2027.`;
+  return { title, description, summary: `${course.blurb} Study modes: ${course.modes.join(", ").toLowerCase()}; registration from US$5 by track.` };
+}
 
 export function pageCopyForView(view: PublicView) {
   return PAGE_COPY[view.type];
@@ -56,7 +66,8 @@ function setCanonical(href: string) {
 }
 
 export function applyPublicSeo({ view, displayName }: SeoInput) {
-  const copy = PAGE_COPY[view.type];
+  const detailCopy = view.type === "programmeDetail" ? programmeDetailCopy(view.slug) : null;
+  const copy = detailCopy ?? PAGE_COPY[view.type];
   const title = displayName && view.type === "home" ? `${displayName} | Certificates that open doors` : copy.title;
   const path = viewToPath(view).split("?")[0] || "/";
   const canonical = `${CANONICAL_ORIGIN}${path}`;
@@ -75,7 +86,7 @@ export function applyPublicSeo({ view, displayName }: SeoInput) {
 
   const schema = {
     "@context": "https://schema.org",
-    "@type": view.type === "home" ? "EducationalOrganization" : "WebPage",
+    "@type": view.type === "home" ? "EducationalOrganization" : view.type === "programmeDetail" ? "Course" : "WebPage",
     name: title,
     description: copy.description,
     url: canonical,
@@ -83,9 +94,19 @@ export function applyPublicSeo({ view, displayName }: SeoInput) {
     ...(view.type === "home" ? {
       telephone: "+231776679963",
       email: "afrohope033@gmail.com",
-      address: { "@type": "PostalAddress", streetAddress: "Boystown Junction", addressLocality: "Lower Margibi", addressCountry: "LR" },
+      address: { "@type": "PostalAddress", streetAddress: "Boystown Junction", addressLocality: "Lower Margibi", addressRegion: "Margibi County", addressCountry: "LR", postalCode: "1000" },
+      areaServed: [{ "@type": "AdministrativeArea", name: "Liberia" }, { "@type": "Place", name: "Boystown Junction, Lower Margibi County, Liberia" }],
+      sameAs: SAME_AS_PROFILES,
       image: OG_IMAGE,
     } : {}),
+    ...(view.type === "programmeDetail" ? (() => {
+      const course = COURSE_CATALOGUE.find((c) => c.slug === view.slug);
+      return {
+        provider: { "@type": "EducationalOrganization", name: SITE_NAME, url: CANONICAL_ORIGIN },
+        hasCourseInstance: { "@type": "CourseInstance", courseMode: course?.modes ?? ["Fully online", "Partially online", "Fully on-site"], courseWorkload: course?.schedule ?? "1 hour a day, 3 days a week (online)" },
+        offers: { "@type": "Offer", priceCurrency: "USD", price: "5", category: "Registration package" },
+      };
+    })() : {}),
     ...(view.type === "home" ? { mainEntity: SEO_FAQS.map((faq) => ({ "@type": "Question", name: faq.q, acceptedAnswer: { "@type": "Answer", text: faq.a } })) } : {}),
   };
   let script = document.head.querySelector<HTMLScriptElement>('script[data-aoh-page-schema="true"]');

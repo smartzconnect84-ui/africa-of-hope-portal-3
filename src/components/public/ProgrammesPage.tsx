@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { courseId } from "@/lib/identifiers";
+import { programSlug } from "@/lib/programSlugs";
 import { Award, BookOpen, ChevronRight, Clock3, Globe, Laptop, MapPin, Search, Sparkles, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -199,6 +200,7 @@ export default function ProgrammesPage({
                           </div>
                           <h3 className="mt-2 text-lg font-semibold text-emerald-950">{program.title}</h3>
                           <p className="mt-1 break-all font-mono text-[10px] text-slate-500">Course ID: {courseId(program)}</p>
+                           <a href={`/programmes/${programSlug(program.title, program.id)}`} className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-semibold text-emerald-700 underline-offset-2 hover:underline">View course details<ChevronRight className="h-3.5 w-3.5" /></a>
                           <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                             {program.description || "Programme details will be available soon."}
                           </p>

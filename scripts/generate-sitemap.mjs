@@ -36,6 +36,12 @@ const PUBLIC_URLS = [
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
   { path: "/policies", changefreq: "monthly", priority: "0.5" },
   { path: "/campus-life", changefreq: "monthly", priority: "0.6" },
+  { path: "/programmes/computer-studies", changefreq: "monthly", priority: "0.8" },
+  { path: "/programmes/tailoring-fashion", changefreq: "monthly", priority: "0.8" },
+  { path: "/programmes/catering-hospitality", changefreq: "monthly", priority: "0.8" },
+  { path: "/programmes/electrical-installation", changefreq: "monthly", priority: "0.7" },
+  { path: "/programmes/plumbing", changefreq: "monthly", priority: "0.7" },
+  { path: "/programmes/business-entrepreneurship", changefreq: "monthly", priority: "0.8" },
   { path: "/cookies", changefreq: "yearly", priority: "0.3" },
 ];
 

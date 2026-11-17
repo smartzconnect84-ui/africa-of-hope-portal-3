@@ -21,6 +21,7 @@ import ProgrammesCarousel from "./home/ProgrammesCarousel";
 import Marquee from "./animata/container/marquee";
 import BrandLockup from "./brand/BrandLockup";
 import ProgrammesPage from "./public/ProgrammesPage";
+import ProgrammeDetailPage from "./public/ProgrammeDetailPage";
 import PoliciesPage from "./public/PoliciesPage";
 import DonatePage from "./public/DonatePage";
 import CookiesPage from "./public/CookiesPage";
@@ -81,6 +82,7 @@ function pageKeyForHref(href: string): string | null {
 function viewPageKey(view: PublicView): string | null {
   switch (view.type) {
     case "programmes": return "programmes";
+    case "programmeDetail": return "programmes";
     case "admissions": return "admissions";
     case "term-dates": return "term-dates";
     case "policies": return "policies";
@@ -541,6 +543,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           {isCurrentPageVisible && (
             <>
           {view.type === "programmes" && <ProgrammesPage programs={publicPrograms} onApply={openApply} />}
+          {view.type === "programmeDetail" && <ProgrammeDetailPage slug={view.slug} programs={publicPrograms} onApply={openApply} />}
           {view.type === "admissions" && <AdmissionsPage onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
