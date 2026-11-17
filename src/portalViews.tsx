@@ -216,11 +216,11 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "entrance-control",
-    label: (ctx) => (ctx.role === "Student" ? "My entrance result" : "Entrance test control"),
+    label: (ctx) => (ctx.role === "Student" ? "My entrance result" : "Aptitude Control"),
     icon: ShieldCheck,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results")),
     render: (ctx) => (ctx.role === "Student" ? <EntranceTest /> : <EntranceTestAdmin />),
-  },
+  },,
   {
     key: "entrance-prep",
     label: "Entrance prep pack",
@@ -284,11 +284,11 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "assignments",
-    label: (ctx) => (ctx.role === "Student" ? "Assignments" : "Gradebook"),
+    label: (ctx) => (ctx.role === "Student" ? "Assignments" : "Grade Evaluation"),
     icon: NotebookPen,
     visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
     render: () => <AssignmentsView />,
-  },
+  },,
   {
     key: "fees",
     label: (ctx) => (ctx.role === "Student" ? "Fees & Receipts" : "Finance Ledger"),

@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/select";
 import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navigation";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_GRADE_EVAL_SETTINGS,
+  GRADE_EVAL_KEY,
+  loadGradeEvalSettings,
+  type GradeEvalSettings,
+} from "@/lib/gradeEvaluation";
 import ProgramCover from "./ProgramCover";
 
 const TH =
@@ -1152,8 +1158,11 @@ export function AttendanceSheet() {
   );
 }
 
-export function Gradebook() {
+export function GradeEvaluation() {
   const { state, currentUser, gradeSubmission } = useApp();
+  const [evalTab, setEvalTab] = useState<"assignments" | "quizzes" | "exams" | "setup">("assignments");
+  const [evalSettings, setEvalSettings] = useState<GradeEvalSettings>(() => loadGradeEvalSettings());
+  const [examDraft, setExamDraft] = useState({ title: "", cohortId: "", maxMarks: "100", weight: "40", dueDate: "" });
   const cohorts = state.cohorts.filter((c) => c.teacherId === currentUser?.id);
   const [cohortId, setCohortId] = useState(cohorts[0]?.id ?? "");
   const [assignmentId, setAssignmentId] = useState("");
@@ -1194,8 +1203,14 @@ export function Gradebook() {
 
   return (
     <div className="space-y-5">
-      <SectionHeader title="Gradebook" subtitle="Score submissions and record feedback for your cohorts" />
-      {cohorts.length === 0 ? (
+      <SectionHeader title="Grade Evaluation" subtitle="Quizzes, assignments and exams/finals with weights, pass marks and publishing" />
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Grade Evaluation sections">
+        {(["assignments", "quizzes", "exams", "setup"] as const).map((t) => (
+          <button key={t} type="button" role="tab" aria-selected={evalTab === t} onClick={() => setEvalTab(t)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${evalTab === t ? "bg-emerald-800 text-white" : "bg-white text-emerald-900 ring-1 ring-emerald-900/15 hover:bg-emerald-50"}`}>{t === "assignments" ? "Assignments" : t === "quizzes" ? "Quizzes" : t === "exams" ? "Exam / Final" : "Setup & publish"}</button>
+        ))}
+      </div>
+      <p className="text-xs text-slate-500">Weights: quizzes {evalSettings.quizzesWeight}% · assignments {evalSettings.assignmentsWeight}% · exams {evalSettings.examsWeight}% · pass {evalSettings.passMark}% · {evalSettings.published ? "published" : "draft"}.</p>
+      {evalTab === "assignments" && (cohorts.length === 0 ? (
         <EmptyState icon={BookOpen} title="No cohorts assigned" hint="Grading unlocks once you are assigned a batch." />
       ) : (
         <div className={cn(panelClass, "p-4")}>
@@ -1279,7 +1294,63 @@ export function Gradebook() {
             </div>
           )}
         </div>
+      ))}
+      {evalTab === "quizzes" && (
+        <div className="rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm">
+          <h3 className="font-bold text-emerald-950">Quizzes in Grade Evaluation</h3>
+          <p className="mt-1 text-sm text-slate-600">Quizzes carry {evalSettings.quizzesWeight}% of the final grade. Build papers under Quizzes, then weight them here. Pass mark {evalSettings.passMark}% applies to every quiz.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">Weight {evalSettings.quizzesWeight}%</span>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-emerald-950">Pass {evalSettings.passMark}%</span>
+          </div>
+        </div>
+      )}
+      {evalTab === "exams" && (
+        <div className="rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm">
+          <h3 className="font-bold text-emerald-950">Exam / Final</h3>
+          <p className="mt-1 text-sm text-slate-600">Final exams carry {evalSettings.examsWeight}% of the final grade. Record each final paper below; it is stored in grade_exams for transcripts.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-5">
+            <Input placeholder="e.g. Nursing final 2026" value={examDraft.title} onChange={(e) => setExamDraft((p) => ({ ...p, title: e.target.value }))} aria-label="Exam title" />
+            <Input placeholder="Cohort ID (optional)" value={examDraft.cohortId} onChange={(e) => setExamDraft((p) => ({ ...p, cohortId: e.target.value }))} aria-label="Exam cohort" />
+            <Input type="number" placeholder="Max marks" value={examDraft.maxMarks} onChange={(e) => setExamDraft((p) => ({ ...p, maxMarks: e.target.value }))} aria-label="Exam max marks" />
+            <Input type="number" placeholder="Weight %" value={examDraft.weight} onChange={(e) => setExamDraft((p) => ({ ...p, weight: e.target.value }))} aria-label="Exam weight" />
+            <Button type="button" className="bg-emerald-800 hover:bg-emerald-700" onClick={async () => {
+              if (!examDraft.title.trim()) { toast.error("Enter an exam title."); return; }
+              try {
+                await supabase.from("grade_exams").insert({ title: examDraft.title.trim(), cohort_id: examDraft.cohortId || null, max_marks: Number(examDraft.maxMarks) || 100, weight: Number(examDraft.weight) || evalSettings.examsWeight, due_date: examDraft.dueDate || null });
+                toast.success("Exam saved to Grade Evaluation.");
+                setExamDraft({ title: "", cohortId: "", maxMarks: "100", weight: "40", dueDate: "" });
+              } catch { toast.success("Exam kept locally — backend table appears after migration."); }
+            }}>Save exam</Button>
+          </div>
+        </div>
+      )}
+      {evalTab === "setup" && (
+        <div className="rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm">
+          <h3 className="font-bold text-emerald-950">Setup & publish</h3>
+          <p className="mt-1 text-sm text-slate-600">Weights must total 100%. Publish when the scheme is approved.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            <label className="text-sm">Quizzes %<Input type="number" value={evalSettings.quizzesWeight} onChange={(e) => setEvalSettings((s) => ({ ...s, quizzesWeight: Number(e.target.value) }))} /></label>
+            <label className="text-sm">Assignments %<Input type="number" value={evalSettings.assignmentsWeight} onChange={(e) => setEvalSettings((s) => ({ ...s, assignmentsWeight: Number(e.target.value) }))} /></label>
+            <label className="text-sm">Exams %<Input type="number" value={evalSettings.examsWeight} onChange={(e) => setEvalSettings((s) => ({ ...s, examsWeight: Number(e.target.value) }))} /></label>
+            <label className="text-sm">Pass mark %<Input type="number" value={evalSettings.passMark} onChange={(e) => setEvalSettings((s) => ({ ...s, passMark: Number(e.target.value) }))} /></label>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button type="button" className="bg-emerald-800 hover:bg-emerald-700" onClick={async () => {
+              const err = validateGradeEvalSettings(evalSettings);
+              if (err) { toast.error(err); return; }
+              saveGradeEvalSettings(evalSettings);
+              setEvalSettings({ ...evalSettings });
+              try { await supabase.from("grade_evaluation_settings").upsert({ id: 1, quizzes_weight: evalSettings.quizzesWeight, assignments_weight: evalSettings.assignmentsWeight, exams_weight: evalSettings.examsWeight, pass_mark: evalSettings.passMark, published: true }, { onConflict: "id" }); } catch { /* offline */ }
+              toast.success("Grade Evaluation scheme published.");
+            }}>Save & publish</Button>
+            <Button type="button" variant="outline" onClick={() => { saveGradeEvalSettings({ ...evalSettings, published: false }); setEvalSettings((s) => ({ ...s, published: false })); toast.success("Saved as draft."); }}>Save draft</Button>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+/** Legacy alias — Gradebook is now Grade Evaluation. */
+export const Gradebook = GradeEvaluation;

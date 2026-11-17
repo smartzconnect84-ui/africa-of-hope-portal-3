@@ -199,3 +199,21 @@ export async function saveEntranceResultBackend(r: EntranceResult): Promise<void
     /* backend optional until migration applied */
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Aptitude Control aliases — new canonical name for Entrance control.   */
+/* Tables keep `entrance_*` names for compatibility; `aptitude_*` views  */
+/* from migration 20261117000000 mirror them. Code should use Aptitude.  */
+/* ------------------------------------------------------------------ */
+
+export const APTITUDE_CONTROL_TITLE = "Aptitude Control";
+export const GRADE_EVALUATION_TITLE = "Grade Evaluation";
+export type AptitudeResult = EntranceResult;
+export const loadAptitudeSettings = loadEntranceSettings;
+export const loadAptitudePass = loadEntrancePass;
+export const loadAptitudeHistory = loadEntranceHistory;
+export const saveAptitudeResult = saveEntranceResult;
+export const fetchAptitudeQuizzes = fetchEntranceQuizzes;
+export const fetchAptitudeResults = fetchEntranceResults;
+export const saveAptitudeResultBackend = saveEntranceResultBackend;
+export const SEEDED_APTITUDE_QUESTIONS = SEEDED_ENTRANCE_QUESTIONS;
