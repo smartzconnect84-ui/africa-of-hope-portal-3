@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -105,6 +105,93 @@ export interface PortalView {
   render: (ctx: PortalViewContext) => ReactNode;
 }
 
+function HubTabs({ tabs, initial }: { tabs: { key: string; label: string }[]; initial?: string }) {
+  const [active, setActive] = useState(initial ?? tabs[0]?.key);
+  return (
+    <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Section">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          role="tab"
+          aria-selected={active === t.key}
+          onClick={() => setActive(t.key)}
+          className={active === t.key ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}
+        >
+          {t.label}
+        </button>
+      ))}
+      <span className="hidden" data-hub-active={active} />
+    </div>
+  );
+}
+
+function AptitudeControlHub({ ctx }: { ctx: PortalViewContext }) {
+  const [tab, setTab] = useState<"control" | "test" | "prep">("control");
+  if (ctx.role === "Student") {
+    return (
+      <div className="space-y-8">
+        <section aria-label="My entrance result"><EntranceTest /></section>
+        <section aria-label="Entrance preparation pack">
+          <h2 className="mb-3 text-lg font-bold text-emerald-950">Entrance prep pack — how to get ready</h2>
+          <EntrancePrepPack />
+        </section>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Aptitude Control sections">
+        {([ ["control", "Aptitude Control"], ["test", "Entrance test preview"], ["prep", "Entrance prep pack"] ] as const).map(([k, label]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={tab === k ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>{label}</button>
+        ))}
+      </div>
+      {tab === "control" ? <EntranceTestAdmin /> : tab === "test" ? <EntranceTest /> : <EntrancePrepPack />}
+    </div>
+  );
+}
+
+function HelpdeskHub({ ctx }: { ctx: PortalViewContext }) {
+  const [tab, setTab] = useState<"tickets" | "letters">("tickets");
+  const canReview = !!ctx.currentUser && ctx.role !== "Student" && (ctx.can("helpdesk.manage") || ctx.can("students.manage"));
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Student helpdesk sections">
+        <button type="button" role="tab" aria-selected={tab === "tickets"} onClick={() => setTab("tickets")} className={tab === "tickets" ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>Helpdesk tickets</button>
+        <button type="button" role="tab" aria-selected={tab === "letters"} onClick={() => setTab("letters")} className={tab === "letters" ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>Reference letters</button>
+      </div>
+      {tab === "tickets" ? <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} /> : <ReferenceLetters key={`ref-${ctx.currentUser?.id}`} canReview={canReview} />}
+    </div>
+  );
+}
+
+function BulletinHub({ ctx }: { ctx: PortalViewContext }) {
+  const [tab, setTab] = useState<"board" | "reports">("board");
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Bulletin Board sections">
+        <button type="button" role="tab" aria-selected={tab === "board"} onClick={() => setTab("board")} className={tab === "board" ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>Announcements</button>
+        <button type="button" role="tab" aria-selected={tab === "reports"} onClick={() => setTab("reports")} className={tab === "reports" ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>Transparency reports</button>
+      </div>
+      {tab === "board" ? <AnnouncementManager /> : <TransparencyLibrary key={ctx.currentUser?.id} management={ctx.can("cms.manage")} />}
+    </div>
+  );
+}
+
+function PeopleHub({ ctx }: { ctx: PortalViewContext }) {
+  const [tab, setTab] = useState<"directory" | "roles">("directory");
+  if (!ctx.isSuperAdmin) return <PeopleManagement />;
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Staff and Students sections">
+        <button type="button" role="tab" aria-selected={tab === "directory"} onClick={() => setTab("directory")} className={tab === "directory" ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>Directory</button>
+        <button type="button" role="tab" aria-selected={tab === "roles"} onClick={() => setTab("roles")} className={tab === "roles" ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}>Roles &amp; Permissions</button>
+      </div>
+      {tab === "directory" ? <PeopleManagement /> : <RolesPermissions />}
+    </div>
+  );
+}
+
 function DashboardView({ role }: { role: Role | null }) {
   if (role === "Student") return <StudentPortal />;
   if (role === "Teacher") return <TeacherDashboard />;
@@ -150,7 +237,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     label: "Staff & Students",
     icon: Users,
     visible: (ctx) => ctx.canAny("people.view", "students.manage", "staff.manage"),
-    render: () => <PeopleManagement />,
+    render: (ctx) => <PeopleHub ctx={ctx} />,
   },
   {
     key: "admissions-inbox",
@@ -158,13 +245,6 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Inbox,
     visible: (ctx) => ctx.canAny("students.manage", "fees.manage"),
     render: () => <EngagementInbox />,
-  },
-  {
-    key: "roles",
-    label: "Roles & Permissions",
-    icon: ShieldCheck,
-    visible: (ctx) => ctx.isSuperAdmin,
-    render: () => <RolesPermissions />,
   },
   {
     key: "academic-planning",
@@ -192,7 +272,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     label: "Student helpdesk",
     icon: LifeBuoy,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.can("helpdesk.manage")),
-    render: (ctx) => <Helpdesk key={`${ctx.currentUser?.id}:${ctx.role}`} />,
+    render: (ctx) => <HelpdeskHub ctx={ctx} />,
   },
   {
     key: "grade-appeals",
@@ -202,33 +282,11 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: (ctx) => <GradeAppeals key={`${ctx.currentUser?.id}:${ctx.role}`} />,
   },
   {
-    key: "reference-letters",
-    label: (ctx) => (ctx.role === "Student" ? "Reference letters" : "Reference letter desk"),
-    icon: Award,
-    visible: (ctx) =>
-      ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("helpdesk.manage", "students.manage")),
-    render: (ctx) => <ReferenceLetters key={`${ctx.currentUser?.id}:${ctx.role}`} />,
-  },
-  {
-    key: "entrance-test",
-    label: "Entrance test",
-    icon: ClipboardCheck,
-    visible: () => true,
-    render: () => <EntranceTest />,
-  },
-  {
     key: "entrance-control",
     label: (ctx) => (ctx.role === "Student" ? "My entrance result" : "Aptitude Control"),
     icon: ShieldCheck,
     visible: (ctx) => ctx.isSignedIn && (ctx.role === "Student" || ctx.canAny("students.manage", "quizzes.manage_all", "quizzes.view_results")),
-    render: (ctx) => (ctx.role === "Student" ? <EntranceTest /> : <EntranceTestAdmin />),
-  },
-  {
-    key: "entrance-prep",
-    label: "Entrance prep pack",
-    icon: Lightbulb,
-    visible: () => true,
-    render: () => <EntrancePrepPack />,
+    render: (ctx) => <AptitudeControlHub ctx={ctx} />,
   },
   {
     key: "study-calendar",
@@ -352,7 +410,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     label: "Bulletin Board",
     icon: Megaphone,
     visible: () => true,
-    render: () => <AnnouncementManager />,
+    render: (ctx) => <BulletinHub ctx={ctx} />,
   },
   {
     key: "blog",
@@ -374,13 +432,6 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: LibraryBig,
     visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
     render: () => <RecommendedTraining />,
-  },
-  {
-    key: "transparency",
-    label: "Transparency reports",
-    icon: FileText,
-    visible: (ctx) => ctx.can("cms.manage"),
-    render: (ctx) => <TransparencyLibrary key={ctx.currentUser?.id} management />,
   },
   {
     key: "opportunities",
@@ -463,9 +514,7 @@ const NAV_RELEVANCE_ORDER = [
   "quizzes",
   "discussions",
   "training-library",
-  "entrance-test",
   "entrance-control",
-  "entrance-prep",
   "fees",
   "payments",
   "payment-review",
@@ -474,10 +523,8 @@ const NAV_RELEVANCE_ORDER = [
   "announcements",
   "helpdesk",
   "grade-appeals",
-  "reference-letters",
   "policies",
   "blog",
-  "transparency",
   "opportunities",
   "donate",
   "my-files",
@@ -485,7 +532,6 @@ const NAV_RELEVANCE_ORDER = [
   "website",
   "email-outbox",
   "settings",
-  "roles",
   "profile",
 ];
 
