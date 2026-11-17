@@ -555,3 +555,48 @@ export function getPortalView(key: string): PortalView | undefined {
 export function portalViewLabel(view: PortalView, ctx: PortalViewContext): string {
   return typeof view.label === "function" ? view.label(ctx) : view.label;
 }
+
+/**
+ * Sidebar categories for the portal nav. Each group renders as an
+ * expandable dropdown so every visible module is reachable in one tap.
+ * Keys must cover every PORTAL_VIEWS key; unknown keys fall into "More".
+ */
+export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] = [
+  { id: "overview", label: "Overview", keys: ["dashboard"] },
+  {
+    id: "administration",
+    label: "Administration",
+    keys: ["people", "admissions-inbox", "cohorts", "programs", "attendance", "insights", "entrance-control"],
+  },
+  {
+    id: "learning",
+    label: "Learning & Teaching",
+    keys: [
+      "course-player",
+      "academic-planning",
+      "study-plan",
+      "study-calendar",
+      "assignments",
+      "quizzes",
+      "discussions",
+      "training-library",
+      "timetable",
+      "report-cards",
+    ],
+  },
+  {
+    id: "finance",
+    label: "Finance & Records",
+    keys: ["fees", "payments", "payment-review", "certificates", "verification"],
+  },
+  {
+    id: "community",
+    label: "Support & Community",
+    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate"],
+  },
+  {
+    id: "system",
+    label: "System & Files",
+    keys: ["my-files", "operations", "website", "email-outbox", "settings", "profile"],
+  },
+];

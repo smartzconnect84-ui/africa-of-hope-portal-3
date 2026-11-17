@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  AlertTriangle, Bell, LogOut, Menu, Search, X,
+  AlertTriangle, Bell, ChevronDown, LogOut, Menu, Search, X,
   RefreshCw, Globe, Megaphone, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
 import PortalInbox from "./portal/PortalInbox";
-import { useVisiblePortalViews, portalViewLabel } from "../portalViews";
+import { useVisiblePortalViews, portalViewLabel, PORTAL_NAV_GROUPS } from "../portalViews";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
@@ -278,6 +278,17 @@ export default function Navigation({
   const { state, currentUser, logout, resetDemoData } = useApp();
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    overview: true,
+    administration: true,
+    learning: true,
+    finance: true,
+    community: true,
+    system: true,
+    more: true,
+  });
+  const toggleGroup = (id: string) =>
+    setOpenGroups((prev) => ({ ...prev, [id]: prev[id] === false ? true : false }));
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -377,35 +388,78 @@ export default function Navigation({
     setQuery("");
   };
 
+  const viewByKey = useMemo(() => new Map(views.map((v) => [v.key, v])), [views]);
+  const groupedNav = useMemo(() => {
+    const seen = new Set<string>();
+    const groups: { id: string; label: string; items: string[] }[] = PORTAL_NAV_GROUPS.map((g) => {
+      const items = g.keys.filter((key) => viewByKey.has(key));
+      items.forEach((key) => seen.add(key));
+      return { id: g.id, label: g.label, items };
+    }).filter((g) => g.items.length > 0);
+    const leftover = views.filter((v) => !seen.has(v.key));
+    if (leftover.length > 0) {
+      groups.push({ id: "more", label: "More", items: leftover.map((v) => v.key) });
+    }
+    return groups;
+  }, [viewByKey, views]);
+
+  const renderNavButton = (key: string) => {
+    const v = viewByKey.get(key);
+    if (!v) return null;
+    const Icon = v.icon;
+    const label = portalViewLabel(v, ctx);
+    const active = view === v.key;
+    return (
+      <button
+        key={v.key}
+        type="button"
+        onClick={() => go(v.key)}
+        data-component-id={`nav-${v.key}`}
+        className={cn(
+          "flex min-h-[48px] items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          active
+            ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
+            : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
+        )}
+      >
+        <Icon className={cn("h-[23px] w-[23px] shrink-0", active ? "text-amber-400" : "text-emerald-700/70")} />
+        {t(label)}
+      </button>
+    );
+  };
+
   const sidebar = (
     <nav
       aria-label="Portal sections"
-      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-[0.1rem] overflow-y-auto overscroll-contain px-[0.4rem] pb-2 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
+      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-1 overflow-y-auto overscroll-contain px-2 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
-      <p className="px-2 pb-1 pt-1.5 text-sm font-semibold uppercase tracking-widest text-emerald-900/70 dark:text-emerald-100/80">
+      <p className="px-2 pb-1 pt-1.5 text-[18px] font-semibold uppercase tracking-widest text-emerald-900/70 dark:text-emerald-100/80">
         {sidebarGroupLabel(ctx.role)}
       </p>
-      {views.map((v) => {
-        const Icon = v.icon;
-        const label = portalViewLabel(v, ctx);
-        const active = view === v.key;
+      {groupedNav.map((group) => {
+        const isOpen = openGroups[group.id] !== false;
         return (
-          <button
-            key={v.key}
-            type="button"
-            onClick={() => go(v.key)}
-            data-component-id={`nav-${v.key}`}
-            className={cn(
-              "flex min-h-[38px] items-center gap-[0.6rem] rounded-lg px-2.5 py-2 text-[14px] font-medium leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
-              active
-                ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
-                : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
+          <div key={group.id} className="flex flex-col gap-[0.1rem]">
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.id)}
+              aria-expanded={isOpen}
+              aria-controls={`portal-nav-group-${group.id}`}
+              className="flex min-h-[48px] items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[18px] font-bold uppercase tracking-wider text-emerald-950 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
+            >
+              <span className="flex-1">{group.label}</span>
+              <span className="rounded-full bg-emerald-800/10 px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-emerald-900 dark:text-emerald-100">
+                {group.items.length}
+              </span>
+              <ChevronDown className={cn("h-5 w-5 shrink-0 text-emerald-800 transition-transform dark:text-emerald-100", isOpen ? "rotate-180" : "rotate-0")} />
+            </button>
+            {isOpen && (
+              <div id={`portal-nav-group-${group.id}`} className="flex flex-col gap-[0.1rem] pl-1">
+                {group.items.map((key) => renderNavButton(key))}
+              </div>
             )}
-          >
-            <Icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-amber-400" : "text-emerald-700/70")} />
-            {t(label)}
-          </button>
+          </div>
         );
       })}
       <div className="mt-1.5 border-t border-slate-100 pt-1.5 dark:border-white/10">
@@ -413,18 +467,18 @@ export default function Navigation({
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex min-h-[38px] w-full items-center gap-[0.6rem] rounded-lg px-2.5 py-2 text-[14px] font-medium leading-snug text-emerald-800 transition hover:bg-emerald-50"
+            className="flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug text-emerald-800 transition hover:bg-emerald-50"
           >
-            <Globe className="h-[18px] w-[18px] shrink-0" />
+            <Globe className="h-[23px] w-[23px] shrink-0" />
             View public website
           </button>
         )}
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex min-h-[38px] w-full items-center gap-[0.6rem] rounded-lg px-2.5 py-2 text-[14px] font-medium leading-snug text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
         >
-          <RefreshCw className="h-[18px] w-[18px] shrink-0" />
+          <RefreshCw className="h-[23px] w-[23px] shrink-0" />
           Reload live data
         </button>
       </div>
