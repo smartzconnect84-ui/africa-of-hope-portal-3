@@ -83,6 +83,7 @@ import TeacherInsights from "./components/academic/TeacherInsights";
 import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
 import GradeAppeals from "./components/portal/GradeAppeals";
+import TermReportCards from "./components/academic/TermReportCards";
 import ReferenceLetters from "./components/portal/ReferenceLetters";
 import EntranceTest from "./components/portal/EntranceTest";
 import EntranceTestAdmin from "./components/admin/EntranceTestAdmin";
@@ -288,6 +289,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: NotebookPen,
     visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
     render: (ctx) => (ctx.role === "Student" ? <AssignmentsView /> : <GradeEvaluation />),
+  },
+  {
+    key: "report-cards",
+    label: (ctx) => (ctx.role === "Student" ? "My Report Card" : "Report Cards"),
+    icon: Award,
+    visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
+    render: () => <TermReportCards />,
   },
   {
     key: "fees",

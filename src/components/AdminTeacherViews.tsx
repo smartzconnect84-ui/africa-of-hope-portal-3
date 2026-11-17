@@ -35,6 +35,7 @@ import {
   type GradeEvalSettings,
 } from "@/lib/gradeEvaluation";
 import ProgramCover from "./ProgramCover";
+import TermReportCards from "./academic/TermReportCards";
 
 const TH =
   "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500";
@@ -1162,7 +1163,7 @@ export function AttendanceSheet() {
 
 export function GradeEvaluation() {
   const { state, currentUser, gradeSubmission } = useApp();
-  const [evalTab, setEvalTab] = useState<"assignments" | "quizzes" | "exams" | "setup">("assignments");
+  const [evalTab, setEvalTab] = useState<"assignments" | "quizzes" | "exams" | "setup" | "reports">("assignments");
   const [evalSettings, setEvalSettings] = useState<GradeEvalSettings>(() => loadGradeEvalSettings());
   const [examDraft, setExamDraft] = useState({ title: "", cohortId: "", maxMarks: "100", weight: "40", dueDate: "" });
   const cohorts = state.cohorts.filter((c) => c.teacherId === currentUser?.id);
@@ -1207,8 +1208,8 @@ export function GradeEvaluation() {
     <div className="space-y-5">
       <SectionHeader title="Grade Evaluation" subtitle="Quizzes, assignments and exams/finals with weights, pass marks and publishing" />
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Grade Evaluation sections">
-        {(["assignments", "quizzes", "exams", "setup"] as const).map((t) => (
-          <button key={t} type="button" role="tab" aria-selected={evalTab === t} onClick={() => setEvalTab(t)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${evalTab === t ? "bg-emerald-800 text-white" : "bg-white text-emerald-900 ring-1 ring-emerald-900/15 hover:bg-emerald-50"}`}>{t === "assignments" ? "Assignments" : t === "quizzes" ? "Quizzes" : t === "exams" ? "Exam / Final" : "Setup & publish"}</button>
+        {(["assignments", "quizzes", "exams", "reports", "setup"] as const).map((t) => (
+          <button key={t} type="button" role="tab" aria-selected={evalTab === t} onClick={() => setEvalTab(t)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${evalTab === t ? "bg-emerald-800 text-white" : "bg-white text-emerald-900 ring-1 ring-emerald-900/15 hover:bg-emerald-50"}`}>{t === "assignments" ? "Assignments" : t === "quizzes" ? "Quizzes" : t === "exams" ? "Exam / Final" : t === "reports" ? "Report cards" : "Setup & publish"}</button>
         ))}
       </div>
       <p className="text-xs text-slate-500">Weights: quizzes {evalSettings.quizzesWeight}% · assignments {evalSettings.assignmentsWeight}% · exams {evalSettings.examsWeight}% · pass {evalSettings.passMark}% · {evalSettings.published ? "published" : "draft"}.</p>
@@ -1326,6 +1327,9 @@ export function GradeEvaluation() {
             }}>Save exam</Button>
           </div>
         </div>
+      )}
+      {evalTab === "reports" && (
+        <TermReportCards />
       )}
       {evalTab === "setup" && (
         <div className="rounded-2xl border border-emerald-900/10 bg-white p-5 shadow-sm">
