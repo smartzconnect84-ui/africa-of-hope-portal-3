@@ -84,14 +84,7 @@ export default function BlogListPage({ onApply }: { onApply?: (programId?: strin
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-400" /> AOH blog
           </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-            className="mt-4 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
-          >
-            News, stories and updates from the academy.
-          </motion.h1>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-white/80">News, stories and updates from the academy.</p>
         </div>
       </section>
 
@@ -138,7 +131,7 @@ export default function BlogListPage({ onApply }: { onApply?: (programId?: strin
           <ScrollReveal className="mt-8">
             <div className="aoh-card aoh-glass overflow-hidden rounded-3xl shadow-sm transition hover:shadow-xl">
             <a
-              href={`#blog/${featured.slug}`}
+              href={`/blog/${featured.slug}`}
               className="group grid lg:grid-cols-2"
             >
               <div className="h-56 overflow-hidden lg:h-full">
@@ -196,7 +189,7 @@ export default function BlogListPage({ onApply }: { onApply?: (programId?: strin
                 key={post.id}
                 className="aoh-card aoh-glass flex h-full flex-col overflow-hidden rounded-2xl shadow-sm transition-shadow duration-200 hover:shadow-lg"
               >
-                <a href={`#blog/${post.slug}`} className="flex flex-1 flex-col">
+                <a href={`/blog/${post.slug}`} className="flex flex-1 flex-col">
                   <div className="h-40 overflow-hidden">
                     <CoverImage post={post} />
                   </div>

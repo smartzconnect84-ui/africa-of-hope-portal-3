@@ -258,7 +258,6 @@ export default function CampusLifePage() {
       <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
         <ScrollReveal className="mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{cms.eyebrow}</p>
-          <h1 className="mt-4 max-w-3xl text-3xl font-bold text-amber-300 sm:text-5xl">{cms.title}</h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-amber-100/90">{cms.body || cms.subtitle}</p>
         </ScrollReveal>
       </section>

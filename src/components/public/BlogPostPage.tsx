@@ -7,6 +7,7 @@ import { isProgrammePost, resolveBlogProgram } from "@/lib/programApply";
 import { useApp } from "@/context/AppContext";
 import { ScrollReveal } from "./motion";
 import { motion } from "framer-motion";
+import { applyBlogPostSeo } from "@/lib/publicSeo";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "";
@@ -70,6 +71,11 @@ export default function BlogPostPage({ slug, onApply }: { slug: string; onApply?
   }, [slug]);
 
   useEffect(() => {
+    if (post && post !== "loading")
+      applyBlogPostSeo({ title: post.title, excerpt: post.excerpt, slug: post.slug, coverImageUrl: post.coverImageUrl, publishedAt: post.publishedAt, authorName: post.authorName });
+  }, [post]);
+
+  useEffect(() => {
     let active = true;
     listPublishedPosts({ limit: 6 }).then((data) => {
       if (active) setMore(data.filter((p) => p.slug !== slug).slice(0, 3));
@@ -99,7 +105,7 @@ export default function BlogPostPage({ slug, onApply }: { slug: string; onApply?
           <p className="mt-3 text-lg font-semibold text-emerald-950">That post could not be found.</p>
           <p className="mt-1 text-sm text-slate-600">It may have been unpublished or the link is incorrect.</p>
           <a
-            href="#blog"
+            href="/blog"
             className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
           >
             <ArrowLeft className="h-4 w-4" /> Back to blog
@@ -112,7 +118,7 @@ export default function BlogPostPage({ slug, onApply }: { slug: string; onApply?
   return (
     <div className="min-h-[70dvh] bg-[#f6f8f7]">
       <article className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-        <a href="#blog" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
+        <a href="/blog" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:text-emerald-900">
           <ArrowLeft className="h-4 w-4" /> Back to blog
         </a>
 
@@ -175,7 +181,7 @@ export default function BlogPostPage({ slug, onApply }: { slug: string; onApply?
 
         {post.coverImageUrl && (
           <ScrollReveal className="mt-6 overflow-hidden rounded-2xl">
-            <img src={post.coverImageUrl} alt="" loading="lazy" decoding="async" className="h-64 w-full object-cover sm:h-96" />
+            <img src={post.coverImageUrl} alt={post.title} loading="lazy" decoding="async" className="h-64 w-full object-cover sm:h-96" />
           </ScrollReveal>
         )}
 

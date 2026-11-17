@@ -1,0 +1,4 @@
+# One slug per line. Appended to public/sitemap.xml on every build.
+# Example:
+# welcome-to-africa-of-hope
+# computer-studies-graduation-2026

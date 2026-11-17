@@ -66,14 +66,13 @@ export default function TeamPage() {
     <section className="bg-emerald-950 px-4 py-14 text-white sm:py-20">
       <ScrollReveal className="mx-auto max-w-6xl">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">People behind the mission</p>
-        <h1 className="mt-4 break-words text-3xl font-bold sm:text-5xl">{team.title || "Meet our team"}</h1>
         {team.description && <p className="mt-5 max-w-2xl whitespace-pre-line text-base leading-8 text-emerald-100">{team.description}</p>}
       </ScrollReveal>
     </section>
     <PageHeroImage src={state.websiteSettings.pageImages?.team} alt="Our team" />
     <section aria-label="Public team profiles" className="mx-auto max-w-6xl px-4 pt-4">
       {team.enabled ? <TeamProfiles team={team} /> : <p className="mt-8 rounded-2xl bg-white p-8 text-center text-slate-600">Team profiles are not currently published.</p>}
-      <a href="#about" className="mt-10 inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">About AFRICA OF HOPE <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+      <a href="/about" className="mt-10 inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-800 px-5 text-sm font-semibold text-white transition hover:bg-emerald-900">About AFRICA OF HOPE <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
     </section>
   </div>;
 }

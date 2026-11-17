@@ -1,0 +1,17 @@
+# Cloudflare Pages redirects: single canonical domain (apex) + SPA fallback.
+# www always resolves to the apex so search engines see one address.
+https://www.africaofhopelr.org/* https://africaofhopelr.org/:splat 301!
+/programmes /index.html 200
+/admissions /index.html 200
+/about /index.html 200
+/impact /index.html 200
+/team /index.html 200
+/blog /index.html 200
+/blog/* /index.html 200
+/verify /index.html 200
+/donate /index.html 200
+/transparency /index.html 200
+/policies /index.html 200
+/campus-life /index.html 200
+/term-dates /index.html 200
+/cookies /index.html 200

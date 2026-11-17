@@ -3,6 +3,15 @@ import { viewToPath, type PublicView } from "./publicRoutes";
 
 type SeoInput = { view: PublicView; displayName?: string };
 
+export type BlogPostSeo = {
+  title: string;
+  excerpt: string;
+  slug: string;
+  coverImageUrl?: string | null;
+  publishedAt?: string | null;
+  authorName?: string;
+};
+
 const PAGE_COPY: Record<PublicView["type"], { title: string; description: string }> = {
   home: { title: `${SITE_NAME} | Certificates that open doors`, description: SITE_DESCRIPTION },
   about: { title: `About AFRICA OF HOPE | Professional Studies in Liberia`, description: "Learn about AFRICA OF HOPE, a practical professional studies school serving learners at Boystown Junction, Lower Margibi, Liberia." },
@@ -21,6 +30,10 @@ const PAGE_COPY: Record<PublicView["type"], { title: string; description: string
   newsletter: { title: `Newsletter | AFRICA OF HOPE`, description: "Manage AFRICA OF HOPE newsletter preferences and subscriptions." },
   blogPost: { title: `AFRICA OF HOPE News and Insights`, description: "Read the latest practical education news and guidance from AFRICA OF HOPE in Liberia." },
 };
+
+export function pageCopyForView(view: PublicView) {
+  return PAGE_COPY[view.type];
+}
 
 function setMeta(attribute: "name" | "property", key: string, content: string) {
   let tag = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
@@ -80,6 +93,46 @@ export function applyPublicSeo({ view, displayName }: SeoInput) {
     script = document.createElement("script");
     script.type = "application/ld+json";
     script.dataset.aohPageSchema = "true";
+    document.head.appendChild(script);
+  }
+  script.textContent = JSON.stringify(schema);
+}
+
+/** Per-article head + BlogPosting JSON-LD when a blog post loads. */
+export function applyBlogPostSeo(post: BlogPostSeo) {
+  const clean = (post.excerpt || "").trim().slice(0, 160) || PAGE_COPY.blogPost.description;
+  const title = `${post.title} | AFRICA OF HOPE`;
+  const canonical = `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(post.slug)}`;
+  const image = post.coverImageUrl || OG_IMAGE;
+  document.title = title;
+  setMeta("name", "description", clean);
+  setMeta("property", "og:title", title);
+  setMeta("property", "og:description", clean);
+  setMeta("property", "og:url", canonical);
+  setMeta("property", "og:image", image);
+  setMeta("property", "og:type", "article");
+  setMeta("name", "twitter:title", title);
+  setMeta("name", "twitter:description", clean);
+  setMeta("name", "twitter:image", image);
+  setCanonical(canonical);
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: clean,
+    url: canonical,
+    ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
+    ...(post.authorName ? { author: { "@type": "Person", name: post.authorName } } : {}),
+    ...(post.coverImageUrl ? { image: post.coverImageUrl } : {}),
+    publisher: { "@type": "EducationalOrganization", name: SITE_NAME, url: CANONICAL_ORIGIN },
+    mainEntityOfPage: canonical,
+  };
+  let script = document.head.querySelector<HTMLScriptElement>('script[data-aoh-post-schema="true"]');
+  if (!script) {
+    script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.aohPostSchema = "true";
     document.head.appendChild(script);
   }
   script.textContent = JSON.stringify(schema);

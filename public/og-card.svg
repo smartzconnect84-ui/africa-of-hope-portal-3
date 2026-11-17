@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#064e2b"/>
+      <stop offset="0.55" stop-color="#0b6b3a"/>
+      <stop offset="1" stop-color="#16803c"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d4af37"/>
+      <stop offset="1" stop-color="#f3d67a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1020" cy="90" r="220" fill="#ffffff" opacity="0.06"/>
+  <circle cx="120" cy="560" r="180" fill="#ffffff" opacity="0.05"/>
+  <rect x="90" y="120" width="1020" height="390" rx="28" fill="#ffffff" opacity="0.08"/>
+  <text x="110" y="215" font-family="Manrope, Arial, sans-serif" font-size="34" font-weight="800" letter-spacing="8" fill="#f3d67a">AFRICA OF HOPE</text>
+  <text x="110" y="300" font-family="Manrope, Arial, sans-serif" font-size="64" font-weight="800" fill="#ffffff">School of Professional Studies</text>
+  <text x="110" y="360" font-family="Manrope, Arial, sans-serif" font-size="30" fill="#d9f2e3">Practical certificate programmes with verifiable certificates in Liberia</text>
+  <rect x="110" y="400" width="560" height="6" rx="3" fill="url(#gold)"/>
+  <text x="110" y="450" font-family="Manrope, Arial, sans-serif" font-size="26" fill="#ffffff">Two-week to six-month tracks · Online and on-site · Admissions open 2026/2027</text>
+  <text x="110" y="490" font-family="Manrope, Arial, sans-serif" font-size="24" font-weight="700" fill="#f3d67a">africaofhopelr.org</text>
+</svg>

@@ -24,14 +24,6 @@ export default function AdmissionsPage({ onApply }: { onApply: () => void }) {
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-400" /> Admissions 2026/2027 is open
           </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-            className="mt-4 max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl"
-          >
-            Admissions: start online anytime.
-          </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -45,10 +37,10 @@ export default function AdmissionsPage({ onApply }: { onApply: () => void }) {
             <Button type="button" onClick={onApply} className="bg-amber-400 text-emerald-950 hover:bg-amber-300">
               Apply online <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
-            <a href="#programmes" className="inline-flex h-10 items-center rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10">
+            <a href="/programmes" className="inline-flex h-10 items-center rounded-xl border border-white/25 px-4 text-sm font-medium text-white hover:bg-white/10">
               Browse programmes
             </a>
-            <a href="#term-dates" className="inline-flex h-10 items-center rounded-xl px-2 text-sm font-medium text-amber-50 underline decoration-amber-300/60 underline-offset-4 hover:text-amber-100">
+            <a href="/term-dates" className="inline-flex h-10 items-center rounded-xl px-2 text-sm font-medium text-amber-50 underline decoration-amber-300/60 underline-offset-4 hover:text-amber-100">
               Term dates
             </a>
           </div>

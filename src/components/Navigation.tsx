@@ -156,7 +156,7 @@ export function SetupError({ message, retry }: { message: string; retry: () => v
 
 function sidebarGroupLabel(role: string | null): string {
   if (role === "Student") return "Student Desk";
-  if (role === "Teacher") return "Instructor";
+  if (role === "Teacher") return "Teachers-Instructors";
   return "Administration";
 }
 
@@ -417,7 +417,7 @@ export default function Navigation({
         aria-current={active ? "page" : undefined}
         title={t(label)}
         className={cn(
-          "group flex min-h-[53px] w-full items-center gap-[10px] rounded-lg px-2 py-1.5 text-left text-[17px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          "group flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[15px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
           active
             ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white shadow-md shadow-emerald-900/25 ring-1 ring-emerald-900/20"
             : "text-slate-700 hover:translate-x-[1px] hover:bg-gradient-to-r hover:from-emerald-50 hover:to-amber-50/70 hover:text-emerald-950 hover:shadow-sm dark:text-slate-100 dark:hover:from-white/10 dark:hover:to-white/5 dark:hover:text-white",
@@ -425,13 +425,13 @@ export default function Navigation({
       >
         <span
           className={cn(
-            "grid h-9 w-9 shrink-0 place-items-center rounded-md transition-all",
+            "grid h-8 w-8 shrink-0 place-items-center rounded-md transition-all",
             active
               ? "bg-white/15 text-amber-300 ring-1 ring-white/25"
               : "bg-gradient-to-br from-emerald-600/10 to-amber-500/15 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white",
           )}
         >
-          <Icon className="h-[21px] w-[21px] shrink-0" />
+          <Icon className="h-[18px] w-[18px] shrink-0" />
         </span>
         <span className="min-w-0 flex-1 truncate">{t(label)}</span>
         {active && <span className="h-5 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
@@ -458,13 +458,13 @@ export default function Navigation({
               onClick={() => toggleGroup(group.id)}
               aria-expanded={isOpen}
               aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[46px] items-center gap-2 rounded-xl bg-black px-2 py-1.5 text-left text-[15px] font-bold uppercase tracking-wider text-amber-300 ring-1 ring-[#D4AF37]/40 transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60 dark:text-amber-300 dark:hover:bg-neutral-900"
+              className="flex min-h-[40px] items-center gap-2 rounded-xl bg-emerald-800 px-2.5 py-1.5 text-left text-[13px] font-bold uppercase tracking-wider text-white ring-1 ring-emerald-900/20 transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50"
             >
               <span className="flex-1 truncate">{group.label}</span>
-              <span className="rounded-full bg-[#D4AF37] px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-black shadow-sm">
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[12px] font-semibold normal-case tracking-normal text-white">
                 {group.items.length}
               </span>
-              <ChevronDown className={cn("h-[18px] w-[18px] shrink-0 text-amber-300 transition-transform", isOpen ? "rotate-180" : "rotate-0")} />
+              <ChevronDown className={cn("h-4 w-4 shrink-0 text-white transition-transform", isOpen ? "rotate-180" : "rotate-0")} />
             </button>
             {isOpen && (
               <div id={`portal-nav-group-${group.id}`} className="ml-2 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
@@ -682,7 +682,7 @@ export default function Navigation({
             role="dialog"
             aria-modal="true"
             aria-label="Portal navigation"
-            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(17rem,78vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
+            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(15rem,84vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
           >
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 p-3 shadow-md shadow-emerald-950/20">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">

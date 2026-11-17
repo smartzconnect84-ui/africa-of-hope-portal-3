@@ -1,24 +1,25 @@
 /**
  * Regenerates public/sitemap.xml from the canonical public routes.
  *
- * Canonical domain: https://www.africaofhopelr.org
+ * Canonical domain: https://africaofhopelr.org
  * Source of truth for public paths: src/lib/publicRoutes.ts (viewToPath).
  * Private routes (admin, portal dashboards, student/instructor accounts,
  * auth, /api, /newsletter confirm+unsubscribe) are intentionally excluded.
  *
  * Runs automatically on every build (see package.json "build"), so newly
- * added entries in PUBLIC_URLS below ship in the next Vercel deploy.
+ * added entries in PUBLIC_URLS below ship in the next deploy.
  * To add a future public page: append its path + changefreq/priority here.
  *
- * Optional: pass blog slugs to include published posts, e.g.
- *   BLOG_SLUGS="my-post,another-post" node scripts/generate-sitemap.mjs
- * Blog slugs can also be supplied newline-separated via public/blog-slugs.txt.
+ * Blog posts: at build time we try the live Supabase `blog_posts` table
+ * (needs VITE_SUPABASE_URL + publishable key env); whatever is found is
+ * merged with BLOG_SLUGS env and public/blog-slugs.txt, so editors can also
+ * add one slug per line to public/blog-slugs.txt without touching code.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const CANONICAL = "https://www.africaofhopelr.org";
+const CANONICAL = "https://africaofhopelr.org";
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const PUBLIC_URLS = [
@@ -31,6 +32,7 @@ const PUBLIC_URLS = [
   { path: "/donate", changefreq: "monthly", priority: "0.6" },
   { path: "/transparency", changefreq: "monthly", priority: "0.6" },
   { path: "/team", changefreq: "monthly", priority: "0.5" },
+  { path: "/impact", changefreq: "monthly", priority: "0.8" },
   { path: "/blog", changefreq: "weekly", priority: "0.7" },
   { path: "/policies", changefreq: "monthly", priority: "0.5" },
   { path: "/campus-life", changefreq: "monthly", priority: "0.6" },
@@ -56,6 +58,33 @@ if (existsSync(slugsFile)) {
     .filter((s) => s && !s.startsWith("#"))
     .forEach((s) => slugs.add(s));
 }
+
+// Best-effort live fetch: published blog_posts slugs via Supabase REST.
+// Requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or SUPABASE_URL /
+// SUPABASE_ANON_KEY). Never fails the build — falls back to the file list.
+try {
+  const base = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key =
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY;
+  if (base && key) {
+    const url = `${String(base).replace(/\/+$/, "")}/rest/v1/blog_posts?select=slug&status=eq.published&limit=500`;
+    const res = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (res.ok) {
+      const rows = await res.json();
+      if (Array.isArray(rows)) {
+        for (const r of rows) {
+          const s = String(r?.slug || "").trim();
+          if (s) slugs.add(s);
+        }
+      }
+    }
+  }
+} catch {
+  /* offline build — file list still applies */
+}
+
 for (const slug of [...slugs]) {
   PUBLIC_URLS.push({
     path: `/blog/${encodeURIComponent(slug)}`,

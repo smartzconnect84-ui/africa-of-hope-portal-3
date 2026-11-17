@@ -161,7 +161,7 @@ export default function WhatsAppEnquiry({
                 <Send className="h-4 w-4" aria-hidden="true" /> {sending ? "Sending…" : "Send via WhatsApp"}
   </button>
   {whatsAppUrl ? (
-    <a href={whatsAppUrl} target="_blank" rel="noreferrer" className="block text-center text-sm font-semibold text-emerald-800 underline underline-offset-4">
+    <a href={whatsAppUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-sm font-semibold text-emerald-800 underline underline-offset-4">
       Continue to WhatsApp
     </a>
   ) : null}
