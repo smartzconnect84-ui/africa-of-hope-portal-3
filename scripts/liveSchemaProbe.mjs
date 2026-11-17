@@ -2,17 +2,24 @@
 /**
  * Live Supabase vs repository contract probe.
  *
- * Reads the REAL client contract straight from src/ (no hand-maintained list, so it
- * cannot drift from the code) and probes the live project with the same public anon
- * key the browser bundle uses. Classifies every object as:
+ * Reads the REAL client contract straight from src/ (tables, RPC names AND their
+ * argument names, storage buckets) and probes the live project with the same public
+ * anon key the browser bundle uses.
  *
- *   ok       – object exists and the anon role may read it
- *   secured  – object exists but RLS/grants deny anon (healthy, not a failure)
- *   MISSING  – object does not exist in the live database (migration not applied)
- *   error    – unexpected response, printed with its message
+ * Why argument names matter: PostgREST resolves an RPC by the parameter names in the
+ * JSON body. Posting {} to a function that takes p_course_id returns PGRST202
+ * ("no matches") even though the function EXISTS. So each call is replayed with the
+ * keys the client actually sends; only then is PGRST202 evidence of absence.
+ *
+ * Each object is classified:
+ *   ok            – exists, anon may read it
+ *   secured       – exists, RLS/grants deny anon (healthy)
+ *   MISSING       – absent live; "drift" if a migration defines it, "code" if none does
+ *   unknown       – arg names not statically resolvable, absence unproven
+ *   error         – unexpected response
  *
  * Usage: node scripts/liveSchemaProbe.mjs [--json out.json]
- * Exit code 1 when anything is MISSING, so it can gate CI.
+ * Exit 1 only for real MISSING objects, so it can gate CI.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -24,11 +31,11 @@ function readEnv() {
   const out = {};
   if (!fs.existsSync(file)) return out;
   for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
     if (eq === -1) continue;
-    out[trimmed.slice(0, eq).trim()] = trimmed
+    out[t.slice(0, eq).trim()] = t
       .slice(eq + 1)
       .trim()
       .replace(/^["']|["']$/g, "");
@@ -40,155 +47,218 @@ const env = { ...readEnv(), ...process.env };
 const BASE = (env.VITE_SUPABASE_URL || "").replace(/\/+$/, "");
 const KEY = env.VITE_SUPABASE_ANON_KEY || "";
 if (!BASE || !KEY) {
-  console.error(
-    "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (in .env or the environment) before probing.",
-  );
+  console.error("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before probing.");
   process.exit(2);
 }
-const HEADERS = { apikey: KEY, Authorization: `Bearer ${KEY}` };
+const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
 function walk(dir, acc = []) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (["node_modules", "dist", ".git", "coverage"].includes(entry.name)) continue;
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (["node_modules", "dist", ".git", "coverage"].includes(e.name)) continue;
       walk(p, acc);
-    } else if (/\.(ts|tsx)$/.test(entry.name)) {
-      acc.push(p);
-    }
+    } else if (/\.(ts|tsx)$/.test(e.name)) acc.push(p);
   }
   return acc;
 }
 
-// Pull the contract from source: supabase.from("x") = table, supabase.rpc("y") = function,
-// supabase.storage.from("z") = bucket. The negative lookbehind keeps buckets out of tables.
-const TABLE_RE = /(?<!storage\s*)(?<!storage)\.from\(\s*["'`]([A-Za-z0-9_]+)["'`]/g;
-const RPC_RE = /\.rpc\(\s*["'`]([A-Za-z0-9_]+)["'`]/g;
-const BUCKET_RE = /\.storage\s*\.from\(\s*["'`]([A-Za-z0-9_-]+)["'`]/g;
+/** Balanced-object capture so nested literals do not truncate the argument list. */
+function argNamesAfter(text, from) {
+  let i = from;
+  while (i < text.length && /\s/.test(text[i])) i++;
+  if (text[i] !== "{") return null;
+  let depth = 0;
+  let j = i;
+  for (; j < text.length; j++) {
+    if (text[j] === "{") depth++;
+    else if (text[j] === "}") {
+      depth--;
+      if (depth === 0) {
+        j++;
+        break;
+      }
+    }
+  }
+  const body = text.slice(i + 1, j - 1);
+  return [...body.matchAll(/(?:^|[,{]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:/g)].map((m) => m[1]);
+}
 
 const tables = new Set();
-const rpcs = new Set();
 const buckets = new Set();
+const rpcArgs = new Map(); // name -> Set(argName) | null (unknown)
+
+const FROM_RE = /\.from\(\s*["'`]([A-Za-z0-9_]+)["'`]/g;
+const STORAGE_FROM_RE = /\.storage\s*\.from\(\s*["'`]([A-Za-z0-9_-]+)["'`]/g;
+const RPC_RE = /\.rpc\(\s*["'`]([A-Za-z0-9_]+)["'`]/g;
+
 for (const file of walk(path.join(root, "src"))) {
   const text = fs.readFileSync(file, "utf8");
-  for (const m of text.matchAll(TABLE_RE)) tables.add(m[1]);
-  for (const m of text.matchAll(RPC_RE)) rpcs.add(m[1]);
-  for (const m of text.matchAll(BUCKET_RE)) buckets.add(m[1]);
+  const storageSpans = [];
+  for (const m of text.matchAll(STORAGE_FROM_RE)) {
+    buckets.add(m[1]);
+    storageSpans.push(m.index);
+  }
+  for (const m of text.matchAll(FROM_RE)) {
+    const isStorage = storageSpans.some((s) => m.index - s > 0 && m.index - s < 40);
+    if (!isStorage) tables.add(m[1]);
+  }
+  for (const m of text.matchAll(RPC_RE)) {
+    const args = argNamesAfter(text, m.index + m[0].length);
+    const prev = rpcArgs.get(m[1]);
+    if (args && (!prev || args.length > prev.size)) rpcArgs.set(m[1], new Set(args));
+    else if (!rpcArgs.has(m[1])) rpcArgs.set(m[1], prev ?? null);
+  }
 }
-// A name used both as table and bucket is a table probe first; keep both lists independent.
-for (const b of buckets) tables.delete(b);
 
-async function probeTable(table) {
-  const res = await fetch(`${BASE}/rest/v1/${table}?select=*&limit=1`, { headers: HEADERS });
-  if (res.ok) return { kind: "table", name: table, status: "ok", code: res.status };
+// The health card is the maintained bucket contract; merge it in so a bucket
+// referenced only through a constant is still covered.
+const healthPath = path.join(root, "src/lib/supabaseHealth.ts");
+if (fs.existsSync(healthPath)) {
+  const health = fs.readFileSync(healthPath, "utf8");
+  const block = health.match(/REQUIRED_BUCKETS\s*=\s*\[([\s\S]*?)\]/);
+  if (block) for (const m of block[1].matchAll(/["'`]([A-Za-z0-9_-]+)["'`]/g)) buckets.add(m[1]);
+  const tBlock = health.match(/REQUIRED_TABLES\s*=\s*\[([\s\S]*?)\]/);
+  if (tBlock) for (const m of tBlock[1].matchAll(/["'`]([A-Za-z0-9_]+)["'`]/g)) tables.add(m[1]);
+}
+
+// Which names does the repository actually define in SQL?
+const migrationsDir = path.join(root, "supabase/migrations");
+const sqlDefined = new Set();
+if (fs.existsSync(migrationsDir)) {
+  for (const f of fs.readdirSync(migrationsDir)) {
+    if (!f.endsWith(".sql")) continue;
+    const sql = fs.readFileSync(path.join(migrationsDir, f), "utf8");
+    for (const m of sql.matchAll(/create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?([A-Za-z0-9_]+)/gi)) {
+      sqlDefined.add(m[1].toLowerCase());
+    }
+  }
+}
+
+const clip = (s, n = 140) => {
+  const one = String(s).replace(/\s+/g, " ").trim();
+  return one.length > n ? one.slice(0, n) + "…" : one;
+};
+
+async function probeTable(name) {
+  const res = await fetch(`${BASE}/rest/v1/${name}?select=*&limit=1`, { headers: H });
+  if (res.ok) return { kind: "table", name, status: "ok", code: res.status };
   const body = await res.text();
-  if (res.status === 401 || res.status === 403) {
-    return { kind: "table", name: table, status: "secured", code: res.status };
-  }
-  if (res.status === 404 || /PGRST205|Could not find the table|does not exist/i.test(body)) {
-    return { kind: "table", name: table, status: "MISSING", code: res.status, detail: clip(body) };
-  }
-  return { kind: "table", name: table, status: "error", code: res.status, detail: clip(body) };
+  if (res.status === 401 || res.status === 403) return { kind: "table", name, status: "secured", code: res.status };
+  if (res.status === 404 || /PGRST205|Could not find the table/i.test(body))
+    return { kind: "table", name, status: "MISSING", code: res.status, detail: clip(body) };
+  return { kind: "table", name, status: "error", code: res.status, detail: clip(body) };
 }
 
-async function probeRpc(fn) {
-  const res = await fetch(`${BASE}/rest/v1/rpc/${fn}`, {
+async function probeRpc(name) {
+  const args = rpcArgs.get(name) ?? null;
+  const payload = args ? Object.fromEntries([...args].map((a) => [a, null])) : {};
+  const res = await fetch(`${BASE}/rest/v1/rpc/${name}`, {
     method: "POST",
-    headers: { ...HEADERS, "Content-Type": "application/json" },
-    body: "{}",
+    headers: { ...H, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
   const body = await res.text();
-  if (res.ok) return { kind: "rpc", name: fn, status: "ok", code: res.status };
-  // A found function with unsatisfied arguments answers 400/404 but names the function,
-  // so distinguish "wrong args" (exists) from "no such function" (missing).
+  const inSql = sqlDefined.has(name.toLowerCase());
+  if (res.ok) return { kind: "rpc", name, status: "ok", code: res.status, args: args ? [...args] : null, inSql };
   if (/PGRST202|Could not find the function/i.test(body)) {
-    return { kind: "rpc", name: fn, status: "MISSING", code: res.status, detail: clip(body) };
+    if (!args) {
+      // No static argument list: absence cannot be proven, do not cry wolf.
+      return { kind: "rpc", name, status: "unknown", code: res.status, args: null, inSql, detail: clip(body) };
+    }
+    return {
+      kind: "rpc",
+      name,
+      status: "MISSING",
+      code: res.status,
+      args: [...args],
+      inSql,
+      cause: inSql ? "drift (defined in migrations, absent live)" : "code (no migration defines it)",
+      detail: clip(body),
+    };
   }
-  if ([400, 401, 403, 404, 409, 422].includes(res.status)) {
-    return { kind: "rpc", name: fn, status: "secured", code: res.status, detail: clip(body) };
+  // Function resolved but rejected the call: it exists.
+  if ([400, 401, 403, 404, 409, 422, 500].includes(res.status)) {
+    return { kind: "rpc", name, status: "secured", code: res.status, args: args ? [...args] : null, inSql, detail: clip(body) };
   }
-  return { kind: "rpc", name: fn, status: "error", code: res.status, detail: clip(body) };
+  return { kind: "rpc", name, status: "error", code: res.status, args: args ? [...args] : null, inSql, detail: clip(body) };
 }
 
-async function probeBucket(bucket) {
-  const res = await fetch(`${BASE}/storage/v1/object/list/${bucket}`, {
+async function probeBucket(name) {
+  const res = await fetch(`${BASE}/storage/v1/object/list/${name}`, {
     method: "POST",
-    headers: { ...HEADERS, "Content-Type": "application/json" },
+    headers: { ...H, "Content-Type": "application/json" },
     body: JSON.stringify({ prefix: "", limit: 1, offset: 0 }),
   });
   const body = await res.text();
-  if (res.ok) return { kind: "bucket", name: bucket, status: "ok", code: res.status };
-  if (res.status === 404 || /not.?found|does not exist/i.test(body)) {
-    return { kind: "bucket", name: bucket, status: "MISSING", code: res.status, detail: clip(body) };
-  }
-  if ([400, 401, 403].includes(res.status)) {
-    return { kind: "bucket", name: bucket, status: "secured", code: res.status, detail: clip(body) };
-  }
-  return { kind: "bucket", name: bucket, status: "error", code: res.status, detail: clip(body) };
-}
-
-function clip(s, n = 160) {
-  const one = String(s).replace(/\s+/g, " ").trim();
-  return one.length > n ? one.slice(0, n) + "…" : one;
+  if (res.ok) return { kind: "bucket", name, status: "ok", code: res.status };
+  if (res.status === 404 || /not.?found|does not exist/i.test(body))
+    return { kind: "bucket", name, status: "MISSING", code: res.status, detail: clip(body) };
+  if ([400, 401, 403].includes(res.status))
+    return { kind: "bucket", name, status: "secured", code: res.status, detail: clip(body) };
+  return { kind: "bucket", name, status: "error", code: res.status, detail: clip(body) };
 }
 
 async function pool(items, worker, size = 6) {
-  const results = [];
+  const out = [];
   let i = 0;
   await Promise.all(
-    Array.from({ length: Math.min(size, items.length) }, async () => {
+    Array.from({ length: Math.min(size, items.length) || 1 }, async () => {
       while (i < items.length) {
         const item = items[i++];
         try {
-          results.push(await worker(item));
+          out.push(await worker(item));
         } catch (err) {
-          results.push({ name: item, status: "error", code: 0, detail: String(err?.message || err) });
+          out.push({ kind: "?", name: item, status: "error", code: 0, detail: String(err?.message || err) });
         }
       }
     }),
   );
-  return results;
+  return out;
 }
 
 const all = [
   ...(await pool([...tables].sort(), probeTable)),
-  ...(await pool([...rpcs].sort(), probeRpc)),
+  ...(await pool([...rpcArgs.keys()].sort(), probeRpc)),
   ...(await pool([...buckets].sort(), probeBucket)),
 ];
 
 const by = (s) => all.filter((r) => r.status === s);
 const missing = by("MISSING");
+const unknown = by("unknown");
 const errors = by("error");
 
 const summary = {
   base: BASE,
-  checked: { tables: tables.size, rpcs: rpcs.size, buckets: buckets.size, total: all.length },
+  contract: { tables: tables.size, rpcs: rpcArgs.size, buckets: buckets.size, total: all.length },
   ok: by("ok").length,
   secured: by("secured").length,
   missing: missing.length,
+  unknown: unknown.length,
   errors: errors.length,
+  sqlDefinedFunctions: sqlDefined.size,
 };
 
 console.log("== LIVE SUPABASE vs REPOSITORY CONTRACT ==");
 console.log(JSON.stringify(summary, null, 2));
 
 if (missing.length) {
-  console.log("\nMISSING IN LIVE DATABASE (migration not applied):");
-  for (const r of missing) console.log(`  - ${r.kind}: ${r.name} [${r.code}] ${r.detail || ""}`);
+  console.log("\nMISSING LIVE:");
+  for (const r of missing)
+    console.log(`  - ${r.kind}: ${r.name} [${r.code}] ${r.cause || ""} ${r.args ? `args=${r.args.join(",")}` : ""}`);
+}
+if (unknown.length) {
+  console.log("\nABSENCE UNPROVEN (dynamic args — verify manually):");
+  for (const r of unknown) console.log(`  - ${r.name}${r.inSql ? " (defined in migrations)" : " (NOT in migrations)"}`);
 }
 if (errors.length) {
-  console.log("\nUNEXPECTED RESPONSES:");
+  console.log("\nUNEXPECTED:");
   for (const r of errors) console.log(`  - ${r.kind}: ${r.name} [${r.code}] ${r.detail || ""}`);
 }
 const secured = by("secured");
-if (secured.length) {
-  console.log(`\nSECURED (exists, anon denied — expected): ${secured.length}`);
-  console.log("  " + secured.map((r) => r.name).join(", "));
-}
+if (secured.length) console.log(`\nSECURED (exists, anon denied — expected): ${secured.map((r) => r.name).join(", ")}`);
 
-const jsonFlag = process.argv.indexOf("--json");
-if (jsonFlag !== -1 && process.argv[jsonFlag + 1]) {
-  fs.writeFileSync(process.argv[jsonFlag + 1], JSON.stringify({ summary, all }, null, 2));
-}
+const jf = process.argv.indexOf("--json");
+if (jf !== -1 && process.argv[jf + 1]) fs.writeFileSync(process.argv[jf + 1], JSON.stringify({ summary, all }, null, 2));
 
 process.exit(missing.length ? 1 : 0);
