@@ -122,15 +122,53 @@ if (fs.existsSync(healthPath)) {
   if (tBlock) for (const m of tBlock[1].matchAll(/["'`]([A-Za-z0-9_]+)["'`]/g)) tables.add(m[1]);
 }
 
-// Which names does the repository actually define in SQL?
+// Which names does the repository define in SQL, and with which parameter names?
+// The SQL signature is authoritative: replaying it is what proves a function exists,
+// because PostgREST resolves overloads by the parameter names in the JSON body.
+function splitTopLevel(s) {
+  const out = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of s) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    if (ch === "," && depth === 0) {
+      out.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
 const migrationsDir = path.join(root, "supabase/migrations");
 const sqlDefined = new Set();
+const sqlSignatures = new Map(); // name -> array of param-name arrays (one per overload)
 if (fs.existsSync(migrationsDir)) {
   for (const f of fs.readdirSync(migrationsDir)) {
     if (!f.endsWith(".sql")) continue;
     const sql = fs.readFileSync(path.join(migrationsDir, f), "utf8");
     for (const m of sql.matchAll(/create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?([A-Za-z0-9_]+)/gi)) {
       sqlDefined.add(m[1].toLowerCase());
+    }
+    const re = /create\s+(?:or\s+replace\s+)?function\s+(?:public\.)?([A-Za-z0-9_]+)\s*\(([\s\S]*?)\)\s*(?:returns|language)/gi;
+    for (const m of sql.matchAll(re)) {
+      const name = m[1].toLowerCase();
+      const params = splitTopLevel(m[2])
+        .map((p) => p.trim())
+        .filter(Boolean)
+        // OUT params are not part of the PostgREST argument contract
+        .filter((p) => !/^out\s+/i.test(p));
+      const names = params
+        .map((p) => {
+          const t = p.match(/^(?:in|inout|variadic)?\s*([a-z_][a-z0-9_]*)\s+/i);
+          return t ? t[1] : null;
+        })
+        .filter(Boolean);
+      if (!sqlSignatures.has(name)) sqlSignatures.set(name, []);
+      sqlSignatures.get(name).push(names);
     }
   }
 }
@@ -151,37 +189,49 @@ async function probeTable(name) {
 }
 
 async function probeRpc(name) {
-  const args = rpcArgs.get(name) ?? null;
-  const payload = args ? Object.fromEntries([...args].map((a) => [a, null])) : {};
-  const res = await fetch(`${BASE}/rest/v1/rpc/${name}`, {
-    method: "POST",
-    headers: { ...H, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const body = await res.text();
   const inSql = sqlDefined.has(name.toLowerCase());
-  if (res.ok) return { kind: "rpc", name, status: "ok", code: res.status, args: args ? [...args] : null, inSql };
-  if (/PGRST202|Could not find the function/i.test(body)) {
-    if (!args) {
-      // No static argument list: absence cannot be proven, do not cry wolf.
-      return { kind: "rpc", name, status: "unknown", code: res.status, args: null, inSql, detail: clip(body) };
+  const candidates = [];
+  for (const sig of sqlSignatures.get(name.toLowerCase()) ?? []) if (sig.length) candidates.push(sig);
+  const tsArgs = rpcArgs.get(name) ?? null;
+  if (tsArgs && tsArgs.size) candidates.push([...tsArgs]);
+  candidates.push([]); // zero-argument overload / no-arg function
+
+  const tried = new Set();
+  let last = null;
+  for (const sig of candidates) {
+    const key = sig.join(",");
+    if (tried.has(key)) continue;
+    tried.add(key);
+    const payload = Object.fromEntries(sig.map((a) => [a, null]));
+    const res = await fetch(`${BASE}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: { ...H, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const body = await res.text();
+    if (res.ok) return { kind: "rpc", name, status: "ok", code: res.status, args: sig, inSql };
+    const notFound = /PGRST202|Could not find the function/i.test(body);
+    if (!notFound) {
+      // The overload resolved and the function ran (then rejected the call): it exists.
+      if ([400, 401, 403, 404, 409, 422, 500].includes(res.status))
+        return { kind: "rpc", name, status: "secured", code: res.status, args: sig, inSql, detail: clip(body) };
+      return { kind: "rpc", name, status: "error", code: res.status, args: sig, inSql, detail: clip(body) };
     }
-    return {
-      kind: "rpc",
-      name,
-      status: "MISSING",
-      code: res.status,
-      args: [...args],
-      inSql,
-      cause: inSql ? "drift (defined in migrations, absent live)" : "code (no migration defines it)",
-      detail: clip(body),
-    };
+    last = { code: res.status, detail: clip(body) };
   }
-  // Function resolved but rejected the call: it exists.
-  if ([400, 401, 403, 404, 409, 422, 500].includes(res.status)) {
-    return { kind: "rpc", name, status: "secured", code: res.status, args: args ? [...args] : null, inSql, detail: clip(body) };
-  }
-  return { kind: "rpc", name, status: "error", code: res.status, args: args ? [...args] : null, inSql, detail: clip(body) };
+
+  const proven = candidates.some((s) => s.length > 0);
+  return {
+    kind: "rpc",
+    name,
+    // With a real signature to replay, PGRST202 is genuine absence. Without one, say so.
+    status: proven ? "MISSING" : "unknown",
+    code: last?.code ?? 0,
+    args: null,
+    inSql,
+    cause: proven ? (inSql ? "drift (defined in migrations, absent live)" : "code (no migration defines it)") : undefined,
+    detail: last?.detail,
+  };
 }
 
 async function probeBucket(name) {
