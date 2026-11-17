@@ -11,6 +11,9 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const STAFF_ROLES = ["Super Admin", "School Admin", "Teacher", "Registrar", "Admission Officer", "Finance Officer", "Public Relations Officer", "Data Entry Officer", "Executive Assistant", "Research Officer", "Customer Care Officer", "Director of Education"];
 const ADMIN_ROLES = ["Super Admin", "School Admin"];
 const STATUSES = ["Active", "Suspended", "Pending Approval", "Rejected"];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DUP = /already|exists|registered|taken|duplicate|unique/i;
+const DUP_MSG = "An account with this email already exists. One email can only be used for one account (Student, Admin or Staff).";
 const randomPassword = () => crypto.randomUUID().replace(/-/g, "") + "Aa1!";
 
 Deno.serve(async (req: Request) => {
@@ -21,8 +24,8 @@ Deno.serve(async (req: Request) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !anonKey || !service) {
-      console.error("admin-users: missing env", { hasUrl: !!url, hasAnon: !!anonKey, hasService: !!service });
-      return json({ error: "Account service is not configured on the server. Set SUPABASE_URL / ANON_KEY / SERVICE_ROLE_KEY for the admin-users function, then redeploy it.", code: "not_configured" }, 503);
+      console.error("admin-users: missing env");
+      return json({ error: "Account service is not configured on the server.", code: "not_configured" }, 503);
     }
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
     if (!token) return json({ error: "Not authenticated. Sign in again, then retry.", code: "no_token" }, 401);
@@ -32,17 +35,11 @@ Deno.serve(async (req: Request) => {
     });
     const { data: authData, error: authError } = await caller.auth.getUser();
     const user = authData?.user;
-    if (authError || !user) {
-      console.error("admin-users: getUser failed", authError?.message);
-      return json({ error: "Not authenticated. Sign in again, then retry.", code: "bad_token" }, 401);
-    }
+    if (authError || !user) return json({ error: "Not authenticated. Sign in again, then retry.", code: "bad_token" }, 401);
     const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: actor, error: actorError } = await admin.from("profiles").select("role, status").eq("id", user.id).single();
-    if (actorError || !actor) {
-      console.error("admin-users: actor profile missing", { userId: user.id, msg: actorError?.message });
-      return json({ error: "Your staff profile was not found. Ask a Super Admin to check the profiles table.", code: "no_actor_profile" }, 403);
-    }
-    if (actor?.status !== "Active") return json({ error: "Your account is not active, so it cannot manage accounts.", code: "actor_inactive" }, 403);
+    const { data: actor } = await admin.from("profiles").select("role, status").eq("id", user.id).single();
+    if (!actor) return json({ error: "Your staff profile was not found. Ask a Super Admin to check the profiles table.", code: "no_actor_profile" }, 403);
+    if (actor.status !== "Active") return json({ error: "Your account is not active, so it cannot manage accounts.", code: "actor_inactive" }, 403);
     const superAdmin = actor.role === "Super Admin";
 
     const hasPermission = async (perm: string): Promise<boolean> => {
@@ -50,19 +47,11 @@ Deno.serve(async (req: Request) => {
       try {
         const { data, error } = await caller.rpc("has_permission", { perm });
         if (!error && data === true) return true;
-        if (error) console.error("admin-users: has_permission rpc failed, falling back", { perm, msg: error.message });
-      } catch (e) {
-        console.error("admin-users: has_permission threw, falling back", { perm, msg: String(e) });
-      }
-      // Fallback: direct role_permissions lookup with the service-role client,
-      // so a missing grant / RLS recursion on the RPC never blocks a permitted user.
+      } catch (_e) { /* fall through to direct lookup */ }
       try {
-        const { data, error } = await admin.from("role_permissions").select("permission").eq("role", actor.role).eq("permission", perm).limit(1);
-        if (!error && data && data.length > 0) return true;
-        if (error) console.error("admin-users: role_permissions fallback failed", { perm, msg: error.message });
-      } catch (e) {
-        console.error("admin-users: role_permissions fallback threw", { perm, msg: String(e) });
-      }
+        const { data } = await admin.from("role_permissions").select("permission").eq("role", actor.role).eq("permission", perm).limit(1);
+        if (data && data.length > 0) return true;
+      } catch (_e) { /* ignore */ }
       return false;
     };
 
@@ -77,113 +66,111 @@ Deno.serve(async (req: Request) => {
     const action = String(body.action ?? "");
 
     if (action === "create") {
-      if (!(await hasPermission("staff.manage"))) {
-        console.error("admin-users: staff.manage denied", { actorRole: actor.role, userId: user.id });
-        return json({ error: "You do not have permission to add staff. Your role needs the “Manage staff” (staff.manage) permission.", code: "forbidden" }, 403);
-      }
       const email = String(body.email ?? "").trim().toLowerCase();
-      const name = String(body.name ?? "").trim();
+      const name = String(body.name ?? body.full_name ?? "").trim();
       const phone = String(body.phone ?? "").trim();
-      const titleRaw = body.title ? String(body.title).trim() : "";
-      const title = titleRaw || null;
+      const title = body.title ? String(body.title).trim() : null;
       const role = String(body.role ?? "Teacher");
       const password = body.password ? String(body.password) : "";
+      const isStudent = role === "Student";
+
+      if (!isStudent && !(await hasPermission("staff.manage"))) {
+        return json({ error: "You do not have permission to add staff. Your role needs the Manage staff (staff.manage) permission.", code: "forbidden" }, 403);
+      }
+      if (isStudent && !(await hasPermission("students.manage")) && !(await hasPermission("staff.manage"))) {
+        return json({ error: "You do not have permission to add students. Your role needs the Manage students (students.manage) permission.", code: "forbidden" }, 403);
+      }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !name || name.length > 200) return json({ error: "A valid name and email are required", code: "bad_input" }, 400);
-      if (!STAFF_ROLES.includes(role)) return json({ error: "Unknown staff role", code: "bad_role" }, 400);
+      if (!isStudent && !STAFF_ROLES.includes(role)) return json({ error: "Unknown role", code: "bad_role" }, 400);
       if (ADMIN_ROLES.includes(role) && !superAdmin) return json({ error: "Only a Super Admin may create administrator accounts", code: "forbidden" }, 403);
       if (password && password.length < 8) return json({ error: "The password must be at least 8 characters", code: "bad_password" }, 400);
+      const programIds = Array.isArray(body.program_ids) ? (body.program_ids as unknown[]).map(String).filter((v) => UUID.test(v)) : [];
 
-      // Create the Auth account. Prefer an emailed invite when no password was
-      // typed; fall back to a temporary password when invites/SMTP are off so
-      // the admin can share it directly instead of seeing a bare 500.
       let userId = "";
       let generatedPassword: string | undefined;
+      const meta = { full_name: name, phone };
+      const createWith = (pw: string) => admin.auth.admin.createUser({ email, password: pw, email_confirm: true, user_metadata: meta });
       if (password) {
-        const created = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { full_name: name, phone } });
+        const created = await createWith(password);
         if (created.error || !created.data?.user) {
           const raw = created.error?.message ?? "Could not create the account";
           console.error("admin-users: createUser failed", { email, msg: raw });
-          const duplicate = /already|exists|registered|taken|duplicate|unique/i.test(raw);
-          return json({ error: duplicate ? "An account with this email already exists. One email can only be used for one account (User, Admin or Staff). Email addresses are changed only at the user's request." : raw, code: duplicate ? "duplicate" : "auth_create_failed" }, 400);
+          return json({ error: DUP.test(raw) ? DUP_MSG : raw, code: DUP.test(raw) ? "duplicate" : "auth_create_failed" }, 400);
         }
         userId = created.data.user.id;
       } else {
-        const invited = await admin.auth.admin.inviteUserByEmail(email, { data: { full_name: name, phone } });
+        const invited = await admin.auth.admin.inviteUserByEmail(email, { data: meta });
         if (!invited.error && invited.data?.user) {
           userId = invited.data.user.id;
         } else {
           const raw = invited.error?.message ?? "Invite failed";
-          console.error("admin-users: invite failed, falling back to temp password", { email, msg: raw });
-          const duplicate = /already|exists|registered|taken|duplicate|unique/i.test(raw);
-          if (duplicate) {
-            return json({ error: "An account with this email already exists. One email can only be used for one account (User, Admin or Staff). Email addresses are changed only at the user's request.", code: "duplicate" }, 400);
-          }
+          if (DUP.test(raw)) return json({ error: DUP_MSG, code: "duplicate" }, 400);
+          console.error("admin-users: invite failed, using temporary password", { email, msg: raw });
           generatedPassword = randomPassword();
-          const created = await admin.auth.admin.createUser({ email, password: generatedPassword, email_confirm: true, user_metadata: { full_name: name, phone } });
+          const created = await createWith(generatedPassword);
           if (created.error || !created.data?.user) {
             const raw2 = created.error?.message ?? "Could not create the account";
-            console.error("admin-users: fallback createUser failed", { email, msg: raw2 });
-            const dup2 = /already|exists|registered|taken|duplicate|unique/i.test(raw2);
-            return json({ error: dup2 ? "An account with this email already exists. One email can only be used for one account (User, Admin or Staff). Email addresses are changed only at the user's request." : `Could not create the account (${raw2}). If invites never arrive, check Auth → Email settings / SMTP on the Supabase project, then retry with a typed password.`, code: dup2 ? "duplicate" : "auth_create_failed" }, 400);
+            return json({ error: DUP.test(raw2) ? DUP_MSG : `Could not create the account (${raw2}).`, code: DUP.test(raw2) ? "duplicate" : "auth_create_failed" }, 400);
           }
           userId = created.data.user.id;
         }
       }
 
-      // Activate the school profile. Tolerate backends where optional columns
-      // (title, phone, name) have not been migrated yet instead of failing.
-      const basePatch: Record<string, unknown> = { full_name: name, email, role, status: "Active" };
+      // The signup trigger creates a Pending profile; activate it with the real role.
+      const basePatch: Record<string, unknown> = { full_name: name, name, email, role, status: "Active" };
       if (phone) basePatch.phone = phone;
-      const tryUpdate = async (patch: Record<string, unknown>) =>
-        await admin.from("profiles").update(patch).eq("id", userId).select("id").single();
-      let saved = null as { id: string } | null;
-      let profileError: { message: string } | null = null;
+      if (title) basePatch.title = title;
+      if (programIds.length) basePatch.program_ids = programIds;
       const attempts: Record<string, unknown>[] = [
-        { ...basePatch, name, title },
-        { ...basePatch, name },
-        { ...basePatch },
+        basePatch,
+        (() => { const p = { ...basePatch }; delete p.title; return p; })(),
         { full_name: name, email, role, status: "Active" },
       ];
+      let saved: { id: string } | null = null;
+      let profileError: { message: string } | null = null;
       for (const patch of attempts) {
-        const res = await tryUpdate(patch);
+        const res = await admin.from("profiles").update(patch).eq("id", userId).select("id").maybeSingle();
         if (!res.error && res.data) { saved = res.data as { id: string }; profileError = null; break; }
-        profileError = res.error as { message: string } | null;
-        const msg = res.error?.message ?? "";
-        const missingColumn = /column .* does not exist|schema cache|title|phone|name/i.test(msg);
-        console.error("admin-users: profile update attempt failed", { msg, patchKeys: Object.keys(patch) });
-        if (!missingColumn) break;
+        if (!res.error && !res.data) {
+          // Trigger did not create a profile row; insert one.
+          const ins = await admin.from("profiles").insert({ id: userId, ...patch }).select("id").maybeSingle();
+          if (!ins.error && ins.data) { saved = ins.data as { id: string }; profileError = null; break; }
+          profileError = ins.error as { message: string } | null;
+        } else {
+          profileError = res.error as { message: string } | null;
+        }
+        if (!/column .* does not exist|schema cache/i.test(profileError?.message ?? "")) break;
       }
       if (!saved) {
-        // Never delete an Auth account to compensate for a failed profile write.
         const msg = profileError?.message ?? "unknown";
         console.error("admin-users: profile activation failed", { userId, msg });
-        const needsMigration = /column .* does not exist|schema cache/i.test(msg);
-        return json({ user_id: userId, ...(generatedPassword ? { temporary_password: generatedPassword } : {}), error: needsMigration ? `Auth account created, but the profiles table is missing a column (${msg}). Apply migration 20261113000000_complete_backend_reconciliation.sql, then update this account's role.` : `Auth account created, but the school profile was not activated (${msg}). Review this account before retrying.`, code: "profile_failed" }, 409);
+        return json({ user_id: userId, ...(generatedPassword ? { temporary_password: generatedPassword } : {}), error: `Sign-in account created, but the profile was not activated (${msg}). Open the account and set its role.`, code: "profile_failed" }, 409);
       }
       const { error: metaError } = await admin.auth.admin.updateUserById(userId, { app_metadata: { role, status: "Active" } });
       if (metaError) {
         console.error("admin-users: metadata sync failed", { userId, msg: metaError.message });
-        return json({ user_id: userId, ...(generatedPassword ? { temporary_password: generatedPassword } : {}), error: "School profile saved, but Auth metadata could not be synchronized. Review the account before retrying.", code: "metadata_failed" }, 409);
+        return json({ user_id: userId, ...(generatedPassword ? { temporary_password: generatedPassword } : {}), error: "Profile saved, but sign-in metadata could not be synchronized. Review the account.", code: "metadata_failed" }, 409);
       }
-      return json({ user_id: userId, ...(generatedPassword ? { temporary_password: generatedPassword } : {}) });
+      return json({ ok: true, user_id: userId, role, ...(generatedPassword ? { temporary_password: generatedPassword } : {}) });
     }
 
     if (!["update", "reset_password", "delete"].includes(action)) return json({ error: "Unknown action", code: "bad_action" }, 400);
     const canStaff = await hasPermission("staff.manage");
-    const canStudents = action === "reset_password" && await hasPermission("students.manage");
+    const canStudents = await hasPermission("students.manage");
     if (!canStaff && !canStudents) return json({ error: "You do not have permission for this account action", code: "forbidden" }, 403);
     const id = String(body.user_id ?? "");
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return json({ error: "A valid user_id is required", code: "bad_input" }, 400);
-    const { data: target, error: targetError } = await admin.from("profiles").select("email, role, status").eq("id", id).single();
-    if (targetError || !target) return json({ error: "Account not found", code: "not_found" }, 404);
+    if (!UUID.test(id)) return json({ error: "A valid user_id is required", code: "bad_input" }, 400);
+    const { data: target } = await admin.from("profiles").select("email, role, status").eq("id", id).single();
+    if (!target) return json({ error: "Account not found", code: "not_found" }, 404);
     if (ADMIN_ROLES.includes(target.role) && !superAdmin) return json({ error: "Only a Super Admin may manage another administrator's access", code: "forbidden" }, 403);
-    if (!canStaff && target.role !== "Student") return json({ error: "You may only reset student passwords", code: "forbidden" }, 403);
+    if (!canStaff && target.role !== "Student") return json({ error: "You may only manage student accounts", code: "forbidden" }, 403);
 
     if (action === "update") {
       if (id === user.id) return json({ error: "You cannot change your own role or status", code: "bad_input" }, 400);
       const role = body.role === undefined ? target.role : String(body.role);
       const status = body.status === undefined ? target.status : String(body.status);
-      if (![...STAFF_ROLES, "Student"].includes(role) || !STATUSES.includes(status)) return json({ error: "Unknown role or status", code: "bad_input" }, 400);
+      if (!([...STAFF_ROLES, "Student"].includes(role)) || !STATUSES.includes(status)) return json({ error: "Unknown role or status", code: "bad_input" }, 400);
+      if (!canStaff && role !== "Student") return json({ error: "You may only manage student accounts", code: "forbidden" }, 403);
       if (ADMIN_ROLES.includes(role) && !superAdmin) return json({ error: "Only a Super Admin may grant administrator access", code: "forbidden" }, 403);
       const { data: existing, error: existingError } = await admin.auth.admin.getUserById(id);
       if (existingError || !existing.user) return json({ error: "Auth account not found", code: "not_found" }, 404);
@@ -197,9 +184,7 @@ Deno.serve(async (req: Request) => {
         const { error: rollbackError } = await admin.auth.admin.updateUserById(id, {
           app_metadata: oldMetadata, ban_duration: target.status === "Active" ? "none" : "876000h",
         });
-        return json({ error: rollbackError
-          ? "Profile save and Auth rollback failed. Review this account in Supabase immediately."
-          : "Profile save failed; the Auth change was rolled back. Reload and try again.", code: "profile_failed" }, 409);
+        return json({ error: rollbackError ? "Profile save and Auth rollback failed. Review this account immediately." : "Profile save failed; the Auth change was rolled back. Reload and try again.", code: "profile_failed" }, 409);
       }
       return json({ ok: true });
     }
@@ -217,7 +202,6 @@ Deno.serve(async (req: Request) => {
       const { error } = await caller.auth.resetPasswordForEmail(target.email);
       return error ? json({ error: error.message, code: "reset_failed" }, 400) : json({ ok: true });
     }
-    // Keep real school records. Auth deletion can cascade through school tables.
     return json({ error: "Permanent deletion is disabled to preserve school records. Suspend this account instead.", code: "delete_disabled" }, 409);
   } catch (err) {
     console.error("admin-users failed", err);
