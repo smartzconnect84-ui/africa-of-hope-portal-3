@@ -524,11 +524,6 @@ export function VerificationPortal({ initialSerial = "" }: { initialSerial?: str
 
   return (
     <div className="space-y-5">
-      <SectionHeader
-        title="Certificate Verification"
-        subtitle="Confirm the authenticity of any AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES credential instantly"
-      />
-
       <Reveal className={cn(panelClass, "p-6")}>
         <div className="mx-auto max-w-xl text-center">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-800/10">

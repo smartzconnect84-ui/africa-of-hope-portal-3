@@ -18,12 +18,6 @@ export default function VerifyPage({ serial }: { serial: string | null }) {
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl">
             Verify a certificate
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-            Every certificate issued by AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES carries a unique
-            serial number. The serial is checked live against the institutional register, so a printed
-            credential or QR code is never accepted on its own — revoked certificates are reported as
-            revoked.
-          </p>
         </ScrollReveal>
 
         <div className="mt-8">
