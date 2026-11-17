@@ -84,6 +84,7 @@ import TransparencyLibrary from "./components/public/TransparencyLibrary";
 import Helpdesk from "./components/portal/Helpdesk";
 import GradeAppeals from "./components/portal/GradeAppeals";
 import TermReportCards from "./components/academic/TermReportCards";
+import CohortTimetable from "./components/academic/CohortTimetable";
 import ReferenceLetters from "./components/portal/ReferenceLetters";
 import EntranceTest from "./components/portal/EntranceTest";
 import EntranceTestAdmin from "./components/admin/EntranceTestAdmin";
@@ -289,6 +290,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: NotebookPen,
     visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own") || ctx.role === "Student",
     render: (ctx) => (ctx.role === "Student" ? <AssignmentsView /> : <GradeEvaluation />),
+  },
+  {
+    key: "timetable",
+    label: "Timetable",
+    icon: CalendarDays,
+    visible: () => true,
+    render: () => <CohortTimetable />,
   },
   {
     key: "report-cards",
