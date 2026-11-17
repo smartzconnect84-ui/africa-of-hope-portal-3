@@ -262,7 +262,7 @@ export default function AdminWebsiteSettings() {
         <div className={`${panelClass} grid gap-5 p-5`}>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <p className="text-sm font-semibold text-emerald-950">Owner-supplied logo & founder portrait</p>
-            <p className="mt-2 text-sm text-slate-600">Copy the official logo into the default, header, footer, portal, sign-in, certificate, brochure and favicon folders, plus the founder photo into Team storage. Existing files are not deleted. Review the draft before publishing. Install icons and splash use the generated production assets.</p>
+            <p className="mt-2 text-sm text-slate-600">Copy the official November 2026 mark into the default, header, footer, portal, sign-in, certificate, brochure and favicon folders, plus the founder photo into Team storage. Retired pre-rebrand files are trashed from storage on copy so the old mark cannot resurface. Review the draft before publishing. Install icons and splash use the generated production assets.</p>
             <button type="button" disabled={copyingBrand || saving} onClick={() => void copyBrand()} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-emerald-800 px-4 text-sm font-semibold text-white hover:bg-emerald-900 disabled:opacity-50">{copyingBrand ? "Copying assets…" : "Copy supplied assets to Supabase"}</button>
             <button type="button" disabled={copyingBrand || saving} onClick={useBuiltInBrand} className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-emerald-800/30 bg-white px-4 text-sm font-semibold text-emerald-900 hover:bg-emerald-50 disabled:opacity-50">Use built-in site images (works offline)</button>
           </div>
@@ -276,7 +276,7 @@ export default function AdminWebsiteSettings() {
           </div>
           <div className="border-t border-slate-100 pt-5">
             <h2 className="text-base font-semibold text-slate-900">Logos by placement</h2>
-            <p className="mt-1 text-sm text-slate-500">Upload a different logo for each location. Empty locations use the default logo. Removing an override does not delete the uploaded file.</p>
+            <p className="mt-1 text-sm text-slate-500">Upload a different logo for each location. Empty locations use the default logo. Removing an override clears it from the site and trashes the retired upload so it cannot be reused.</p>
             <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {([['header', 'Public header & mobile menu'], ['footer', 'Public footer'], ['portal', 'Portal header & mobile menu'], ['auth', 'Sign in & registration'], ['certificate', 'Completion certificates'], ['brochure', 'Programme brochures']] as const).map(([key, label]) => (
                 <ImageBox key={key} label={label} folder={`logo/${key}`} value={draft.logos?.[key] || ''} onChange={(value) => patch({ logos: { ...draft.logos, [key]: value } })} />

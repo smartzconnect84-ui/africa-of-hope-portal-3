@@ -1,6 +1,6 @@
 import type { WebsiteSettings } from "@/types";
 import { FOUNDER_PROFILE } from "@/data/teamContent";
-import { uploadSiteAsset } from "./storage";
+import { pruneSiteAssets, uploadSiteAsset } from "./storage";
 
 /**
  * Built-in production assets. These ship with the site bundle (generated from
@@ -86,7 +86,7 @@ export function builtInBrandAssets(): {
 
 /**
  * Explicit administrator action: copy owner-provided assets into Supabase
- * storage. New UUID paths only; no old files or settings are deleted.
+ * storage. New UUID paths only; superseded files in each brand folder are deleted.
  *
  * Resilient by design:
  * - Each upload is attempted independently; one failure no longer aborts the rest.
@@ -153,6 +153,19 @@ export async function copySuppliedBrandAssets(): Promise<BrandCopyResult> {
   if (portraitFile) {
     const portrait = await tryUpload("Founder portrait", "team", portraitFile);
     if (portrait) portraitUrl = portrait;
+  }
+  // Owner order: trash retired brand files so only the November 2026 mark remains.
+  // Best effort: a prune failure never fails the copy; warnings already cover storage issues.
+  if (storageOk) {
+    const pruned: Array<Promise<unknown>> = [];
+    if (defaultLogo) pruned.push(pruneSiteAssets("logo", defaultLogo));
+    for (const placement of BRAND_PLACEMENTS) {
+      const kept = logos[placement];
+      if (kept && kept !== BUILT_IN_LOGO) pruned.push(pruneSiteAssets(`logos/${placement}`, kept));
+    }
+    if (favicon) pruned.push(pruneSiteAssets("favicon", favicon));
+    if (portraitUrl !== (FOUNDER_PROFILE.image || BUILT_IN_PORTRAIT)) pruned.push(pruneSiteAssets("team", portraitUrl));
+    await Promise.allSettled(pruned);
   }
 
   return {

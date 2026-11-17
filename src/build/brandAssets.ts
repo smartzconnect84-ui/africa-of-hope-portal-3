@@ -13,9 +13,9 @@ async function getSharp(): Promise<any> {
   return sharpInstance;
 }
 
-// Permanent owner-supplied source. Production emits local files so installed
+// Permanent owner-supplied source (November 2026 official mark). Production emits local files so installed
 // identity and the launch screen do not depend on third-party image hosting.
-const SOURCE = "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+const SOURCE = "https://files.monstarx.app/jk0454jkv1/public/uploads/chat/7ynjatu3oi/Aoh-favicon.png";
 
 async function keyOutBlackBackground(input: Buffer): Promise<Buffer> {
   // The owner-supplied mark ships on a flat black field. Key near-black pixels

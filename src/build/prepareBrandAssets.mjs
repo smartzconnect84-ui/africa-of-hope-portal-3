@@ -7,7 +7,7 @@ import { dirname, resolve } from "node:path";
 // The Vite plugin (src/build/brandAssets.ts) serves/generates the same files
 // at dev/build time when possible.
 const SOURCE =
-  "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+  "https://files.monstarx.app/jk0454jkv1/public/uploads/chat/7ynjatu3oi/Aoh-favicon.png";
 
 async function exists(path) {
   try {

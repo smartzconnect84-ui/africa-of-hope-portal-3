@@ -48,31 +48,11 @@ export const SUPPLIED_DOCS = {
   },
 } as const;
 
-/** Brand/artwork variations supplied alongside the photos — shown as a row, never cropped as logos. */
+/** Official brand mark (November 2026 rebrand) — single source for every logo, favicon and PWA icon. Old variations retired. */
 export const SUPPLIED_ARTWORK = [
   {
-    id: "art-94",
-    src: "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png",
-    caption: "Brand artwork I",
-  },
-  {
-    id: "art-95a",
-    src: "https://files.monstarx.app/54c3deukza/public/uploads/chat/cd6mq1yuax/file_0000000009d471fdb2483f23fe455e95.png",
-    caption: "Brand artwork II",
-  },
-  {
-    id: "art-95b",
-    src: "https://files.monstarx.app/54c3deukza/public/uploads/chat/8gnc2n2zi0/file_0000000009d471fdb2483f23fe455e95.png",
-    caption: "Brand artwork III",
-  },
-  {
-    id: "art-95c",
-    src: "https://files.monstarx.app/54c3deukza/public/uploads/chat/jdo1hlptc9/file_0000000009d471fdb2483f23fe455e95.png",
-    caption: "Brand artwork IV",
-  },
-  {
-    id: "art-aa7",
-    src: "https://files.monstarx.app/54c3deukza/public/uploads/chat/mo35wdme29/file_000000009acc81f4a3b11508f1c06aa7.png",
-    caption: "Brand artwork V",
+    id: "art-official-2026",
+    src: "https://files.monstarx.app/jk0454jkv1/public/uploads/chat/7ynjatu3oi/Aoh-favicon.png",
+    caption: "Official Africa of Hope mark — November 2026",
   },
 ] as const;

@@ -90,9 +90,10 @@ export default function BrandLockup({
 }: BrandLockupProps) {
   const visibleName = displayName || academyName;
   const showTaglineLine = showTagline && Boolean(tagline);
-  // Built-in frontend copy: when a Supabase-hosted logo cannot be reached
-  // (storage disconnected / offline), fall back to the bundled production
-  // logo so the header, footer, portal and sign-in never lose their mark.
+  // Offline fallback: when a Supabase-hosted logo cannot be reached
+  // (storage disconnected / offline), fall back to the generated production
+  // mark at /logo/aoh-logo.png. That path is rebuilt from the November 2026
+  // official mark on every build; retired pre-rebrand binaries no longer exist.
   const FALLBACK_LOGO = "/logo/aoh-logo.png";
   const initialSrc = logoUrl && logoUrl.trim() ? logoUrl : FALLBACK_LOGO;
   const [src, setSrc] = useState(initialSrc);

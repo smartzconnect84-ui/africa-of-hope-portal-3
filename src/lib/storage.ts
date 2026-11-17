@@ -127,6 +127,10 @@ export const pruneProgramImages = (programId: string, keepUrl?: string) =>
 export const uploadSiteAsset = (folder: string, file: File) =>
   uploadPublicImage(SITE_ASSETS_BUCKET, folder, file);
 
+/** Deletes superseded brand/site files in a folder, keeping only `keepUrl`. Best effort, never throws. */
+export const pruneSiteAssets = (folder: string, keepUrl?: string) =>
+  pruneFolder(SITE_ASSETS_BUCKET, folder, keepUrl);
+
 // ── Personal documents (private bucket, "profiles/<uid>/<ts>__<category>__<name>") ──
 
 const docFolder = (userId: string) => `profiles/${userId}`;

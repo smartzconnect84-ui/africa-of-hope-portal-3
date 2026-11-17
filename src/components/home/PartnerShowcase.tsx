@@ -5,39 +5,39 @@ import type { PartnerItem, WebsiteSettings } from '@/types';
 
 /**
  * Live partnership shelf — logo-first, no duplication.
- * CMS partners win when they include a logo; otherwise the five supplied
- * partner marks keep real logos on screen instead of text-only cards.
- * A single scrolling row shows each logo once per cycle.
+ * CMS partners win when they include a logo; otherwise partner names render
+ * with initial-letter marks until real partner logos are uploaded.
+ * Old supplied artwork URLs were retired with the November 2026 rebrand.
  */
 const SUPPLIED_PARTNERS: PartnerItem[] = [
   {
     id: 'partner-eagles-nest',
     name: "Eagles' Nest Academy — Day-Care, Elem. & Jr. High School, Boys' Town Community",
-    logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png',
+    logo: '',
     description: 'Motto: Every child is a potential leader. Est. 2013. Community schooling partner.',
   },
   {
     id: 'partner-dmg',
     name: 'DMG — Deesire Moore Grace Foundation',
-    logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/cd6mq1yuax/file_0000000009d471fdb2483f23fe455e95.png',
+    logo: '',
     description: 'Transforming & empowering lives through hope, change & inspiration.',
   },
   {
     id: 'partner-games-james',
     name: 'Games James',
-    logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/mo35wdme29/file_000000009acc81f4a3b11508f1c06aa7.png',
+    logo: '',
     description: 'Sport, energy and youth community engagement partner.',
   },
   {
     id: 'partner-love-lamp',
     name: 'Love and Lamp Children Mission — Matthew 25:35',
-    logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/jdo1hlptc9/file_0000000009d471fdb2483f23fe455e95.png',
+    logo: '',
     description: 'Children-focused mission partner serving with heart, faith and light.',
   },
   {
     id: 'partner-global-hope',
     name: 'Global Hope Foundation — Charity Organization',
-    logo: 'https://files.monstarx.app/54c3deukza/public/uploads/chat/8gnc2n2zi0/file_0000000009d471fdb2483f23fe455e95.png',
+    logo: '',
     description: 'Global charity partner caring for communities with hope in hand.',
   },
 ];

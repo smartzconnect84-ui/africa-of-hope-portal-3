@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isIos, isStandalone } from "@/lib/pwa";
 
-const BRAND_ICON = "https://files.monstarx.app/54c3deukza/public/uploads/chat/sczxaz2gix/file_0000000009d471fdb2483f23fe455e94.png";
+const BRAND_ICON = "https://files.monstarx.app/jk0454jkv1/public/uploads/chat/7ynjatu3oi/Aoh-favicon.png";
 export type ReminderKind = "lesson" | "assignment" | "fee" | "announcement";
 export interface ReminderItem { id: string; kind: ReminderKind; title: string; body: string; dueAt: string; url: string }
 export interface ReminderPrefs { enabled: boolean; lessons: boolean; assignments: boolean; fees: boolean; announcements: boolean; windowHours: number }
