@@ -682,7 +682,7 @@ export default function Navigation({
             role="dialog"
             aria-modal="true"
             aria-label="Portal navigation"
-            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(14rem,84vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
+            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(16.1rem,96vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
           >
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 p-3 shadow-md shadow-emerald-950/20">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">

@@ -2,7 +2,7 @@ export const CANONICAL_ORIGIN =
   "https://africaofhopelr.org";
 
 export const SITE_NAME =
-  "AFRICA OF HOPE School of Professional Studies";
+  "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
 
 export const SITE_DESCRIPTION =
   "AFRICA OF HOPE in Liberia offers practical certificate programmes with online admissions and verifiable certificates.";

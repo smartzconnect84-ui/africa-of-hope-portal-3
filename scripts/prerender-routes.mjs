@@ -23,21 +23,23 @@ if (!existsSync(baseFile)) {
 
 const ORIGIN = "https://africaofhopelr.org";
 
+const OFFICIAL_NAME = "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
+
 const ROUTES = [
-  { path: "/", key: "home", title: "AFRICA OF HOPE School of Professional Studies | Certificates that open doors", desc: "AFRICA OF HOPE in Liberia offers practical certificate programmes with online admissions and verifiable certificates.", h1: "AFRICA OF HOPE School of Professional Studies — practical certificate programmes in Liberia" },
-  { path: "/about", key: "about", title: "About AFRICA OF HOPE | Practical training in Liberia", desc: "Meet AFRICA OF HOPE at Boystown Junction, Lower Margibi — practical certificate training with mentors from enrolment to graduation.", h1: "About AFRICA OF HOPE" },
-  { path: "/programmes", key: "programmes", title: "Programmes and fees | AFRICA OF HOPE", desc: "Two-week (US$5), one-month (US$10), three-month (US$30) and six-month (US$45) certificate tracks — online, on-site and blended.", h1: "Certificate programmes and fees" },
-  { path: "/admissions", key: "admissions", title: "Admissions 2026/2027 | Apply online — AFRICA OF HOPE", desc: "Admissions for 2026/2027 are open. Apply online in minutes; strictly online students can enrol anytime.", h1: "Admissions 2026/2027 — apply online" },
-  { path: "/term-dates", key: "term-dates", title: "Term dates and cohorts | AFRICA OF HOPE", desc: "On-site cohort calendar plus anytime enrolment for strictly online students. Pick your 3 training days each week.", h1: "Term dates and cohorts" },
-  { path: "/verify", key: "verify", title: "Verify a certificate | AFRICA OF HOPE", desc: "Enter a certificate serial number to check it live against the institutional register — name, programme and status.", h1: "Verify a certificate" },
-  { path: "/donate", key: "donate", title: "Donate and support training | AFRICA OF HOPE", desc: "Sponsor tuition so more Liberians gain job-ready skills. Every gift keeps certificate training affordable.", h1: "Support practical training" },
-  { path: "/transparency", key: "transparency", title: "Transparency library | AFRICA OF HOPE", desc: "Policies, reports and verifiable records — openness you can check, not just promises.", h1: "Transparency library" },
-  { path: "/team", key: "team", title: "Our team | AFRICA OF HOPE", desc: "Mentors, instructors and staff guiding learners from enrolment to graduation in Liberia.", h1: "Meet the team" },
-  { path: "/impact", key: "impact", title: "Our impact — jobs and community outcomes | AFRICA OF HOPE", desc: "Graduates, jobs and community outcomes from practical certificate training in Liberia.", h1: "Our impact in Liberia" },
-  { path: "/blog", key: "blog", title: "AFRICA OF HOPE News and Insights", desc: "News, graduations, course stories and announcements from AFRICA OF HOPE School of Professional Studies.", h1: "News and insights" },
-  { path: "/policies", key: "policies", title: "Policies | AFRICA OF HOPE", desc: "Admissions, study, payment and safeguarding policies for learners and partners.", h1: "School policies" },
-  { path: "/campus-life", key: "campus", title: "Campus life | AFRICA OF HOPE", desc: "On-site learning, mentors and community at Boystown Junction, Lower Margibi.", h1: "Campus life" },
-  { path: "/cookies", key: "cookies", title: "Cookie policy | AFRICA OF HOPE", desc: "How AFRICA OF HOPE uses cookies and how to manage your choices.", h1: "Cookie policy" },
+  { path: "/", key: "home", title: `${OFFICIAL_NAME} | Certificates that open doors`, desc: "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES in Liberia offers practical certificate programmes with online admissions and verifiable certificates.", h1: "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES — practical certificate programmes in Liberia" },
+  { path: "/about", key: "about", title: `About ${OFFICIAL_NAME} | Practical Training in Liberia`, desc: `Learn about ${OFFICIAL_NAME}, a practical professional studies school serving learners at Boystown Junction, Lower Margibi, Liberia.`, h1: `About ${OFFICIAL_NAME}` },
+  { path: "/programmes", key: "programmes", title: `Certificate Programmes in Liberia | ${OFFICIAL_NAME}`, desc: "Two-week (US$5), one-month (US$10), three-month (US$30) and six-month (US$45) certificate tracks — online, on-site and blended.", h1: "Certificate programmes and fees" },
+  { path: "/admissions", key: "admissions", title: `Admissions 2026/2027 | ${OFFICIAL_NAME}`, desc: "Admissions for 2026/2027 are open. Apply online in minutes; strictly online students can enrol anytime.", h1: "Admissions 2026/2027 — apply online" },
+  { path: "/term-dates", key: "term-dates", title: `Term Dates and Training Calendar | ${OFFICIAL_NAME}`, desc: "On-site cohort calendar plus anytime enrolment for strictly online students. Pick your 3 training days each week.", h1: "Term dates and cohorts" },
+  { path: "/verify", key: "verify", title: `Verify an ${OFFICIAL_NAME} Certificate`, desc: "Enter a certificate serial number to check it live against the institutional register — name, programme and status.", h1: "Verify a certificate" },
+  { path: "/donate", key: "donate", title: `Support ${OFFICIAL_NAME} | Donate to Practical Education`, desc: "Sponsor tuition so more Liberians gain job-ready skills. Every gift keeps certificate training affordable.", h1: "Support practical training" },
+  { path: "/transparency", key: "transparency", title: `Transparency Reports | ${OFFICIAL_NAME}`, desc: "Policies, reports and verifiable records — openness you can check, not just promises.", h1: "Transparency library" },
+  { path: "/team", key: "team", title: `Our Team | ${OFFICIAL_NAME}`, desc: "Mentors, instructors and staff guiding learners from enrolment to graduation in Liberia.", h1: "Meet the team" },
+  { path: "/impact", key: "impact", title: `Our Impact | ${OFFICIAL_NAME}`, desc: "Graduates, jobs and community outcomes from practical certificate training in Liberia.", h1: "Our impact in Liberia" },
+  { path: "/blog", key: "blog", title: `News and Insights | ${OFFICIAL_NAME}`, desc: `News, graduations, course stories and announcements from ${OFFICIAL_NAME}.`, h1: "News and insights" },
+  { path: "/policies", key: "policies", title: `School Policies | ${OFFICIAL_NAME}`, desc: "Admissions, study, payment and safeguarding policies for learners and partners.", h1: "School policies" },
+  { path: "/campus-life", key: "campus", title: `Campus Life | ${OFFICIAL_NAME}`, desc: "On-site learning, mentors and community at Boystown Junction, Lower Margibi.", h1: "Campus life" },
+  { path: "/cookies", key: "cookies", title: `Cookie Policy | ${OFFICIAL_NAME}`, desc: `How ${OFFICIAL_NAME} uses cookies and how to manage your choices.`, h1: "Cookie policy" },
 ];
 
 let base = readFileSync(baseFile, "utf8");

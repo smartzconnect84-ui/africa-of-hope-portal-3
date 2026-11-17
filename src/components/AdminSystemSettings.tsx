@@ -5,7 +5,8 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
-import type { AppState, PortalThemeSettings, SystemSettings } from "../types";
+import type { AppState, PortalNavModule, PortalThemeSettings, SystemSettings } from "../types";
+import { PORTAL_VIEWS } from "../portalViews";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -85,6 +86,9 @@ export default function AdminSystemSettings() {
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<SystemSettings>(state.settings);
   const [themeDraft, setThemeDraft] = useState<PortalThemeSettings>(state.themeSettings);
+  const [moduleLabel, setModuleLabel] = useState("");
+  const [moduleViewKey, setModuleViewKey] = useState(PORTAL_VIEWS[0]?.key ?? "dashboard");
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | "clear" | "reset">(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -306,7 +310,7 @@ export default function AdminSystemSettings() {
                 <p className="text-[11px] text-slate-500">Night mode removed — portal stays in day mode for brand visibility.</p>
               </div>
               <div className="space-y-1.5">
-                <Label>Font family</Label>
+                <Label>Font style</Label>
                 <select
                   className={SELECT}
                   value={themeDraft.fontFamily}
@@ -376,6 +380,116 @@ export default function AdminSystemSettings() {
                   />
                   <Input value={themeDraft.accentColor} onChange={(e) => setTheme("accentColor", e.target.value)} />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sidebar font size</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.fontSize}
+                  onChange={(e) => setTheme("fontSize", e.target.value as PortalThemeSettings["fontSize"])}
+                >
+                  <option value="small">Compact</option>
+                  <option value="medium">Comfortable</option>
+                  <option value="large">Large</option>
+                </select>
+                <p className="text-[11px] text-slate-500">Sidebar and portal text scale.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sidebar alignment</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.sidebarAlign}
+                  onChange={(e) => setTheme("sidebarAlign", e.target.value as PortalThemeSettings["sidebarAlign"])}
+                >
+                  <option value="left">Left-aligned</option>
+                  <option value="center">Centered</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Sidebar theme</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.sidebarTheme}
+                  onChange={(e) => setTheme("sidebarTheme", e.target.value as PortalThemeSettings["sidebarTheme"])}
+                >
+                  <option value="emerald">Emerald (brand)</option>
+                  <option value="gold">Gold</option>
+                  <option value="midnight">Midnight</option>
+                  <option value="light">Light</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Full backend theme</Label>
+                <select
+                  className={SELECT}
+                  value={themeDraft.backendTheme}
+                  onChange={(e) => setTheme("backendTheme", e.target.value as PortalThemeSettings["backendTheme"])}
+                >
+                  <option value="emerald">Emerald (brand)</option>
+                  <option value="gold">Gold</option>
+                  <option value="midnight">Midnight</option>
+                  <option value="light">Light</option>
+                </select>
+                <p className="text-[11px] text-slate-500">Applies to the whole authenticated backend background.</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 p-4">
+              <h4 className="text-sm font-semibold text-slate-800">Sidebar modules</h4>
+              <p className="mt-1 text-xs text-slate-500">
+                Add, edit or delete shortcut modules shown at the bottom of the portal sidebar. Changes preview live and apply on Save appearance.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <div className="space-y-1.5">
+                  <Label>Module label</Label>
+                  <Input value={moduleLabel} onChange={(e) => setModuleLabel(e.target.value)} placeholder="e.g. Evening classes" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Opens</Label>
+                  <select className={SELECT} value={moduleViewKey} onChange={(e) => setModuleViewKey(e.target.value)}>
+                    {PORTAL_VIEWS.map((v) => (
+                      <option key={v.key} value={v.key}>{typeof v.label === "string" ? v.label : v.key}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    className="bg-emerald-700 hover:bg-emerald-800"
+                    onClick={() => {
+                      const label = moduleLabel.trim();
+                      if (!label) { toast.error("Give the module a label"); return; }
+                      if (editingModuleId) {
+                        setTheme("customModules", (themeDraft.customModules ?? []).map((m) => m.id === editingModuleId ? { ...m, label, viewKey: moduleViewKey } : m));
+                        setEditingModuleId(null);
+                      } else {
+                        const mod: PortalNavModule = { id: `custom-${Date.now()}`, label, viewKey: moduleViewKey };
+                        setTheme("customModules", [...(themeDraft.customModules ?? []), mod]);
+                      }
+                      setModuleLabel("");
+                    }}
+                  >
+                    {editingModuleId ? "Update module" : "Add module"}
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                {(themeDraft.customModules ?? []).length === 0 ? (
+                  <p className="text-xs text-slate-500">No custom modules yet.</p>
+                ) : (
+                  (themeDraft.customModules ?? []).map((m) => (
+                    <div key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                      <span>
+                        <span className="block text-sm font-medium text-slate-800">{m.label}</span>
+                        <span className="block text-[11px] text-slate-500">{(() => { const f = PORTAL_VIEWS.find((v) => v.key === m.viewKey); return f && typeof f.label === "string" ? f.label : m.viewKey; })()}</span>
+                      </span>
+                      <span className="flex gap-2">
+                        <Button variant="outline" size="sm" type="button" onClick={() => { setEditingModuleId(m.id); setModuleLabel(m.label); setModuleViewKey(m.viewKey); }}>Edit</Button>
+                        <Button variant="outline" size="sm" type="button" className="text-rose-700" onClick={() => setTheme("customModules", (themeDraft.customModules ?? []).filter((x) => x.id !== m.id))}>Delete</Button>
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

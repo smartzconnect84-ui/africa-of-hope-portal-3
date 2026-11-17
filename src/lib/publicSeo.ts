@@ -14,21 +14,21 @@ export type BlogPostSeo = {
 
 const PAGE_COPY: Record<PublicView["type"], { title: string; description: string }> = {
   home: { title: `${SITE_NAME} | Certificates that open doors`, description: SITE_DESCRIPTION },
-  about: { title: `About AFRICA OF HOPE | Professional Studies in Liberia`, description: "Learn about AFRICA OF HOPE, a practical professional studies school serving learners at Boystown Junction, Lower Margibi, Liberia." },
-  programmes: { title: `Certificate Programmes in Liberia | AFRICA OF HOPE`, description: "Explore practical certificate programmes in technology, trades, business and hospitality at AFRICA OF HOPE in Liberia." },
-  admissions: { title: `Admissions 2026/2027 | AFRICA OF HOPE Liberia`, description: "Apply online to AFRICA OF HOPE School of Professional Studies and start a practical certificate programme in Liberia." },
-  impact: { title: `Our Impact | AFRICA OF HOPE Liberia`, description: "See AFRICA OF HOPE impact: practical certificate outcomes, student success stories, community stats and partners in Liberia." },
-  "term-dates": { title: `Term Dates and Training Calendar | AFRICA OF HOPE`, description: "View AFRICA OF HOPE training terms, cohort dates and study calendar information for learners in Liberia." },
-  verify: { title: `Verify an AFRICA OF HOPE Certificate`, description: "Verify an AFRICA OF HOPE certificate by serial number against the school's live institutional register." },
-  donate: { title: `Support AFRICA OF HOPE | Donate to Practical Education`, description: "Support practical education, skills training and learner opportunities at AFRICA OF HOPE in Liberia." },
-  transparency: { title: `Transparency Reports | AFRICA OF HOPE`, description: "Read public transparency reports and accountability information from AFRICA OF HOPE School of Professional Studies." },
-  team: { title: `Our Team | AFRICA OF HOPE Liberia`, description: "Meet the mentors and team supporting practical certificate education at AFRICA OF HOPE in Liberia." },
-  blog: { title: `News and Insights | AFRICA OF HOPE`, description: "Read news, learner guidance and practical education insights from AFRICA OF HOPE in Liberia." },
-  policies: { title: `School Policies | AFRICA OF HOPE`, description: "Review public school policies for learners, admissions, certificates and responsible study at AFRICA OF HOPE." },
-  campus: { title: `Campus Life | AFRICA OF HOPE Liberia`, description: "Discover campus life, learning spaces and student support at AFRICA OF HOPE in Lower Margibi, Liberia." },
-  cookies: { title: `Cookie Policy | AFRICA OF HOPE`, description: "Read the cookie policy for the AFRICA OF HOPE website and learning portal." },
-  newsletter: { title: `Newsletter | AFRICA OF HOPE`, description: "Manage AFRICA OF HOPE newsletter preferences and subscriptions." },
-  blogPost: { title: `AFRICA OF HOPE News and Insights`, description: "Read the latest practical education news and guidance from AFRICA OF HOPE in Liberia." },
+  about: { title: `About ${SITE_NAME} | Practical Training in Liberia`, description: "Learn about AFRICA OF HOPE School of Professional Studies, a practical professional studies school serving learners at Boystown Junction, Lower Margibi, Liberia." },
+  programmes: { title: `Certificate Programmes in Liberia | ${SITE_NAME}`, description: "Explore practical certificate programmes in technology, trades, business and hospitality at AFRICA OF HOPE School of Professional Studies in Liberia." },
+  admissions: { title: `Admissions 2026/2027 | ${SITE_NAME}`, description: "Apply online to AFRICA OF HOPE School of Professional Studies and start a practical certificate programme in Liberia." },
+  impact: { title: `Our Impact | ${SITE_NAME}`, description: "See AFRICA OF HOPE School of Professional Studies impact: practical certificate outcomes, student success stories, community stats and partners in Liberia." },
+  "term-dates": { title: `Term Dates and Training Calendar | ${SITE_NAME}`, description: "View AFRICA OF HOPE School of Professional Studies training terms, cohort dates and study calendar information for learners in Liberia." },
+  verify: { title: `Verify an AFRICA OF HOPE School of Professional Studies Certificate`, description: "Verify an AFRICA OF HOPE School of Professional Studies certificate by serial number against the school's live institutional register." },
+  donate: { title: `Support ${SITE_NAME} | Donate to Practical Education`, description: "Support practical education, skills training and learner opportunities at AFRICA OF HOPE School of Professional Studies in Liberia." },
+  transparency: { title: `Transparency Reports | ${SITE_NAME}`, description: "Read public transparency reports and accountability information from AFRICA OF HOPE School of Professional Studies." },
+  team: { title: `Our Team | ${SITE_NAME}`, description: "Meet the mentors and team supporting practical certificate education at AFRICA OF HOPE School of Professional Studies in Liberia." },
+  blog: { title: `News and Insights | ${SITE_NAME}`, description: "Read news, learner guidance and practical education insights from AFRICA OF HOPE School of Professional Studies in Liberia." },
+  policies: { title: `School Policies | ${SITE_NAME}`, description: "Review public school policies for learners, admissions, certificates and responsible study at AFRICA OF HOPE School of Professional Studies." },
+  campus: { title: `Campus Life | ${SITE_NAME}`, description: "Discover campus life, learning spaces and student support at AFRICA OF HOPE School of Professional Studies in Lower Margibi, Liberia." },
+  cookies: { title: `Cookie Policy | ${SITE_NAME}`, description: "Read the cookie policy for the AFRICA OF HOPE School of Professional Studies website and learning portal." },
+  newsletter: { title: `Newsletter | ${SITE_NAME}`, description: "Manage AFRICA OF HOPE School of Professional Studies newsletter preferences and subscriptions." },
+  blogPost: { title: `News and Insights | ${SITE_NAME}`, description: "Read the latest practical education news and guidance from AFRICA OF HOPE School of Professional Studies in Liberia." },
 };
 
 export function pageCopyForView(view: PublicView) {
@@ -101,7 +101,7 @@ export function applyPublicSeo({ view, displayName }: SeoInput) {
 /** Per-article head + BlogPosting JSON-LD when a blog post loads. */
 export function applyBlogPostSeo(post: BlogPostSeo) {
   const clean = (post.excerpt || "").trim().slice(0, 160) || PAGE_COPY.blogPost.description;
-  const title = `${post.title} | AFRICA OF HOPE`;
+  const title = `${post.title} | ${SITE_NAME}`;
   const canonical = `${CANONICAL_ORIGIN}/blog/${encodeURIComponent(post.slug)}`;
   const image = post.coverImageUrl || OG_IMAGE;
   document.title = title;

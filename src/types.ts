@@ -444,6 +444,12 @@ export interface AppState {
   permissionCatalogue: PermissionDef[];
 }
 
+export interface PortalNavModule {
+  id: string;
+  label: string;
+  viewKey: string;
+}
+
 export interface PortalThemeSettings {
   mode: "light" | "dark" | "system";
   primaryColor: string;
@@ -452,6 +458,13 @@ export interface PortalThemeSettings {
   iconStyle: "outline" | "filled";
   contentAlignment: "left" | "center";
   borderRadius: "sharp" | "rounded" | "pill";
+  /** Sidebar + full-backend layout controls (Admin > System Settings > Appearance). */
+  fontSize: "small" | "medium" | "large";
+  sidebarAlign: "left" | "center";
+  sidebarTheme: "emerald" | "gold" | "midnight" | "light";
+  backendTheme: "emerald" | "gold" | "midnight" | "light";
+  /** Admin-defined shortcut modules shown at the bottom of the portal sidebar. */
+  customModules: PortalNavModule[];
 }
 
 export interface SystemSettings {

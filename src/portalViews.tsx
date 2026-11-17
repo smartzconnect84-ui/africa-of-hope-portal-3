@@ -553,15 +553,15 @@ export function portalViewLabel(view: PortalView, ctx: PortalViewContext): strin
  * Keys must cover every PORTAL_VIEWS key; unknown keys fall into "More".
  */
 export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] = [
-  { id: "overview", label: "Overview", keys: ["dashboard"] },
+  { id: "overview", label: "Overview", keys: ["dashboard", "insights"] },
   {
     id: "administration",
     label: "Administration",
-    keys: ["people", "admissions-inbox", "cohorts", "programs", "attendance", "insights", "entrance-control"],
+    keys: ["people", "admissions-inbox", "cohorts", "programs", "attendance", "entrance-control"],
   },
   {
     id: "learning",
-    label: "Learning & Teaching",
+    label: "Academics",
     keys: [
       "course-player",
       "academic-planning",
@@ -586,7 +586,7 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
   },
   {
     id: "system",
-    label: "System & Files",
+    label: "System & Resources",
     keys: ["my-files", "operations", "website", "email-outbox", "settings", "profile"],
   },
 ];

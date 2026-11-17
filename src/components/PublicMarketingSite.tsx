@@ -203,9 +203,9 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
   }, [saved, w]);
   const displayName = useMemo(() => {
     const full = (w.academyName || settings.academyName || "").trim();
-    // Short institutional name shown on tablet/desktop header + footer.
-    if (/africa\s+of\s+hope/i.test(full)) return "AFRICA OF HOPE";
-    return full || "AFRICA OF HOPE";
+    // Official institutional name shown on header + footer (SEO e13).
+    if (/africa\s+of\s+hope/i.test(full)) return full;
+    return full || "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
   }, [w.academyName, settings.academyName]);
   // Day mode only: night mode removed per branding — public site always renders light.
   const presentation = w.presentation || DEFAULT_PRESENTATION;

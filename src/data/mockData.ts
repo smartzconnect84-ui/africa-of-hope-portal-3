@@ -20,7 +20,7 @@ const GRADUATE_IMG =
  */
 
 export const defaultSettings: SystemSettings = {
-  academyName: "AFRICA OF HOPE",
+  academyName: "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES",
   motto: "Certificates that open doors. Skills that build communities.",
   contactEmail: "",
   contactPhone: "For Inquiries: +231776679963 or afrohope033@gmail.com",
@@ -48,6 +48,11 @@ export const defaultThemeSettings: PortalThemeSettings = {
   iconStyle: "outline",
   contentAlignment: "left",
   borderRadius: "rounded",
+  fontSize: "medium",
+  sidebarAlign: "left",
+  sidebarTheme: "emerald",
+  backendTheme: "emerald",
+  customModules: [],
 };
 
 export const defaultWebsiteSettings: WebsiteSettings = {
@@ -73,7 +78,7 @@ export const defaultWebsiteSettings: WebsiteSettings = {
   faviconUrl: "/favicon.png",
   pageImages: {},
   pages: DEFAULT_PUBLIC_PAGES,
-  academyName: "AFRICA OF HOPE",
+  academyName: "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES",
   tagline: "",
   announcementText:
     "Admissions for the 2026/2027 intake are now open. Apply online in minutes.",
