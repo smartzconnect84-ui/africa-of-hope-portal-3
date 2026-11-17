@@ -360,7 +360,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "report-cards",
     label: (ctx) => (ctx.role === "Student" ? "My Report Card" : "Report Cards"),
     icon: Award,
-    visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own", "reports.manage") || ctx.role === "Student",
+    visible: (ctx) => ctx.canAny("assignments.manage", "assignments.own", "reports.manage", "grades.manage") || ctx.role === "Student",
     render: () => <TermReportCards />,
   },
   {
@@ -430,21 +430,21 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "training-library",
     label: "Training Library",
     icon: LibraryBig,
-    visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll"),
+    visible: (ctx) => ctx.canAny("materials.manage", "materials.approve", "lessons.manage", "courses.enroll", "library.manage"),
     render: () => <RecommendedTraining />,
   },
   {
     key: "opportunities",
     label: "Vacancies & Businesses",
     icon: Briefcase,
-    visible: (ctx) => ctx.canAny("cms.manage", "transparency.manage"),
+    visible: (ctx) => ctx.canAny("cms.manage", "transparency.manage", "donations.manage"),
     render: () => <AdminOpportunities />,
   },
   {
     key: "website",
     label: "Website CMS",
     icon: Globe,
-    visible: (ctx) => ctx.canAny("cms.manage", "blog.manage", "transparency.manage", "policies.manage"),
+    visible: (ctx) => ctx.canAny("cms.manage", "blog.manage", "transparency.manage", "policies.manage", "impact.manage", "campus.manage", "donations.manage"),
     render: () => <AdminWebsiteSettings />,
   },
   {

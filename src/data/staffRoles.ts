@@ -1,15 +1,7 @@
 import type { Role } from "../types";
 
 export interface StaffRoleGuide {
-  role: Extract<
-    Role,
-    | "Public Relations Officer"
-    | "Data Entry Officer"
-    | "Executive Assistant"
-    | "Research Officer"
-    | "Customer Care Officer"
-    | "Director of Education"
-  >;
+  role: Role;
   mission: string;
   modules: string[];
   accountsNote: string;
@@ -108,7 +100,40 @@ export const NEW_BACK_OFFICE_ROLES: StaffRoleGuide[] = [
 export const NEW_ROLE_NAMES = NEW_BACK_OFFICE_ROLES.map((r) => r.role);
 
 /** Alias used by Roles & Permissions screen. Same list, shared with the team. */
-export const STAFF_ROLE_GUIDE = NEW_BACK_OFFICE_ROLES.map((r) => ({
+const CORE_ROLE_GUIDE: StaffRoleGuide[] = [
+  {
+    role: "School Admin",
+    mission: "Day-to-day academic and operational administration: people, admissions, cohorts, grade evaluation, finance review, certificates and website CMS.",
+    modules: ["Dashboard", "Staff & Students", "Admissions & support inbox", "Cohort Coordinator", "Grade Evaluation", "Finance Ledger", "Certificates", "Website CMS", "System Settings"],
+    accountsNote: "Create via Staff & Students → Add staff. Has every operational permission except full user admin.",
+  },
+  {
+    role: "Teacher",
+    mission: "Teaches cohorts: attendance, assignments, quizzes, grade evaluation, report cards and training materials.",
+    modules: ["Dashboard", "Attendance Sheet", "Assignments inbox", "Quizzes", "Grade Evaluation", "Report cards", "Training Library", "Discussions"],
+    accountsNote: "Create via Staff & Students → Add staff, then assign as cohort teacher.",
+  },
+  {
+    role: "Registrar",
+    mission: "Owns admissions, programmes, cohorts, certificates and verification; reviews grades and results.",
+    modules: ["Staff & Students", "Admissions & support inbox", "Program Builder", "Cohort Coordinator", "Certificates", "Verification Hub", "Grade Evaluation (view)"],
+    accountsNote: "Create via Staff & Students → Add staff. Approve applicants before assigning cohorts.",
+  },
+  {
+    role: "Admission Officer",
+    mission: "Owns the admissions pipeline: new applications, applicant follow-up, intake status and enrolment readiness.",
+    modules: ["Dashboard", "Staff & Students (applicants)", "Admissions & support inbox", "Bulletin Board"],
+    accountsNote: "Create via Staff & Students → Add staff. Focus on Pending Approval applicants.",
+  },
+  {
+    role: "Finance Officer",
+    mission: "Fee collection and the finance ledger: records payments, confirms paystack receipts and reviews balances.",
+    modules: ["Dashboard", "Finance Ledger", "Vacancies & Businesses (donations)", "Certificates (view)"],
+    accountsNote: "Create via Staff & Students → Add staff. Cannot change staff roles or system settings.",
+  },
+];
+
+export const STAFF_ROLE_GUIDE = [...CORE_ROLE_GUIDE, ...NEW_BACK_OFFICE_ROLES].map((r) => ({
   role: r.role,
   duty: r.mission,
   modules: r.modules,

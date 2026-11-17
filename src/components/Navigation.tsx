@@ -415,8 +415,9 @@ export default function Navigation({
         onClick={() => go(v.key)}
         data-component-id={`nav-${v.key}`}
         aria-current={active ? "page" : undefined}
+        title={t(label)}
         className={cn(
-          "group flex min-h-[44px] items-center gap-1.5 rounded-xl px-1.5 py-1.5 text-sm font-medium leading-snug transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          "group flex min-h-[40px] w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
           active
             ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white shadow-md shadow-emerald-900/25 ring-1 ring-emerald-900/20"
             : "text-slate-700 hover:translate-x-[1px] hover:bg-gradient-to-r hover:from-emerald-50 hover:to-amber-50/70 hover:text-emerald-950 hover:shadow-sm dark:text-slate-100 dark:hover:from-white/10 dark:hover:to-white/5 dark:hover:text-white",
@@ -424,16 +425,16 @@ export default function Navigation({
       >
         <span
           className={cn(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-all",
+            "grid h-7 w-7 shrink-0 place-items-center rounded-md transition-all",
             active
               ? "bg-white/15 text-amber-300 ring-1 ring-white/25"
               : "bg-gradient-to-br from-emerald-600/10 to-amber-500/15 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white",
           )}
         >
-          <Icon className="h-[18px] w-[18px] shrink-0" />
+          <Icon className="h-4 w-4 shrink-0" />
         </span>
         <span className="min-w-0 flex-1 truncate">{t(label)}</span>
-        {active && <span className="h-6 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
+        {active && <span className="h-5 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
       </button>
     );
   };
@@ -451,22 +452,22 @@ export default function Navigation({
       {groupedNav.map((group) => {
         const isOpen = openGroups[group.id] !== false;
         return (
-          <div key={group.id} className="flex flex-col gap-0.5 rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10">
+          <div key={group.id} className="flex flex-col gap-1 rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10">
             <button
               type="button"
               onClick={() => toggleGroup(group.id)}
               aria-expanded={isOpen}
               aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700/[0.07] via-teal-600/[0.05] to-amber-500/[0.08] px-1.5 py-1.5 text-left text-[13px] font-bold uppercase tracking-wider text-emerald-950 transition hover:from-emerald-700/[0.12] hover:to-amber-500/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
+              className="flex min-h-[40px] items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700/[0.07] via-teal-600/[0.05] to-amber-500/[0.08] px-2 py-1.5 text-left text-[13px] font-bold uppercase tracking-wider text-emerald-950 transition hover:from-emerald-700/[0.12] hover:to-amber-500/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
             >
-              <span className="flex-1">{group.label}</span>
-              <span className="rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-white shadow-sm">
+              <span className="flex-1 truncate">{group.label}</span>
+              <span className="rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 px-2 py-0.5 text-[12px] font-semibold normal-case tracking-normal text-white shadow-sm">
                 {group.items.length}
               </span>
-              <ChevronDown className={cn("h-5 w-5 shrink-0 text-emerald-800 transition-transform dark:text-emerald-100", isOpen ? "rotate-180" : "rotate-0")} />
+              <ChevronDown className={cn("h-4 w-4 shrink-0 text-emerald-800 transition-transform dark:text-emerald-100", isOpen ? "rotate-180" : "rotate-0")} />
             </button>
             {isOpen && (
-              <div id={`portal-nav-group-${group.id}`} className="ml-1.5 flex flex-col gap-[3px] border-l-2 border-emerald-600/20 py-1 pl-1.5">
+              <div id={`portal-nav-group-${group.id}`} className="ml-2 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
                 {group.items.map((key) => renderNavButton(key))}
               </div>
             )}
