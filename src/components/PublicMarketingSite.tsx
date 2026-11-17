@@ -495,11 +495,11 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               role="dialog"
               aria-modal="true"
               aria-label="Site menu"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ duration: 0.28, ease: "easeOut" }}
-              className="aoh-drawer absolute right-0 top-0 flex w-[min(20rem,88vw)] flex-col gap-2 border-l-[3px] border-[#D4AF37] bg-black p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
+              initial={{ x: "100%", opacity: 0.6 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "100%", opacity: 0 }}
+              transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+              className="aoh-drawer absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 top-[max(0.75rem,env(safe-area-inset-top))] flex w-[min(20rem,88vw)] flex-col gap-2 overflow-hidden rounded-2xl border border-white/10 border-l-[3px] border-l-[#D4AF37] bg-black p-4 text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -526,7 +526,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                 ))}
               </nav>
               <div className="mt-1 border-t border-white/10 pt-2">
-                <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
+                <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-11 min-h-[2.75rem] w-full items-center justify-center rounded-xl bg-amber-400 text-[1.05rem] font-semibold leading-6 text-emerald-950 transition hover:bg-amber-300">
                   {t("School Portal")}
                 </button>
               </div>
