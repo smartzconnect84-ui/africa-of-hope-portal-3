@@ -585,6 +585,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const full = {
             id,
             code: programCode,
+            name: program.title,
             title: program.title,
             category: program.category,
             duration_weeks: program.durationWeeks,
@@ -592,7 +593,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             certification: program.certification,
             description: program.description,
             entry_requirements: program.entryRequirements,
-            delivery_modes: program.deliveryModes?.length ? program.deliveryModes : null,
+            delivery_modes: program.deliveryModes?.length ? program.deliveryModes : [],
             study_plan: program.studyPlan || null,
             image_url: program.imageUrl || null,
             published: program.published ?? true,
@@ -618,9 +619,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           if (res.error) {
             if (/null value.*code|violates not-null.*code|code.*not-null/i.test(res.error.message)) {
-              return "Programme code could not be generated. Please give the programme a title and try again.";
+              // Live trigger backstop (20261118000000) auto-fills code server-side,
+              // but a stale schema cache can still reject the first write: retry once
+              // with a freshly generated unique code plus the legacy name column.
+              const retryCode = programCodeFor(`${program.title} ${id.slice(0, 8)}`, id);
+              const retry = await supabase.from("programs").insert({ ...full, code: retryCode, name: program.title });
+              if (!retry.error) res = retry;
+              else return `Programme code was rejected by the database (${retry.error.message}). Apply the latest migration, then try again.`;
+            } else {
+              return migrationHint(res.error.message, "Programme catalogue");
             }
-            return migrationHint(res.error.message, "Programme catalogue");
           }
           if (modules.length) {
             const { error: modError } = await supabase.from("program_modules").insert(
@@ -662,6 +670,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const row: Record<string, unknown> = {};
           if (rest.title !== undefined) {
             row.title = rest.title;
+            row.name = rest.title;
             // Keep the required programs.code in sync when a title is renamed.
             row.code = programCodeFor(String(rest.title), id);
           }
@@ -671,7 +680,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (rest.certification !== undefined) row.certification = rest.certification;
           if (rest.description !== undefined) row.description = rest.description;
           if (rest.entryRequirements !== undefined) row.entry_requirements = rest.entryRequirements;
-          if (rest.deliveryModes !== undefined) row.delivery_modes = rest.deliveryModes?.length ? rest.deliveryModes : null;
+          if (rest.deliveryModes !== undefined) row.delivery_modes = rest.deliveryModes?.length ? rest.deliveryModes : [];
           if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
           if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
           if (rest.published !== undefined) row.published = rest.published;

@@ -84,6 +84,7 @@ export default function AdminSystemSettings() {
   } = useApp();
 
   const [saving, setSaving] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
   const [draft, setDraft] = useState<SystemSettings>(state.settings);
   const [themeDraft, setThemeDraft] = useState<PortalThemeSettings>(state.themeSettings);
   const [moduleLabel, setModuleLabel] = useState("");
@@ -122,29 +123,69 @@ export default function AdminSystemSettings() {
     setThemeDraft((d) => ({ ...d, [key]: value }));
 
   const saveTheme = async () => {
-    const error = await publishThemeSettings(themeDraft);
-    if (error) toast.error(error);
-    else toast.success("Appearance saved");
+    if (themeSaving) return;
+    setThemeSaving(true);
+    try {
+      const error = await publishThemeSettings(themeDraft);
+      if (error) toast.error(error);
+      else toast.success("Appearance saved — live across the portal");
+    } finally {
+      setThemeSaving(false);
+    }
   };
 
   const radiusPx = (radius: PortalThemeSettings["borderRadius"]) =>
     radius === "sharp" ? "0.25rem" : radius === "pill" ? "9999px" : "0.75rem";
 
+  const systemDirty = JSON.stringify(draft) !== JSON.stringify(state.settings);
+  const themeDirty = JSON.stringify(themeDraft) !== JSON.stringify(state.themeSettings);
+  const anyDirty = systemDirty || themeDirty;
+
   const save = async () => {
-    if (saving) return;
+    if (saving || themeSaving) return;
     if (!draft.academyName.trim()) {
       toast.error("Academy name cannot be empty");
       return;
     }
-    if (draft.passMark < 0 || draft.passMark > 100) {
+    const email = draft.contactEmail.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Contact email does not look valid");
+      return;
+    }
+    if (!Number.isFinite(draft.passMark) || draft.passMark < 0 || draft.passMark > 100) {
       toast.error("Pass mark must be between 0 and 100");
+      return;
+    }
+    if (!Number.isFinite(draft.minAttendance) || draft.minAttendance < 0 || draft.minAttendance > 100) {
+      toast.error("Minimum attendance must be between 0 and 100");
       return;
     }
     setSaving(true);
     try {
-      const error = await updateSystemSettings(draft);
-      if (error) toast.error(error);
-      else toast.success("System settings saved");
+      // Save system settings when they changed.
+      if (systemDirty) {
+        const error = await updateSystemSettings({
+          ...draft,
+          academyName: draft.academyName.trim(),
+          contactEmail: email,
+          passMark: Math.min(100, Math.max(0, Math.round(draft.passMark))),
+          minAttendance: Math.min(100, Math.max(0, Math.round(draft.minAttendance))),
+        });
+        if (error) {
+          toast.error(error);
+          return;
+        }
+      }
+      // Save appearance together so one click applies everything.
+      if (themeDirty) {
+        const themeError = await publishThemeSettings(themeDraft);
+        if (themeError) {
+          toast.error(themeError);
+          return;
+        }
+      }
+      if (!anyDirty) toast.success("Everything is already up to date");
+      else toast.success("System settings saved — portal and public site updated");
     } catch {
       toast.error("Settings could not be saved. Check your connection and try again.");
     } finally {
