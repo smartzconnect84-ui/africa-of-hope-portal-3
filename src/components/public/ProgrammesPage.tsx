@@ -92,14 +92,6 @@ export default function ProgrammesPage({
           >
             <Sparkles className="h-3.5 w-3.5" /> Admission 2026/2027 is open
           </motion.p>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-            className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-amber-400 sm:text-4xl lg:text-5xl"
-          >
-            Choose your course, duration and how you study.
-          </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
