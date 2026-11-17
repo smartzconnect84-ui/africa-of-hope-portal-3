@@ -530,9 +530,6 @@ export function VerificationPortal({ initialSerial = "" }: { initialSerial?: str
             <Search className="h-5 w-5 text-emerald-800" />
           </span>
           <h3 className="mt-3 text-lg font-semibold text-slate-900">Enter a certificate serial</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Serials are printed at the base of every certificate — current credentials use AOH-CERT-YEAR-NNNNNNNNNN, older ones keep their original serial.
-          </p>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <Input
               value={query}
