@@ -8,6 +8,7 @@ const PAGE_COPY: Record<PublicView["type"], { title: string; description: string
   about: { title: `About AFRICA OF HOPE | Professional Studies in Liberia`, description: "Learn about AFRICA OF HOPE, a practical professional studies school serving learners at Boystown Junction, Lower Margibi, Liberia." },
   programmes: { title: `Certificate Programmes in Liberia | AFRICA OF HOPE`, description: "Explore practical certificate programmes in technology, trades, business and hospitality at AFRICA OF HOPE in Liberia." },
   admissions: { title: `Admissions 2026/2027 | AFRICA OF HOPE Liberia`, description: "Apply online to AFRICA OF HOPE School of Professional Studies and start a practical certificate programme in Liberia." },
+  impact: { title: `Our Impact | AFRICA OF HOPE Liberia`, description: "See AFRICA OF HOPE impact: practical certificate outcomes, student success stories, community stats and partners in Liberia." },
   "term-dates": { title: `Term Dates and Training Calendar | AFRICA OF HOPE`, description: "View AFRICA OF HOPE training terms, cohort dates and study calendar information for learners in Liberia." },
   verify: { title: `Verify an AFRICA OF HOPE Certificate`, description: "Verify an AFRICA OF HOPE certificate by serial number against the school's live institutional register." },
   donate: { title: `Support AFRICA OF HOPE | Donate to Practical Education`, description: "Support practical education, skills training and learner opportunities at AFRICA OF HOPE in Liberia." },

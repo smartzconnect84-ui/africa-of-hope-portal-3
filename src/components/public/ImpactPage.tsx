@@ -26,9 +26,6 @@ export default function ImpactPage({ onApply }: { onApply: (programId?: string) 
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
               <Sparkles className="h-4 w-4" aria-hidden="true" /> {page.eyebrow || 'Our impact'}
             </p>
-            <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-              {page.title || 'Learning that moves people forward'}
-            </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-emerald-50/85 sm:text-base">
               {page.subtitle || 'Practical certificate programmes, supportive mentors and clear proof — from application to verified certificate.'}
             </p>

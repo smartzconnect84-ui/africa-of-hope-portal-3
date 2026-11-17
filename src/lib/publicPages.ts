@@ -85,6 +85,22 @@ export const PUBLIC_PAGE_DEFS: PublicPageDef[] = [
     },
   },
   {
+    key: "impact",
+    label: "Impact",
+    href: "/impact",
+    hint: "Mission proof, student stories, stats and partners.",
+    imageFolder: "pages/impact",
+    canDisable: true,
+    defaults: {
+      enabled: true,
+      title: "Learning that moves people forward",
+      eyebrow: "Our impact",
+      subtitle: "Practical certificate programmes, supportive mentors and clear proof — from application to verified certificate.",
+      body: "Education is a foundation for opportunity and independence. At AFRICA OF HOPE, we focus on helping people build practical skills, develop their potential and take meaningful steps toward their future — fully online or onsite at Boystown Junction, Lower Margibi.",
+      image: "",
+    },
+  },
+  {
     key: "term-dates",
     label: "Term dates",
     href: "#term-dates",

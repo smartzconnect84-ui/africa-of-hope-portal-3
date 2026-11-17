@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from "framer-motion";
 import {
   LogIn, Menu, X, Mail, Phone,
@@ -29,9 +29,10 @@ import TeamPage, { TeamProfiles } from "./public/TeamPage";
 import CookieConsent from "./public/CookieConsent";
 import InstallPrompt from "./pwa/InstallPrompt";
 import BlogListPage from "./public/BlogListPage";
-import BlogPostPage from "./public/BlogPostPage";
-import VerifyPage from "./public/VerifyPage";
-import TransparencyLibrary from "./public/TransparencyLibrary";
+const BlogPostPage = lazy(() => import("./public/BlogPostPage"));
+const VerifyPage = lazy(() => import("./public/VerifyPage"));
+const TransparencyLibrary = lazy(() => import("./public/TransparencyLibrary"));
+const ImpactPage = lazy(() => import("./public/ImpactPage"));
 import { ScrollReveal, StaggerGroup } from "./public/motion";
 import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
@@ -69,6 +70,7 @@ function pageKeyForHref(href: string): string | null {
   if (h.startsWith("/blog")) return "blog";
   if (h.startsWith("/policies")) return "policies";
   if (h.startsWith("/transparency")) return "transparency";
+  if (h === "/impact" || h.startsWith("/impact/")) return "impact";
   if (h.startsWith("/donate")) return "donate";
   if (h === "/" || h.startsWith("/?section=support")) return "support";
   if (h.startsWith("/verify")) return "verify";
@@ -83,6 +85,7 @@ function viewPageKey(view: PublicView): string | null {
     case "term-dates": return "term-dates";
     case "policies": return "policies";
     case "transparency": return "transparency";
+    case "impact": return "impact";
     case "cookies": return "cookies";
     case "donate": return "donate";
     case "about": return "about";
@@ -108,6 +111,7 @@ function PageUnavailable({ label }: { label: string }) {
 const NAV_LINKS: [string, string][] = [
   ["/", "Home"],
   ["/about", "About"],
+  ["/impact", "Impact"],
   ["/team", "Team"],
   ["/programmes", "Programmes"],
   ["/term-dates", "Term dates"],
@@ -495,7 +499,7 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              className="aoh-drawer absolute right-0 top-0 flex w-[min(20rem,88vw)] flex-col border-l-[3px] border-[#D4AF37] bg-black p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
+              className="aoh-drawer absolute right-0 top-0 flex w-[min(20rem,88vw)] flex-col gap-2 border-l-[3px] border-[#D4AF37] bg-black p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-white shadow-2xl"
             >
               <div className="flex items-center justify-between">
                 <BrandLockup logoUrl={w.logos?.header || w.logoUrl} academyName={displayName} size="sm" tone="dark" showTagline={false} nameClassName="hidden sm:block" />
@@ -509,19 +513,19 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="-mr-1 mt-1.5 flex min-h-0 flex-1 flex-col gap-[3px] overflow-y-auto overscroll-contain pr-1">
+              <nav className="-mr-1 mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain py-2 pr-1">
                 {navLinks.map((l) => (
                   <a
                     key={l.id}
                     href={l.href}
                     onClick={(e) => { setMenu(false); if (HOME_RE.test(l.href.trim())) goHomeTop(e); }}
-                    className="flex min-h-10 items-center rounded-lg px-2.5 py-2 text-[15px] font-medium text-emerald-100 transition hover:bg-white/10"
+                    className="flex min-h-11 items-center rounded-xl px-3.5 py-2.5 text-[15px] font-medium leading-6 text-emerald-100 transition hover:bg-white/10"
                   >
                     {t(l.label)}
                   </a>
                 ))}
               </nav>
-              <div className="mt-1.5 border-t border-white/10 pt-2">
+              <div className="mt-2 border-t border-white/10 pt-3">
                 <button type="button" onClick={() => { setMenu(false); openLogin(); }} className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-emerald-950 transition hover:bg-amber-300">
                   {t("School Portal")}
                 </button>
@@ -540,15 +544,32 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
           {view.type === "admissions" && <AdmissionsPage onApply={openApply} />}
           {view.type === "term-dates" && <TermDatesPage onApply={openApply} />}
           {view.type === "policies" && <PoliciesPage />}
-          {view.type === "transparency" && <TransparencyLibrary />}
+          {view.type === "transparency" && (
+            <Suspense fallback={<section className="mx-auto max-w-6xl px-4 py-16 text-center text-sm text-slate-500">Loading…</section>}>
+              <TransparencyLibrary />
+            </Suspense>
+          )}
+          {view.type === "impact" && (
+            <Suspense fallback={<section className="mx-auto max-w-6xl px-4 py-16 text-center text-sm text-slate-500">Loading impact stories…</section>}>
+              <ImpactPage onApply={openApply} />
+            </Suspense>
+          )}
           {view.type === "cookies" && <CookiesPage />}
           {view.type === "about" && <AboutPage />}
           {view.type === "team" && <TeamPage />}
           {view.type === "newsletter" && <NewsletterAction key={`${view.action}:${view.params}`} action={view.action} params={view.params} />}
           {view.type === "donate" && <DonatePage onLogin={openLogin} />}
           {view.type === "blog" && <BlogListPage onApply={openApply} />}
-          {view.type === "blogPost" && <BlogPostPage slug={view.slug} onApply={openApply} />}
-          {view.type === "verify" && <VerifyPage serial={view.serial} />}
+          {view.type === "blogPost" && (
+            <Suspense fallback={<section className="mx-auto max-w-6xl px-4 py-16 text-center text-sm text-slate-500">Loading story…</section>}>
+              <BlogPostPage slug={view.slug} onApply={openApply} />
+            </Suspense>
+          )}
+          {view.type === "verify" && (
+            <Suspense fallback={<section className="mx-auto max-w-6xl px-4 py-16 text-center text-sm text-slate-500">Loading verification…</section>}>
+              <VerifyPage serial={view.serial} />
+            </Suspense>
+          )}
           {view.type === "campus" && <CampusLifePage />}
 
           {view.type === "home" && (

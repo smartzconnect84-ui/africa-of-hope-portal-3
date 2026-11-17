@@ -21,7 +21,6 @@ import {
   CalendarDays,
   GraduationCap,
   Gavel,
-  MessagesSquare,
   Newspaper,
   Smartphone,
   Mail,
@@ -74,7 +73,6 @@ import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
 import EngagementInbox from "./components/portal/EngagementInbox";
 import OperationsHub from "./components/OperationsHub";
 import CoursePlayer from "./components/academic/CoursePlayer";
-import CourseDiscussions from "./components/academic/CourseDiscussions";
 import StudentCalendar from "./components/academic/StudentCalendar";
 import StudyPlanner from "./components/academic/StudyPlanner";
 import AssignmentInbox from "./components/academic/AssignmentInbox";
@@ -261,13 +259,6 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: () => <CoursePlayer />,
   },
   {
-    key: "discussions",
-    label: "Class Discussions",
-    icon: MessagesSquare,
-    visible: () => true,
-    render: () => <CourseDiscussions />,
-  },
-  {
     key: "helpdesk",
     label: "Student helpdesk",
     icon: LifeBuoy,
@@ -292,7 +283,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "study-calendar",
     label: "Study Calendar",
     icon: CalendarDays,
-    visible: () => true,
+    visible: (ctx) => ctx.isSignedIn,
     render: () => <StudentCalendar />,
   },
   {
@@ -335,6 +326,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     label: "Progress Insights",
     icon: TrendingUp,
     visible: (ctx) =>
+      ctx.canAny("reports.manage", "grades.manage", "attendance.manage", "academic_plans.manage", "academic_plans.approve") ||
       ctx.role === "Teacher" ||
       ctx.role === "School Admin" ||
       ctx.role === "Super Admin" ||
@@ -472,7 +464,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "email-outbox",
     label: "Email delivery",
     icon: Mail,
-    visible: (ctx) => ctx.can("settings.manage"),
+    visible: (ctx) => ctx.canAny("settings.manage", "email.manage"),
     render: () => <EmailOutboxPanel />,
   },
   {
@@ -512,7 +504,6 @@ const NAV_RELEVANCE_ORDER = [
   "study-calendar",
   "assignments",
   "quizzes",
-  "discussions",
   "training-library",
   "entrance-control",
   "fees",
@@ -578,7 +569,6 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
       "study-calendar",
       "assignments",
       "quizzes",
-      "discussions",
       "training-library",
       "timetable",
       "report-cards",

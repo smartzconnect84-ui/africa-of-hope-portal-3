@@ -11,6 +11,7 @@ import { useVisiblePortalViews, getPortalView } from "./portalViews";
 import PublicMarketingSite from "./components/PublicMarketingSite";
 import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/AuthPortal";
 import OfflineBanner from "./components/pwa/OfflineBanner";
+import LivePushHost from "./components/LivePushHost";
 // Production perf: below-the-fold extras load lazily so first paint on
 // low-end Android pays only for the requested site (public or portal).
 const HopeAssistant = lazy(() => import("./components/assistant/HopeAssistant"));
@@ -204,6 +205,7 @@ function Shell() {
       ) : (
         <Portal onExitToPublic={() => setSite("public")} initialTab={authTab} />
       )}
+      <LivePushHost />
       <Suspense fallback={null}>
         <CurrencyConverter />
       </Suspense>

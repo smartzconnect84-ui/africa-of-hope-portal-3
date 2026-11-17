@@ -160,10 +160,13 @@ export function DirectMessageDialog({
     if (!draft.trim() || sending) return;
     setSending(true);
     setError(null);
-    const err = await send(draft);
+    const ok = await send(draft);
     setSending(false);
-    if (err) setError(err);
-    else setDraft("");
+    if (!ok) setError("Message could not be delivered. It is saved on this device and will retry automatically.");
+    else {
+      setError(null);
+      setDraft("");
+    }
   }
 
   return (
@@ -177,7 +180,7 @@ export function DirectMessageDialog({
                 <span className="truncate">Chat with {peer.name}</span>
               </DialogTitle>
               <DialogDescription>
-                1:1 conversation · {peerTyping ? "typing…" : "messages stay on this device until the chat table is deployed"}
+                1:1 conversation · messages deliver instantly on this device and live to everyone online
               </DialogDescription>
             </DialogHeader>
             <div className="min-h-48 max-h-[46vh] flex-1 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3" aria-live="polite">

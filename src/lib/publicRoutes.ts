@@ -13,6 +13,7 @@ export type PublicView =
   | { type: "programmes" }
   | { type: "term-dates" }
   | { type: "admissions" }
+  | { type: "impact" }
   | { type: "campus" }
   | { type: "policies" }
   | { type: "transparency" }
@@ -39,6 +40,7 @@ export function parsePublicPath(pathname: string, search = ""): PublicView {
   if (path === "/about" || path === "/about-us" || path === "/who-we-are") return { type: "about" };
   if (path === "/programmes" || path === "/programs") return { type: "programmes" };
   if (path === "/admissions" || path === "/apply" || path === "/apply-online") return { type: "admissions" };
+  if (path === "/impact" || path === "/our-impact") return { type: "impact" };
   if (path === "/term-dates") return { type: "term-dates" };
   if (path === "/policies") return { type: "policies" };
   if (path === "/transparency") return { type: "transparency" };
@@ -80,6 +82,8 @@ export function viewToPath(view: PublicView): string {
       return "/programmes";
     case "admissions":
       return "/admissions";
+    case "impact":
+      return "/impact";
     case "term-dates":
       return "/term-dates";
     case "policies":
@@ -128,6 +132,7 @@ export function legacyHashToPath(hash: string): string | null {
   if (/^#transparency\/?$/i.test(h)) return "/transparency";
   if (/^#\/?(team|our-team)\/?$/i.test(h)) return "/team";
   if (/^#(admissions|apply|apply-online)\/?$/i.test(h)) return "/admissions";
+  if (/^#(impact|our-impact)\/?$/i.test(h)) return "/impact";
   if (/^#(about|about-us|who-we-are)\/?$/i.test(h)) return "/about";
   if (/^#campus-life\/?$/i.test(h)) return "/campus-life";
   if (/^#blog\/?$/i.test(h)) return "/blog";

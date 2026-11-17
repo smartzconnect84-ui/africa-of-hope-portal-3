@@ -417,7 +417,7 @@ export default function Navigation({
         aria-current={active ? "page" : undefined}
         title={t(label)}
         className={cn(
-          "group flex min-h-[40px] w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+          "group flex min-h-[53px] w-full items-center gap-[10px] rounded-lg px-2 py-1.5 text-left text-[17px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
           active
             ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white shadow-md shadow-emerald-900/25 ring-1 ring-emerald-900/20"
             : "text-slate-700 hover:translate-x-[1px] hover:bg-gradient-to-r hover:from-emerald-50 hover:to-amber-50/70 hover:text-emerald-950 hover:shadow-sm dark:text-slate-100 dark:hover:from-white/10 dark:hover:to-white/5 dark:hover:text-white",
@@ -425,13 +425,13 @@ export default function Navigation({
       >
         <span
           className={cn(
-            "grid h-7 w-7 shrink-0 place-items-center rounded-md transition-all",
+            "grid h-9 w-9 shrink-0 place-items-center rounded-md transition-all",
             active
               ? "bg-white/15 text-amber-300 ring-1 ring-white/25"
               : "bg-gradient-to-br from-emerald-600/10 to-amber-500/15 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white",
           )}
         >
-          <Icon className="h-4 w-4 shrink-0" />
+          <Icon className="h-[21px] w-[21px] shrink-0" />
         </span>
         <span className="min-w-0 flex-1 truncate">{t(label)}</span>
         {active && <span className="h-5 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden="true" />}
@@ -458,13 +458,13 @@ export default function Navigation({
               onClick={() => toggleGroup(group.id)}
               aria-expanded={isOpen}
               aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[40px] items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700/[0.07] via-teal-600/[0.05] to-amber-500/[0.08] px-2 py-1.5 text-left text-[13px] font-bold uppercase tracking-wider text-emerald-950 transition hover:from-emerald-700/[0.12] hover:to-amber-500/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 dark:text-emerald-50 dark:hover:bg-white/10"
+              className="flex min-h-[46px] items-center gap-2 rounded-xl bg-black px-2 py-1.5 text-left text-[15px] font-bold uppercase tracking-wider text-amber-300 ring-1 ring-[#D4AF37]/40 transition hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60 dark:text-amber-300 dark:hover:bg-neutral-900"
             >
               <span className="flex-1 truncate">{group.label}</span>
-              <span className="rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 px-2 py-0.5 text-[12px] font-semibold normal-case tracking-normal text-white shadow-sm">
+              <span className="rounded-full bg-[#D4AF37] px-2 py-0.5 text-[13px] font-semibold normal-case tracking-normal text-black shadow-sm">
                 {group.items.length}
               </span>
-              <ChevronDown className={cn("h-4 w-4 shrink-0 text-emerald-800 transition-transform dark:text-emerald-100", isOpen ? "rotate-180" : "rotate-0")} />
+              <ChevronDown className={cn("h-[18px] w-[18px] shrink-0 text-amber-300 transition-transform", isOpen ? "rotate-180" : "rotate-0")} />
             </button>
             {isOpen && (
               <div id={`portal-nav-group-${group.id}`} className="ml-2 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
@@ -560,7 +560,7 @@ export default function Navigation({
           </div>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-3 md:ml-2">
-            <PortalInbox onOpenDiscussions={() => go("discussions")} />
+            <PortalInbox />
             <LanguageSwitcher tone="dark" className="flex" />
             {onExitToPublic && (
               <button
@@ -576,7 +576,7 @@ export default function Navigation({
                 <span className="relative grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10" role="img" aria-label={bellCount > 0 ? `Bulletin board, ${bellCount} new notices` : "Bulletin board"}>
                   <Bell className="h-5 w-5" />
                   {bellCount > 0 && (
-                    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-amber-400 px-1 text-[11px] font-bold text-emerald-950 ring-2 ring-white">
+                    <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-red-600 px-1 text-[11px] font-bold text-white ring-2 ring-white">
                       {bellCount > 9 ? "9+" : bellCount}
                     </span>
                   )}
@@ -682,7 +682,7 @@ export default function Navigation({
             role="dialog"
             aria-modal="true"
             aria-label="Portal navigation"
-            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(20rem,92vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
+            className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(17rem,78vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
           >
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 p-3 shadow-md shadow-emerald-950/20">
               <div className="flex min-w-0 flex-1 items-center overflow-hidden">
