@@ -71,3 +71,49 @@ export function syncDiscussions(userId: string, cohorts: string[]): Promise<Disc
   void task.finally(() => running.delete(userId)).catch(() => {});
   return task;
 }
+
+/** Edit a cached thread (own pending post or local copy); server update is best-effort in the UI. */
+export function patchCachedThread(userId: string, threadId: string, patch: { title: string; body: string }) {
+  const store = read(userId);
+  let changed = false;
+  store.threads = store.threads.map((t) => (t.id === threadId ? { ...t, ...patch } : t));
+  for (const op of store.pending) {
+    if ("thread" in op && op.thread.id === threadId) { op.thread = { ...op.thread, ...patch }; changed = true; }
+  }
+  if (store.threads.some((t) => t.id === threadId)) changed = true;
+  if (changed) write(userId, store);
+}
+
+/** Remove a cached thread and any of its pending ops on this device. */
+export function removeCachedThread(userId: string, threadId: string) {
+  const store = read(userId);
+  store.threads = store.threads.filter((t) => t.id !== threadId);
+  store.pending = store.pending.filter((p) =>
+    ("thread" in p ? p.thread.id !== threadId : (p as { threadId: string }).threadId !== threadId),
+  );
+  write(userId, store);
+}
+
+/** Edit a cached reply body on this device. */
+export function patchCachedReply(userId: string, threadId: string, replyId: string, body: string) {
+  const store = read(userId);
+  store.threads = store.threads.map((t) =>
+    t.id === threadId
+      ? { ...t, replies: t.replies.map((r) => (r.id === replyId ? { ...r, body } : r)) }
+      : t,
+  );
+  for (const op of store.pending) {
+    if ("reply" in op && op.reply.id === replyId) op.reply = { ...op.reply, body };
+  }
+  write(userId, store);
+}
+
+/** Remove a cached reply on this device. */
+export function removeCachedReply(userId: string, threadId: string, replyId: string) {
+  const store = read(userId);
+  store.threads = store.threads.map((t) =>
+    t.id === threadId ? { ...t, replies: t.replies.filter((r) => r.id !== replyId) } : t,
+  );
+  store.pending = store.pending.filter((p) => p.id !== replyId);
+  write(userId, store);
+}

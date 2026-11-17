@@ -7,6 +7,7 @@ import {
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
+import PortalInbox from "./portal/PortalInbox";
 import { useVisiblePortalViews, portalViewLabel } from "../portalViews";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
@@ -379,7 +380,7 @@ export default function Navigation({
   const sidebar = (
     <nav
       aria-label="Portal sections"
-      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-0.5 overflow-y-auto overscroll-contain px-2 pb-2 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
+      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-[0.1rem] overflow-y-auto overscroll-contain px-[0.4rem] pb-2 pt-1 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin]"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
       <p className="px-2 pb-1 pt-1.5 text-sm font-semibold uppercase tracking-widest text-emerald-900/70 dark:text-emerald-100/80">
@@ -396,13 +397,13 @@ export default function Navigation({
             onClick={() => go(v.key)}
             data-component-id={`nav-${v.key}`}
             className={cn(
-              "flex min-h-[48px] items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
+              "flex min-h-[38px] items-center gap-[0.6rem] rounded-lg px-2.5 py-2 text-[14px] font-medium leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
               active
                 ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/20"
                 : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
             )}
           >
-            <Icon className={cn("h-[22px] w-[22px] shrink-0", active ? "text-amber-400" : "text-emerald-700/70")} />
+            <Icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-amber-400" : "text-emerald-700/70")} />
             {t(label)}
           </button>
         );
@@ -412,7 +413,7 @@ export default function Navigation({
           <button
             type="button"
             onClick={onExitToPublic}
-            className="flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug text-emerald-800 transition hover:bg-emerald-50"
+            className="flex min-h-[38px] w-full items-center gap-[0.6rem] rounded-lg px-2.5 py-2 text-[14px] font-medium leading-snug text-emerald-800 transition hover:bg-emerald-50"
           >
             <Globe className="h-[18px] w-[18px] shrink-0" />
             View public website
@@ -421,7 +422,7 @@ export default function Navigation({
         <button
           type="button"
           onClick={() => resetDemoData()}
-          className="flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[18px] font-medium leading-snug text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+          className="flex min-h-[38px] w-full items-center gap-[0.6rem] rounded-lg px-2.5 py-2 text-[14px] font-medium leading-snug text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
         >
           <RefreshCw className="h-[18px] w-[18px] shrink-0" />
           Reload live data
@@ -489,6 +490,7 @@ export default function Navigation({
           </div>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-3 md:ml-2">
+            <PortalInbox onOpenDiscussions={() => go("discussions")} />
             <LanguageSwitcher tone="dark" className="flex" />
             {onExitToPublic && (
               <button

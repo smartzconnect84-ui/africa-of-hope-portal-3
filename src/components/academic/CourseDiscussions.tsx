@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { BadgeCheck, Loader2, MessageCircle, Plus, Reply, Send } from "lucide-react";
+import { BadgeCheck, Loader2, MessageCircle, Pencil, Plus, Reply, Send, Trash2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type DiscussionReply as ReplyRow, type DiscussionThread as Thread } from "@/lib/academics";
-import { cachedDiscussions, pendingDiscussionCount, queueReply, queueThread, syncDiscussions } from "@/lib/discussions";
+import { supabase } from "@/integrations/supabase/client";
+import { cachedDiscussions, patchCachedReply, patchCachedThread, pendingDiscussionCount, queueReply, queueThread, removeCachedReply, removeCachedThread, syncDiscussions } from "@/lib/discussions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,10 @@ export default function CourseDiscussions() {
   const [body, setBody] = useState("");
   const [unitId, setUnitId] = useState("general");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [editingThreadId, setEditingThreadId] = useState("");
+  const [editingThreadTitle, setEditingThreadTitle] = useState("");
+  const [editingThreadBody, setEditingThreadBody] = useState("");
+  const [editingReply, setEditingReply] = useState<{ threadId: string; replyId: string; body: string } | null>(null);
 
   // Never read another signed-in user's cache, or the old shared-device v1 store.
   const allowedCohortIds = useMemo(() => {
@@ -135,6 +140,76 @@ export default function CourseDiscussions() {
     finally { savingRef.current = false; setSaving(false); }
   };
 
+  const startThreadEdit = (t: Thread) => {
+    setEditingThreadId(t.id); setEditingThreadTitle(t.title); setEditingThreadBody(t.body);
+    setOpenThread(t.id);
+  };
+
+  const saveThreadEdit = async (threadId: string) => {
+    if (!currentUser || savingRef.current || !editingThreadTitle.trim() || !editingThreadBody.trim()) return;
+    const patch = { title: editingThreadTitle.trim(), body: editingThreadBody.trim() };
+    savingRef.current = true; setSaving(true);
+    try {
+      const { error } = await supabase.from("discussion_threads").update({ title: patch.title, body: patch.body }).eq("id", threadId);
+      if (error) throw error;
+    } catch { /* offline or no table yet — keep the edit on this device */ }
+    patchCachedThread(currentUser.id, threadId, patch);
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, ...patch } : t)));
+    setEditingThreadId("");
+    toast.success("Question updated.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
+  };
+
+  const deleteThread = async (threadId: string) => {
+    if (!currentUser || savingRef.current) return;
+    if (!window.confirm("Delete this question and all its replies?")) return;
+    savingRef.current = true; setSaving(true);
+    try {
+      const { error } = await supabase.from("discussion_threads").delete().eq("id", threadId);
+      if (error) throw error;
+    } catch { /* offline or no table yet — remove it on this device */ }
+    removeCachedThread(currentUser.id, threadId);
+    setThreads((prev) => prev.filter((t) => t.id !== threadId));
+    if (openThread === threadId) setOpenThread("");
+    if (editingThreadId === threadId) setEditingThreadId("");
+    toast.success("Question deleted.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
+  };
+
+  const saveReplyEdit = async () => {
+    if (!currentUser || !editingReply || savingRef.current || !editingReply.body.trim()) return;
+    const { threadId, replyId, body } = editingReply;
+    const next = body.trim();
+    savingRef.current = true; setSaving(true);
+    try {
+      const { error } = await supabase.from("discussion_replies").update({ body: next }).eq("id", replyId);
+      if (error) throw error;
+    } catch { /* offline or no table yet — keep the edit on this device */ }
+    patchCachedReply(currentUser.id, threadId, replyId, next);
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.map((r) => (r.id === replyId ? { ...r, body: next } : r)) } : t)));
+    setEditingReply(null);
+    toast.success("Reply updated.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
+  };
+
+  const deleteReply = async (threadId: string, replyId: string) => {
+    if (!currentUser || savingRef.current) return;
+    if (!window.confirm("Delete this reply?")) return;
+    savingRef.current = true; setSaving(true);
+    try {
+      const { error } = await supabase.from("discussion_replies").delete().eq("id", replyId);
+      if (error) throw error;
+    } catch { /* offline or no table yet — remove it on this device */ }
+    removeCachedReply(currentUser.id, threadId, replyId);
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.filter((r) => r.id !== replyId) } : t)));
+    toast.success("Reply deleted.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
+  };
+
   return (
     <div className={cn(panelClass, "p-5 sm:p-6")}>
       <SectionHeader title="Class discussions" subtitle="Lesson Q&A and cohort conversations" action={<Button size="sm" onClick={() => setShowNew((v) => !v)} className="bg-emerald-700 hover:bg-emerald-800"><Plus className="mr-1 h-4 w-4" /> Ask a question</Button>} />
@@ -183,6 +258,8 @@ export default function CourseDiscussions() {
         {visible.map((thread) => {
           const open = openThread === thread.id;
           const answer = thread.replies.find((r) => r.isAnswer);
+          const mine = !!currentUser && thread.authorId === currentUser.id;
+          const canMod = mine || isStaff;
           return (
             <div key={thread.id} className="rounded-xl border border-slate-150 bg-white dark:bg-slate-900 p-4">
               <button className="w-full text-left" onClick={() => setOpenThread(open ? "" : thread.id)}>
@@ -196,20 +273,57 @@ export default function CourseDiscussions() {
                 <p className="mt-1 font-semibold text-slate-900 dark:text-white">{thread.title}</p>
                 <p className="mt-0.5 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{thread.body}</p>
               </button>
+              {canMod && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Button type="button" size="sm" variant="outline" onClick={() => startThreadEdit(thread)}><Pencil className="mr-1 h-3 w-3" /> Edit</Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => void deleteThread(thread.id)} className="text-rose-700 hover:text-rose-800"><Trash2 className="mr-1 h-3 w-3" /> Delete</Button>
+                </div>
+              )}
+              {editingThreadId === thread.id && (
+                <div className="mt-2 space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
+                  <Input maxLength={200} value={editingThreadTitle} onChange={(e) => setEditingThreadTitle(e.target.value)} aria-label="Edit question title" />
+                  <Textarea maxLength={10000} value={editingThreadBody} onChange={(e) => setEditingThreadBody(e.target.value)} rows={3} aria-label="Edit question details" />
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={() => setEditingThreadId("")}>Cancel</Button>
+                    <Button type="button" size="sm" onClick={() => void saveThreadEdit(thread.id)} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800">Save changes</Button>
+                  </div>
+                </div>
+              )}
               {open && (
                 <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
                   {thread.replies.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-300">No replies yet — help your classmate or wait for your teacher.</p>}
-                  {thread.replies.map((reply) => (
+                  {thread.replies.map((reply) => {
+                    const replyMine = !!currentUser && reply.authorId === currentUser.id;
+                    const canModReply = replyMine || isStaff;
+                    const isEditingReply = editingReply?.replyId === reply.id;
+                    return (
                     <div key={reply.id} className={cn("rounded-lg border p-2.5 text-sm", reply.isAnswer ? "border-emerald-300 bg-emerald-50" : "border-slate-100 bg-slate-50/60 dark:bg-slate-900/60")}>
                       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
                         <span className="font-semibold text-slate-700 dark:text-slate-200">{reply.authorName} · {reply.role}</span>
                         <span>{new Date(reply.createdAt).toLocaleString()}</span>
                         {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Teacher answer</span>}
-                        {isStaff && <button disabled={saving || pending > 0} className="ml-auto font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
+                        {isStaff && <button disabled={saving || pending > 0} className="font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
+                        {canModReply && !isEditingReply && (
+                          <span className="ml-auto inline-flex items-center gap-1">
+                            <button className="inline-flex items-center gap-0.5 font-semibold text-slate-600 hover:text-emerald-800 hover:underline" onClick={() => setEditingReply({ threadId: thread.id, replyId: reply.id, body: reply.body })}><Pencil className="h-3 w-3" /> Edit</button>
+                            <button className="inline-flex items-center gap-0.5 font-semibold text-rose-700 hover:underline" onClick={() => void deleteReply(thread.id, reply.id)}><Trash2 className="h-3 w-3" /> Delete</button>
+                          </span>
+                        )}
                       </div>
-                      <p className="mt-1 text-slate-700 dark:text-slate-200">{reply.body}</p>
+                      {isEditingReply ? (
+                        <div className="mt-2 space-y-2">
+                          <Textarea maxLength={10000} value={editingReply?.body ?? ""} onChange={(e) => setEditingReply((p) => (p ? { ...p, body: e.target.value } : p))} rows={2} aria-label="Edit reply" />
+                          <div className="flex justify-end gap-2">
+                            <Button type="button" size="sm" variant="outline" onClick={() => setEditingReply(null)}>Cancel</Button>
+                            <Button type="button" size="sm" onClick={() => void saveReplyEdit()} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800">Save reply</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-slate-700 dark:text-slate-200">{reply.body}</p>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <div className="flex gap-2">
                     <Input maxLength={10000} disabled={saving} placeholder="Write a reply…" value={replyDrafts[thread.id] ?? ""} onChange={(e) => setReplyDrafts((d) => ({ ...d, [thread.id]: e.target.value }))} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addReply(thread.id); } }} />
                     <Button size="sm" disabled={saving} aria-label="Send reply" onClick={() => void addReply(thread.id)} className="bg-emerald-700 hover:bg-emerald-800"><Send className="h-4 w-4" /></Button>

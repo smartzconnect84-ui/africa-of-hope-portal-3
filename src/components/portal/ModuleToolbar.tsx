@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Download, Upload, Printer, Save, Rocket, Settings2, X, Check, FileSpreadsheet,
+  Download, Upload, Printer, Save, Rocket, Settings2, X, Check, FileSpreadsheet, Plus, Pencil, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -61,6 +61,7 @@ export default function ModuleToolbar({ viewKey, viewLabel }: { viewKey: string;
   const [importInfo, setImportInfo] = useState<{ name: string; note: string; headers: string[]; rows: string[][]; text: string } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,6 +88,83 @@ export default function ModuleToolbar({ viewKey, viewLabel }: { viewKey: string;
   }, [settings, viewKey]);
 
   const snapshot = (): TableSnapshot[] => collectModuleTables();
+
+  const handleAdd = () => {
+    const main = document.querySelector("main");
+    const btn = main?.querySelector<HTMLButtonElement>(
+      "button[data-module-add], button[data-add], button.new-btn",
+    ) ?? [...(main?.querySelectorAll<HTMLButtonElement>("button") ?? [])].find((b) =>
+      /add|new|create|ask a question|post|upload|compose/i.test(b.textContent ?? ""),
+    );
+    if (btn) {
+      btn.click();
+      toast.success(`Add opened in ${viewLabel}.`);
+      return;
+    }
+    const field = main?.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      "input, textarea, select",
+    );
+    if (field) {
+      field.focus();
+      toast.success(`Ready to add in ${viewLabel} — fill the highlighted form.`);
+      return;
+    }
+    fileRef.current?.click();
+  };
+
+  const toggleEdit = () => {
+    const main = document.querySelector("main");
+    const next = !editing;
+    setEditing(next);
+    try {
+      main?.querySelectorAll("table td, table th").forEach((cell) => {
+        if (next) {
+          (cell as HTMLElement).contentEditable = "true";
+          cell.classList.add("aoh-cell-editing");
+        } else {
+          (cell as HTMLElement).contentEditable = "false";
+          cell.classList.remove("aoh-cell-editing");
+        }
+      });
+    } catch { /* ignore */ }
+    toast.success(next ? `Edit mode on in ${viewLabel} — click any table cell to change it, then Save.` : `Edit mode off in ${viewLabel}. Press Save to keep a draft.`);
+  };
+
+  const handleDelete = () => {
+    if (!window.confirm(`Delete saved imports and drafts for ${viewLabel} on this device?`)) return;
+    try {
+      localStorage.removeItem(`aoh-module-import-${viewKey}`);
+      localStorage.removeItem(`aoh-module-draft-${viewKey}`);
+      localStorage.removeItem(`aoh-module-published-${viewKey}`);
+    } catch { /* ignore */ }
+    setImportInfo(null);
+    setSaveState(readSaveState(viewKey));
+    setMessage(`Saved data cleared for ${viewLabel}.`);
+    toast.success(`Deleted saved data for ${viewLabel}.`);
+  };
+
+  const updateImportCell = (ri: number, ci: number, value: string) => {
+    setImportInfo((prev) => {
+      if (!prev) return prev;
+      const rows = prev.rows.map((r, i) => (i === ri ? r.map((c, j) => (j === ci ? value : c)) : r));
+      return { ...prev, rows };
+    });
+  };
+
+  const deleteImportRow = (ri: number) => {
+    setImportInfo((prev) => {
+      if (!prev) return prev;
+      return { ...prev, rows: prev.rows.filter((_, i) => i !== ri) };
+    });
+  };
+
+  const addImportRow = () => {
+    setImportInfo((prev) => {
+      if (!prev) return prev;
+      const width = prev.headers.length || prev.rows[0]?.length || 1;
+      return { ...prev, rows: [...prev.rows, Array(width).fill("")] };
+    });
+  };
 
   const doExport = async (format: "csv" | "tsv" | "json" | "xls" | "doc" | "pdf" | "png" | "jpg" | "sheets") => {
     const tables = snapshot();
@@ -192,6 +270,7 @@ export default function ModuleToolbar({ viewKey, viewLabel }: { viewKey: string;
         main[data-module-large="true"] { font-size: 112.5%; }
         main[data-module-large="true"] table { font-size: 1.02em; }
         main[data-module-zebra="false"] table tbody tr:nth-child(even) { background: transparent !important; }
+        .aoh-cell-editing { outline: 2px dashed rgba(4,120,87,.5); outline-offset: -2px; background: rgba(236,253,245,.6); }
       `}</style>
       <div className="flex flex-wrap items-center gap-2">
         <div className="mr-auto flex min-w-0 items-center gap-2">
@@ -243,8 +322,17 @@ export default function ModuleToolbar({ viewKey, viewLabel }: { viewKey: string;
           className="sr-only"
           onChange={(e) => void onImportFile(e.target.files?.[0])}
         />
+        <Button type="button" size="sm" variant="outline" onClick={handleAdd}>
+          <Plus className="h-3.5 w-3.5" /> Add
+        </Button>
+        <Button type="button" size="sm" variant={editing ? "default" : "outline"} onClick={toggleEdit} aria-pressed={editing}>
+          <Pencil className="h-3.5 w-3.5" /> {editing ? "Done" : "Edit"}
+        </Button>
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
-          <Upload className="h-3.5 w-3.5" /> Import
+          <Upload className="h-3.5 w-3.5" /> Upload
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={handleDelete} className="text-rose-700 hover:text-rose-800">
+          <Trash2 className="h-3.5 w-3.5" /> Delete
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={() => printTables(snapshot(), viewLabel)}>
           <Printer className="h-3.5 w-3.5" /> Print
@@ -337,9 +425,23 @@ export default function ModuleToolbar({ viewKey, viewLabel }: { viewKey: string;
                   <tr>{importInfo.headers.map((h) => <th key={h} className="border-b px-2 py-1.5 font-semibold">{h}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {importInfo.rows.slice(0, 5).map((r, i) => (
+                  {importInfo.rows.slice(0, 8).map((r, i) => (
                     <tr key={i} className="border-b last:border-0">
-                      {r.map((c, j) => <td key={j} className="px-2 py-1.5">{c}</td>)}
+                      {r.map((c, j) => (
+                        <td key={j} className="px-1 py-1">
+                          <input
+                            value={c}
+                            onChange={(e) => updateImportCell(i, j, e.target.value)}
+                            aria-label={`Row ${i + 1} column ${importInfo.headers[j] ?? j + 1}`}
+                            className="w-full min-w-20 rounded-md border border-transparent bg-transparent px-1.5 py-1 focus:border-emerald-500 focus:bg-white focus:outline-none"
+                          />
+                        </td>
+                      ))}
+                      <td className="px-1 py-1">
+                        <button type="button" onClick={() => deleteImportRow(i)} aria-label={`Delete row ${i + 1}`} className="rounded-md p-1.5 text-rose-600 hover:bg-rose-50">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -347,6 +449,9 @@ export default function ModuleToolbar({ viewKey, viewLabel }: { viewKey: string;
             </div>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={addImportRow}>
+              <Plus className="h-3.5 w-3.5" /> Add row
+            </Button>
             <Button type="button" size="sm" onClick={keepImport} className="bg-emerald-700 text-white hover:bg-emerald-800">
               <Check className="h-3.5 w-3.5" /> Save import to {viewLabel}
             </Button>
