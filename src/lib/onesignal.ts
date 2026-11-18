@@ -112,6 +112,16 @@ export function initOneSignal(): Promise<boolean> {
   return initPromise;
 }
 
+/** The v16 SDK exposes some fields as plain values and others as promises. */
+async function resolveValue<T>(input: unknown, fallback: T): Promise<T> {
+  try {
+    const value = input && typeof (input as Promise<T>).then === "function" ? await (input as Promise<T>) : input;
+    return (value ?? fallback) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export type OneSignalStatus = {
   configured: boolean;
   supported: boolean;
@@ -130,12 +140,9 @@ export async function oneSignalStatus(): Promise<OneSignalStatus> {
     const ready = await initOneSignal();
     if (!ready || !window.OneSignal) return { configured, supported: true, permission, subscribed: false, externalId: null };
     const OS = window.OneSignal;
-    const subId: string | null | undefined = await OS.User?.PushSubscription?.id?.catch?.(() => null).catch(() => null);
-    const optedIn: boolean = await OS.User?.PushSubscription?.optedIn?.catch?.(() => false).catch(() => false);
-    let externalId: string | null = null;
-    try {
-      externalId = (await OS.login?.externalId?.catch?.(() => null)) ?? (OS.User?.externalId as string | undefined) ?? null;
-    } catch { externalId = null; }
+    const subId = await resolveValue<string | null>(OS.User?.PushSubscription?.id, null);
+    const optedIn = await resolveValue<boolean>(OS.User?.PushSubscription?.optedIn, false);
+    const externalId = await resolveValue<string | null>(OS.login?.externalId ?? OS.User?.externalId, null);
     return { configured, supported: true, permission, subscribed: Boolean(optedIn || subId), externalId };
   } catch {
     return { configured, supported: true, permission, subscribed: false, externalId: null };
@@ -207,10 +214,8 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
     await subscription.optIn();
     // The v16 SDK exposes these as plain values on some builds and as promises
     // on others, so accept either rather than reporting a false failure.
-    const rawId: any = OS?.User?.PushSubscription?.id;
-    const id: string | null = typeof rawId?.then === "function" ? await rawId.catch(() => null) : (rawId ?? null);
-    const rawOptedIn: any = OS?.User?.PushSubscription?.optedIn;
-    const optedIn: boolean = typeof rawOptedIn?.then === "function" ? Boolean(await rawOptedIn.catch(() => false)) : Boolean(rawOptedIn);
+    const id = await resolveValue<string | null>(OS?.User?.PushSubscription?.id, null);
+    const optedIn = await resolveValue<boolean>(OS?.User?.PushSubscription?.optedIn, false);
     if (id || optedIn) {
       return { subscribed: true, message: "Notifications enabled on this device, including when the screen is locked (OS / browser permitting)." };
     }

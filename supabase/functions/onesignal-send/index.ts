@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-push-dispatch",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) =>
@@ -12,11 +12,100 @@ const STAFF_ROLES = ["admin", "super_admin", "registrar", "support", "teacher", 
 const validUrl = (u: unknown): string => {
   try {
     const s = String(u ?? "/");
-    if (!s.startsWith("/")) return "/";
-    const url = new URL(s, "https://example.org");
+    if (!s.startsWith("/") && !s.startsWith("#")) return "/";
+    const url = new URL(s.replace(/^#/, "/"), "https://example.org");
     return url.pathname + url.search + url.hash;
   } catch { return "/"; }
 };
+
+/** Constant-time comparison for the internal dispatch token. */
+function sameToken(a: string, b: string): boolean {
+  const left = new TextEncoder().encode(a);
+  const right = new TextEncoder().encode(b);
+  let diff = left.length ^ right.length;
+  const len = Math.max(left.length, right.length);
+  for (let i = 0; i < len; i++) diff |= (left[i] ?? 0) ^ (right[i] ?? 0);
+  return diff === 0;
+}
+
+type Admin = ReturnType<typeof createClient>;
+
+type SendOutcome = { status: "sent" | "failed"; provider: unknown };
+
+async function sendOne(appId: string, apiKey: string, recipient: string, title: string, message: string, url: string): Promise<SendOutcome> {
+  const payload = {
+    app_id: appId,
+    headings: { en: title },
+    contents: { en: message },
+    include_external_user_ids: [recipient],
+    web_url: url.startsWith("#") ? "/" + url : url,
+    data: { url },
+    chrome_web_icon: "/icons/icon-192.png",
+    chrome_web_badge: "/icons/icon-192.png",
+  };
+  try {
+    const res = await fetch("https://api.onesignal.com/notifications?c=push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Key ${apiKey}` },
+      body: JSON.stringify(payload),
+    });
+    const provider = await res.json().catch(() => ({ http: res.status })) as any;
+    const ids: string[] = Array.isArray(provider?.id) ? provider.id.map(String) : provider?.id ? [String(provider.id)] : [];
+    const errors: string[] = Array.isArray(provider?.errors) ? provider.errors.map(String) : [];
+    // OneSignal answers 200 with an `errors` array when nothing was deliverable.
+    // An empty id with errors is not a send.
+    return { status: res.ok && errors.length === 0 && ids.length > 0 ? "sent" : "failed", provider };
+  } catch (e) {
+    return { status: "failed", provider: { error: e instanceof Error ? e.message : "send failed" } };
+  }
+}
+
+/**
+ * Internal mode used by pg_cron (`_cron_dispatch_push`): drain queued
+ * notification_outbox rows, one targeted push per recipient. Authenticated by a
+ * token only the database and this service-role client can read.
+ */
+async function dispatchQueued(admin: Admin, appId: string, apiKey: string, rawLimit: unknown) {
+  const take = Math.min(Math.max(Number(rawLimit) || 25, 1), 50);
+  const { data: rows, error } = await admin
+    .from("notification_outbox")
+    .select("id,title,body,url,recipient_id,attempts")
+    .eq("status", "queued")
+    .not("recipient_id", "is", null)
+    .order("created_at", { ascending: true })
+    .limit(take);
+  if (error) return json({ error: "Could not read the queue." }, 500);
+
+  const results: Array<{ id: string; status: string }> = [];
+  for (const row of (rows ?? []) as any[]) {
+    // Claim first so a second cron tick (or a manual call) cannot send twice.
+    const { data: claimed } = await admin
+      .from("notification_outbox")
+      .update({ status: "sending", attempts: Number(row.attempts ?? 0) + 1 })
+      .eq("id", row.id)
+      .eq("status", "queued")
+      .select("id")
+      .maybeSingle();
+    if (!claimed) continue;
+
+    const outcome = await sendOne(
+      appId, apiKey, String(row.recipient_id),
+      String(row.title ?? "AFRICA OF HOPE"),
+      String(row.body ?? "You have a new update in the portal."),
+      validUrl(row.url),
+    );
+
+    await admin.from("notification_outbox").update({
+      status: outcome.status,
+      provider_response: outcome.provider,
+      sent_at: outcome.status === "sent" ? new Date().toISOString() : null,
+    }).eq("id", row.id);
+
+    results.push({ id: String(row.id), status: outcome.status });
+  }
+
+  return json({ ok: true, dispatched: results.length, results });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -34,19 +123,35 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   if (!supabaseUrl || !serviceKey) return json({ error: "Server misconfigured." }, 500);
 
-  // Caller must be an authenticated staff member (admin/registrar/support/teacher).
+  const admin = createClient(supabaseUrl, serviceKey);
+
+  let body: any = {};
+  try { body = await req.json(); } catch { body = {}; }
+
+  // ── Internal cron dispatch ────────────────────────────────────────────────
+  // verify_jwt is off because pg_cron cannot mint a user JWT; this header check
+  // is what protects the endpoint instead, and the browser path below still
+  // requires a real verified session.
+  const dispatchToken = req.headers.get("x-push-dispatch");
+  if (dispatchToken) {
+    const { data: tokenRow } = await admin.from("push_dispatch_token").select("token").limit(1).maybeSingle();
+    const expected = String((tokenRow as any)?.token ?? "");
+    if (!expected || !sameToken(dispatchToken, expected)) {
+      return json({ error: "Unauthorized dispatch." }, 401);
+    }
+    return await dispatchQueued(admin, APP_ID, API_KEY, body?.limit);
+  }
+
+  // ── Browser / admin sends ─────────────────────────────────────────────────
   const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!jwt) return json({ error: "Sign in required." }, 401);
   const caller = createClient(supabaseUrl, anonKey || serviceKey, { global: { headers: { Authorization: `Bearer ${jwt}` } } });
   const { data: { user } } = await caller.auth.getUser(jwt);
   if (!user) return json({ error: "Invalid session." }, 401);
-  const admin = createClient(supabaseUrl, serviceKey);
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).maybeSingle();
   const role = String((profile as any)?.role ?? "").toLowerCase().trim().replace(/[\s-]+/g, "_");
   const isStaff = STAFF_ROLES.includes(role);
 
-  let body: any = {};
-  try { body = await req.json(); } catch { return json({ error: "Invalid JSON body." }, 400); }
   const title = String(body.title ?? "").trim().slice(0, 120);
   const message = String(body.message ?? body.body ?? "").trim().slice(0, 1000);
   if (!title || !message) return json({ error: "Title and message are required." }, 400);
@@ -104,6 +209,7 @@ Deno.serve(async (req) => {
   const { data: outbox, error: obErr } = await admin.from("notification_outbox").insert({
     idempotency_key: idempotencyKey, title, body: message, url, audience,
     course_id: courseId, created_by: user.id, status: "sending",
+    recipient_id: audience === "user" && targetUserId ? String(targetUserId) : null,
   }).select("id").maybeSingle();
   if (obErr) return json({ error: "Could not queue notification." }, 500);
   const outboxId = (outbox as any)?.id as string;
@@ -113,14 +219,12 @@ Deno.serve(async (req) => {
     app_id: APP_ID,
     headings: { en: title },
     contents: { en: message },
-    url: undefined as unknown,
-    web_url: undefined as unknown,
     data: { url, outbox_id: outboxId },
     chrome_web_icon: "/icons/icon-192.png",
     chrome_web_badge: "/icons/icon-192.png",
   };
   // Web push click opens the in-app destination; keep same-origin only.
-  (payload as any).web_url = url.startsWith("/") ? url : "/";
+  (payload as any).web_url = url.startsWith("#") ? "/" + url : url.startsWith("/") ? url : "/";
   if (externalIds.length) (payload as any).include_external_user_ids = externalIds;
   else if (filters) (payload as any).filters = filters;
   else (payload as any).included_segments = ["Subscribed Users"];
@@ -149,6 +253,7 @@ Deno.serve(async (req) => {
     // written even when the device is offline — but a trigger may already have
     // written the same row (a direct message raises its own notification), so
     // identical rows from the last ten minutes are not duplicated.
+    const freshlyInserted: string[] = [];
     for (const uid of externalIds) {
       const { data: duplicate } = await admin
         .from("notifications")
@@ -160,9 +265,25 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (duplicate) continue;
-      await admin.from("notifications").insert({
+      const { data: created } = await admin.from("notifications").insert({
         recipient_id: uid, user_id: uid, title, body: message, url, kind: "announcement", read: false,
-      }).then(() => undefined).catch(() => undefined);
+      }).select("id").maybeSingle();
+      if (created) freshlyInserted.push(String((created as any).id));
+    }
+    // Inserting that row also queues it for the pg_cron dispatcher. This request
+    // has already pushed it, so close the queued copy rather than send twice.
+    if (freshlyInserted.length) {
+      await admin
+        .from("notification_outbox")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          provider_response: { deduplicated: "delivered by the requesting session" },
+        })
+        .in("notification_id", freshlyInserted)
+        .eq("status", "queued")
+        .then(() => undefined)
+        .catch(() => undefined);
     }
   } catch (e) {
     providerResponse = { error: e instanceof Error ? e.message : "send failed" };
@@ -170,9 +291,10 @@ Deno.serve(async (req) => {
 
   await admin.from("notification_outbox").update({
     status: providerStatus, provider_response: providerResponse,
+    sent_at: providerStatus === "sent" ? new Date().toISOString() : null,
   }).eq("id", outboxId);
 
-  // Timing-safe: never log the API key; response contains only OneSignal ids/errors.
+  // Never log the API key; the response contains only OneSignal ids/errors.
   if (providerStatus !== "sent") {
     return json({ error: "The push was not delivered. Check the audience and whether any device is subscribed.", detail: providerResponse }, 502);
   }

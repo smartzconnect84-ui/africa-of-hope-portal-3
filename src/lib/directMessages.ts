@@ -355,21 +355,11 @@ export function useDirectMessages(meId: string | undefined, peerId: string | und
           delivered = false;
         }
       }
-      // Best-effort offline push for the receiver's phone (staff policy may
-      // reject self-sent DMs — the in-app live toast above still fires).
-      try {
-        await supabase.functions.invoke("onesignal-send", {
-          body: {
-            audience: "user",
-            user_id: peerId,
-            title: "New message",
-            message: msg.body.slice(0, 140),
-            url: "#messages",
-          },
-        });
-      } catch {
-        /* push is optional; realtime already delivered when online */
-      }
+      // Device push is no longer sent from here. The direct_message_notification
+      // trigger writes the recipient's notification row, and the
+      // notifications_queue_push trigger queues it for the pg_cron dispatcher,
+      // which pushes it even if this tab is closed. Sending from both places
+      // would deliver the same message twice.
       setSending(false);
       if (!delivered) {
         // Kept locally and retried on the next send/poll — surfaced honestly.

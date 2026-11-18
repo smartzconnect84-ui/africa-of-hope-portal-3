@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isIos, isStandalone } from "@/lib/pwa";
+import { oneSignalOptIn } from "@/lib/onesignal";
 
 const BRAND_ICON = "https://files.monstarx.app/jk0454jkv1/public/uploads/chat/7ynjatu3oi/Aoh-favicon.png";
 export type ReminderKind = "lesson" | "assignment" | "fee" | "announcement";
@@ -114,7 +115,19 @@ export function useReminderNotifications(userId: string | undefined, items: Remi
       const next = { ...prefsRef.current, enabled: true }; save(next);
       const key = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim();
       const worker = await workerReady();
-      if (!key || !worker.pushManager) { setPushState("device"); setNotice("Permission granted. Only open-app notifications are available until an administrator configures the Web Push public key and sender."); return; }
+      if (!key || !worker.pushManager) {
+        // Device push in this deployment goes through OneSignal, which owns the
+        // web-push sender, so no VAPID key of our own is needed. Opt the device
+        // in there instead of stopping at "open-app notifications only".
+        void syncSettings(next).catch(() => undefined);
+        const opted = await oneSignalOptIn();
+        if (owner.current !== userId) return;
+        setPushState(opted.subscribed ? "subscribed" : "device");
+        setNotice(opted.subscribed
+          ? "This device is registered for push — messages, fees, grades, attendance and announcements arrive even when the app is closed."
+          : opted.message);
+        return;
+      }
       const sub = await worker.pushManager.getSubscription() ?? await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKeyBytes(key) as unknown as BufferSource });
       const json = sub.toJSON();
       const { error } = await supabase.from("push_subscriptions").upsert({ user_id: userId, endpoint: sub.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth, user_agent: navigator.userAgent.slice(0, 500), enabled: true, preferences: next, updated_at: new Date().toISOString() }, { onConflict: "endpoint" });

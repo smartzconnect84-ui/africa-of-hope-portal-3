@@ -216,3 +216,39 @@ frontend).
   either a plain value or a promise) and reports the honest failure instead.
   Unresolved server-side questions: none — `GET /apps/{id}` is 200 and the REST
   key is valid; delivery is blocked purely by the absence of a subscriber.
+
+- Every notification now pushes, server-side (2026-11-18, migration
+  `20261118090000_push_all_notifications.sql` + `onesignal-send` v21). Before
+  this, only a direct message (sent by the sender's browser) and an admin
+  broadcast ever reached a phone: the nine routines that insert
+  `public.notifications` (`_notify_direct_message`, `submit_payment`,
+  `review_payment`, `submit_classwork`, `_notify_attendance`,
+  `_notify_schedule_updated`, `_notify_academic_status`,
+  `close_expired_course_windows`, `_recompute_enrollment_progress`) wrote an
+  in-app row only. The chain is now: insert on `notifications` →
+  `notifications_queue_push` trigger queues a `notification_outbox` row with
+  `recipient_id`/`notification_id` (unique, so one notification can never push
+  twice) → pg_cron job `aoh-dispatch-push` (every minute) calls
+  `_cron_dispatch_push()` → `net.http_post` to `onesignal-send` with an internal
+  token from `push_dispatch_token` (RLS on, no policies; unreadable by
+  anon/authenticated) → one targeted push per recipient. Nothing depends on a
+  browser being open, so a closed tab still receives messages and updates.
+- The reminder card no longer dead-ends on VAPID. `pushReminders.enable()` used
+  to stop at "Only open-app notifications are available until an administrator
+  configures the Web Push public key and sender" because
+  `VITE_VAPID_PUBLIC_KEY` is not set; it now opts the device into OneSignal,
+  which owns the web-push sender, so no VAPID pair is needed. Self-hosted VAPID
+  remains supported if those keys ever exist (`push_subscriptions` untouched).
+- `onesignal-send` v21 also closes a double-send: an admin one-to-one send used
+  to create a notification whose new trigger row queued a second push; the
+  function now marks those queued copies `sent` after its own delivery.
+  `verify_jwt` is off (pg_cron cannot mint a user JWT) but the browser path still
+  requires a verified session — a service-role call with no user gets 401, and
+  the internal token is compared in constant time. Deploying with the tool
+  re-enables `verify_jwt`, so it must be flipped off after every deploy.
+- Still required for real delivery: an actual OneSignal player on a device. The
+  test notification reached the dispatcher (HTTP 200, `dispatched: 1`) and
+  OneSignal answered `All included players are not subscribed`, so the pipeline
+  is proven up to the device. Press Enable on the Phone push card (or Enable
+  reminders after the next frontend build) while signed in on the production
+  origin, then the same test will record `sent`.
