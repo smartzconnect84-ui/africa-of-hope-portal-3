@@ -85,6 +85,21 @@ frontend).
 
 - Memory file added to an existing project; pending reconstruction.
 - Reconstructed memory from the available documentation snapshot and added a standalone React/Vite public homepage and build manifest.
+- Supabase backend reconciled against the live project (`gatnzfjpuokopqyksqoy`,
+  78 tables + 3 views, all RLS; 45 realtime tables covering every channel the
+  app subscribes to; 9 buckets with 23 storage policies; 8 active edge
+  functions). Applied `20261118053234_programs_code_autofill` after fixing its
+  invalid `left()` call — `programs_ensure_code` now generates `code` on insert
+  (probe row verified, then deleted), and renamed nine duplicate-version
+  migration files to the versions recorded in `schema_migrations` so
+  `supabase db push` no longer aborts. Added edge-function secrets
+  `NEWSLETTER_TOKEN_SECRET`, `PUBLIC_SITE_URL`, `APP_URL`, `EMAIL_CRON_SECRET`
+  plus Vault `send_email_dispatch_url` / `email_cron_secret`, which unblocked
+  newsletter signup and the pg_cron email dispatcher (queue drained). Still
+  owner-supplied: VAPID keys, OneSignal REST key; `admin-users` and
+  `onesignal-send` run with `verify_jwt=false` although `config.toml` asks for
+  true (handlers re-check roles).
+
 - Added the project's own database: 72-table schema, access policies, storage
   buckets, live updates and the roles/permissions seed written as migrations;
   src/integrations/supabase/client.ts turned into a bridge onto the new
@@ -92,3 +107,21 @@ frontend).
   sign-in, sign-up, password reset and sign-out mapped onto the platform auth
   client; registration details carried to the first profile row; boolean
   columns read from the database normalised in src/data/liveData.ts.
+
+- Backend completion pass (2026-11-18, second pass): redeployed `admin-users`
+  from the repo source (version 34) so the live bundle matches the 13:50
+  commit, and both `admin-users` and `onesignal-send` now run with
+  `verify_jwt=true`, matching `supabase/config.toml` (the `onesignal-send`
+  bundle hash is unchanged). Drained the email queue completely by marking the
+  two undeliverable `qa-audit+portal@example.com` rows `skipped` (Resend blocks
+  example.com, so they retried forever): outbox is now 44 sent / 4 skipped /
+  0 queued. Checked parity rather than re-applying: all 29 `.rpc()` names the
+  app calls exist live, the unversioned/renamed migrations' objects
+  (`grade_appeals` + its four security-definer RPCs, `live_sync`'s grade /
+  aptitude / report-card / timetable tables, the reconciliation baseline) are
+  present with RLS, 45 tables are in `supabase_realtime`, and all nine buckets
+  exist. `run-repo-migration` is a retired 410 stub, not an open endpoint.
+  Still owner-supplied: `ONESIGNAL_REST_API_KEY` (push returns 503 until set)
+  and the VAPID keypair plus `VITE_VAPID_PUBLIC_KEY` for web push
+  (`send-deadline-reminders` degrades to `configured:false` and has no cron
+  job yet).

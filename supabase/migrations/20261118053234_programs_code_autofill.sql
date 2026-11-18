@@ -33,9 +33,9 @@ begin
 
   -- Backfill NULL/empty codes: slug(title or name or 'course') + '-' + id fragment.
   execute $u$update public.programs
-    set code = left(
+    set code = btrim(
       regexp_replace(lower(coalesce(nullif(btrim(title), ''), nullif(btrim(name), ''), 'course')), '[^a-z0-9]+', '-', 'g'),
-      E'^-+|-+$', '', 'g'
+      '-'
     ) || '-' || left(regexp_replace(id::text, '[^a-z0-9]', '', 'gi'), 4)
     where code is null or btrim(code) = ''$u$;
 
@@ -81,7 +81,15 @@ begin
   end;
 
   -- Unique index powers the app's duplicate-code retry (same title twice).
-  if not exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'programs_code_unique') then
+  -- The live project already enforces uniqueness as programs_code_key, so only
+  -- create a new index when no unique index over (code) exists at all.
+  if not exists (
+    select 1
+    from pg_index i
+    join pg_class c on c.oid = i.indrelid
+    join pg_attribute a on a.attrelid = c.oid and a.attnum = any (i.indkey)
+    where c.relname = 'programs' and i.indisunique and a.attname = 'code'
+  ) then
     begin
       create unique index programs_code_unique on public.programs (code);
     exception when unique_violation then
@@ -107,4 +115,13 @@ select 'programs_ensure_code_trigger',
   case when exists (
     select 1 from pg_trigger
     where tgrelid = 'public.programs'::regclass and tgname = 'programs_ensure_code' and not tgisinternal
+  ) then 'ok' else 'missing' end
+union all
+select 'programs_code_unique_index',
+  case when exists (
+    select 1
+    from pg_index i
+    join pg_class c on c.oid = i.indrelid
+    join pg_attribute a on a.attrelid = c.oid and a.attnum = any (i.indkey)
+    where c.relname = 'programs' and i.indisunique and a.attname = 'code'
   ) then 'ok' else 'missing' end;
