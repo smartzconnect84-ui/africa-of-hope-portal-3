@@ -314,6 +314,22 @@ frontend).
   repo), so the public site renders but sign-in and data features report the
   backend as not connected until the bundle is rebuilt with those values.
 
+- Both Sites environments were rebuilt and redeployed on 2026-11-18 after the
+  backend audit, so they now serve the fixed client (`rpc()` forwarding to the
+  data client, guarded `import.meta.env`, the typecheck/test config fixes).
+  Build: `VERCEL=1 npm run build:sites` (exit 0, 19 prerendered routes, bundle
+  `index-Bmdn156H.js`); deploys: preview and production both `succeeded`, both
+  still published. Production is https://aoh.freebuff.site — earlier notes said
+  `africa-of-hope-portal-kjxltx.freebuff.site`, which now answers 307 to the
+  `aoh` subdomain; the custom domain `www.africaofhopelr.online` is still
+  `pending_dns`. Serving checked over HTTP: `/` 200 text/html, `/verify/` and
+  `/admissions/` 200, `/programmes` 307 to `/programmes/`, `/sw.js` 200
+  text/javascript, unknown paths fall back to `index.html`. Sign-in and data
+  remain unavailable on these hosts: the bundle was built without
+  `VITE_AUTOBASE_URL` and `VITE_AUTOBASE_PUBLISHABLE_KEY`, and the Supabase
+  project (`gatnzfjpuokopqyksqoy`) does not serve better-auth (`/auth/ok` is
+  404), so it cannot stand in for the Autobase backend.
+
 - "Push library is unavailable offline" was a dead end (2026-11-18,
   `src/lib/onesignal.ts` + `OneSignalPanel`). `initOneSignal()` cached its first
   result for the life of the page and `loadPageSdk()` cached a rejected script
