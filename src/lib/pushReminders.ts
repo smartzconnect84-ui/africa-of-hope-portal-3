@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isIos, isStandalone } from "@/lib/pwa";
-import { oneSignalOptIn } from "@/lib/onesignal";
+import { oneSignalLogin, oneSignalOptIn } from "@/lib/onesignal";
 
 const BRAND_ICON = "https://files.monstarx.app/jk0454jkv1/public/uploads/chat/7ynjatu3oi/Aoh-favicon.png";
 export type ReminderKind = "lesson" | "assignment" | "fee" | "announcement";
@@ -120,6 +120,11 @@ export function useReminderNotifications(userId: string | undefined, items: Remi
         // web-push sender, so no VAPID key of our own is needed. Opt the device
         // in there instead of stopping at "open-app notifications only".
         void syncSettings(next).catch(() => undefined);
+        // Link the Supabase identity before opting in, so this subscription is
+        // addressable by targeted pushes (messages, grades, fees), not only by
+        // broadcasts. Sign-in already links it; this covers a device that was
+        // signed in before the identity was linked.
+        await oneSignalLogin(userId);
         const opted = await oneSignalOptIn();
         if (owner.current !== userId) return;
         setPushState(opted.subscribed ? "subscribed" : "device");

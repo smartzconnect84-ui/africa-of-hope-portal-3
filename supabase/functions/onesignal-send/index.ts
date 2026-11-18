@@ -32,6 +32,19 @@ type Admin = ReturnType<typeof createClient>;
 
 type SendOutcome = { status: "sent" | "failed"; provider: unknown };
 
+/** Retry policy for queued per-user pushes: 1m, 2m, 5m, 15m, then stop. */
+const MAX_ATTEMPTS = 5;
+const BACKOFF_SECONDS = [60, 120, 300, 900, 3600];
+
+/** One short, secret-free reason for the outbox row. */
+function failureReason(provider: any): string {
+  const errors = Array.isArray(provider?.errors) ? provider.errors.map(String) : [];
+  if (errors.length) return errors.join("; ").slice(0, 500);
+  if (provider?.error) return String(provider.error).slice(0, 500);
+  if (provider?.http) return `OneSignal HTTP ${provider.http}`.slice(0, 500);
+  return "No delivery receipt from OneSignal.";
+}
+
 async function sendOne(appId: string, apiKey: string, recipient: string, title: string, message: string, url: string): Promise<SendOutcome> {
   const payload = {
     app_id: appId,
@@ -67,27 +80,16 @@ async function sendOne(appId: string, apiKey: string, recipient: string, title: 
  */
 async function dispatchQueued(admin: Admin, appId: string, apiKey: string, rawLimit: unknown) {
   const take = Math.min(Math.max(Number(rawLimit) || 25, 1), 50);
-  const { data: rows, error } = await admin
-    .from("notification_outbox")
-    .select("id,title,body,url,recipient_id,attempts")
-    .eq("status", "queued")
-    .not("recipient_id", "is", null)
-    .order("created_at", { ascending: true })
-    .limit(take);
-  if (error) return json({ error: "Could not read the queue." }, 500);
+  // `_claim_push_rows` is the only claim path: it locks the rows, increments
+  // attempts and returns exactly what is due (fresh, retryable, or abandoned),
+  // so two dispatchers — the instant trigger and the cron sweep — can never
+  // take the same row or send the same push twice.
+  const { data: rows, error } = await admin.rpc("_claim_push_rows", { p_limit: take });
+  if (error) return json({ error: "Could not claim the queue." }, 500);
 
-  const results: Array<{ id: string; status: string }> = [];
+  const results: Array<{ id: string; status: string; attempt?: number }> = [];
   for (const row of (rows ?? []) as any[]) {
-    // Claim first so a second cron tick (or a manual call) cannot send twice.
-    const { data: claimed } = await admin
-      .from("notification_outbox")
-      .update({ status: "sending", attempts: Number(row.attempts ?? 0) + 1 })
-      .eq("id", row.id)
-      .eq("status", "queued")
-      .select("id")
-      .maybeSingle();
-    if (!claimed) continue;
-
+    const attempt = Number(row.attempts ?? 1);
     const outcome = await sendOne(
       appId, apiKey, String(row.recipient_id),
       String(row.title ?? "AFRICA OF HOPE"),
@@ -95,13 +97,29 @@ async function dispatchQueued(admin: Admin, appId: string, apiKey: string, rawLi
       validUrl(row.url),
     );
 
-    await admin.from("notification_outbox").update({
-      status: outcome.status,
-      provider_response: outcome.provider,
-      sent_at: outcome.status === "sent" ? new Date().toISOString() : null,
-    }).eq("id", row.id);
+    if (outcome.status === "sent") {
+      await admin.from("notification_outbox").update({
+        status: "sent",
+        provider_response: outcome.provider,
+        sent_at: new Date().toISOString(),
+        last_error: null,
+        next_attempt_at: null,
+      }).eq("id", row.id);
+    } else {
+      // A push that failed is retried with backoff instead of being dropped.
+      // Once the attempts are spent the row stays `failed` for inspection.
+      const retry = attempt < MAX_ATTEMPTS;
+      const delay = BACKOFF_SECONDS[Math.min(attempt - 1, BACKOFF_SECONDS.length - 1)];
+      await admin.from("notification_outbox").update({
+        status: "failed",
+        provider_response: outcome.provider,
+        sent_at: null,
+        last_error: failureReason(outcome.provider),
+        next_attempt_at: retry ? new Date(Date.now() + delay * 1000).toISOString() : null,
+      }).eq("id", row.id);
+    }
 
-    results.push({ id: String(row.id), status: outcome.status });
+    results.push({ id: String(row.id), status: outcome.status, attempt });
   }
 
   return json({ ok: true, dispatched: results.length, results });
@@ -267,6 +285,9 @@ Deno.serve(async (req) => {
       if (duplicate) continue;
       const { data: created } = await admin.from("notifications").insert({
         recipient_id: uid, user_id: uid, title, body: message, url, kind: "announcement", read: false,
+        // This request already pushed it, so the notification trigger must not
+        // queue an instant push of the same message.
+        push_suppressed: true,
       }).select("id").maybeSingle();
       if (created) freshlyInserted.push(String((created as any).id));
     }
@@ -292,6 +313,14 @@ Deno.serve(async (req) => {
   await admin.from("notification_outbox").update({
     status: providerStatus, provider_response: providerResponse,
     sent_at: providerStatus === "sent" ? new Date().toISOString() : null,
+    last_error: providerStatus === "sent" ? null : failureReason(providerResponse),
+    // A one-to-one send has a recipient the queue can replay, so a failure is
+    // retried like any other push. Broadcasts (filters/segments) are not
+    // replayable from the queue and stay failed.
+    attempts: providerStatus === "sent" ? 0 : 1,
+    next_attempt_at: providerStatus !== "sent" && audience === "user" && targetUserId
+      ? new Date(Date.now() + BACKOFF_SECONDS[0] * 1000).toISOString()
+      : null,
   }).eq("id", outboxId);
 
   // Never log the API key; the response contains only OneSignal ids/errors.

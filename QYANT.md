@@ -252,3 +252,19 @@ frontend).
   is proven up to the device. Press Enable on the Phone push card (or Enable
   reminders after the next frontend build) while signed in on the production
   origin, then the same test will record `sent`.
+
+- Push is instant and retried (2026-11-18, migration
+  `20261118093000_push_instant_and_retries.sql` + `onesignal-send` v22). The
+  only thing that woke the outbox was the pg_cron job once a minute, so a
+  message could arrive up to 60 seconds late; the `notifications` trigger now
+  calls `_cron_dispatch_push()` itself (net.http_post is asynchronous, so the
+  insert is not held up) and pg_cron stays as the sweep. A send that failed
+  used to be written `failed` and never looked at again: claims now go through
+  `_claim_push_rows()` (`for update skip locked`, increments `attempts`), the
+  function records `last_error` and schedules `next_attempt_at` with backoff
+  (1m, 2m, 5m, 15m; five attempts), and rows stuck in `sending` because a
+  dispatch died are reclaimed after ten minutes. `notifications.push_suppressed`
+  flags rows the browser already pushed (admin composer, direct-message sender)
+  so the instant trigger cannot send them twice; failed one-to-one sends from
+  the composer are replayed by the queue, broadcasts are not (their audience is
+  a filter/segment, not a recipient the queue can address).
