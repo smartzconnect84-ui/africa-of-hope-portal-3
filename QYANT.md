@@ -125,3 +125,22 @@ frontend).
   and the VAPID keypair plus `VITE_VAPID_PUBLIC_KEY` for web push
   (`send-deadline-reminders` degrades to `configured:false` and has no cron
   job yet).
+
+- Edge function deploy pass (2026-11-18): all seven repo functions were
+  redeployed, because their live bundles dated from the 2026-11-15 bulk deploy
+  while the repo sources changed on 2026-11-16. Live now: `admin-users` v34,
+  `assistant` v31, `newsletter` v15, `onesignal-send` v14,
+  `send-deadline-reminders` v19, `send-email` v25, `verify-certificate` v37;
+  gateway flags match `config.toml` (only `admin-users` and `onesignal-send`
+  require a JWT). `run-repo-migration` remains a retired 410 stub. The deploy
+  API accepts one file per function, so `assistant`, `newsletter` and
+  `send-email` were shipped as single-file bundles with `guide.ts` /
+  `_shared/newsletter.ts` inlined; the repo keeps the split source. Verified:
+  `verify-certificate` 200, `newsletter` 400 on a bad email, `admin-users` 401
+  for a non-user token, `send-deadline-reminders` 401 without the cron secret,
+  `assistant` status 200, and the pg_cron dispatcher got 200
+  `{configured:true,processed:0}` from `send-email`. Fixed a live bug found
+  during the pass: `assistant/index.ts` built `faqsRaw` but read `faqRaw`, so
+  `buildPublicContext` threw on every request and the AI answered with no
+  programme, contact or FAQ knowledge at all; the reference is corrected in
+  the repo and in the deployed v31.
