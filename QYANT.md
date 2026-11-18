@@ -179,3 +179,23 @@ frontend).
   Verified by queueing a real profile in a rolled-back transaction: role Super
   Admin produced template `account_approved`, audience `staff`, subject
   "Welcome to AFRICA OF HOPE — your staff account".
+
+- OneSignal is live and verified (2026-11-18). `ONESIGNAL_REST_API_KEY` is now a
+  project secret, so `onesignal-send` passes its credential gate (it answers 401
+  to an unauthenticated call instead of the old 503). Verified against the real
+  provider: `GET /apps/{id}` returned 200 for app "AfroHope-School"
+  (`1c7444cf-8299-48c3-adf7-0d1b32dbed7b`), matching the App ID the frontend
+  uses, so app id and REST key are a valid pair. A real single-recipient push to
+  the owner's Supabase user id was accepted by OneSignal but came back
+  `{"id":"","errors":["All included players are not subscribed"]}`: no browser
+  has opted in yet (`push_subscriptions` 0, `onesignal_devices` 0), and the
+  client only links identity via `OS.login(user.id)` once push is enabled.
+  Testing that revealed two defects, both fixed and deployed as
+  `onesignal-send` v18: (a) any HTTP 200 was recorded as `status='sent'`, so an
+  undelivered push looked successful — an empty `id` or a non-empty `errors`
+  array is now `failed` with the provider body kept in `provider_response`;
+  (b) the worker also inserted an in-app notification for the target user, which
+  duplicated the row the `direct_message_notification` trigger had already
+  written for the same DM — identical recipient/title/body rows within ten
+  minutes are now skipped. The in-app row is written whether or not the device
+  is reachable, because the portal list is the authoritative copy.

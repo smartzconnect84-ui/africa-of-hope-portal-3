@@ -8,15 +8,6 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-function timingSafeEqual(a: string, b: string): boolean {
-  const aB = new TextEncoder().encode(a);
-  const bB = new TextEncoder().encode(b);
-  const len = Math.max(aB.length, bB.length, 32);
-  let diff = aB.length === bB.length ? 0 : 1;
-  for (let i = 0; i < len; i++) diff |= (i < aB.length ? aB[i] : 0) ^ (i < bB.length ? bB[i] : 0);
-  return diff === 0;
-}
-
 const STAFF_ROLES = ["admin", "super_admin", "registrar", "support", "teacher", "instructor", "admissions"];
 const validUrl = (u: unknown): string => {
   try {
@@ -143,12 +134,35 @@ Deno.serve(async (req) => {
       body: JSON.stringify(payload),
     });
     providerResponse = await res.json().catch(() => ({ http: res.status }));
-    providerStatus = res.ok ? "sent" : "failed";
-    // Persist in-app records for targeted single users (authoritative store).
-    if (res.ok && externalIds.length) {
-      await admin.from("notifications").insert(externalIds.map((uid) => ({
+    const provider = providerResponse as any;
+    const providerIds: string[] = Array.isArray(provider?.id)
+      ? provider.id.map((v: unknown) => String(v))
+      : provider?.id ? [String(provider.id)] : [];
+    const providerErrors: string[] = Array.isArray(provider?.errors)
+      ? provider.errors.map((e: unknown) => String(e))
+      : [];
+    // OneSignal answers 200 with an `errors` array when nothing was deliverable
+    // ("All included players are not subscribed" before anyone opts in). An
+    // empty id with errors is not a send, so never record it as one.
+    providerStatus = res.ok && providerErrors.length === 0 && providerIds.length > 0 ? "sent" : "failed";
+    // The in-app row is authoritative and independent of push delivery, so it is
+    // written even when the device is offline — but a trigger may already have
+    // written the same row (a direct message raises its own notification), so
+    // identical rows from the last ten minutes are not duplicated.
+    for (const uid of externalIds) {
+      const { data: duplicate } = await admin
+        .from("notifications")
+        .select("id")
+        .eq("recipient_id", uid)
+        .eq("title", title)
+        .eq("body", message)
+        .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+        .limit(1)
+        .maybeSingle();
+      if (duplicate) continue;
+      await admin.from("notifications").insert({
         recipient_id: uid, user_id: uid, title, body: message, url, kind: "announcement", read: false,
-      }))).then(() => undefined).catch(() => undefined);
+      }).then(() => undefined).catch(() => undefined);
     }
   } catch (e) {
     providerResponse = { error: e instanceof Error ? e.message : "send failed" };
@@ -159,6 +173,8 @@ Deno.serve(async (req) => {
   }).eq("id", outboxId);
 
   // Timing-safe: never log the API key; response contains only OneSignal ids/errors.
-  if (providerStatus !== "sent") return json({ error: "Provider rejected the send. Check audience and retry.", detail: providerResponse }, 502);
+  if (providerStatus !== "sent") {
+    return json({ error: "The push was not delivered. Check the audience and whether any device is subscribed.", detail: providerResponse }, 502);
+  }
   return json({ ok: true, outbox_id: outboxId, onesignal: providerResponse });
 });
