@@ -144,3 +144,38 @@ frontend).
   `buildPublicContext` threw on every request and the AI answered with no
   programme, contact or FAQ knowledge at all; the reference is corrected in
   the repo and in the deployed v31.
+
+- Messaging / notification / push audit (2026-11-18) with three real fixes.
+  (1) Direct messages raised no notification: the browser insert was rejected by
+  RLS because `notifications` has no INSERT policy. A security-definer trigger
+  `direct_message_notification` now writes the recipient's row server-side
+  (probe: one DM produced exactly one notification, then rolled back).
+  (2) `notifications` drifted between its two identity columns and two read
+  flags: `recipient_id` is NOT NULL while `user_id` is nullable, and readers
+  updated either `read` or `read_at`. A `notifications_sync_read_state`
+  before-trigger mirrors both pairs and keeps `read`/`read_at` in step; the two
+  stale rows were backfilled (6 notifications, unread went 6 → 4).
+  (3) Direct-message push was broken twice over: the client sent
+  `{userId, data}` while the worker expects `{audience, user_id}`, so a DM was
+  treated as an institution-wide broadcast, and the worker required a staff
+  caller so student DMs could never push. The client now sends
+  `{audience:'user', user_id}`, and the worker accepts `userId` too, allows any
+  signed-in member to notify someone they already have a conversation with, and
+  writes `recipient_id` (not just `user_id`) on the in-app record it creates.
+  Deployed `onesignal-send` v17; `ONESIGNAL_APP_ID` is set from the public app id
+  already in `src/lib/onesignal.ts`. Direct messaging itself was sound: 8
+  messages, 3 senders/receivers, RLS read/send/seen policies, 45 realtime tables.
+  Still blocked: `ONESIGNAL_REST_API_KEY` (the worker returns 503 until it is a
+  Supabase secret) and the VAPID keypair for the separate web-push worker.
+
+- Welcome emails are now split by audience and editable in the admin backend.
+  New table `welcome_email_templates` (audience `staff` | `student`, subject,
+  body, RLS: staff read, Super Admin / School Admin write) holds two distinct
+  letters — staff and volunteers vs students and applicants — with `{{name}}`
+  and `{{event_line}}` placeholders. `_queue_account_congratulations` picks the
+  row by role (Student → student, every other role → staff) and falls back to
+  the previous wording only if a template is empty. The editor lives at Admin →
+  System Settings → Welcome emails (`src/components/admin/WelcomeEmailTemplates.tsx`).
+  Verified by queueing a real profile in a rolled-back transaction: role Super
+  Admin produced template `account_approved`, audience `staff`, subject
+  "Welcome to AFRICA OF HOPE — your staff account".

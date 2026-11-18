@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey);
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).maybeSingle();
   const role = String((profile as any)?.role ?? "").toLowerCase().trim().replace(/[\s-]+/g, "_");
-  if (!STAFF_ROLES.includes(role)) return json({ error: "Only authorized staff may send push notifications." }, 403);
+  const isStaff = STAFF_ROLES.includes(role);
 
   let body: any = {};
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body." }, 400); }
@@ -60,9 +60,31 @@ Deno.serve(async (req) => {
   const message = String(body.message ?? body.body ?? "").trim().slice(0, 1000);
   if (!title || !message) return json({ error: "Title and message are required." }, 400);
   const url = validUrl(body.url);
-  const audience = String(body.audience ?? "all").slice(0, 40);
+  // Accept both `user_id` (canonical) and `userId` (older client callers) and
+  // infer a single-user audience so a direct message can never fan out to all.
+  const targetUserId = body.user_id ?? body.userId;
+  const audience = String(body.audience ?? (targetUserId ? "user" : "all")).slice(0, 40);
   const courseId = body.course_id ? String(body.course_id).slice(0, 80) : null;
   const idempotencyKey = String(body.idempotency_key ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 120);
+
+  // One-to-one alerts (direct messages) are open to any signed-in member, but
+  // only for someone they already have a conversation with. Everything broader
+  // stays staff-only.
+  if (!isStaff) {
+    if (!(audience === "user" && targetUserId)) {
+      return json({ error: "Only authorized staff may send push notifications." }, 403);
+    }
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(targetUserId))) {
+      return json({ error: "Unknown recipient." }, 400);
+    }
+    const { data: thread } = await admin
+      .from("direct_messages")
+      .select("id")
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${user.id})`)
+      .limit(1)
+      .maybeSingle();
+    if (!thread) return json({ error: "You can only notify someone you have already messaged." }, 403);
+  }
 
   // Broadcasts require admin-level roles; others may only target their course/all-students flows.
   if ((audience === "all" || audience === "all_users") && !["admin", "super_admin", "registrar"].includes(role)) {
@@ -82,8 +104,8 @@ Deno.serve(async (req) => {
     filters = [{ field: "tag", key: "role", relation: "=", value: audience }];
   } else if (audience === "course" && courseId) {
     filters = [{ field: "tag", key: "course_" + courseId, relation: "exists" }];
-  } else if (audience === "user" && body.user_id) {
-    externalIds = [String(body.user_id).slice(0, 80)];
+  } else if (audience === "user" && targetUserId) {
+    externalIds = [String(targetUserId).slice(0, 80)];
   } else {
     return json({ error: "Unknown audience. Use all, students, teachers, admins, staff, course or user." }, 400);
   }
@@ -125,7 +147,7 @@ Deno.serve(async (req) => {
     // Persist in-app records for targeted single users (authoritative store).
     if (res.ok && externalIds.length) {
       await admin.from("notifications").insert(externalIds.map((uid) => ({
-        user_id: uid, title, body: message, url, kind: "announcement", read: false,
+        recipient_id: uid, user_id: uid, title, body: message, url, kind: "announcement", read: false,
       }))).then(() => undefined).catch(() => undefined);
     }
   } catch (e) {

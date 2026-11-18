@@ -98,8 +98,25 @@ export function useUnreadDMs(userId: string | undefined) {
   const userRef = useRef(userId);
   userRef.current = userId;
 
+  // Local threads give an instant number; the database is authoritative for real
+  // accounts so the badge matches the messages actually waiting on every device.
   const refresh = useCallback(() => {
-    setUnread(countLocalUnread(userRef.current));
+    const local = countLocalUnread(userRef.current);
+    setUnread(local);
+    const me = userRef.current;
+    if (!isUuidId(me)) return;
+    void (async () => {
+      try {
+        const { count, error } = await supabase
+          .from("direct_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("receiver_id", me)
+          .is("seen_at", null);
+        if (!error && typeof count === "number") setUnread((prev) => Math.max(prev, count));
+      } catch {
+        /* offline — the local count stands */
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -331,19 +348,9 @@ export function useDirectMessages(meId: string | undefined, peerId: string | und
             body: msg.body,
           });
           if (error) delivered = false;
-          else {
-            try {
-              await supabase.from("notifications").insert({
-                recipient_id: peerId,
-                kind: "direct_message",
-                title: "New message",
-                body: msg.body.slice(0, 200),
-                entity_type: "direct_message",
-              });
-            } catch {
-              /* notification mirror is optional */
-            }
-          }
+          // The recipient's notification row is raised by the
+          // direct_message_notification trigger on insert; a browser insert here
+          // would only be rejected by row level security.
         } catch {
           delivered = false;
         }
@@ -352,7 +359,13 @@ export function useDirectMessages(meId: string | undefined, peerId: string | und
       // reject self-sent DMs — the in-app live toast above still fires).
       try {
         await supabase.functions.invoke("onesignal-send", {
-          body: { userId: peerId, title: "New message", message: msg.body.slice(0, 140), data: { kind: "dm", from: meId } },
+          body: {
+            audience: "user",
+            user_id: peerId,
+            title: "New message",
+            message: msg.body.slice(0, 140),
+            url: "#messages",
+          },
         });
       } catch {
         /* push is optional; realtime already delivered when online */

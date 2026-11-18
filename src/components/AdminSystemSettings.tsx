@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
-  AlertTriangle, Building2, Database, Download, Globe, Lock, Megaphone, Paintbrush, Palette,
+  AlertTriangle, Building2, Database, Download, Globe, Lock, Mail, Megaphone, Paintbrush, Palette,
   Percent, RefreshCw, Save, ShieldCheck, Trash2, Undo2, Upload, Users,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
 import BackendStatusCard from "./admin/BackendStatusCard";
 import AssistantStatusCard from "./admin/AssistantStatusCard";
+import WelcomeEmailTemplates from "./admin/WelcomeEmailTemplates";
 
 const CURRENCIES = ["$", "₦", "KSh", "€", "GHS", "R"];
 const INTAKES = ["Open", "Closing soon", "Waitlist", "Closed"];
@@ -279,6 +280,7 @@ export default function AdminSystemSettings() {
           <TabsTrigger value="marketing" className={TAB}><Megaphone className="mr-1.5 h-4 w-4" /> Public site</TabsTrigger>
           <TabsTrigger value="data" className={TAB}><Database className="mr-1.5 h-4 w-4" /> Data controls</TabsTrigger>
           <TabsTrigger value="security" className={TAB}><ShieldCheck className="mr-1.5 h-4 w-4" /> Security and RBAC</TabsTrigger>
+          <TabsTrigger value="emails" className={TAB}><Mail className="mr-1.5 h-4 w-4" /> Welcome emails</TabsTrigger>
           <TabsTrigger value="backend" className={TAB}><Database className="mr-1.5 h-4 w-4" /> Backend</TabsTrigger>
         </TabsList>
 
@@ -767,6 +769,10 @@ export default function AdminSystemSettings() {
               </p>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="emails" className="mt-4">
+          <WelcomeEmailTemplates />
         </TabsContent>
 
         <TabsContent value="backend" className="mt-4 space-y-4">
