@@ -199,3 +199,20 @@ frontend).
   written for the same DM — identical recipient/title/body rows within ten
   minutes are now skipped. The in-app row is written whether or not the device
   is reachable, because the portal list is the authoritative copy.
+
+- Push has still never delivered to a device (2026-11-18, follow-up). Asked to
+  retest after enabling: OneSignal reported the app has `total_count: 0`
+  players and the owner's external id does not exist at all, so no subscription
+  was ever created — "enable" only changed the browser permission. Two client
+  defects explain it and are fixed in the frontend (needs a rebuild/redeploy of
+  the site to take effect): (a) `oneSignalLogin()` ran only from
+  `OneSignalPanel`, i.e. only after a member opened Profile or Reminder
+  settings, so a signed-in member who never opened those screens was never
+  linked for targeted push — `Shell` in `src/App.tsx` now links identity the
+  moment anyone signs in; (b) `oneSignalOptIn()` used optional chaining on the
+  SDK's subscription object and then returned `subscribed: true`
+  unconditionally, so the card could say "Notifications enabled on this device"
+  while OneSignal held no player — it now verifies `id`/`optedIn` (accepting
+  either a plain value or a promise) and reports the honest failure instead.
+  Unresolved server-side questions: none — `GET /apps/{id}` is 200 and the REST
+  key is valid; delivery is blocked purely by the absence of a subscriber.

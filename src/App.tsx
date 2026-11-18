@@ -20,7 +20,7 @@ const CurrencyConverter = lazy(() => import("./components/CurrencyConverter"));
 import { Button } from "@/components/ui/button";
 import { applyPublicBranding } from './lib/publicBranding';
 import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
-import { initOneSignalClickRouting } from '@/lib/onesignal';
+import { initOneSignalClickRouting, oneSignalLogin } from '@/lib/onesignal';
 import { applySearchConsoleVerification } from '@/lib/seo';
 import { initNativeOneSignal } from '@/lib/nativeOneSignal';
 
@@ -127,7 +127,7 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
 }
 
 function Shell() {
-  const { state } = useApp();
+  const { state, currentUser } = useApp();
   const [site, setSite] = useState<"public" | "portal">(() => {
     try { return localStorage.getItem("aoh-site") === "portal" ? "portal" : "public"; }
     catch { return "public"; }
@@ -137,6 +137,14 @@ function Shell() {
   useEffect(() => {
     try { localStorage.setItem("aoh-site", site); } catch { /* optional preference */ }
   }, [site]);
+
+  // Link this browser/device to the signed-in member immediately. Identity used
+  // to be linked only from the profile push card, so anyone who never opened
+  // that card was unreachable by targeted push even with a subscription.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    void oneSignalLogin(currentUser.id).catch(() => undefined);
+  }, [currentUser?.id]);
 
   // Apply the CMS-configured academy name / favicon at runtime so a change
   // published from the CMS shows up without a rebuild. Only drives

@@ -196,8 +196,28 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
   const ready = await initOneSignal();
   if (!ready || !window.OneSignal) return { subscribed: false, message: "Push library is unavailable offline. Reconnect and retry." };
   try {
-    await window.OneSignal.User?.PushSubscription?.optIn?.();
-    return { subscribed: true, message: "Notifications enabled on this device, including when the screen is locked (OS / browser permitting)." };
+    const OS = window.OneSignal;
+    const subscription = OS?.User?.PushSubscription;
+    // Optional chaining used to make this resolve successfully even when the SDK
+    // had no subscription object, so the card claimed success while OneSignal
+    // never recorded a player. Only report success once one exists.
+    if (!subscription?.optIn) {
+      return { subscribed: false, message: "The push library did not expose a subscription. Reload the page and try again." };
+    }
+    await subscription.optIn();
+    // The v16 SDK exposes these as plain values on some builds and as promises
+    // on others, so accept either rather than reporting a false failure.
+    const rawId: any = OS?.User?.PushSubscription?.id;
+    const id: string | null = typeof rawId?.then === "function" ? await rawId.catch(() => null) : (rawId ?? null);
+    const rawOptedIn: any = OS?.User?.PushSubscription?.optedIn;
+    const optedIn: boolean = typeof rawOptedIn?.then === "function" ? Boolean(await rawOptedIn.catch(() => false)) : Boolean(rawOptedIn);
+    if (id || optedIn) {
+      return { subscribed: true, message: "Notifications enabled on this device, including when the screen is locked (OS / browser permitting)." };
+    }
+    return {
+      subscribed: false,
+      message: "The browser did not create a push subscription. Allow notifications for this site, make sure it is served over HTTPS, then retry.",
+    };
   } catch {
     return { subscribed: false, message: "Could not enable notifications. Check Focus / Do Not Disturb and retry." };
   }
