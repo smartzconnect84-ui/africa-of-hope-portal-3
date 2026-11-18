@@ -147,7 +147,7 @@ async function buildPublicContext(admin: ReturnType<typeof createClient>, query:
   const settings = (settingsResult.error ? null : settingsResult.data) as Row | null;
   const websiteSettings = (settings?.website_settings as Row | null) ?? null;
   const faqsRaw = (websiteSettings?.faqs ?? websiteSettings?.faq) as unknown;
-  const faqList = Array.isArray(faqsRaw) ? faqsRaw : [];
+  const faqList = Array.isArray(faqRaw) ? faqRaw : [];
   const admissionReqs = str(websiteSettings?.admissionRequirements ?? websiteSettings?.admission_requirements);
   const admissionSteps = str(websiteSettings?.admissionSteps ?? websiteSettings?.admission_steps ?? websiteSettings?.enrollmentProcedures);
   const contactEmail = str(settings?.contact_email) || str(websiteSettings?.contactEmail);

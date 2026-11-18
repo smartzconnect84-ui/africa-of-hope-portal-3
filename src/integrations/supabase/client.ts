@@ -1,286 +1,71 @@
+import { createClient } from "@supabase/supabase-js";
+import { authStorage } from "../../lib/authStorage.ts";
+
 /**
- * The portal's data client.
+ * Live Supabase project for the Africa of Hope portal.
  *
- * The whole app talks to the school database through this one object. It keeps
- * the familiar `supabase.from(...)` / `supabase.auth` shape, so every screen,
- * helper and hook keeps working while the storage underneath is the project's
- * own backend (see `src/integrations/autobase/client.ts`).
+ * CONFIRMED live project: `gatnzfjpuokopqyksqoy`
+ * (https://gatnzfjpuokopqyksqoy.supabase.co). The old linked project
+ * `txprgdnznzxpwpuqlxlq` (supabase-blue-ball) is unused — pause/delete it in
+ * the Supabase dashboard; local CLI link files now point at gatnz….
+ *
+ * Configuration priority:
+ *  1. `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` environment variables
+ *     (Backend → Secrets in MonstarX, or a local `.env` file).
+ *  2. Built-in production fallback so the public site and portal keep working
+ *     without extra setup.
  */
-import type { Session, User } from "@supabase/supabase-js";
-import {
-  auth,
-  db,
-  isBackendConfigured,
-  resetPassword,
-  sendPasswordReset,
-} from "../autobase/client";
 
-const BASE_URL = ((import.meta.env.VITE_AUTOBASE_URL as string | undefined) ?? "").replace(/\/$/, "");
-const PUBLISHABLE_KEY = (import.meta.env.VITE_AUTOBASE_PUBLISHABLE_KEY as string | undefined) ?? "";
+const FALLBACK_URL = "https://gatnzfjpuokopqyksqoy.supabase.co";
+const FALLBACK_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhdG56ZmpwdW9rb3BxeWtzcW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNjAyMTcsImV4cCI6MjEwNzgzNjIxN30.g0tptBFvclxGhqePFrWz0nov3R_DRsOgnSQJpKjdDT8";
 
-export const SUPABASE_URL: string = BASE_URL;
-export const SUPABASE_ANON_KEY: string = PUBLISHABLE_KEY;
-export const SUPABASE_USING_ENV = Boolean(BASE_URL && PUBLISHABLE_KEY);
-
-export function supabaseProjectRef(url: string = SUPABASE_URL): string {
+function readEnv(name: string): string {
   try {
-    return new URL(url).hostname;
+    const value = (import.meta as unknown as { env?: Record<string, string> }).env?.[name];
+    return typeof value === "string" ? value.trim() : "";
   } catch {
-    return url;
+    return "";
   }
 }
 
-export const SUPABASE_PROJECT_REF = supabaseProjectRef();
+export const SUPABASE_URL: string = readEnv("VITE_SUPABASE_URL") || FALLBACK_URL;
 
-export const isSupabaseConfigured = (): boolean => isBackendConfigured;
+export const SUPABASE_ANON_KEY: string =
+  readEnv("VITE_SUPABASE_ANON_KEY") || FALLBACK_ANON_KEY;
 
-/** True when the page was opened from a password-reset email. */
+export const SUPABASE_USING_ENV = Boolean(
+  readEnv("VITE_SUPABASE_URL") && readEnv("VITE_SUPABASE_ANON_KEY"),
+);
+
+/** e.g. https://gatnzfjpuokopqyksqoy.supabase.co -> gatnzfjpuokopqyksqoy */
+export function supabaseProjectRef(url: string = SUPABASE_URL): string {
+  const match = url.match(/https?:\/\/([^.]+)\.supabase\.co/i);
+  return match ? match[1] : url;
+}
+
+export const SUPABASE_PROJECT_REF = supabaseProjectRef(SUPABASE_URL);
+
+export const isSupabaseConfigured = (): boolean =>
+  Boolean(SUPABASE_URL) &&
+  SUPABASE_URL.startsWith("https://") &&
+  SUPABASE_ANON_KEY.length > 40;
+
+/**
+ * True when the page was opened from a password-reset email. Read before the
+ * client starts, because the client consumes and clears the URL tokens.
+ */
 export const OPENED_FROM_RECOVERY_LINK =
   typeof window !== "undefined" &&
-  (/(^|[#&?])type=recovery(&|$)/.test(`${window.location.hash}&${window.location.search.slice(1)}`) ||
-    /autobase_action=reset-password/.test(`${window.location.hash}${window.location.search}`));
+  /(^|[#&?])type=recovery(&|$)/.test(`${window.location.hash}&${window.location.search.slice(1)}`);
 
-// ── session shape ───────────────────────────────────────────────────────────
-
-type AuthPayload = {
-  user?: { id: string; email?: string | null; name?: string | null; image?: string | null };
-  session?: { token?: string | null } | null;
-} | null;
-
-function toUser(user: NonNullable<AuthPayload>["user"]): User {
-  return {
-    id: user?.id ?? "",
-    email: user?.email ?? null,
-    user_metadata: { full_name: user?.name ?? null, avatar_url: user?.image ?? null },
-    app_metadata: {},
-    aud: "authenticated",
-    created_at: "",
-  } as unknown as User;
-}
-
-function toSession(payload: AuthPayload): Session | null {
-  if (!payload?.user) return null;
-  return {
-    access_token: payload.session?.token ?? "",
-    refresh_token: "",
-    token_type: "bearer",
-    expires_in: 60 * 60,
-    expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
-    user: toUser(payload.user),
-  } as unknown as Session;
-}
-
-async function currentPayload(): Promise<AuthPayload> {
-  try {
-    const { data } = await auth.getSession();
-    return (data ?? null) as unknown as AuthPayload;
-  } catch {
-    return null;
-  }
-}
-
-const failure = (message: string) => ({ data: { session: null, user: null }, error: { message } });
-
-/**
- * Registration details are kept on the device until the account's profile row
- * exists, because email confirmation finishes the sign-up on another visit.
- */
-const PENDING_PROFILE_KEY = "aoh-pending-profile:";
-
-function rememberRegistration(email: string, details: Record<string, unknown>) {
-  try {
-    localStorage.setItem(`${PENDING_PROFILE_KEY}${email.toLowerCase()}`, JSON.stringify(details));
-  } catch {
-    // Storage is optional: the account and profile are still created.
-  }
-}
-
-export function takePendingRegistration(email: string | null): Record<string, unknown> | null {
-  if (!email) return null;
-  try {
-    const key = `${PENDING_PROFILE_KEY}${email.toLowerCase()}`;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    localStorage.removeItem(key);
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-// ── auth ────────────────────────────────────────────────────────────────────
-
-type AuthChangeEvent = "INITIAL_SESSION" | "SIGNED_IN" | "SIGNED_OUT" | "TOKEN_REFRESHED";
-type AuthListener = (event: AuthChangeEvent, session: Session | null) => void;
-
-const listeners = new Set<AuthListener>();
-let lastUserId: string | null = null;
-let watchStarted = false;
-
-async function broadcast(event: AuthChangeEvent, force = false) {
-  const session = toSession(await currentPayload());
-  const nextId = session?.user.id ?? null;
-  if (!force && event !== "INITIAL_SESSION" && nextId === lastUserId) return;
-  const resolved: AuthChangeEvent = event === "INITIAL_SESSION" ? event : nextId ? "SIGNED_IN" : "SIGNED_OUT";
-  lastUserId = nextId;
-  for (const listener of [...listeners]) listener(resolved, session);
-}
-
-/** Watches for sign-in / sign-out once, for every screen that asked. */
-function startWatching() {
-  if (watchStarted) return;
-  watchStarted = true;
-  const store = (auth as unknown as { $store?: { listen?: (cb: () => void) => () => void } }).$store;
-  if (store && typeof store.listen === "function") {
-    try {
-      store.listen(() => void broadcast("SIGNED_IN"));
-    } catch {
-      // A polling check below still keeps the session in step.
-    }
-  }
-  window.setInterval(() => void broadcast("SIGNED_IN"), 20_000);
-}
-
-const authApi = {
-  async getSession() {
-    const payload = await currentPayload();
-    return { data: { session: toSession(payload) }, error: null };
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    storage: authStorage,
+    autoRefreshToken: true,
+    // Needed so email confirmation and password-reset links start a session.
+    detectSessionInUrl: true,
+    storageKey: "aoh-portal-auth",
   },
-
-  async getUser() {
-    const payload = await currentPayload();
-    const user = payload?.user ? toUser(payload.user) : null;
-    return { data: { user }, error: user ? null : { message: "Not signed in." } };
-  },
-
-  onAuthStateChange(callback: AuthListener) {
-    listeners.add(callback);
-    startWatching();
-    window.setTimeout(() => void broadcast("INITIAL_SESSION", true), 0);
-    return {
-      data: {
-        subscription: {
-          unsubscribe() {
-            listeners.delete(callback);
-          },
-        },
-      },
-    };
-  },
-
-  async signInWithPassword({ email, password }: { email: string; password: string }) {
-    const { data, error } = await auth.signIn.email({ email, password });
-    if (error) return failure(error.message || "That email and password do not match an account.");
-    void broadcast("SIGNED_IN", true);
-    return { data: { session: toSession(data as unknown as AuthPayload), user: data?.user ? toUser(data.user) : null }, error: null };
-  },
-
-  async signUp({
-    email,
-    password,
-    options,
-  }: {
-    email: string;
-    password: string;
-    options?: { data?: Record<string, unknown>; emailRedirectTo?: string };
-  }) {
-    const details = options?.data ?? {};
-    const name = typeof details.full_name === "string" ? details.full_name : email.split("@")[0];
-    const { data, error } = await auth.signUp.email({ email, password, name });
-    if (error) {
-      const message = /exist/i.test(error.message ?? "")
-        ? "An account with this email already exists. One email can only be used for one account (User, Admin or Staff) — please sign in instead."
-        : error.message || "The account could not be created.";
-      return { data: { user: null, session: null, identities: [] }, error: { message } };
-    }
-    const { full_name: _name, ...rest } = details;
-    if (Object.keys(rest).length) rememberRegistration(email, rest);
-    void broadcast("SIGNED_IN", true);
-    return {
-      data: {
-        user: data?.user ? toUser(data.user) : null,
-        session: toSession(data as unknown as AuthPayload),
-        identities: data?.user ? [{ id: data.user.id }] : [],
-      },
-      error: null,
-    };
-  },
-
-  async resetPasswordForEmail(email: string, _options?: { redirectTo?: string }) {
-    try {
-      await sendPasswordReset(email, "/reset-password");
-      return { data: {}, error: null };
-    } catch (err) {
-      return { data: {}, error: { message: err instanceof Error ? err.message : "The reset email could not be sent." } };
-    }
-  },
-
-  async updateUser({ password }: { password?: string; [key: string]: unknown }) {
-    if (!password) return { data: { user: null }, error: null };
-    try {
-      await resetPassword(password);
-      return { data: { user: null }, error: null };
-    } catch (err) {
-      return { data: { user: null }, error: { message: err instanceof Error ? err.message : "The password could not be changed." } };
-    }
-  },
-
-  async signOut() {
-    const { error } = await auth.signOut();
-    void broadcast("SIGNED_OUT", true);
-    return { error: error ? { message: error.message || "Sign-out did not finish." } : null };
-  },
-};
-
-// ── server functions ───────────────────────────────────────────────────────
-
-async function invokeFunction(name: string, body: unknown) {
-  if (!isBackendConfigured) {
-    return { data: null, error: { message: "The server function is unavailable right now." } };
-  }
-  const payload = await currentPayload();
-  const token = payload?.session?.token ?? PUBLISHABLE_KEY;
-  try {
-    const response = await fetch(`${BASE_URL}/functions/v1/${name}`, {
-      method: "POST",
-      headers: {
-        apikey: PUBLISHABLE_KEY,
-        Authorization: `Bearer ${token}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(body ?? {}),
-    });
-    const text = await response.text();
-    let data: unknown = text;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      // Plain text answers are passed through as they are.
-    }
-    if (!response.ok) {
-      const message =
-        data && typeof data === "object" && "error" in data
-          ? String((data as { error: unknown }).error)
-          : `The request failed (${response.status}).`;
-      return { data: null, error: { message } };
-    }
-    return { data, error: null };
-  } catch (err) {
-    return { data: null, error: { message: err instanceof Error ? err.message : "The request could not be sent." } };
-  }
-}
-
-// ── the client the app already uses ────────────────────────────────────────
-
-const NOT_PORTED = "This action is not available yet in the new database. Tell us which module you need next.";
-
-export const supabase = {
-  from: (table: string) => db.from(table),
-  storage: db.storage,
-  channel: (name: string, params?: unknown) => db.channel(name, params as never),
-  removeChannel: (channel: unknown) => db.removeChannel(channel as never),
-  auth: authApi,
-  functions: { invoke: invokeFunction },
-  /** Server-side routines are being moved to the new backend. */
-  rpc: async (_fn: string, _args?: Record<string, unknown>) => ({ data: null, error: { message: NOT_PORTED } }),
-};
+});

@@ -3,16 +3,9 @@
 > Paste **`supabase/DEPLOY_01_14_RUN_ME.sql`** first (pure SQL, safe to Run), then paste
 > each migration file listed below one at a time, in order.
 
-# DEPLOY TAGS — migration deploy set (historical checklist)
+# DEPLOY TAGS — unapplied migrations (run in this order)
 
-> **Status 2026-11-18:** DEPLOY-01 through DEPLOY-14 are present on the live
-> project and recorded in `supabase_migrations.schema_migrations`; there is no
-> remaining pending set. The only genuinely missing piece — the
-> `programs_ensure_code` trigger — was applied as
-> `20261118053234_programs_code_autofill` and verified. Keep this file as the
-> order-of-application reference, not as a to-do list.
-
-> Originally: nothing here had been executed. The builder has no live database connection.
+> Nothing here has been executed. The builder has no live database connection.
 > Run these yourself in Supabase Dashboard → SQL editor on project
 > `gatnzfjpuokopqyksqoy`, staging first, one block at a time, top to bottom.
 > Verify each with the check query before running the next.

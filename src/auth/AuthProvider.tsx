@@ -1,5 +1,5 @@
 import * as React from "react";
-import { supabase, takePendingRegistration } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
 export type Profile = {
@@ -61,19 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(data as Profile);
         return;
       }
-      // A profile is created on the first sign-in, carrying whatever the
-      // applicant entered in the registration form.
-      const application = takePendingRegistration(email) ?? {};
+      // The signup trigger normally creates the row; if it did not, create it.
       const { data: created, error: createError } = await supabase
         .from("profiles")
-        .insert({
-          id: userId,
-          email,
-          full_name: (application.full_name as string) ?? null,
-          ...application,
-          role: "Student",
-          status: "Pending Approval",
-        })
+        .insert({ id: userId, email, role: "Student", status: "Pending Approval" })
         .select()
         .single();
       if (activeUserIdRef.current !== userId) return;

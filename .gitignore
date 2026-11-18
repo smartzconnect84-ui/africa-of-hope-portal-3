@@ -22,13 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env*
-!.env*.example
-!.env*.sample
-!.env*.template
-!.envrc
-.claude/skills/blocks/
-# bychat: never commit local env files (injected secrets)
-.env
-.env.*
-!.env.example
