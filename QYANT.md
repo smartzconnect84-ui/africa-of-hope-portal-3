@@ -268,3 +268,15 @@ frontend).
   so the instant trigger cannot send them twice; failed one-to-one sends from
   the composer are replayed by the queue, broadcasts are not (their audience is
   a filter/segment, not a recipient the queue can address).
+
+- "Push library is unavailable offline" was a dead end (2026-11-18,
+  `src/lib/onesignal.ts` + `OneSignalPanel`). `initOneSignal()` cached its first
+  result for the life of the page and `loadPageSdk()` cached a rejected script
+  promise, so a single blocked or slow CDN download — or one rejected
+  `OS.init` — made Enable answer the same words on every retry, and "Refresh
+  status" replayed the cached failure too. A failed init is no longer
+  remembered, a dead `<script>` tag is removed so the next attempt really
+  reloads, the download times out after 12 s instead of hanging, and the
+  message now names the real cause. iOS is called out explicitly in both the
+  message and the card: web push only works from the Home Screen app, never a
+  Safari tab (iOS 16.4+).

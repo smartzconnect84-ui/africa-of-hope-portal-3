@@ -16,8 +16,11 @@
 
 import { dispatchPushNavigate, pushPlatformTag } from "./androidPush";
 import { isNativeWrapper } from "./nativeOneSignal";
+import { isIos, isStandalone } from "./pwa";
 
 const PAGE_SDK_URL = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+/** A blocked or hanging CDN request must not leave Enable spinning forever. */
+const SDK_LOAD_TIMEOUT_MS = 12000;
 const APP_ID_KEY = "VITE_ONESIGNAL_APP_ID";
 const SAFARI_WEB_ID_KEY = "VITE_ONESIGNAL_SAFARI_WEB_ID";
 // Owner-supplied production OneSignal app (public IDs only — safe for frontend).
@@ -58,23 +61,42 @@ function loadPageSdk(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("No window"));
   if (window.OneSignal) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
-  scriptPromise = new Promise<void>((resolve, reject) => {
+  const promise = new Promise<void>((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[data-onesignal="v16"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Push library failed to load. Check your connection and retry.")), { once: true });
-      return;
+    const tag = existing ?? document.createElement("script");
+    let settled = false;
+    let timer: number | undefined;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      tag.removeEventListener("load", onLoad);
+      tag.removeEventListener("error", onError);
+      if (!error) { resolve(); return; }
+      // A failed or blocked load must not poison later retries: forget the
+      // cached promise and drop the dead tag so Enable can genuinely try again.
+      scriptPromise = null;
+      if (!window.OneSignal) tag.remove();
+      reject(error);
+    };
+    const onLoad = () => {
+      if (window.OneSignal) finish();
+      else finish(new Error("Push library loaded but did not start."));
+    };
+    const onError = () => finish(new Error("Push library could not be downloaded."));
+    tag.addEventListener("load", onLoad, { once: true });
+    tag.addEventListener("error", onError, { once: true });
+    timer = window.setTimeout(() => finish(new Error("Push library download timed out.")), SDK_LOAD_TIMEOUT_MS);
+    if (!existing) {
+      tag.src = PAGE_SDK_URL;
+      tag.async = true;
+      tag.defer = true;
+      tag.dataset.onesignal = "v16";
+      document.head.appendChild(tag);
     }
-    const tag = document.createElement("script");
-    tag.src = PAGE_SDK_URL;
-    tag.async = true;
-    tag.defer = true;
-    tag.dataset.onesignal = "v16";
-    tag.addEventListener("load", () => resolve(), { once: true });
-    tag.addEventListener("error", () => reject(new Error("Push library failed to load. Check your connection and retry.")), { once: true });
-    document.head.appendChild(tag);
   });
-  return scriptPromise;
+  scriptPromise = promise;
+  return promise;
 }
 
 /** Initialize once; safe to call from multiple components (StrictMode-proof).
@@ -82,7 +104,7 @@ function loadPageSdk(): Promise<void> {
  *  (src/lib/nativeOneSignal.ts) owns push there, so we never double-init. */
 export function initOneSignal(): Promise<boolean> {
   if (initPromise) return initPromise;
-  initPromise = (async () => {
+  const attempt = (async (): Promise<boolean> => {
     try {
       if (isNativeWrapper()) return false;
     } catch { /* fall through to web path */ }
@@ -108,7 +130,15 @@ export function initOneSignal(): Promise<boolean> {
       // Graceful: portal + local reminders keep working; OneSignal stays off.
       return false;
     }
-  })();
+  })().catch(() => false);
+  // A failed initialisation is deliberately not remembered. It used to be
+  // cached for the life of the page, so one blocked script download or one
+  // rejected OS.init made “Enable notifications” answer “push library is
+  // unavailable” until a full reload, however often the user retried.
+  initPromise = attempt.then((ok) => {
+    if (!ok) initPromise = null;
+    return ok;
+  });
   return initPromise;
 }
 
@@ -197,11 +227,19 @@ export async function oneSignalLogout(): Promise<void> {
 export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: string }> {
   if (!isOneSignalConfigured()) return { subscribed: false, message: "Push is not configured yet. Ask an administrator to add the OneSignal App ID." };
   if (!pushSupported()) return { subscribed: false, message: "This browser does not support push. Portal messages still work without it." };
+  // iOS only delivers web push to the installed (Home Screen) app, never to a
+  // plain Safari tab — the SDK fails to subscribe there, which is why the card
+  // stayed at "off" while the permission read "granted".
+  if (isIos() && !isStandalone()) {
+    return { subscribed: false, message: "On iPhone or iPad, notifications only work from the installed app: open this site in Safari, tap Share → Add to Home Screen, open it from the Home Screen, then press Enable there (iOS 16.4 or newer)." };
+  }
   if ("Notification" in window && Notification.permission === "denied") {
     return { subscribed: false, message: "Notifications are blocked for this site. Allow them in your browser / device settings, then retry." };
   }
   const ready = await initOneSignal();
-  if (!ready || !window.OneSignal) return { subscribed: false, message: "Push library is unavailable offline. Reconnect and retry." };
+  if (!ready || !window.OneSignal) {
+    return { subscribed: false, message: "The push library could not start on this device. Check your connection or a content blocker, reload the page, then press Enable again." };
+  }
   try {
     const OS = window.OneSignal;
     const subscription = OS?.User?.PushSubscription;

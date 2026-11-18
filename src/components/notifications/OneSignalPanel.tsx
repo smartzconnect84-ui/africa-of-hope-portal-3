@@ -10,6 +10,7 @@ import {
   nativeRequestPermission, nativeStatus, isNativeWrapper,
 } from "@/lib/nativeOneSignal";
 import { useApp } from "@/context/AppContext";
+import { isIos, isStandalone } from "@/lib/pwa";
 
 function safeMsg(e: unknown) { return e instanceof Error ? e.message : "Request failed"; }
 
@@ -113,6 +114,9 @@ export default function OneSignalPanel({ compact = false }: { compact?: boolean 
         </div>
       </div>
       <p className="text-muted-foreground flex gap-1.5 items-start"><ShieldCheck size={14} className="mt-0.5 shrink-0" />{oneSignalHowLockScreenWorks()}</p>
+      {isIos() && !isStandalone() && (
+        <p className="flex gap-1.5 items-start text-amber-700"><Smartphone size={14} className="mt-0.5 shrink-0" />On iPhone/iPad, enable this from the installed app: Safari → Share → Add to Home Screen, open it there, then press Enable (iOS 16.4+).</p>
+      )}
       {!compact && <Button size="sm" variant="ghost" onClick={() => void refresh()}>Refresh status</Button>}
       {notice && <p role="status" className="rounded bg-muted px-2 py-1.5">{notice}</p>}
     </section>
