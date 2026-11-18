@@ -48,8 +48,11 @@ verify_jwt = false
 [functions.send-deadline-reminders]
 verify_jwt = false
 
-# Authenticated at the gateway (admin JWT required); the handler additionally
-# re-checks the caller role server-side and never accepts the REST key.
-# Server secrets: ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY.
+# Open at the gateway on purpose: the database dispatcher (`_cron_dispatch_push`)
+# cannot mint a user JWT, so it presents a DB-only token instead. The handler is
+# still closed — it accepts that token, or a signed-in staff session whose role
+# it re-checks server-side, and never the REST key. Turning verify_jwt back on
+# here silently breaks every notification push queued by the database.
+# Server secrets: ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY, PUSH_DISPATCH_TOKEN.
 [functions.onesignal-send]
-verify_jwt = true
+verify_jwt = false

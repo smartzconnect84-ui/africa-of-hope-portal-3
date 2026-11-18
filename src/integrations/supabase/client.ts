@@ -13,10 +13,11 @@ import {
   isBackendConfigured,
   resetPassword,
   sendPasswordReset,
-} from "../autobase/client";
+} from "../autobase/client.ts";
 
-const BASE_URL = ((import.meta.env.VITE_AUTOBASE_URL as string | undefined) ?? "").replace(/\/$/, "");
-const PUBLISHABLE_KEY = (import.meta.env.VITE_AUTOBASE_PUBLISHABLE_KEY as string | undefined) ?? "";
+const env = (import.meta as { env?: Record<string, string | undefined> }).env;
+const BASE_URL = (env?.VITE_AUTOBASE_URL ?? "").replace(/\/$/, "");
+const PUBLISHABLE_KEY = env?.VITE_AUTOBASE_PUBLISHABLE_KEY ?? "";
 
 export const SUPABASE_URL: string = BASE_URL;
 export const SUPABASE_ANON_KEY: string = PUBLISHABLE_KEY;
@@ -33,6 +34,17 @@ export function supabaseProjectRef(url: string = SUPABASE_URL): string {
 export const SUPABASE_PROJECT_REF = supabaseProjectRef();
 
 export const isSupabaseConfigured = (): boolean => isBackendConfigured;
+
+/**
+ * better-auth types every generated endpoint as taking a required input object,
+ * so the documented no-argument `getSession()` / `signOut()` calls fail to
+ * typecheck while working perfectly at runtime. These narrow views keep the
+ * calls exactly as they are executed.
+ */
+const sessionApi = auth as unknown as {
+  getSession: () => Promise<{ data: AuthPayload | null }>;
+  signOut: () => Promise<{ error: { message?: string } | null }>;
+};
 
 /** True when the page was opened from a password-reset email. */
 export const OPENED_FROM_RECOVERY_LINK =
@@ -72,7 +84,7 @@ function toSession(payload: AuthPayload): Session | null {
 
 async function currentPayload(): Promise<AuthPayload> {
   try {
-    const { data } = await auth.getSession();
+    const { data } = await sessionApi.getSession();
     return (data ?? null) as unknown as AuthPayload;
   } catch {
     return null;
@@ -110,7 +122,12 @@ export function takePendingRegistration(email: string | null): Record<string, un
 
 // ── auth ────────────────────────────────────────────────────────────────────
 
-type AuthChangeEvent = "INITIAL_SESSION" | "SIGNED_IN" | "SIGNED_OUT" | "TOKEN_REFRESHED";
+type AuthChangeEvent =
+  | "INITIAL_SESSION"
+  | "SIGNED_IN"
+  | "SIGNED_OUT"
+  | "TOKEN_REFRESHED"
+  | "PASSWORD_RECOVERY";
 type AuthListener = (event: AuthChangeEvent, session: Session | null) => void;
 
 const listeners = new Set<AuthListener>();
@@ -226,7 +243,7 @@ const authApi = {
   },
 
   async signOut() {
-    const { error } = await auth.signOut();
+    const { error } = await sessionApi.signOut();
     void broadcast("SIGNED_OUT", true);
     return { error: error ? { message: error.message || "Sign-out did not finish." } : null };
   },
@@ -272,7 +289,31 @@ async function invokeFunction(name: string, body: unknown) {
 
 // ── the client the app already uses ────────────────────────────────────────
 
-const NOT_PORTED = "This action is not available yet in the new database. Tell us which module you need next.";
+const NOT_CONNECTED =
+  "The database is not connected in this build, so this action is unavailable. Tell us which module you need.";
+
+/**
+ * Server-side routines run on the same backend as the tables, so they are
+ * forwarded rather than stubbed. They used to answer "not available yet" for
+ * every call, which silently disabled helpdesk, quizzes, grade appeals,
+ * newsletter campaigns, enrolment and the congratulations queue even though
+ * the routines exist and are granted by the access policies.
+ */
+const rpc = async (
+  fn: string,
+  args?: Record<string, unknown>,
+  options?: Record<string, unknown>,
+): Promise<{ data: unknown; error: { message: string } | null }> => {
+  if (!isBackendConfigured) return { data: null, error: { message: NOT_CONNECTED } };
+  const client = db as unknown as {
+    rpc: (
+      name: string,
+      params?: Record<string, unknown>,
+      opts?: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+  return client.rpc(fn, args, options);
+};
 
 export const supabase = {
   from: (table: string) => db.from(table),
@@ -281,6 +322,5 @@ export const supabase = {
   removeChannel: (channel: unknown) => db.removeChannel(channel as never),
   auth: authApi,
   functions: { invoke: invokeFunction },
-  /** Server-side routines are being moved to the new backend. */
-  rpc: async (_fn: string, _args?: Record<string, unknown>) => ({ data: null, error: { message: NOT_PORTED } }),
+  rpc,
 };

@@ -2,9 +2,10 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tests.tsbuildinfo",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "types": ["node"]
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "types": ["node", "vite/client"]
   },
   "include": [
     "tests/**/*.ts",

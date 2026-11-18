@@ -22,8 +22,12 @@ import { createAuthClient } from 'better-auth/react';
 import { jwtClient, magicLinkClient } from 'better-auth/client/plugins';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const baseUrl = import.meta.env.VITE_AUTOBASE_URL as string | undefined;
-const publishableKey = import.meta.env.VITE_AUTOBASE_PUBLISHABLE_KEY as string | undefined;
+// `import.meta.env` only exists when Vite builds the page. Reading it without a
+// guard threw on every other entry point (the node test runner imports this
+// module), which made the data layer impossible to load outside the bundler.
+const env = (import.meta as { env?: Record<string, string | undefined> }).env;
+const baseUrl = env?.VITE_AUTOBASE_URL;
+const publishableKey = env?.VITE_AUTOBASE_PUBLISHABLE_KEY;
 
 function isValidConfig(url: string | undefined, key: string | undefined): boolean {
   if (!url || !key || !key.startsWith('sb_publishable_')) return false;
@@ -107,7 +111,8 @@ function expiry(jwt: string): number {
 async function currentAccessToken(): Promise<string | null> {
   if (!session.get()) return null;
   if (accessToken && accessToken.exp - 60 > Date.now() / 1000) return accessToken.token;
-  const { data } = await auth.token();
+  // The generated client types token() as requiring input; it is a no-argument call.
+  const { data } = await (auth.token as unknown as () => Promise<{ data?: { token?: string } }>)();
   if (!data?.token) {
     accessToken = null;
     return null;

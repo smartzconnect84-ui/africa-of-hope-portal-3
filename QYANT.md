@@ -269,6 +269,34 @@ frontend).
   the composer are replayed by the queue, broadcasts are not (their audience is
   a filter/segment, not a recipient the queue can address).
 
+- Backend audit (2026-11-18). The `supabase.rpc()` bridge answered "This action
+  is not available yet" for every single call while all 105 public routines
+  exist in the project and are granted, so helpdesk, quizzes, grade appeals,
+  newsletter campaigns, enrolment, attendance, certificate issue/revoke and the
+  congratulations queue were dead in the UI. It now forwards to the same client
+  the tables use and only reports "not connected" when the backend is
+  unconfigured. Verified over REST with the publishable key
+  (`verify_public_certificate` → 200/null) and through the public
+  `verify-certificate` function (200, `valid:false`).
+- `import.meta.env` was read unguarded in `src/integrations/autobase/client.ts`
+  and `src/integrations/supabase/client.ts`, so loading the data layer outside
+  Vite (the node test runner) threw on import and two test files never ran. Both
+  reads are guarded now.
+- `npm test` could never pass: `tsconfig.tests.json` used NodeNext, which rejects
+  this app's extensionless imports and `import.meta.env`, and `typecheck` pointed
+  at the solution-style root config (`files: []`), which typechecked nothing. Both
+  are fixed — 41 tests pass — and the real errors they had hidden are gone:
+  `AuthChangeEvent` was missing `PASSWORD_RECOVERY`, and three better-auth
+  no-argument calls (`getSession`, `signOut`, `token`) failed the generated types.
+  `src/integrations/supabase/client.ts` also imports `../autobase/client.ts` with
+  its extension so Node can resolve it.
+- `supabase/config.toml` still declared `verify_jwt = true` for `onesignal-send`,
+  contradicting the deployed DB-token design: any CLI or config deploy would have
+  silently turned every queued push off. It now matches the live function.
+- Not fixed, only recorded: a deployed function `run-repo-migration` has no
+  source in this repo, and the root `index.ts` duplicates the `admin-users`
+  handler; the app calls neither.
+
 - Deployed to Freebuff Sites (2026-11-18). Preview
   https://africa-of-hope-portal-kjxltx-preview.freebuff.site and production
   https://africa-of-hope-portal-kjxltx.freebuff.site, both published. The app is
