@@ -16,17 +16,37 @@ Hash routing (#/programs, #/login, #/signup, #/verify, #/vacancies, #/yearbook,
 
 ## Data model
 
-Live backend: Supabase project gatnzfjpuokopqyksqoy (afrohopeschool_database) —
-72 RLS tables, realtime on 43, 9 storage buckets, 8 edge functions, 2 cron jobs.
-Frontend wires: programs, applications, enquiries, pledges, vacancies,
-yearbook, transparency, newsletter (edge), certificate verification (edge),
-student portal (profile, notifications realtime, announcements realtime,
-enrollments, assignments, quizzes, payment submissions with proof upload,
-helpdesk, avatar upload), staff/admin console (announcements, vacancies,
-payments review, helpdesk, yearbook moderation, people, enquiries,
-applications, certificates). See AUDIT.md.
-Repository still contains no SQL migrations; the live database is the source
-of truth until a migrations export is added.
+The portal's own database (Autobase, SQLite) is now the source of truth:
+backend/migrations/*.sql creates 72 tables with access policies, storage
+buckets and live updates.
+
+- portal_schema.sql — every table the app reads or writes (profiles, roles,
+  permissions, programmes and modules, cohorts and cohort_students,
+  timetables, assignments and submissions, quizzes, attendance, learning
+  progress, fees and payments, certificates, announcements, blog, enquiries,
+  vacancies, yearbook, alumni businesses, transparency, helpdesk, grade
+  appeals, direct messages, notifications, newsletter, push, system settings).
+- portal_access_policies.sql — is_staff() / is_admin() helpers plus policies
+  for all 72 tables: public read for published site content, own-row access
+  for personal records, staff for everything else.
+- portal_storage_live_updates.sql — avatars, program-images, site-assets,
+  blog-covers (public), documents, classwork-submissions, training-materials
+  (private, signed links); realtime on announcements, direct_messages,
+  notifications, yearbook_entries and profiles.
+- portal_roles_permissions_seed.sql — the six roles and the 43-grant
+  permission matrix.
+
+src/integrations/supabase/client.ts is now a bridge: the app keeps calling
+supabase.from(...) / supabase.auth, and those calls run against the project
+backend via src/integrations/autobase/client.ts. Sign-in is the platform's
+(better-auth): email + password, reset by email, Google/Microsoft available.
+
+Not yet ported: the ~30 SQL routines the academic, quiz, payment-ledger,
+certificate, helpdesk, grade-appeal and newsletter modules called with
+supabase.rpc(), and the 8 edge functions (send-email, newsletter,
+admin-users, onesignal-send, verify-certificate, assistant,
+send-deadline-reminders). Those calls now return a clear "not available
+yet" message instead of failing silently.
 
 ## Pages and routes
 
@@ -36,9 +56,9 @@ of truth until a migrations export is added.
 
 ## Environment
 
-Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (anon key only; no
-secret keys in the frontend). A local .env exists for development and is
-git-ignored.
+Provisioned by the platform, no manual setup: VITE_AUTOBASE_URL and
+VITE_AUTOBASE_PUBLISHABLE_KEY (publishable key only; no secret keys in the
+frontend).
 
 ## Decisions
 
@@ -65,3 +85,10 @@ git-ignored.
 
 - Memory file added to an existing project; pending reconstruction.
 - Reconstructed memory from the available documentation snapshot and added a standalone React/Vite public homepage and build manifest.
+- Added the project's own database: 72-table schema, access policies, storage
+  buckets, live updates and the roles/permissions seed written as migrations;
+  src/integrations/supabase/client.ts turned into a bridge onto the new
+  backend so every screen, helper and hook keeps its existing data calls;
+  sign-in, sign-up, password reset and sign-out mapped onto the platform auth
+  client; registration details carried to the first profile row; boolean
+  columns read from the database normalised in src/data/liveData.ts.

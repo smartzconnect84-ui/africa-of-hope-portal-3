@@ -27,3 +27,4 @@ dist-ssr
 !.env*.sample
 !.env*.template
 !.envrc
+.claude/skills/blocks/

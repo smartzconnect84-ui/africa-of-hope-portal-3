@@ -34,8 +34,13 @@ const num = (p: Row, key: string, fallback = 0) => {
   const v = p[key];
   return v === null || v === undefined ? fallback : Number(v);
 };
-const flag = (p: Row, key: string, fallback: boolean) =>
-  typeof p[key] === "boolean" ? (p[key] as boolean) : fallback;
+const flag = (p: Row, key: string, fallback: boolean) => {
+  const value = p[key];
+  if (typeof value === "boolean") return value;
+  // Stored flags come back as 1 / 0.
+  if (value === 1 || value === 0) return value === 1;
+  return fallback;
+};
 
 function mapUser(p: Row, cohortIds: string[]): User {
   return {
