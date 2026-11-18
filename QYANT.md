@@ -269,6 +269,23 @@ frontend).
   the composer are replayed by the queue, broadcasts are not (their audience is
   a filter/segment, not a recipient the queue can address).
 
+- Deployed to Freebuff Sites (2026-11-18). Preview
+  https://africa-of-hope-portal-kjxltx-preview.freebuff.site and production
+  https://africa-of-hope-portal-kjxltx.freebuff.site, both published. The app is
+  a prerendered Vite SPA, so `deploy/sites-worker.js` only forwards to the
+  static asset binding and `sites.manifest.json` sets `spa: true` for client
+  routes. Two build problems had to be fixed first: (a) a stub `vite.config.js`
+  shadowed `vite.config.ts` (Vite prefers the `.js`), so `npm run build` could
+  not resolve the `@/` alias — the stub is removed and the real config is the
+  only one; (b) the build output ships `public/_redirects`, which Cloudflare
+  rejects on upload as an infinite loop (error 100324), and `dist/.well-known`
+  is refused as a hidden path, so `npm run build:sites` builds and then strips
+  both before `sites_deploy`. Sites has no build step, so the `VITE_*` values
+  must be present when the bundle is built. This deployment was built without
+  them (the Autobase URL/key are platform-provisioned and absent from the
+  repo), so the public site renders but sign-in and data features report the
+  backend as not connected until the bundle is rebuilt with those values.
+
 - "Push library is unavailable offline" was a dead end (2026-11-18,
   `src/lib/onesignal.ts` + `OneSignalPanel`). `initOneSignal()` cached its first
   result for the life of the page and `loadPageSdk()` cached a rejected script
