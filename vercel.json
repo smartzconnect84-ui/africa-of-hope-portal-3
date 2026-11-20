@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/((?!api|assets|logo|icons|og-card.svg|manifest.webmanifest|sitemap.xml|robots.txt|llms.txt|blog-slugs.txt).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!api|assets|logo|icons|favicon.png|favicon.ico|og-card.png|og-card.svg|manifest.webmanifest|sw.js|offline.html|sitemap.xml|robots.txt|llms.txt|blog-slugs.txt).*)", "destination": "/index.html" }],
   "redirects": [{ "source": "/:path*", "has": [{ "type": "host", "value": "www.africaofhopelr.org" }], "destination": "https://africaofhopelr.org/:path*", "permanent": true }],
   "headers": [
     {
