@@ -186,6 +186,12 @@ const authApi = {
   },
 
   async signInWithPassword({ email, password }: { email: string; password: string }) {
+    if (!isBackendConfigured) {
+      return failure(
+        "Sign-in is not available right now because the school database is not connected in this build. " +
+        "If you are the owner, add VITE_AUTOBASE_URL and VITE_AUTOBASE_PUBLISHABLE_KEY under Manage → Backend → Secrets, then reload and try again."
+      );
+    }
     const { data, error } = await auth.signIn.email({ email, password });
     if (error) return failure(error.message || "That email and password do not match an account.");
     void broadcast("SIGNED_IN", true);
