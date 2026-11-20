@@ -384,3 +384,8 @@ with them because Sites has no build step.
   deleted afterwards (39 users / 39 profiles, unchanged). `npm run typecheck`,
   `npm test` (41/41) and `VERCEL=1 npm run build:sites` pass, and the built
   bundle now contains the project URL instead of the placeholder host.
+- This merge keeps the newer `main` work (`213b416`, `0d841a5`, `2dfa776`,
+  `00784ef`, `30af657`: portal modules, the operations hub, the website settings
+  scrolling fix and the better-auth response mapping). Only the data/auth client
+  changed: those commits tried to make the managed backend answer; this one
+  points the app at the project that actually holds the accounts.

@@ -232,7 +232,7 @@ export default function AdminWebsiteSettings() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-slate-200 bg-[#f2ebd6] p-1.5">
+      <div className="flex gap-1.5 overflow-x-auto rounded-2xl border border-slate-200 bg-[#f2ebd6] p-1.5 overscroll-x-contain lg:flex-wrap lg:overflow-visible">
         {TABS.map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -242,7 +242,7 @@ export default function AdminWebsiteSettings() {
               type="button"
               onClick={() => setTab(t.key)}
               title={t.hint}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition ${
                 active ? "bg-emerald-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -253,7 +253,7 @@ export default function AdminWebsiteSettings() {
       </div>
 
       {(publishError || Object.keys(errors).length > 0) && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-semibold">Changes have not been published. Your draft is retained.</p>{publishError && <p className="mt-2">{publishError}</p>}<ul className="mt-2 list-inside list-disc">{Object.entries(errors).map(([key, message]) => <li key={key}>{key}: {message}</li>)}</ul></div>}
-      <fieldset disabled={saving || copyingBrand} className="min-w-0 space-y-5 disabled:opacity-75">
+      <fieldset disabled={saving || copyingBrand} className="min-w-0 space-y-5 [min-inline-size:0] disabled:opacity-75">
       {tab === "modules" && <SiteModulesManager draft={draft} patch={patch} />}
       {tab === "campus" && <CampusLifeEditor draft={draft} patch={patch} />}
       {tab === 'presentation' && <PublicContentEditor draft={draft} patch={patch} errors={errors} />}

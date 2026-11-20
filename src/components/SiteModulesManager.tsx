@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Download, Eye, EyeOff, Pencil, Trash2, Undo2, Upload, Database, Globe, Layers } from "lucide-react";
+import { ArrowUp, Download, Eye, EyeOff, Pencil, Trash2, Undo2, Upload, Database, Globe, Layers } from "lucide-react";
 import type { HomeSectionKey, WebsiteSettings } from "@/types";
 import { PUBLIC_PAGE_DEFS, getPublicPage } from "@/lib/publicPages";
 import { panelClass } from "./Navigation";
@@ -208,7 +208,7 @@ export default function SiteModulesManager({ draft, patch }: Props) {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 scroll-mt-24 space-y-5 pb-[max(0px,env(safe-area-inset-bottom))]">
       <div className={`${panelClass} p-5`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -401,6 +401,11 @@ export default function SiteModulesManager({ draft, patch }: Props) {
           tables on startup and on every Publish; the public site filters unpublished programmes, expired announcements and
           disabled pages automatically.
         </p>
+        <div className="mt-4 flex justify-end">
+          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+            <ArrowUp className="h-3.5 w-3.5" /> Back to top
+          </button>
+        </div>
       </div>
     </div>
   );

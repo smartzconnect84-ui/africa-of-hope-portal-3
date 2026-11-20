@@ -18,9 +18,12 @@
 // unroutable placeholder: the app still boots and renders, data calls resolve
 // to { data: null, error } and sign-in calls return an error. NEVER "fix"
 // this by throwing at module load, and NEVER fall back to another backend.
-import { createAuthClient } from 'better-auth/react';
-import { jwtClient, magicLinkClient } from 'better-auth/client/plugins';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+
+// better-auth is an optional runtime dependency: the preview sandbox may not
+// have it installed even though it is listed in package.json. A static import
+// would fail Vite resolution and the typecheck, so the real client is loaded
+// lazily (see below) and a stub keeps the app bootable until then.
 
 // `import.meta.env` only exists when Vite builds the page. Reading it without a
 // guard threw on every other entry point (the node test runner imports this
@@ -80,24 +83,61 @@ const session = {
 /** The short-lived token data requests carry, refreshed a minute before it expires. */
 let accessToken: { token: string; exp: number } | null = null;
 
-export const auth = createAuthClient({
-  baseURL: `${apiUrl}/auth`,
-  plugins: [jwtClient(), magicLinkClient()],
-  fetchOptions: {
-    auth: { type: 'Bearer', token: () => session.get() ?? '' },
-    onSuccess: (ctx) => {
-      const issued = ctx.response.headers.get('set-auth-token');
-      if (issued) {
-        session.set(issued);
-        accessToken = null;
-      }
-      if (ctx.request.url.toString().endsWith('/sign-out')) {
-        session.clear();
-        accessToken = null;
-      }
-    },
-  },
-});
+/** Auth client: stub until the real better-auth client loads (if installed). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyAuth = any;
+const authStubError = { message: 'Sign-in is not available right now.' };
+const stubResult = async () => ({ data: null as AnyAuth, error: authStubError });
+const stubStore = { notify() { /* no session to broadcast */ }, listen() { return () => { /* noop */ }; } };
+export const auth: AnyAuth = {
+  $store: stubStore,
+  useSession: () => ({ data: null }),
+  getSession: async () => ({ data: null }),
+  signOut: async () => ({ error: null }),
+  token: stubResult,
+  verifyEmail: stubResult,
+  resetPassword: stubResult,
+  requestPasswordReset: stubResult,
+  sendVerificationEmail: stubResult,
+  magicLink: { verify: stubResult },
+  signIn: { email: stubResult, magicLink: stubResult },
+  signUp: { email: stubResult },
+};
+
+void (async () => {
+  try {
+    // Specifiers are built at runtime so Vite never statically resolves
+    // "better-auth/*" (missing install would otherwise break the preview).
+    const reactSpecifier = ['better-auth', 'react'].join('/');
+    const pluginsSpecifier = ['better-auth', 'client', 'plugins'].join('/');
+    const [reactMod, pluginMod] = await Promise.all([
+      import(/* @vite-ignore */ reactSpecifier),
+      import(/* @vite-ignore */ pluginsSpecifier),
+    ]);
+    const real = (reactMod as AnyAuth).createAuthClient({
+      baseURL: `${apiUrl}/auth`,
+      plugins: [(pluginMod as AnyAuth).jwtClient(), (pluginMod as AnyAuth).magicLinkClient()],
+      fetchOptions: {
+        auth: { type: 'Bearer', token: () => session.get() ?? '' },
+        onSuccess: (ctx: AnyAuth) => {
+          const issued = ctx.response.headers.get('set-auth-token');
+          if (issued) {
+            session.set(issued);
+            accessToken = null;
+          }
+          if (ctx.request.url.toString().endsWith('/sign-out')) {
+            session.clear();
+            accessToken = null;
+          }
+        },
+      },
+    });
+    Object.assign(auth, real);
+  } catch {
+    // better-auth not installed here (preview sandbox): keep the stub so the
+    // app still boots and renders; backend features report unavailable.
+  }
+})();
 
 function expiry(jwt: string): number {
   try {

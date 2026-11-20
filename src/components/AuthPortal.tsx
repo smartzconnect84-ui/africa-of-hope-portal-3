@@ -6,7 +6,7 @@ import {
   KeyRound, Loader2, Lock, LogIn, Mail, MailCheck, Phone, Search, ShieldCheck,
   Sparkles, User as UserIcon, UserPlus, type LucideIcon,
 } from "lucide-react";
-import { OPENED_FROM_RECOVERY_LINK, supabase } from "@/integrations/supabase/client";
+import { OPENED_FROM_RECOVERY_LINK, isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import { useApp, type SignUpResult } from "@/context/AppContext";
 import { programImage } from "@/lib/programImages";
 import { durationLabel } from "@/lib/programDelivery";
@@ -1020,6 +1020,15 @@ export default function AuthPortal({
             </div>
 
             <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-b from-amber-50/70 via-white to-white p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
+              {!isSupabaseConfigured() && (
+                <div role="alert" className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left">
+                  <p className="text-sm font-semibold text-rose-800">Portal sign-in is offline — the school database is not connected in this build.</p>
+                  <p className="mt-1 text-sm text-rose-700">
+                    Student and staff sign-in cannot work until the owner connects the backend. Owner: add VITE_AUTOBASE_URL
+                    and VITE_AUTOBASE_PUBLISHABLE_KEY under Manage → Backend → Secrets, then reload this page.
+                  </p>
+                </div>
+              )}
               {!registrationOpen && applyIntent && !done && (
                 <div role="alert" className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left">
                   <p className="text-sm font-semibold text-amber-900">You tapped “Apply for this programme”.</p>
