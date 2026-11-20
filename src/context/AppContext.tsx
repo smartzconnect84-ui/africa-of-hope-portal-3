@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { resendConfirmationEmail, supabase } from "@/integrations/supabase/client";
 import { fetchState, mergeThemeSettings, mergeWebsiteSettings, persistSettingsPatch, settingsRow, today, uid, type Row } from "@/data/liveData";
 import type {
   Announcement,
@@ -341,11 +341,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       refresh,
       login: async (emailOrUserId, password) => {
         if (!password) return "Enter your portal password to sign in.";
+        const email = emailOrUserId.trim().toLowerCase();
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: emailOrUserId.trim(),
+          email,
           password,
         });
         if (error) {
+          // Supabase refuses sign-in until the address is confirmed. Answer with
+          // a way forward (a fresh link) instead of a dead end.
+          if (/email[_ ]?not[_ ]?confirmed/i.test(error.message)) {
+            const { error: resendError } = await resendConfirmationEmail(email);
+            const message = resendError
+              ? `This email address is not confirmed yet, and a new confirmation link could not be sent (${resendError}). Contact the admissions office.`
+              : `This email address is not confirmed yet. We sent a fresh confirmation link to ${email} — open it, then sign in.`;
+            toast.error(message, { duration: 9000 });
+            return message;
+          }
           toast.error(error.message);
           return error.message;
         }

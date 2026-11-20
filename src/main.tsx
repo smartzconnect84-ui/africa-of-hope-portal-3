@@ -5,13 +5,12 @@ import "./index.css";
 import App from "./App.tsx";
 import { dismissSplash, registerServiceWorker } from "./lib/pwa";
 import { restorePublicLaunch } from './lib/publicBranding';
-import { completeSignIn } from "./integrations/autobase/client";
-
 restorePublicLaunch();
 registerServiceWorker();
 
-// Finishes a sign-in, confirmation or password-reset link the page was opened from.
-void completeSignIn().catch(() => undefined);
+// Supabase finishes confirmation, recovery and magic-link sign-ins itself:
+// `detectSessionInUrl` on the client in src/integrations/supabase/client.ts
+// reads the returned token and raises SIGNED_IN / PASSWORD_RECOVERY.
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

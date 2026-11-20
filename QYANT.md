@@ -16,9 +16,16 @@ Hash routing (#/programs, #/login, #/signup, #/verify, #/vacancies, #/yearbook,
 
 ## Data model
 
-The portal's own database (Autobase, SQLite) is now the source of truth:
-backend/migrations/*.sql creates 72 tables with access policies, storage
-buckets and live updates.
+The Supabase project `gatnzfjpuokopqyksqoy` (Postgres 17, us-east-1) is the
+source of truth: 78 tables and 3 views, all with RLS, 45 tables in
+`supabase_realtime`, 9 storage buckets, 8 active edge functions and the six
+roles with the 43-grant permission matrix. supabase/migrations keeps the schema
+history of this project; backend/migrations is the unused managed-backend port.
+
+`profiles` rows are created by the `handle_new_user` trigger on `auth.users`,
+which copies `full_name`, `phone`, `program_ids`, `note` and `documents` from
+the sign-up metadata and defaults to role Student / status Pending Approval.
+`confirmed_account_congratulations` queues the welcome email on confirmation.
 
 - portal_schema.sql — every table the app reads or writes (profiles, roles,
   permissions, programmes and modules, cohorts and cohort_students,
@@ -36,17 +43,12 @@ buckets and live updates.
 - portal_roles_permissions_seed.sql — the six roles and the 43-grant
   permission matrix.
 
-src/integrations/supabase/client.ts is now a bridge: the app keeps calling
-supabase.from(...) / supabase.auth, and those calls run against the project
-backend via src/integrations/autobase/client.ts. Sign-in is the platform's
-(better-auth): email + password, reset by email, Google/Microsoft available.
-
-Not yet ported: the ~30 SQL routines the academic, quiz, payment-ledger,
-certificate, helpdesk, grade-appeal and newsletter modules called with
-supabase.rpc(), and the 8 edge functions (send-email, newsletter,
-admin-users, onesignal-send, verify-certificate, assistant,
-send-deadline-reminders). Those calls now return a clear "not available
-yet" message instead of failing silently.
+src/integrations/supabase/client.ts is the single data client: a real
+`@supabase/supabase-js` client, so supabase.from(...), supabase.auth,
+supabase.rpc(...), supabase.storage and supabase.functions all run against this
+project. Sign-in is Supabase Auth: email + password with email confirmation,
+password reset by email. src/integrations/autobase/client.ts remains in the
+repo but is no longer imported.
 
 ## Pages and routes
 
@@ -56,9 +58,12 @@ yet" message instead of failing silently.
 
 ## Environment
 
-Provisioned by the platform, no manual setup: VITE_AUTOBASE_URL and
-VITE_AUTOBASE_PUBLISHABLE_KEY (publishable key only; no secret keys in the
-frontend).
+VITE_SUPABASE_URL=https://gatnzfjpuokopqyksqoy.supabase.co and
+VITE_SUPABASE_ANON_KEY (the project's publishable key). Both are public client
+values: the publishable/anon key is designed to ship in the browser. The
+service-role key is a server-only secret and must never get a VITE_ prefix.
+Locally they live in the gitignored .env.local; a Sites bundle must be built
+with them because Sites has no build step.
 
 ## Decisions
 
@@ -341,3 +346,41 @@ frontend).
   message now names the real cause. iOS is called out explicitly in both the
   message and the card: web push only works from the Home Screen app, never a
   Safari tab (iOS 16.4+).
+
+- Authentication repair (2026-11-20). Sign-in and sign-up were dead in every
+  build: `src/integrations/supabase/client.ts` was a bridge onto the managed
+  Autobase backend, whose `VITE_AUTOBASE_URL` / `VITE_AUTOBASE_PUBLISHABLE_KEY`
+  are set nowhere, so every `supabase.auth.*`, `supabase.from(...)` and realtime
+  call went to `autobase-not-connected.invalid`. The module is now one real
+  `@supabase/supabase-js` client for project `gatnzfjpuokopqyksqoy`, created once
+  from `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, with `detectSessionInUrl`,
+  refresh-token rotation and the existing remember-me storage
+  (`src/lib/authStorage.ts`). No screen, table, role or policy changed.
+  `src/integrations/autobase/client.ts` stays in the repo but is no longer
+  imported (`main.tsx` dropped its `completeSignIn()` call because Supabase
+  finishes confirmation/recovery links itself).
+- Supabase Auth configuration corrected: `uri_allow_list` only allowed
+  `africaofhopelr.org`, so a confirmation or reset link sent from the deployed
+  app redirected to the wrong site. It now also allows `https://aoh.freebuff.site`,
+  the Sites preview origin, `africaofhopelr.online` / `www.africaofhopelr.online`
+  and `http://localhost:3000` / `http://127.0.0.1:3000`. Email confirmation stays
+  required (`mailer_autoconfirm=false`); SMTP is Resend through
+  `auth@africaofhopelr.online` and accepts these sends.
+- Signing in before confirming an address used to be a dead end (`email_not_confirmed`).
+  `login()` in `src/context/AppContext.tsx` now recognises it, sends a fresh
+  confirmation link (`resendConfirmationEmail`) and says so.
+- Verified against the real project and the real UI: sign-up created the auth
+  user and the `handle_new_user` trigger created its profile as Student /
+  Pending Approval with the submitted name, phone and note; the confirmation
+  email was accepted for delivery; sign-in before confirmation returned
+  `email_not_confirmed` and the resend endpoint answered 200 with an app-origin
+  redirect; after confirmation the sign-in form produced a session and the
+  student dashboard; a page refresh kept the session; sign-out cleared it and
+  returned to the public site. API checks: own profile readable under RLS, role
+  self-promotion rejected ("An active account is required"), a staff-only
+  `role_permissions` write denied (403), wrong password `invalid_credentials`,
+  refresh rotated the token, and the refresh token was refused after logout
+  (`refresh_token_not_found`). The two throwaway accounts and their profiles were
+  deleted afterwards (39 users / 39 profiles, unchanged). `npm run typecheck`,
+  `npm test` (41/41) and `VERCEL=1 npm run build:sites` pass, and the built
+  bundle now contains the project URL instead of the placeholder host.
