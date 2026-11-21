@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, CheckCheck, MessageCircle, Send } from "lucide-react";
 import type { User } from "@/types";
 import { accountId } from "@/lib/identifiers";
-import { useDirectMessages } from "@/lib/directMessages";
+import { useChatThread } from "@/lib/chat";
 import { formatLastSeen, getLastSeen } from "@/lib/presence";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,7 +127,8 @@ export function DirectMessageDialog({
   peer: User | null;
   onClose: () => void;
 }) {
-  const { messages, peerTyping, send, sendTyping, markSeen } = useDirectMessages(meId, peer?.id ?? null);
+  const thread = peer ? { kind: "dm" as const, id: peer.id } : null;
+  const { messages, peerTyping, send, sendTyping, markSeen } = useChatThread(meId, thread);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,7 +161,7 @@ export function DirectMessageDialog({
     if (!draft.trim() || sending) return;
     setSending(true);
     setError(null);
-    const ok = await send(draft);
+    const ok = await send({ body: draft.trim() });
     setSending(false);
     if (!ok) setError("Message could not be delivered. It is saved on this device and will retry automatically.");
     else {

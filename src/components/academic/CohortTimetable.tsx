@@ -66,7 +66,7 @@ export default function CohortTimetable() {
   const visibleCohorts = useMemo(() => {
     if (!currentUser) return [];
     if (isStudent) return state.cohorts.filter((c) => c.studentIds.includes(currentUser.id));
-    if (currentUser.role === "Teacher") return state.cohorts.filter((c) => c.teacherId === currentUser.id);
+    if (currentUser.role === "Instructor") return state.cohorts.filter((c) => c.teacherId === currentUser.id);
     return state.cohorts;
   }, [state.cohorts, currentUser, isStudent]);
 

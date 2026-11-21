@@ -412,3 +412,18 @@ extraction reports itself unconfigured (503) until the secret exists.
   `tests/apyhubPdf.test.ts` builds a synthetic one-page PDF with a real text
   layer and covers the request shape, the upload checks and the error mapping.
   Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret.
+
+- Global scrolling pass: the document is the only vertical scroller. `src/index.css`
+  now gives `html`, `body` and `#root` a `100dvh` minimum with no height cap and
+  clips horizontal overflow (`clip`, not `hidden`, so sticky headers stay
+  pinned), so every public page, dashboard and portal view expands to its
+  content on phones, tablets and desktops. Long dialogs and sheets are capped at
+  `calc(100dvh - 2rem)` and scroll inside (`[data-slot="dialog-content"]`,
+  `[data-slot="sheet-content"]`, `.aoh-modal-scroll`), and `.aoh-drawer` no
+  longer forces `height: 100dvh !important` (it now derives its height from the
+  safe-area insets, so the last menu rows are reachable). The public menu, portal
+  drawer and image lightbox share one reference-counted lock in
+  `src/lib/scrollLock.ts`; the page can no longer stay locked after overlays
+  close, and iOS restores the previous scroll offset. Quiz consent/submit modals,
+  the WhatsApp enquiry sheet and the programme popup use the same capped scroll.
+  Verified with `npm run typecheck`, `npm test` and `VERCEL=1 npm run build:sites`.

@@ -76,7 +76,7 @@ export default function StudentQuizzes() {
   }
 
   if (quizzes.length === 0) {
-    return <EmptyState icon={FileQuestion} title="No quizzes yet" hint="Your teacher hasn't published any quizzes for your cohort yet." />;
+    return <EmptyState icon={FileQuestion} title="No quizzes yet" hint="Your instructor hasn't published any quizzes for your cohort yet." />;
   }
 
   return (
