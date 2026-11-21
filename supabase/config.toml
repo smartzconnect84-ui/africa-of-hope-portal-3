@@ -17,6 +17,7 @@
 #   PUBLIC_SITE_URL             absolute site URL used in emailed links
 #   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   push delivery
 #   APP_URL                     public app URL used in account emails
+#   APY_TOKEN                   ApyHub API token for extract-pdf-text (PDF text)
 
 # Admin-only: staff account management. The handler additionally re-checks the
 # caller's role and refuses privilege escalation.
@@ -56,3 +57,10 @@ verify_jwt = false
 # Server secrets: ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY, PUSH_DISPATCH_TOKEN.
 [functions.onesignal-send]
 verify_jwt = false
+
+# Signed-in members only: extracts the text layer of an uploaded PDF through
+# ApyHub (scanned PDFs return nothing and need OCR). The handler re-checks the
+# caller's session, validates the upload (PDF magic bytes, 10 MB) and keeps
+# APY_TOKEN server-side.
+[functions.extract-pdf-text]
+verify_jwt = true

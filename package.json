@@ -12,7 +12,7 @@
     "build": "node src/build/prepareBrandAssets.mjs || true; node scripts/generate-og-image.mjs || true; node scripts/generate-sitemap.mjs || true; vite build; node scripts/prerender-routes.mjs || true",
     "build:sites": "npm run build && rm -rf dist/.well-known dist/_redirects",
     "build:strict": "node src/build/prepareBrandAssets.mjs || true; node scripts/generate-og-image.mjs || true; node scripts/generate-sitemap.mjs || true; tsc -b && vite build; node scripts/prerender-routes.mjs || true",
-    "test": "tsc --noEmit -p tsconfig.tests.json && node --test tests/academicApi.test.ts tests/blogApi.test.ts tests/paymentsApi.test.ts",
+    "test": "tsc --noEmit -p tsconfig.tests.json && node --test tests/academicApi.test.ts tests/apyhubPdf.test.ts tests/blogApi.test.ts tests/paymentsApi.test.ts",
     "test:academic:db": "bash supabase/tests/run-academic-contract.sh",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "lint": "eslint .",
