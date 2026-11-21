@@ -389,3 +389,18 @@ with them because Sites has no build step.
   scrolling fix and the better-auth response mapping). Only the data/auth client
   changed: those commits tried to make the managed backend answer; this one
   points the app at the project that actually holds the accounts.
+
+- Global scrolling pass: the document is the only vertical scroller. `src/index.css`
+  now gives `html`, `body` and `#root` a `100dvh` minimum with no height cap and
+  clips horizontal overflow (`clip`, not `hidden`, so sticky headers stay
+  pinned), so every public page, dashboard and portal view expands to its
+  content on phones, tablets and desktops. Long dialogs and sheets are capped at
+  `calc(100dvh - 2rem)` and scroll inside (`[data-slot="dialog-content"]`,
+  `[data-slot="sheet-content"]`, `.aoh-modal-scroll`), and `.aoh-drawer` no
+  longer forces `height: 100dvh !important` (it now derives its height from the
+  safe-area insets, so the last menu rows are reachable). The public menu, portal
+  drawer and image lightbox share one reference-counted lock in
+  `src/lib/scrollLock.ts`; the page can no longer stay locked after overlays
+  close, and iOS restores the previous scroll offset. Quiz consent/submit modals,
+  the WhatsApp enquiry sheet and the programme popup use the same capped scroll.
+  Verified with `npm run typecheck`, `npm test` and `VERCEL=1 npm run build:sites`.

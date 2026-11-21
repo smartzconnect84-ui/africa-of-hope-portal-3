@@ -207,7 +207,7 @@ export default function QuizPlayer({
 
   if (pendingExam && !consented) return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#f6f8f7] p-4">
-      <section className="aoh-card w-full max-w-lg rounded-2xl bg-white p-6" aria-labelledby="exam-ready">
+      <section className="aoh-card aoh-modal-scroll w-full max-w-lg rounded-2xl bg-white p-6" aria-labelledby="exam-ready">
         <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Timed exam · single attempt</p>
         <h2 id="exam-ready" className="mt-2 text-xl font-bold text-slate-900">{pendingExam.title}</h2>
         <p className="mt-3 text-sm text-slate-600">You have {pendingExam.timeLimitMinutes} minutes, or until the exam closes if sooner. Starting uses your only attempt. The server clock continues if you leave, refresh or lose connection.</p>
@@ -389,8 +389,8 @@ export default function QuizPlayer({
       </div>
 
       {confirmOpen && remainingMs !== 0 && !(remainingMs !== null && remainingMs < 0) && (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-emerald-900/10 bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-slate-900/40 p-4">
+          <div className="aoh-modal-scroll w-full max-w-md rounded-2xl border border-emerald-900/10 bg-white p-6 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900">Submit your quiz?</h2>
             <p className="mt-2 text-sm text-slate-600">
               You've answered <b className="text-slate-900">{answeredCount} of {total}</b> questions.

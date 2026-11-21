@@ -13,6 +13,7 @@ import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
 import { displayRole } from "@/lib/roleDisplay";
+import { lockPageScroll } from "@/lib/scrollLock";
 import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
 
@@ -296,11 +297,8 @@ export default function Navigation({
   // focus back to the menu button on close.
   useEffect(() => {
     if (!drawer) return;
-    const root = document.documentElement;
-    const previousBody = document.body.style.overflow;
-    const previousRoot = root.style.overflow;
-    document.body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
+    // Shared lock: only the last overlay to close releases the page.
+    const releaseScroll = lockPageScroll();
 
     const focusables = () =>
       Array.from(
@@ -341,8 +339,7 @@ export default function Navigation({
       document.removeEventListener("keydown", onKeyDown);
       desktop.removeEventListener("change", onDesktop);
       window.cancelAnimationFrame(raf);
-      document.body.style.overflow = previousBody;
-      root.style.overflow = previousRoot;
+      releaseScroll();
       menuButtonRef.current?.focus();
     };
   }, [drawer]);
