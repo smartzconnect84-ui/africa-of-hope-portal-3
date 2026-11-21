@@ -601,6 +601,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             category: program.category,
             duration_weeks: program.durationWeeks,
             tuition: program.tuition,
+            fee: program.tuition,
             certification: program.certification,
             description: program.description,
             entry_requirements: program.entryRequirements,
@@ -608,6 +609,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             study_plan: program.studyPlan || null,
             image_url: program.imageUrl || null,
             published: program.published ?? true,
+            is_active: program.published ?? true,
+            duration: program.durationWeeks ? `${program.durationWeeks} weeks` : "",
           };
           let res = await supabase.from("programs").insert(full);
           // Duplicate code (two programmes, same title): retry once with a unique suffix.
@@ -646,9 +649,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               modules.map((m, index) => ({
                 id: m.id,
                 program_id: id,
-                title: m.title,
+                name: m.title,
+                description: m.summary,
                 weeks: m.weeks,
-                summary: m.summary,
                 position: index,
               })),
             );

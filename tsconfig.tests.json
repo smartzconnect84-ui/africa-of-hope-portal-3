@@ -13,6 +13,8 @@
     "src/lib/blog.ts",
     "src/lib/blogPublic.ts",
     "src/lib/payments.ts",
-    "src/lib/emailOutbox.ts"
+    "src/lib/emailOutbox.ts",
+    "supabase/functions/_shared/apyhubPdf.ts",
+    "supabase/functions/_shared/apyhubPdfHandler.ts"
   ]
 }

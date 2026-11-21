@@ -13,8 +13,10 @@ import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
 import { displayRole } from "@/lib/roleDisplay";
+import { lockPageScroll } from "@/lib/scrollLock";
 import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
+import PortalSidebar from "./portal/PortalSidebar";
 
 export const panelClass =
   "aoh-gold-border rounded-2xl border border-emerald-900/10 bg-white shadow-sm shadow-emerald-900/5 dark:border-white/10 dark:bg-slate-900 dark:shadow-none";
@@ -136,7 +138,16 @@ const statusTone: Record<string, string> = {
 
 /** Capitalised status chip reused across academic planning, the learning path and progress views. */
 export function Status({ value }: { value: string }) {
-  return <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize", statusTone[value] ?? "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-100")}>{value.replaceAll("_", " ")}</span>;
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize",
+        statusTone[value] ?? "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-100",
+      )}
+    >
+      {value.replaceAll("_", " ")}
+    </span>
+  );
 }
 
 /** Shared "the backend migration isn't applied yet" / fetch-failed panel with a retry action. */
@@ -149,7 +160,9 @@ export function SetupError({ message, retry }: { message: string; retry: () => v
           <p className="font-semibold">Academic planning is unavailable</p>
           <p className="mt-1 text-sm text-amber-900/80">{message}</p>
         </div>
-        <Button size="sm" variant="outline" onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" /> Retry</Button>
+        <Button size="sm" variant="outline" onClick={retry}>
+          <RefreshCw className="mr-1 h-3.5 w-3.5" /> Retry
+        </Button>
       </div>
     </div>
   );
@@ -157,9 +170,10 @@ export function SetupError({ message, retry }: { message: string; retry: () => v
 
 function sidebarGroupLabel(role: string | null): string {
   if (role === "Student") return "Student Desk";
-  if (role === "Teacher") return "Teachers-Instructors";
+  if (role === "Instructor") return "Instructors";
   return "Administration";
 }
+
 function Pop({
   trigger,
   align = "right",
@@ -205,17 +219,7 @@ function readDismissedIds(): string[] {
   }
 }
 
-/**
- * G6: a dismissible ticker of currently-visible announcements for all
- * signed-in users (every role), shown above the portal content on every view except the
- * Bulletin Board itself (which already lists them in full). The Marquee
- * provides a decorative, non-interactive scroll of the same text that's
- * already announced via the sr-only live region; a separate "View bulletin
- * board" link is the one focusable, keyboard-reachable way to act on it.
- * Reuses the visibility rules from the public site announcement banner
- * (audience/status/schedule window), scoped here to the signed-in user's
- * own audience instead of "public".
- */
+/** G6: a dismissible ticker of currently-visible announcements for all signed-in users. */
 function PortalAnnouncementTicker({ onOpenBoard }: { onOpenBoard: () => void }) {
   const { state, currentUser } = useApp();
   const prefersReducedMotion = useReducedMotion();
@@ -232,20 +236,37 @@ function PortalAnnouncementTicker({ onOpenBoard }: { onOpenBoard: () => void }) 
   const dismiss = () => {
     const next = [...dismissedIds, ...items.map((item) => item.id)];
     setDismissedIds(next);
-    try { sessionStorage.setItem("dismissed-announcement-ids", JSON.stringify(next)); }
-    catch { /* sessionStorage may be unavailable (private mode, quota) */ }
+    try {
+      sessionStorage.setItem("dismissed-announcement-ids", JSON.stringify(next));
+    } catch {
+      /* sessionStorage may be unavailable (private mode, quota) */
+    }
   };
 
   if (items.length === 0) return null;
   const text = items.map((item) => `${item.title}${item.body ? ` — ${item.body}` : ""}`);
   return (
-    <div className="mb-3 flex items-center gap-2 overflow-hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2" role="region" aria-label="Announcements">
+    <div
+      className="mb-3 flex items-center gap-2 overflow-hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2"
+      role="region"
+      aria-label="Announcements"
+    >
       <Megaphone className="h-4 w-4 shrink-0 text-amber-700" aria-hidden="true" />
-      <div className="sr-only" aria-live="polite">{text.join(". ")}</div>
+      <div className="sr-only" aria-live="polite">
+        {text.join(". ")}
+      </div>
       {prefersReducedMotion ? (
-        <p className="min-w-0 flex-1 truncate text-xs font-medium text-amber-900" aria-hidden="true">{text.join("   ·   ")}</p>
+        <p className="min-w-0 flex-1 truncate text-xs font-medium text-amber-900" aria-hidden="true">
+          {text.join("   ·   ")}
+        </p>
       ) : (
-        <Marquee repeat={2} pauseOnHover applyMask={false} className="min-w-0 flex-1 overflow-hidden p-0 text-xs font-medium text-amber-900 [--duration:28s] [--gap:3rem]" aria-hidden="true">
+        <Marquee
+          repeat={2}
+          pauseOnHover
+          applyMask={false}
+          className="min-w-0 flex-1 overflow-hidden p-0 text-xs font-medium text-amber-900 [--duration:28s] [--gap:3rem]"
+          aria-hidden="true"
+        >
           {items.map((item) => (
             <span key={item.id} tabIndex={-1} className="whitespace-nowrap">
               {item.title}{item.body ? ` — ${item.body}` : ""}
@@ -253,10 +274,19 @@ function PortalAnnouncementTicker({ onOpenBoard }: { onOpenBoard: () => void }) 
           ))}
         </Marquee>
       )}
-      <button type="button" onClick={onOpenBoard} className="shrink-0 whitespace-nowrap text-xs font-semibold text-amber-900 underline-offset-2 hover:underline">
+      <button
+        type="button"
+        onClick={onOpenBoard}
+        className="shrink-0 whitespace-nowrap text-xs font-semibold text-amber-900 underline-offset-2 hover:underline"
+      >
         View bulletin board
       </button>
-      <button type="button" onClick={dismiss} aria-label="Dismiss announcements" className="shrink-0 rounded-full p-1 text-amber-700 hover:bg-amber-100">
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="Dismiss announcements"
+        className="shrink-0 rounded-full p-1 text-amber-700 hover:bg-amber-100"
+      >
         <X className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -296,11 +326,8 @@ export default function Navigation({
   // focus back to the menu button on close.
   useEffect(() => {
     if (!drawer) return;
-    const root = document.documentElement;
-    const previousBody = document.body.style.overflow;
-    const previousRoot = root.style.overflow;
-    document.body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
+    // Shared lock: only the last overlay to close releases the page.
+    const releaseScroll = lockPageScroll();
 
     const focusables = () =>
       Array.from(
@@ -341,15 +368,13 @@ export default function Navigation({
       document.removeEventListener("keydown", onKeyDown);
       desktop.removeEventListener("change", onDesktop);
       window.cancelAnimationFrame(raf);
-      document.body.style.overflow = previousBody;
-      root.style.overflow = previousRoot;
+      releaseScroll();
       menuButtonRef.current?.focus();
     };
   }, [drawer]);
 
   // Measures the real header + marketing-banner height so the sticky
-  // sidebar's offset/height stays in sync with it (instead of assuming a
-  // fixed 4rem header that falls out of sync whenever the banner shows).
+  // sidebar's offset/height stays in sync with it.
   const headerRef = useRef<HTMLElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   const [topOffset, setTopOffset] = useState(64);
@@ -364,11 +389,13 @@ export default function Navigation({
     if (bannerRef.current) observer.observe(bannerRef.current);
     return () => observer.disconnect();
   }, [bannerVisible]);
+
   const bellCount = useMemo(() => {
     const now = Date.now();
     const role = currentUser?.role ?? "Student";
     return state.announcements.filter((item) => isAnnouncementLiveFor(item, role, now)).length;
   }, [state.announcements, currentUser?.role]);
+
   const { ctx, views } = useVisiblePortalViews();
   const { t } = useLocale();
 
@@ -452,7 +479,10 @@ export default function Navigation({
       {groupedNav.map((group) => {
         const isOpen = openGroups[group.id] !== false;
         return (
-          <div key={group.id} className="flex flex-col gap-1 rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10">
+          <div
+            key={group.id}
+            className="flex flex-col gap-1 rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10"
+          >
             <button
               type="button"
               onClick={() => toggleGroup(group.id)}
@@ -464,7 +494,12 @@ export default function Navigation({
               <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-white">
                 {group.items.length}
               </span>
-              <ChevronDown className={cn("h-4 w-4 shrink-0 text-white transition-transform", isOpen ? "rotate-180" : "rotate-0")} />
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-white transition-transform",
+                  isOpen ? "rotate-180" : "rotate-0",
+                )}
+              />
             </button>
             {isOpen && (
               <div id={`portal-nav-group-${group.id}`} className="ml-2 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
@@ -503,7 +538,10 @@ export default function Navigation({
 
   return (
     <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
-      <header ref={headerRef} className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden"
+      >
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-2 px-3 sm:gap-[1.15rem] sm:px-5">
           <button
             ref={menuButtonRef}
@@ -573,7 +611,11 @@ export default function Navigation({
             )}
             <Pop
               trigger={
-                <span className="relative grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10" role="img" aria-label={bellCount > 0 ? `Bulletin board, ${bellCount} new notices` : "Bulletin board"}>
+                <span
+                  className="relative grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10"
+                  role="img"
+                  aria-label={bellCount > 0 ? `Bulletin board, ${bellCount} new notices` : "Bulletin board"}
+                >
                   <Bell className="h-5 w-5" />
                   {bellCount > 0 && (
                     <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-[20px] place-items-center rounded-full bg-red-600 px-1 text-[11px] font-bold text-white ring-2 ring-white">
@@ -621,13 +663,17 @@ export default function Navigation({
               {currentUser ? (
                 <UserAvatar user={currentUser} className="h-9 w-9 text-xs ring-2 ring-emerald-700/10" />
               ) : (
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">AO</span>
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">
+                  AO
+                </span>
               )}
               <span className="hidden leading-tight lg:block">
                 <span className="block max-w-[140px] truncate text-sm font-medium text-white">
                   {currentUser?.name}
                 </span>
-                <span className="block max-w-[140px] truncate text-[11px] text-white/70">{currentUser?.title ?? currentUser?.email}</span>
+                <span className="block max-w-[140px] truncate text-[11px] text-white/70">
+                  {currentUser?.title ?? currentUser?.email}
+                </span>
               </span>
             </button>
 
@@ -644,11 +690,21 @@ export default function Navigation({
       </header>
 
       {bannerVisible && (
-        <div ref={bannerRef} className="sticky z-20 overflow-hidden border-b border-amber-300/60 bg-amber-50 print:hidden" style={{ top: headerRef.current?.offsetHeight ?? 64 }}>
+        <div
+          ref={bannerRef}
+          className="sticky z-20 overflow-hidden border-b border-amber-300/60 bg-amber-50 print:hidden"
+          style={{ top: headerRef.current?.offsetHeight ?? 64 }}
+        >
           <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-3 py-2 text-xs text-amber-900 sm:px-4">
             <Megaphone className="h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
             <span className="sr-only">{state.settings.marketingBanner}</span>
-            <Marquee repeat={2} pauseOnHover applyMask={false} className="min-w-0 flex-1 overflow-hidden p-0 text-xs font-medium text-amber-900 [--duration:30s] [--gap:3rem]" aria-hidden="true">
+            <Marquee
+              repeat={2}
+              pauseOnHover
+              applyMask={false}
+              className="min-w-0 flex-1 overflow-hidden p-0 text-xs font-medium text-amber-900 [--duration:30s] [--gap:3rem]"
+              aria-hidden="true"
+            >
               <span className="whitespace-nowrap">{state.settings.marketingBanner}</span>
             </Marquee>
           </div>
@@ -662,9 +718,18 @@ export default function Navigation({
         >
           <div className="flex h-full min-h-0 flex-col">
             <div className="shrink-0 border-b border-slate-100 p-3">
-              <BrandLockup logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl} academyName={state.websiteSettings.academyName} displayName="AOH-PORTAL" size="sm" showTagline={false} className="w-full min-w-0 items-center gap-2" logoClassName="h-7 w-auto shrink-0" nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-xs leading-none tracking-[0.12em]" />
+              <BrandLockup
+                logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
+                academyName={state.websiteSettings.academyName}
+                displayName="AOH-PORTAL"
+                size="sm"
+                showTagline={false}
+                className="w-full min-w-0 items-center gap-2"
+                logoClassName="h-7 w-auto shrink-0"
+                nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-xs leading-none tracking-[0.12em]"
+              />
             </div>
-            {sidebar}
+            <PortalSidebar />
           </div>
         </aside>
         <main className="min-w-0 max-w-full flex-1 overflow-x-clip p-4 sm:p-5 lg:p-6 xl:p-8">

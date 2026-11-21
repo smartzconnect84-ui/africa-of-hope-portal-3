@@ -38,6 +38,7 @@ import { ScrollReveal, StaggerGroup } from "./public/motion";
 import { buttonMotionProps, fadeUpVariants } from "./public/motionConstants";
 import { listPublishedPosts, readingTimeMinutes, type BlogPost } from "@/lib/blogPublic";
 import { setPendingProgramApply } from "@/lib/programApply";
+import { lockPageScroll } from "@/lib/scrollLock";
 import PublicNav from "./public/PublicNav";
 import ProgramAnnouncementPopup from "./public/ProgramAnnouncementPopup";
 import WhatsAppEnquiry from "./public/WhatsAppEnquiry";
@@ -345,18 +346,13 @@ export default function PublicMarketingSite({ onEnterPortal }: { onEnterPortal: 
     };
     const desktop = window.matchMedia("(min-width: 768px)");
     const onDesktop = () => setMenu(false);
-    // Lock both the root and body: with `overflow-x: clip` the page scrolls on
-    // <html>, so locking <body> alone would no longer freeze the background.
-    const root = document.documentElement;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousRootOverflow = root.style.overflow;
-    document.body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
+    // Shared lock: it freezes the page behind the menu and only releases it
+    // once every overlay has closed, so the page can never stay locked.
+    const releaseScroll = lockPageScroll();
     document.addEventListener("keydown", onKey);
     desktop.addEventListener("change", onDesktop);
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      root.style.overflow = previousRootOverflow;
+      releaseScroll();
       document.removeEventListener("keydown", onKey);
       desktop.removeEventListener("change", onDesktop);
       menuButton?.focus();

@@ -44,7 +44,7 @@ export default function CourseDiscussions() {
     if (!currentUser) return [];
     return state.cohorts.filter((c) => currentUser.role === "Student"
       ? currentUser.cohortIds.includes(c.id)
-      : currentUser.role === "Teacher" ? c.teacherId === currentUser.id : true).map((c) => c.id);
+      : currentUser.role === "Instructor" ? c.teacherId === currentUser.id : true).map((c) => c.id);
   }, [state.cohorts, currentUser]);
   const cohortKey = allowedCohortIds.join(",");
   const refresh = async () => {
@@ -245,7 +245,7 @@ export default function CourseDiscussions() {
               </SelectContent>
             </Select>
           </div>
-          <Textarea maxLength={10000} placeholder="Describe your question for your Teachers-Instructors and classmates…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
+          <Textarea maxLength={10000} placeholder="Describe your question for your instructors and classmates…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
             <Button type="submit" disabled={saving || !cohortId} className="bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1 h-4 w-4" /> Post to class</Button>
@@ -291,7 +291,7 @@ export default function CourseDiscussions() {
               )}
               {open && (
                 <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                  {thread.replies.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-300">No replies yet — help your classmate or wait for your Teachers-Instructors.</p>}
+                  {thread.replies.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-300">No replies yet — help your classmate or wait for your instructors.</p>}
                   {thread.replies.map((reply) => {
                     const replyMine = !!currentUser && reply.authorId === currentUser.id;
                     const canModReply = replyMine || isStaff;
@@ -301,7 +301,7 @@ export default function CourseDiscussions() {
                       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
                         <span className="font-semibold text-slate-700 dark:text-slate-200">{reply.authorName} · {reply.role}</span>
                         <span>{new Date(reply.createdAt).toLocaleString()}</span>
-                        {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Teachers-Instructors answer</span>}
+                        {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Instructor answer</span>}
                         {isStaff && <button disabled={saving || pending > 0} className="font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
                         {canModReply && !isEditingReply && (
                           <span className="ml-auto inline-flex items-center gap-1">

@@ -65,6 +65,11 @@ service-role key is a server-only secret and must never get a VITE_ prefix.
 Locally they live in the gitignored .env.local; a Sites bundle must be built
 with them because Sites has no build step.
 
+`APY_TOKEN` is the ApyHub API token used by the `extract-pdf-text` Edge
+Function. It is server-only: it is declared empty in `.env.example`, set with
+`supabase secrets set APY_TOKEN=...`, and never gets a `VITE_` prefix. PDF text
+extraction reports itself unconfigured (503) until the secret exists.
+
 ## Decisions
 
 - Preserve the React/Vite stack and use the Vite CLI directly for development.
@@ -389,3 +394,53 @@ with them because Sites has no build step.
   scrolling fix and the better-auth response mapping). Only the data/auth client
   changed: those commits tried to make the managed backend answer; this one
   points the app at the project that actually holds the accounts.
+
+- PDF text extraction through ApyHub (2026-11-21). New Edge Function
+  `extract-pdf-text` (signed-in members only, `verify_jwt = true`) takes the
+  upload as multipart `file`, checks the MIME type/`.pdf` name, the `%PDF-`
+  magic bytes and the 10 MB limit, then forwards it to
+  `POST https://api.eu.apyhub.com/apyhub/extract-text-from-pdf/file` with the
+  `apy-token` header and returns ApyHub's `data` string as
+  `{ text, characters, truncated }`. `APY_TOKEN` is read from the function
+  environment only and declared empty in `.env.example`; upstream 4xx/5xx,
+  401/403, 413 and 429 answers, network failures and timeouts map to safe
+  messages that never repeat the provider body, and an empty `data` string is
+  reported as a scanned/empty PDF that needs OCR (this service does not OCR).
+  Extracted text is normalised (CRLF, control bytes, 200k character cap) and is
+  untrusted document content: render it as text, never as HTML.
+  `src/lib/pdfText.ts` is the browser entry point (`extractPdfText(file)`).
+  `tests/apyhubPdf.test.ts` builds a synthetic one-page PDF with a real text
+  layer and covers the request shape, the upload checks and the error mapping.
+  Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret.
+
+- PDF text extraction reconcile (2026-11-21). The `extract-pdf-text` Edge Function's
+  repo source (`index.ts` importing from `../_shared/apyhubPdfHandler.ts`) could not
+  be deployed as-is: the Supabase deploy tool bundles one file per function and cannot
+  resolve `../_shared/` imports that sit outside the function's own directory, even
+  though the same `_shared/` layout works for `newsletter` (which imports
+  `../_shared/newsletter.ts`). Reconciled by making `supabase/functions/extract-pdf-text/index.ts`
+  self-contained: it inlines the ApyHub client (`_shared/apyhubPdf.ts`) and the HTTP
+  handler (`_shared/apyhubPdfHandler.ts`) so the repo file is now byte-for-byte what
+  is deployed. The `_shared/` files are kept as the tested library source that
+  `tests/apyhubPdf.test.ts` imports directly (Node resolves the path fine), and
+  `index.ts` carries a comment pointing at them. Redeployed from repo source as
+  `extract-pdf-text` v4 (ACTIVE, `verify_jwt = true`); the `APY_TOKEN` Supabase
+  project secret was rotated to the full key and the function now returns 401
+  (auth required) for anonymous calls instead of 503 (not configured) — confirmed
+  working. To redeploy after future edits, invoke the Supabase deploy function tool
+  with `index.ts`'s content; do not point it at the multi-file import version.
+
+- Global scrolling pass: the document is the only vertical scroller. `src/index.css`
+  now gives `html`, `body` and `#root` a `100dvh` minimum with no height cap and
+  clips horizontal overflow (`clip`, not `hidden`, so sticky headers stay
+  pinned), so every public page, dashboard and portal view expands to its
+  content on phones, tablets and desktops. Long dialogs and sheets are capped at
+  `calc(100dvh - 2rem)` and scroll inside (`[data-slot="dialog-content"]`,
+  `[data-slot="sheet-content"]`, `.aoh-modal-scroll`), and `.aoh-drawer` no
+  longer forces `height: 100dvh !important` (it now derives its height from the
+  safe-area insets, so the last menu rows are reachable). The public menu, portal
+  drawer and image lightbox share one reference-counted lock in
+  `src/lib/scrollLock.ts`; the page can no longer stay locked after overlays
+  close, and iOS restores the previous scroll offset. Quiz consent/submit modals,
+  the WhatsApp enquiry sheet and the programme popup use the same capped scroll.
+  Verified with `npm run typecheck`, `npm test` and `VERCEL=1 npm run build:sites`.
