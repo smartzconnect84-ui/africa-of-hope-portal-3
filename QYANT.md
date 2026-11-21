@@ -413,6 +413,23 @@ extraction reports itself unconfigured (503) until the secret exists.
   layer and covers the request shape, the upload checks and the error mapping.
   Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret.
 
+- PDF text extraction reconcile (2026-11-21). The `extract-pdf-text` Edge Function's
+  repo source (`index.ts` importing from `../_shared/apyhubPdfHandler.ts`) could not
+  be deployed as-is: the Supabase deploy tool bundles one file per function and cannot
+  resolve `../_shared/` imports that sit outside the function's own directory, even
+  though the same `_shared/` layout works for `newsletter` (which imports
+  `../_shared/newsletter.ts`). Reconciled by making `supabase/functions/extract-pdf-text/index.ts`
+  self-contained: it inlines the ApyHub client (`_shared/apyhubPdf.ts`) and the HTTP
+  handler (`_shared/apyhubPdfHandler.ts`) so the repo file is now byte-for-byte what
+  is deployed. The `_shared/` files are kept as the tested library source that
+  `tests/apyhubPdf.test.ts` imports directly (Node resolves the path fine), and
+  `index.ts` carries a comment pointing at them. Redeployed from repo source as
+  `extract-pdf-text` v4 (ACTIVE, `verify_jwt = true`); the `APY_TOKEN` Supabase
+  project secret was rotated to the full key and the function now returns 401
+  (auth required) for anonymous calls instead of 503 (not configured) — confirmed
+  working. To redeploy after future edits, invoke the Supabase deploy function tool
+  with `index.ts`'s content; do not point it at the multi-file import version.
+
 - Global scrolling pass: the document is the only vertical scroller. `src/index.css`
   now gives `html`, `body` and `#root` a `100dvh` minimum with no height cap and
   clips horizontal overflow (`clip`, not `hidden`, so sticky headers stay
