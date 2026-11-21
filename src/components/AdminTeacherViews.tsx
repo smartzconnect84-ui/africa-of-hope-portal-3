@@ -609,7 +609,7 @@ export function ProgramBuilder() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit program setup" : "New program setup"}</DialogTitle>
             <DialogDescription>
@@ -773,7 +773,7 @@ export function ProgramBuilder() {
           {error && (
             <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>
           )}
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <DialogFooter className="sticky bottom-0 bg-white border-t border-slate-100 flex-col gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => { setError(null); if (step === 0) setOpen(false); else setStep((s) => s - 1); }}>
               {step === 0 ? "Cancel" : "Back"}
             </Button>
@@ -799,7 +799,7 @@ export function CohortCoordinator() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyCohort);
   const [roster, setRoster] = useState<string[]>([]);
-  const teachers = state.users.filter((u) => u.role === "Teacher");
+  const teachers = state.users.filter((u) => u.role === "Instructor");
 
   const toggleStudent = (id: string) =>
     setRoster((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));
@@ -840,7 +840,7 @@ export function CohortCoordinator() {
 
   const submit = async () => {
     if (!form.name.trim() || !form.programId || !form.teacherId) {
-      toast.error("Cohort name, program and Teachers-Instructors are required");
+      toast.error("Cohort name, program and instructor are required");
       return;
     }
     const payload = {
@@ -866,7 +866,7 @@ export function CohortCoordinator() {
         return;
       }
       const teacher = state.users.find((u) => u.id === form.teacherId);
-      toast.success(`Cohort created and assigned to ${teacher?.name ?? "Teachers-Instructors"}`);
+      toast.success(`Cohort created and assigned to ${teacher?.name ?? "Instructor"}`);
     }
     setForm(emptyCohort);
     setRoster([]);
@@ -878,7 +878,7 @@ export function CohortCoordinator() {
     <div className="space-y-5">
       <SectionHeader
         title="Cohort Coordinator"
-        subtitle="Batch learners, assign Teachers-Instructors and schedule training rooms"
+        subtitle="Batch learners, assign instructors and schedule training rooms"
         action={
           <Button onClick={openCreate} className="bg-emerald-700 hover:bg-emerald-800">
             <Plus className="mr-1 h-4 w-4" /> New cohort
@@ -931,7 +931,7 @@ export function CohortCoordinator() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit cohort" : "Create a cohort"}</DialogTitle>
-            <DialogDescription>{editingId ? "Update program, Teachers-Instructors, dates, room and roster." : "Assign a program, Teachers-Instructors and student roster."}</DialogDescription>
+            <DialogDescription>{editingId ? "Update program, instructors, dates, room and roster." : "Assign a program, instructors and student roster."}</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
@@ -948,9 +948,9 @@ export function CohortCoordinator() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Teachers-Instructors</Label>
+              <Label>Instructor</Label>
               <Select value={form.teacherId} onValueChange={(v) => setForm({ ...form, teacherId: v })}>
-                <SelectTrigger><SelectValue placeholder="Select Teachers-Instructors" /></SelectTrigger>
+                <SelectTrigger>                <SelectValue placeholder="Select instructor" /></SelectTrigger>
                 <SelectContent>
                   {teachers.map((t) => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
                 </SelectContent>
@@ -1001,7 +1001,7 @@ export function TeacherDashboard() {
 
   return (
     <div className="space-y-5">
-      <SectionHeader title={`Welcome, ${currentUser?.name.split(" ")[0] ?? "Teachers-Instructors"}`} subtitle="Your teaching load, rosters and grading queue at a glance." />
+      <SectionHeader title={`Welcome, ${currentUser?.name.split(" ")[0] ?? "Instructor"}`} subtitle="Your teaching load, rosters and grading queue at a glance." />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={Boxes} label="My cohorts" value={cohorts.length} hint={currentUser?.title} />
         <StatCard icon={Users} label="Students taught" value={studentIds.size} tone="slate" />

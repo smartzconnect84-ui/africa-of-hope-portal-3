@@ -158,7 +158,7 @@ export function SetupError({ message, retry }: { message: string; retry: () => v
 
 function sidebarGroupLabel(role: string | null): string {
   if (role === "Student") return "Student Desk";
-  if (role === "Teacher") return "Teachers-Instructors";
+  if (role === "Instructor") return "Instructors";
   return "Administration";
 }
 function Pop({

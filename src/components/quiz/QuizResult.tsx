@@ -184,7 +184,7 @@ export default function QuizResult({
                     </p>
                   )}
                   {q.explanation && <p className="mt-2 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600">{q.explanation}</p>}
-                  {q.overridden && <Badge className="mt-2 bg-indigo-100 text-indigo-700">Points adjusted by teacher</Badge>}
+                  {q.overridden && <Badge className="mt-2 bg-indigo-100 text-indigo-700">Points adjusted by instructor</Badge>}
                 </div>
               );
             })}
