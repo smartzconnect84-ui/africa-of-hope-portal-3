@@ -65,6 +65,11 @@ service-role key is a server-only secret and must never get a VITE_ prefix.
 Locally they live in the gitignored .env.local; a Sites bundle must be built
 with them because Sites has no build step.
 
+`APY_TOKEN` is the ApyHub API token used by the `extract-pdf-text` Edge
+Function. It is server-only: it is declared empty in `.env.example`, set with
+`supabase secrets set APY_TOKEN=...`, and never gets a `VITE_` prefix. PDF text
+extraction reports itself unconfigured (503) until the secret exists.
+
 ## Decisions
 
 - Preserve the React/Vite stack and use the Vite CLI directly for development.
@@ -389,3 +394,21 @@ with them because Sites has no build step.
   scrolling fix and the better-auth response mapping). Only the data/auth client
   changed: those commits tried to make the managed backend answer; this one
   points the app at the project that actually holds the accounts.
+
+- PDF text extraction through ApyHub (2026-11-21). New Edge Function
+  `extract-pdf-text` (signed-in members only, `verify_jwt = true`) takes the
+  upload as multipart `file`, checks the MIME type/`.pdf` name, the `%PDF-`
+  magic bytes and the 10 MB limit, then forwards it to
+  `POST https://api.eu.apyhub.com/apyhub/extract-text-from-pdf/file` with the
+  `apy-token` header and returns ApyHub's `data` string as
+  `{ text, characters, truncated }`. `APY_TOKEN` is read from the function
+  environment only and declared empty in `.env.example`; upstream 4xx/5xx,
+  401/403, 413 and 429 answers, network failures and timeouts map to safe
+  messages that never repeat the provider body, and an empty `data` string is
+  reported as a scanned/empty PDF that needs OCR (this service does not OCR).
+  Extracted text is normalised (CRLF, control bytes, 200k character cap) and is
+  untrusted document content: render it as text, never as HTML.
+  `src/lib/pdfText.ts` is the browser entry point (`extractPdfText(file)`).
+  `tests/apyhubPdf.test.ts` builds a synthetic one-page PDF with a real text
+  layer and covers the request shape, the upload checks and the error mapping.
+  Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret.
