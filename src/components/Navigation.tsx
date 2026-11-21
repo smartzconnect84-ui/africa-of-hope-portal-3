@@ -8,7 +8,8 @@ import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
 import PortalInbox from "./portal/PortalInbox";
-import { useVisiblePortalViews, portalViewLabel, PORTAL_NAV_GROUPS } from "../portalViews";
+import { portalViewLabel, PORTAL_NAV_GROUPS, PORTAL_VIEWS } from "../portalViews";
+import { NAV_RELEVANCE_RANK } from "../portalViews";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
@@ -305,6 +306,15 @@ export default function Navigation({
   children: ReactNode;
 }) {
   const { state, currentUser, logout, resetDemoData } = useApp();
+  // Build the visible views list directly from the static registry using the
+  // current user context. This avoids calling useVisiblePortalViews() here
+  // (which internally calls useApp() again) to keep the hook chain simple.
+  const ctx = { currentUser, state, role: currentUser?.role ?? null, isSignedIn: !!currentUser, isSuperAdmin: currentUser?.role === "Super Admin", can: (key: any) => false, canAny: (...keys: any[]) => false, canAll: (...keys: any[]) => false } as any;
+  const views = PORTAL_VIEWS.filter((v) => v.visible(ctx)).sort((a, b) => {
+    const ra = NAV_RELEVANCE_RANK.get(a.key) ?? 999;
+    const rb = NAV_RELEVANCE_RANK.get(b.key) ?? 999;
+    return ra - rb;
+  });
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -396,7 +406,6 @@ export default function Navigation({
     return state.announcements.filter((item) => isAnnouncementLiveFor(item, role, now)).length;
   }, [state.announcements, currentUser?.role]);
 
-  const { ctx, views } = useVisiblePortalViews();
   const { t } = useLocale();
 
   const results = useMemo(() => {
