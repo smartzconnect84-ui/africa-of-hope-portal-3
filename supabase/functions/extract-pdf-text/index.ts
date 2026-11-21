@@ -61,10 +61,12 @@ function validatePdfUpload(
 }
 
 function isPdfSignature(head: Uint8Array): boolean {
-  if (head.length < 5) return false;
+  if (head.length < PDF_MAGIC.length) return false;
   let signature = "";
-  for (let i = 0; i < 5; i++) signature += String.fromCharCode(head[i]);
-  return signature === "%PDF-";
+  for (let i = 0; i < PDF_MAGIC.length; i++) {
+    signature += String.fromCharCode(head[i]);
+  }
+  return signature === PDF_MAGIC;
 }
 
 function stripControlCharacters(value: string): string {

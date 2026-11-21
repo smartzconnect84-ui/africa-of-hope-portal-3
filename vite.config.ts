@@ -35,6 +35,14 @@ function stripDotfileDirs() {
         fs.rmSync(target, { recursive: true, force: true });
       }
       }
+      // Remove crossorigin from module scripts in index.html so same-origin
+      // module scripts are not blocked by missing CORS headers on the edge.
+      const indexHtml = path.join(dist, "index.html");
+      if (fs.existsSync(indexHtml)) {
+        let html = fs.readFileSync(indexHtml, "utf-8");
+        html = html.replace(/<script type="module" crossorigin src=/g, '<script type="module" src=');
+        fs.writeFileSync(indexHtml, html);
+      }
     },
   };
 }

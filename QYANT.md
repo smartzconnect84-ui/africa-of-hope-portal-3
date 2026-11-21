@@ -70,6 +70,14 @@ Function. It is server-only: it is declared empty in `.env.example`, set with
 `supabase secrets set APY_TOKEN=...`, and never gets a `VITE_` prefix. PDF text
 extraction reports itself unconfigured (503) until the secret exists.
 
+The other function credentials are Supabase project secrets set the same way and
+never committed: the service credential Supabase injects for workers, the Resend
+send key and verified sender, the email and reminder cron secrets, the Groq
+assistant key and model, the newsletter signing secret, the VAPID keypair and
+subject, the OneSignal app id and REST credential, the internal push dispatch
+token, and the public site/app URLs. Each function's source names the ones it
+reads.
+
 ## Decisions
 
 - Preserve the React/Vite stack and use the Vite CLI directly for development.
@@ -396,8 +404,10 @@ extraction reports itself unconfigured (503) until the secret exists.
   points the app at the project that actually holds the accounts.
 
 - PDF text extraction through ApyHub (2026-11-21). New Edge Function
-  `extract-pdf-text` (signed-in members only, `verify_jwt = true`) takes the
-  upload as multipart `file`, checks the MIME type/`.pdf` name, the `%PDF-`
+  `extract-pdf-text` (signed-in members only: Supabase's default gateway JWT
+  check plus an in-handler session re-check, so no `[functions.*]` override was
+  added to `config.toml`) takes the upload as multipart `file`, checks the MIME
+  type/`.pdf` name, the `%PDF-`
   magic bytes and the 10 MB limit, then forwards it to
   `POST https://api.eu.apyhub.com/apyhub/extract-text-from-pdf/file` with the
   `apy-token` header and returns ApyHub's `data` string as
@@ -410,8 +420,12 @@ extraction reports itself unconfigured (503) until the secret exists.
   untrusted document content: render it as text, never as HTML.
   `src/lib/pdfText.ts` is the browser entry point (`extractPdfText(file)`).
   `tests/apyhubPdf.test.ts` builds a synthetic one-page PDF with a real text
-  layer and covers the request shape, the upload checks and the error mapping.
-  Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret.
+  layer and covers the request shape, the upload checks and the error mapping;
+  it also holds an opt-in live check that uploads that PDF to ApyHub and asserts
+  the returned text contains it (`APY_TOKEN=... node --test
+  tests/apyhubPdf.test.ts`), which skips when no token is present.
+  Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret — the
+  live call has not run yet, so a real ApyHub answer is unconfirmed.
 
 - PDF text extraction reconcile (2026-11-21). The `extract-pdf-text` Edge Function's
   repo source (`index.ts` importing from `../_shared/apyhubPdfHandler.ts`) could not

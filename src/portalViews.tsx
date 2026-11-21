@@ -535,7 +535,7 @@ const NAV_RELEVANCE_ORDER = [
   "profile",
 ];
 
-const NAV_RELEVANCE_RANK = new Map(NAV_RELEVANCE_ORDER.map((key, i) => [key, i]));
+export const NAV_RELEVANCE_RANK = new Map(NAV_RELEVANCE_ORDER.map((key, i) => [key, i]));
 
 /** The sidebar/router list, filtered and ordered for the signed-in user. */
 export function useVisiblePortalViews(): { ctx: PortalViewContext; views: PortalView[] } {

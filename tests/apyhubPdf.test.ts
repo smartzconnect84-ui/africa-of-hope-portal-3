@@ -251,3 +251,24 @@ test("the handler returns the extracted text and never the token", async () => {
   });
   assert.doesNotMatch(raw, /test-apy-token/);
 });
+
+/**
+ * Opt-in live check: needs a real ApyHub token in the environment, because the
+ * other tests mock the provider. It uploads the same synthetic PDF and asserts
+ * ApyHub returns the text inside it. Skipped in normal runs.
+ */
+test(
+  "live ApyHub extraction returns the synthetic PDF's text",
+  { skip: !process.env.APY_TOKEN && "set APY_TOKEN to run the live ApyHub check" },
+  async () => {
+    const result = await extractPdfTextFromApyhub({
+      file: pdfBlob(),
+      fileName: "synthetic.pdf",
+      token: process.env.APY_TOKEN ?? "",
+    });
+    assert.ok(
+      result.text.includes(SAMPLE_TEXT),
+      `expected the synthetic PDF text in the ApyHub answer, got: ${JSON.stringify(result.text.slice(0, 120))}`,
+    );
+  },
+);
