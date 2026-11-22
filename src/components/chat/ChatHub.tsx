@@ -1,248 +1,748 @@
-import { useMemo, useState } from "react";
-import { MessageCircle, Plus, Users, Image as ImageIcon, File, Mic, Send, ChevronLeft } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  ChevronLeft,
+  File as FileIcon,
+  Image as ImageIcon,
+  MessageCircle,
+  Mic,
+  Plus,
+  Search,
+  Send,
+  Square,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { useChatThread, useConversations, type ChatConversation } from "@/lib/chat";
+import {
+  attachmentTypeFor,
+  chatErrorMessage,
+  createChatGroup,
+  formatVoiceTime,
+  uploadChatFile,
+  useChatThread,
+  useConversations,
+  useSignedUrl,
+  useVoiceRecorder,
+  type ChatConversation,
+  type ChatGroup,
+  type ChatMessage,
+} from "@/lib/chat";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { useVoiceRecorder, uploadChatFile, type ChatAttachmentType, chatErrorMessage, formatVoiceTime, useSignedUrl } from "@/lib/chat";
-import { Check } from "lucide-react";
-import UserProfileDialog from "./UserProfileDialog";
-import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@/types";
 
-function ConversationRow({ conv, active, onClick, unreadCount }: { conv: ChatConversation; active: boolean; onClick: () => void; unreadCount?: number; }) {
+function initialsOf(name: string) {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
+
+function ConversationRow({
+  conv,
+  active,
+  onClick,
+}: {
+  conv: ChatConversation;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn("flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-emerald-50", active && "bg-emerald-100")}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-emerald-50",
+        active && "bg-emerald-100",
+      )}
     >
       <Avatar className="h-8 w-8 shrink-0">
-        <AvatarFallback className="bg-emerald-800 text-amber-400">{conv.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</AvatarFallback>
+        <AvatarFallback className="bg-emerald-800 text-amber-400">{initialsOf(conv.name)}</AvatarFallback>
       </Avatar>
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{conv.name}</span>
-      {unreadCount ? <span className="shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{unreadCount}</span> : null}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{conv.name}</span>
+          {conv.kind === "group" && <Users className="h-3 w-3 shrink-0 text-slate-400" />}
+        </span>
+        <span className="block truncate text-[11px] text-slate-500">{conv.lastBody || "No messages yet"}</span>
+      </span>
+      {conv.unread > 0 ? (
+        <span className="shrink-0 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          {conv.unread > 99 ? "99+" : conv.unread}
+        </span>
+      ) : null}
     </button>
   );
 }
 
-function NewGroupDialog({ open, onClose, users, meId }: { open: boolean; onClose: () => void; users: User[]; meId: string; }) {
+/**
+ * Private attachments are addressed by storage path. The signed URL is minted
+ * in this component (one hook per message) instead of inside the message loop.
+ */
+function AttachmentView({ message }: { message: ChatMessage }) {
+  const url = useSignedUrl(message.attachment_path);
+  const name = message.attachment_name || "attachment";
+
+  if (!url) {
+    return <p className="text-[11px] italic opacity-70">Preparing {name}…</p>;
+  }
+  if (message.attachment_type === "image") {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className="block">
+        <img
+          src={url}
+          alt={name}
+          loading="lazy"
+          className="max-h-64 w-auto max-w-full rounded-xl object-contain"
+        />
+      </a>
+    );
+  }
+  if (message.attachment_type === "voice") {
+    return (
+      <div className="space-y-0.5">
+        <audio controls src={url} className="max-w-[260px]" />
+        <p className="text-[11px] opacity-70">{formatVoiceTime(message.duration_seconds)}</p>
+      </div>
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 text-sm underline underline-offset-2"
+    >
+      <FileIcon className="h-4 w-4 shrink-0" /> {name}
+    </a>
+  );
+}
+
+function Bubble({ mine, message }: { mine: boolean; message: ChatMessage }) {
+  const time = new Date(message.created_at).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    <div className={cn("flex gap-2", mine ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "max-w-[75%] space-y-1.5 rounded-2xl px-3 py-2 shadow-sm",
+          mine ? "bg-emerald-700 text-white" : "bg-white text-slate-800 ring-1 ring-slate-200",
+        )}
+      >
+        {message.attachment_path && <AttachmentView message={message} />}
+        {message.body.trim() && <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>}
+        <p
+          className={cn(
+            "flex items-center justify-end gap-1 text-[11px]",
+            mine ? "text-emerald-100" : "text-slate-400",
+          )}
+        >
+          {time}
+          {mine && message.seen_at && (
+            <span className="inline-flex items-center gap-0.5" title="Seen">
+              <Check className="h-3 w-3" /> Seen
+            </span>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NewGroupDialog({
+  open,
+  onClose,
+  people,
+  meId,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  people: User[];
+  meId: string | null;
+  onCreated: (group: ChatGroup) => void;
+}) {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<{ id: string; name: string } | null>(null);
-  const me = meId;
+
+  useEffect(() => {
+    if (!open) return;
+    setName("");
+    setDesc("");
+    setSelected([]);
+    setError(null);
+  }, [open]);
+
   async function submit() {
-    if (!name.trim()) { setError("The group needs a name."); return; }
-    setSaving(true); setError(null);
+    if (!name.trim()) {
+      setError("The group needs a name.");
+      return;
+    }
+    if (!meId) {
+      setError("Sign in to create a group.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
     try {
-      const ids = users.map((u) => u.id).filter((id) => selected.includes(id) || id === me);
-      const { data: group } = await supabase.from("chat_groups").insert({ name: name.trim().slice(0, 80), created_by: me }).select("id").single();
-      const members = users.filter((u) => selected.includes(u.id) || u.id === me);
-      const { error: e2 } = await supabase.from("chat_group_members").insert(members.map((u) => ({ group_id: group!.id, user_id: u.id, member_role: u.id === me ? "owner" : "member" })));
-      if (e2) throw e2;
-      setCreated({ id: group!.id, name: name.trim() });
+      const group = await createChatGroup({
+        name,
+        description: desc,
+        createdBy: meId,
+        memberIds: selected,
+      });
+      onCreated(group);
       onClose();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+    } catch (err) {
+      setError(chatErrorMessage(err, "The group could not be created."));
     } finally {
       setSaving(false);
     }
   }
+
   if (!open) return null;
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>New group chat</DialogTitle><DialogDescription>Pick the people you want in the group. They receive a join invitation.</DialogDescription></DialogHeader>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>New group chat</DialogTitle>
+          <DialogDescription>
+            Pick the people you want in the group. They are added straight away and see it in their Messages.
+          </DialogDescription>
+        </DialogHeader>
         <div className="space-y-3">
-          <Label>Group name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Project squad" />
-          <Label>Description (optional)</Label><Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="What this group is for" />
-          <Label>Members</Label><div className="max-h-[240px] overflow-y-auto space-y-1">{users.map((u) => <button key={u.id} type="button" onClick={() => setSelected((s) => s.includes(u.id) ? s.filter((x) => x !== u.id) : [...s, u.id])} className={cn("flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition", selected.includes(u.id) && "bg-emerald-50")}><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-800 text-[11px] font-bold text-amber-400">{u.name.split(" ").map((p) => p[0]).slice(0,2).join("").toUpperCase()}</span><span className="min-w-0 flex-1 truncate text-sm">{u.name}</span>{selected.includes(u.id) && <Check className="h-4 w-4 text-emerald-700" />}</button>)}</div>
-          {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}
-          <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={submit} disabled={saving}>{saving ? "Creating..." : "Create group"}</Button></DialogFooter>
-          {created && <p className="text-xs text-emerald-700">{created.name} is live.</p>}
+          <div className="space-y-1.5">
+            <Label htmlFor="group-name">Group name</Label>
+            <Input
+              id="group-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Project squad"
+              maxLength={80}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="group-desc">Description (optional)</Label>
+            <Input
+              id="group-desc"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="What this group is for"
+              maxLength={500}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Members ({selected.length} selected)</Label>
+            <div className="max-h-[240px] space-y-1 overflow-y-auto">
+              {people.length === 0 && (
+                <p className="px-1 py-3 text-xs text-slate-500">No other portal members are visible yet.</p>
+              )}
+              {people.map((u) => {
+                const on = selected.includes(u.id);
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() =>
+                      setSelected((s) => (s.includes(u.id) ? s.filter((x) => x !== u.id) : [...s, u.id]))
+                    }
+                    aria-pressed={on}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition",
+                      on && "bg-emerald-50",
+                    )}
+                  >
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-800 text-[11px] font-bold text-amber-400">
+                      {initialsOf(u.name)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-slate-800">{u.name}</span>
+                      <span className="block truncate text-[11px] text-slate-500">{u.role}</span>
+                    </span>
+                    {on && <Check className="h-4 w-4 shrink-0 text-emerald-700" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {error && (
+            <p role="alert" className="rounded-lg bg-rose-50 p-2 text-xs text-rose-700">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={saving} className="bg-emerald-700 hover:bg-emerald-800">
+              {saving ? "Creating…" : "Create group"}
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Bubble({ mine, body, time, attachment, seen }: { mine: boolean; body: string; time: string; attachment?: { type: "image" | "file" | "voice"; name: string; seconds: number | null; url: string | null }; seen?: boolean; }) {
-  if (attachment?.type === "voice") {
-    return (
-      <div className={cn("flex gap-2 max-width-full", mine ? "justify-end" : "justify-start")}>
-        <div className={cn("flex flex-col items-center gap-1 rounded-2xl px-3 py-2 shadow-sm", mine ? "bg-emerald-700" : "bg-white ring-1 ring-slate-200")}>
-          <audio controls className="max-w-[260px]" src={attachment.url ?? undefined} />
-          <p className={cn("text-[11px] text-right", mine ? "text-emerald-100" : "text-slate-400")}>{formatVoiceTime(attachment.seconds)}</p>
-        </div>
-        {!mine && attachment.url && <div className="flex flex-col items-center"><span className="text-[11px] text-slate-400">{attachment.name}</span></div>}
-      </div>
-    );
-  }
+function NewMessageDialog({
+  open,
+  onClose,
+  people,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  people: User[];
+  onPick: (user: User) => void;
+}) {
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    if (open) setQuery("");
+  }, [open]);
+  if (!open) return null;
+  const q = query.trim().toLowerCase();
+  const matches = q
+    ? people.filter((u) => `${u.name} ${u.email}`.toLowerCase().includes(q))
+    : people;
   return (
-    <div className={cn("flex gap-2 max-width-full", mine ? "justify-end" : "justify-start")}>
-      <div className={cn("max-w-[75%] rounded-2xl px-3 py-2 shadow-sm", mine ? "bg-emerald-700" : "bg-white ring-1 ring-slate-200")}>
-        <p className={cn("text-sm", !mine && "text-slate-800")}>{body}</p>
-        <p className={cn("text-[11px] mt-1 text-right", mine ? "text-emerald-100" : "text-slate-400")}>{time}</p>
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>New message</DialogTitle>
+          <DialogDescription>Start a private conversation with a portal member.</DialogDescription>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or email…"
+            aria-label="Search members"
+            className="pl-9"
+          />
+        </div>
+        <div className="max-h-[320px] space-y-1 overflow-y-auto">
+          {matches.length === 0 && (
+            <p className="px-1 py-6 text-center text-xs text-slate-500">No members match that search.</p>
+          )}
+          {matches.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => {
+                onPick(u);
+                onClose();
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-emerald-50"
+            >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-800 text-[11px] font-bold text-amber-400">
+                {initialsOf(u.name)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-slate-800">{u.name}</span>
+                <span className="block truncate text-[11px] text-slate-500">{u.role}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function ChatHub() {
-  const { currentUser } = useApp();
+  const { state, currentUser } = useApp();
   const meId = currentUser?.id ?? null;
 
-  const { conversations } = useConversations(meId, [], 0);
+  const people = useMemo(
+    () =>
+      state.users
+        .filter((u) => u.id !== meId)
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [state.users, meId],
+  );
+
+  const [tick, setTick] = useState(0);
+  const { conversations, loading, error: listError } = useConversations(
+    meId ?? undefined,
+    people,
+    tick,
+  );
 
   const [view, setView] = useState<"conversations" | "thread">("conversations");
   const [active, setActive] = useState<ChatConversation | null>(null);
   const [groupOpen, setGroupOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [created, setCreated] = useState<{ id: string; name: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [peer, setPeer] = useState<User | null>(null);
-  const [threadUser, setThreadUser] = useState<User | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [peerTyping, setPeerTyping] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [attaching, setAttaching] = useState(false);
-  const [audioFile, setAudioFile] = useState<{ blob: Blob; mime: string } | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [recordingError, setRecordingError] = useState<string | null>(null);
-  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+  const [newDmOpen, setNewDmOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const imageInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const typingAt = useRef(0);
 
-  const threadTarget = useMemo(() => {
-    if (!meId || !peer) return null;
-    return { kind: "dm" as const, id: peer.id };
-  }, [meId, peer]);
+  const target = useMemo(() => {
+    if (!active) return null;
+    if (active.kind === "dm") return active.peerId ? { kind: "dm" as const, id: active.peerId } : null;
+    return active.groupId ? { kind: "group" as const, id: active.groupId } : null;
+  }, [active]);
 
-  // Load people list
-  async function loadPeople() {
-    if (!meId) return;
-    try {
-      const { data, error } = await supabase.from("users").select("id, name, email, role").neq("id", meId).order("name");
-      if (!error && data) setUsers(data as User[]);
-    } catch { /* ignore */ }
+  const thread = useChatThread(meId ?? undefined, target);
+  const recorder = useVoiceRecorder();
+
+  const openConversation = (conv: ChatConversation) => {
+    setActive(conv);
+    setView("thread");
+    setDraft("");
+    setUploadError(null);
+  };
+
+  const openDm = (user: User) =>
+    openConversation({
+      key: `dm:${user.id}`,
+      kind: "dm",
+      peerId: user.id,
+      name: user.name,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      lastBody: "",
+      lastAt: new Date().toISOString(),
+      unread: 0,
+    });
+
+  const handleGroupCreated = (group: ChatGroup) => {
+    openConversation({
+      key: `group:${group.id}`,
+      kind: "group",
+      groupId: group.id,
+      name: group.name,
+      lastBody: group.description || "No messages yet",
+      lastAt: group.created_at,
+      unread: 0,
+      memberCount: group.memberIds.length,
+    });
+    setTick((t) => t + 1);
+  };
+
+  // Read receipts: only once the thread has actually loaded messages.
+  useEffect(() => {
+    if (!target || thread.messages.length === 0) return;
+    if (!thread.messages.some((m) => m.sender_id !== meId)) return;
+    let cancelled = false;
+    void thread.markSeen().then(() => {
+      if (!cancelled) setTick((t) => t + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, thread.messages.length, meId]);
+
+  // Keep the newest message in view, like every other chat client.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [target, thread.messages.length]);
+
+  async function sendText() {
+    const body = draft.trim();
+    if (!body || !target) return;
+    setDraft("");
+    setUploadError(null);
+    const ok = await thread.send({ body });
+    if (!ok) setDraft(body);
+    else setTick((t) => t + 1);
   }
 
-  // Send a message (direct or group)
-  async function sendMessage(text: string) {
-    if (!meId || !text.trim() || !threadTarget) return;
-    setSending(true);
-    setError(null);
+  function onDraftChange(value: string) {
+    setDraft(value);
+    const now = Date.now();
+    if (now - typingAt.current > 1500) {
+      typingAt.current = now;
+      thread.sendTyping();
+    }
+  }
+
+  async function sendAttachment(file: File, seconds = 0) {
+    if (!meId || !target) return;
+    const type = attachmentTypeFor(file);
+    setUploading(true);
+    setUploadError(null);
     try {
-      const { sendDirectMessage, sendGroupMessage } = await import("@/lib/chat");
-      const payload = { body: text.trim() };
-      if (threadTarget.kind === "dm") {
-        await sendDirectMessage(meId!, threadTarget.id, payload);
-      } else {
-        await sendGroupMessage(meId!, threadTarget.id, payload);
-      }
-      setActive({ key: threadTarget.id, kind: "dm", name: "", lastBody: "", lastAt: "", unread: 0 });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      const { path, name } = await uploadChatFile({
+        meId,
+        peerId: target.kind === "dm" ? target.id : undefined,
+        groupId: target.kind === "group" ? target.id : undefined,
+        file,
+        fileName: file.name,
+        type,
+      });
+      const ok = await thread.send({
+        attachment_path: path,
+        attachment_type: type,
+        attachment_name: name,
+        duration_seconds: type === "voice" ? Math.round(seconds) : null,
+      });
+      if (!ok) setUploadError("The attachment was uploaded but the message could not be sent.");
+      else setTick((t) => t + 1);
+    } catch (err) {
+      setUploadError(chatErrorMessage(err, "The attachment could not be uploaded."));
     } finally {
-      setSending(false);
+      setUploading(false);
     }
   }
 
-  // Voice
-  function startRecording() {
-    setRecording(true); setRecordingError(null); setSeconds(0); setRecordingUrl(null);
-  }
-  function stopRecording() {
-    setRecording(false);
-  }
-  function cancelRecording() {
-    setRecording(false); setAudioFile(null); setRecordingUrl(null); setSeconds(0);
+  async function toggleRecording() {
+    if (!recorder.recording) {
+      setUploadError(null);
+      await recorder.start();
+      return;
+    }
+    const result = await recorder.stop();
+    if (!result) {
+      setUploadError("Nothing was recorded. Try again and speak after the timer starts.");
+      return;
+    }
+    const extension = result.mime.includes("mp4") ? "m4a" : result.mime.includes("ogg") ? "ogg" : "webm";
+    const file = new File([result.blob], `voice-${Date.now()}.${extension}`, { type: result.mime });
+    await sendAttachment(file, result.seconds);
   }
 
-  function attachVoice() {
-    if (audioFile) {
-      const blob = audioFile.blob;
-      setAttaching(true);
-      uploadChatFile({ meId: meId!, type: "voice" as const, file: new Blob([blob], { type: audioFile.mime }), fileName: `voice-${Date.now()}.webm` })
-        .then(({ path }) => { setAudioFile(null); setRecordingUrl(path); setError(null); })
-        .catch((err: unknown) => setError(chatErrorMessage(err, "Could not upload the voice note.")))
-        .finally(() => setAttaching(false));
-      setAudioFile(null);
-    }
+  const error = uploadError ?? thread.error ?? listError;
+
+  if (!meId) {
+    return (
+      <div className="rounded-xl border border-emerald-900/10 bg-white p-10 text-center text-sm text-slate-500">
+        Sign in to send and receive messages.
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className="flex h-full max-h-[calc(100dvh-4rem)] gap-3">
+      <div className="flex h-full max-h-[calc(100dvh-4rem)] min-h-[420px] gap-3">
         {/* Conversation list */}
-        <div className={cn("flex w-[320px] max-w-[80vw] flex-col border border-emerald-900/10 bg-white overflow-hidden", view === "conversations" ? "hidden md:flex" : "flex")}>
+        <div
+          className={cn(
+            "flex-col overflow-hidden border border-emerald-900/10 bg-white",
+            // Phones show one pane at a time: the list is the landing view, and
+            // it only yields to the thread once a conversation is open.
+            view === "thread" ? "hidden md:flex md:w-[320px]" : "flex w-full md:w-[320px]",
+          )}
+        >
           <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
             <MessageCircle className="h-4 w-4 text-emerald-700" />
             <span className="text-sm font-semibold text-slate-800">Messages</span>
+            {loading && <span className="ml-auto text-[11px] text-slate-400">Syncing…</span>}
           </div>
-          <div className="p-1.5">
-            <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => setGroupOpen(true)}>
+          <div className="flex gap-1 p-1.5">
+            <Button variant="ghost" size="sm" className="flex-1 justify-start" onClick={() => setNewDmOpen(true)}>
+              <MessageCircle className="mr-1 h-4 w-4" /> New message
+            </Button>
+            <Button variant="ghost" size="sm" className="flex-1 justify-start" onClick={() => setGroupOpen(true)}>
               <Plus className="mr-1 h-4 w-4" /> New group
             </Button>
-            {conversations.map((c) => (
-              <ConversationRow key={c.key} conv={c} active={active?.key === c.key} onClick={() => { setActive(c); setView("thread"); }} unreadCount={c.unread} />
+          </div>
+          <div className="flex-1 space-y-0.5 overflow-y-auto overscroll-contain p-1.5">
+            {conversations.length === 0 && !loading && (
+              <p className="px-3 py-8 text-center text-xs text-slate-500">
+                No conversations yet. Start a private chat or create a group.
+              </p>
+            )}
+            {conversations.map((conv) => (
+              <ConversationRow
+                key={conv.key}
+                conv={conv}
+                active={active?.key === conv.key}
+                onClick={() => openConversation(conv)}
+              />
             ))}
           </div>
         </div>
 
         {/* Thread / composer */}
-        {view === "thread" && active && threadTarget ? (
-          <div className="flex flex-1 flex-col border border-emerald-900/10 bg-slate-50 overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
-              <Button variant="ghost" size="sm" onClick={() => setView("conversations")}><ChevronLeft className="h-4 w-4" /></Button>
+        {view === "thread" && active && target ? (
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden border border-emerald-900/10 bg-slate-50">
+            <div className="flex items-center gap-2 border-b border-slate-100 bg-white px-3 py-2">
+              <Button variant="ghost" size="sm" onClick={() => setView("conversations")} aria-label="Back to conversations">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-emerald-800 text-amber-400">{active.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="bg-emerald-800 text-amber-400">{initialsOf(active.name)}</AvatarFallback>
               </Avatar>
-              <span className="text-sm font-semibold text-slate-800">{active.name}</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {messages.map((m) => {
-                const mine = m.sender_id === meId;
-                const attachment = m.attachment_path ? { type: m.attachment_type ?? "file", name: m.attachment_name ?? "", seconds: m.duration_seconds, url: useSignedUrl(m.attachment_path) } : undefined;
-                return <Bubble key={m.id} mine={mine} body={m.body} time={new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} attachment={attachment} seen={m.seen_at != null} />;
-              })}
-              {peerTyping && <p className="text-xs italic text-slate-400">Someone is typing…</p>}
-              {!messages.length && <p className="py-8 text-center text-xs text-slate-400">No messages yet. Say hello!</p>}
-            </div>
-            <div className="border-t border-slate-100 p-3">
-              <div className="flex gap-2">
-                <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(draft); } }} placeholder="Message…" rows={1} className="max-h-[120px]" />
-                <Button onClick={() => void sendMessage(draft)} disabled={sending}><Send className="h-4 w-4" /></Button>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-800">{active.name}</p>
+                <p className="text-[11px] text-slate-500">
+                  {active.kind === "group"
+                    ? `${active.memberCount ?? 0} member${(active.memberCount ?? 0) === 1 ? "" : "s"}`
+                    : active.role || "Direct message"}
+                </p>
               </div>
-              <div className="mt-2 flex gap-1">
-                <Button variant="ghost" size="sm" className="px-2 py-1"><ImageIcon className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="sm" className="px-2 py-1"><File className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="sm" onClick={() => { if (recording) { attachVoice(); } else { startRecording(); } }} disabled={attaching}>
-                  <Mic className={cn("h-4 w-4", recording ? "animate-pulse" : "h-4 w-4")} />
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto overscroll-contain p-3" aria-live="polite">
+              {thread.loading && thread.messages.length === 0 && (
+                <p className="py-8 text-center text-xs text-slate-400">Loading messages…</p>
+              )}
+              {!thread.loading && thread.messages.length === 0 && (
+                <p className="py-8 text-center text-xs text-slate-400">No messages yet. Say hello!</p>
+              )}
+              {thread.messages.map((message) => (
+                <Bubble key={message.id} mine={message.sender_id === meId} message={message} />
+              ))}
+              {thread.peerTyping && <p className="text-xs italic text-slate-400">Someone is typing…</p>}
+              <div ref={bottomRef} />
+            </div>
+
+            {error && (
+              <p role="alert" className="mx-3 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">
+                {error}
+              </p>
+            )}
+
+            <div className="border-t border-slate-100 bg-white p-3">
+              {recorder.recording && (
+                <div className="mb-2 flex items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-rose-600" />
+                  Recording {formatVoiceTime(recorder.seconds)} — tap the square to send.
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto text-rose-700"
+                    onClick={recorder.cancel}
+                    aria-label="Discard recording"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <Textarea
+                  value={draft}
+                  onChange={(e) => onDraftChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void sendText();
+                    }
+                  }}
+                  placeholder="Message… (Enter to send, Shift+Enter for a new line)"
+                  aria-label="Message"
+                  rows={1}
+                  className="max-h-[120px]"
+                />
+                <Button
+                  onClick={() => void sendText()}
+                  disabled={thread.sending || !draft.trim()}
+                  aria-label="Send message"
+                  className="bg-emerald-700 hover:bg-emerald-800"
+                >
+                  <Send className="h-4 w-4" />
                 </Button>
+              </div>
+              <input
+                ref={imageInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void sendAttachment(file);
+                }}
+              />
+              <input
+                ref={fileInput}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void sendAttachment(file);
+                }}
+              />
+              <div className="mt-2 flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="px-2 py-1"
+                  onClick={() => imageInput.current?.click()}
+                  disabled={uploading}
+                  aria-label="Attach a photo"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="px-2 py-1"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={uploading}
+                  aria-label="Attach a file"
+                >
+                  <FileIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn("px-2 py-1", recorder.recording && "text-rose-600")}
+                  onClick={() => void toggleRecording()}
+                  disabled={uploading || thread.sending}
+                  aria-label={recorder.recording ? "Stop and send voice note" : "Record a voice note"}
+                >
+                  {recorder.recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                {uploading && <span className="text-[11px] text-slate-500">Uploading…</span>}
+                {recorder.error && <span className="text-[11px] text-rose-600">{recorder.error}</span>}
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col border border-emerald-900/10 bg-slate-50 items-center justify-center text-slate-400">
-            <MessageCircle className="h-10 w-10 mb-2" />
-            <p className="text-sm">Select a conversation or create a group to start messaging.</p>
+          <div className="hidden flex-1 flex-col items-center justify-center border border-emerald-900/10 bg-slate-50 p-6 text-center text-slate-400 md:flex">
+            <MessageCircle className="mb-2 h-10 w-10" />
+            <p className="text-sm">Select a conversation or start a new message.</p>
           </div>
         )}
       </div>
 
-      <NewGroupDialog open={groupOpen} onClose={() => setGroupOpen(false)} users={users} meId={meId} />
+      <NewGroupDialog
+        open={groupOpen}
+        onClose={() => setGroupOpen(false)}
+        people={people}
+        meId={meId}
+        onCreated={handleGroupCreated}
+      />
+      <NewMessageDialog
+        open={newDmOpen}
+        onClose={() => setNewDmOpen(false)}
+        people={people}
+        onPick={openDm}
+      />
     </div>
   );
 }

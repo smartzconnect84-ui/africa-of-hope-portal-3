@@ -32,6 +32,8 @@ export interface ChatGroup {
   description: string;
   created_by: string;
   created_at: string;
+  /** When the signed-in member last opened this group; drives the unread badge. */
+  lastReadAt: string;
   memberIds: string[];
   ownerId: string;
   admins: string[];
@@ -123,11 +125,14 @@ export async function loadGroupMessages(groupId: string): Promise<ChatMessage[]>
 export async function loadMyGroups(meId: string): Promise<ChatGroup[]> {
   const { data: mine, error } = await supabase
     .from("chat_group_members")
-    .select("group_id,member_role")
+    .select("group_id,member_role,last_read_at")
     .eq("user_id", meId);
   if (error) throw error;
   const ids = ((mine ?? []) as Row[]).map((r) => str(r.group_id)).filter(Boolean);
   if (ids.length === 0) return [];
+  const lastReadByGroup = new Map(
+    ((mine ?? []) as Row[]).map((r) => [str(r.group_id), str(r.last_read_at)]),
+  );
   const [{ data: groups, error: groupError }, { data: members, error: memberError }] = await Promise.all([
     supabase.from("chat_groups").select("*").in("id", ids),
     supabase.from("chat_group_members").select("group_id,user_id,member_role").in("group_id", ids),
@@ -143,6 +148,7 @@ export async function loadMyGroups(meId: string): Promise<ChatGroup[]> {
       description: str(g.description),
       created_by: str(g.created_by),
       created_at: str(g.created_at),
+      lastReadAt: lastReadByGroup.get(str(g.id)) || str(g.created_at),
       memberIds: groupMembers.map((m) => str(m.user_id)),
       ownerId: groupMembers.find((m) => str(m.member_role) === "owner")?.user_id
         ? str(groupMembers.find((m) => str(m.member_role) === "owner")!.user_id)
@@ -270,16 +276,34 @@ export async function createChatGroup(input: {
   if (error) throw error;
   const group = data as Row;
   const unique = Array.from(new Set([input.createdBy, ...input.memberIds]));
-  const { error: memberError } = await supabase.from("chat_group_members").insert(
-    unique.map((id) => ({
-      group_id: str(group.id),
-      user_id: id,
-      member_role: id === input.createdBy ? "owner" : "member",
-    })),
-  );
-  if (memberError) {
+  const rollback = async () => {
     await supabase.from("chat_groups").delete().eq("id", str(group.id));
-    throw memberError;
+  };
+  // Insert the owner row first: the chat_group_members policy authorises the
+  // other rows through is_chat_group_admin(), which is STABLE and therefore
+  // cannot see membership rows written by the same multi-row INSERT.
+  const { error: ownerError } = await supabase.from("chat_group_members").insert({
+    group_id: str(group.id),
+    user_id: input.createdBy,
+    member_role: "owner",
+  });
+  if (ownerError) {
+    await rollback();
+    throw ownerError;
+  }
+  const others = unique.filter((id) => id !== input.createdBy);
+  if (others.length > 0) {
+    const { error: memberError } = await supabase.from("chat_group_members").insert(
+      others.map((id) => ({
+        group_id: str(group.id),
+        user_id: id,
+        member_role: "member",
+      })),
+    );
+    if (memberError) {
+      await rollback();
+      throw memberError;
+    }
   }
   return {
     id: str(group.id),
@@ -287,6 +311,7 @@ export async function createChatGroup(input: {
     description: str(group.description),
     created_by: str(group.created_by),
     created_at: str(group.created_at),
+    lastReadAt: str(group.created_at),
     memberIds: unique,
     ownerId: input.createdBy,
     admins: [input.createdBy],
@@ -493,6 +518,11 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const typingTimer = useRef<number | undefined>(undefined);
   const key = target ? `${target.kind}:${target.id}` : "";
+  // Callers often build the target inline, so a fresh object arrives on every
+  // render. Keep the latest one in a ref and depend on the stable string key,
+  // otherwise refresh() changes identity and the thread refetches in a loop.
+  const targetRef = useRef(target);
+  targetRef.current = target;
 
   const apply = useCallback((rows: ChatMessage[]) => {
     rowsRef.current = sortMessages(rows);
@@ -500,7 +530,8 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!meId || !target) {
+    const current = targetRef.current;
+    if (!meId || !current) {
       apply([]);
       return;
     }
@@ -508,9 +539,9 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
     setError(null);
     try {
       const rows =
-        target.kind === "dm"
-          ? await loadDirectMessages(meId, target.id)
-          : await loadGroupMessages(target.id);
+        current.kind === "dm"
+          ? await loadDirectMessages(meId, current.id)
+          : await loadGroupMessages(current.id);
       rowsRef.current = rows;
       setMessages(rows);
     } catch (err) {
@@ -518,7 +549,7 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
     } finally {
       setLoading(false);
     }
-  }, [meId, target, apply]);
+  }, [meId, apply]);
 
   useEffect(() => {
     void refresh();
@@ -526,8 +557,9 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
 
   // Realtime inserts/updates for the open thread.
   useEffect(() => {
-    if (!meId || !target) return;
-    const table = target.kind === "dm" ? "direct_messages" : "group_messages";
+    const current = targetRef.current;
+    if (!meId || !current) return;
+    const table = current.kind === "dm" ? "direct_messages" : "group_messages";
     const ch = supabase
       .channel(`chat-thread:${key}`)
       .on(
@@ -535,12 +567,12 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
         { event: "*", schema: "public", table },
         (change) => {
           const row = mapMessage((change.new ?? change.old ?? {}) as Row);
-          if (target.kind === "dm") {
+          if (current.kind === "dm") {
             const mine =
-              (row.sender_id === meId && row.receiver_id === target.id) ||
-              (row.sender_id === target.id && row.receiver_id === meId);
+              (row.sender_id === meId && row.receiver_id === current.id) ||
+              (row.sender_id === current.id && row.receiver_id === meId);
             if (!mine) return;
-          } else if (row.group_id !== target.id) {
+          } else if (row.group_id !== current.id) {
             return;
           }
           if (change.eventType === "INSERT" || change.eventType === "UPDATE") {
@@ -577,7 +609,7 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
       }
       channelRef.current = null;
     };
-  }, [meId, target, key, apply]);
+  }, [meId, key, apply]);
 
   const sendTyping = useCallback(() => {
     try {
@@ -589,15 +621,16 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
 
   const send = useCallback(
     async (payload: OutgoingMessage) => {
-      if (!meId || !target || sending) return false;
+      const current = targetRef.current;
+      if (!meId || !current || sending) return false;
       if (!payload.body?.trim() && !payload.attachment_path) return false;
       setSending(true);
       setError(null);
       try {
         const row =
-          target.kind === "dm"
-            ? await sendDirectMessage(meId, target.id, payload)
-            : await sendGroupMessage(meId, target.id, payload);
+          current.kind === "dm"
+            ? await sendDirectMessage(meId, current.id, payload)
+            : await sendGroupMessage(meId, current.id, payload);
         apply(mergeMessage(rowsRef.current, [row]));
         return true;
       } catch (err) {
@@ -607,18 +640,19 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
         setSending(false);
       }
     },
-    [meId, target, sending, apply],
+    [meId, sending, apply],
   );
 
   const markSeen = useCallback(async () => {
-    if (!meId || !target) return;
+    const current = targetRef.current;
+    if (!meId || !current) return;
     try {
-      if (target.kind === "dm") await markDirectSeen(meId, target.id);
-      else await markGroupRead(target.id, meId);
+      if (current.kind === "dm") await markDirectSeen(meId, current.id);
+      else await markGroupRead(current.id, meId);
     } catch {
       /* read receipts are best effort */
     }
-  }, [meId, target]);
+  }, [meId]);
 
   return { messages, loading, error, sending, peerTyping, send, sendTyping, markSeen, refresh };
 }
@@ -695,11 +729,14 @@ export function useConversations(
   }
   const grouped = groups.map((group) => {
     const latest = groupRows.find((r) => str(r.group_id) === group.id);
+    // Unread = messages from other members since this member last opened the
+    // group, not every message the group has ever had.
+    const readAt = +new Date(group.lastReadAt || group.created_at);
     const unread = groupRows.filter(
       (r) =>
         str(r.group_id) === group.id &&
         str(r.sender_id) !== meId &&
-        +new Date(str(r.created_at)) > +new Date("1970-01-01T00:00:00.000Z"),
+        +new Date(str(r.created_at)) > readAt,
     ).length;
     const body = latest
       ? str(latest.body) || (str(latest.attachment_type) === "voice" ? "Voice note" : str(latest.attachment_type) === "image" ? "Photo" : "Attachment")

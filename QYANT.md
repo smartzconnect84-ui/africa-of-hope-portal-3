@@ -474,3 +474,46 @@ reads.
   per-table failure handling sound; RPC usage is covered by the existing tests.
   Verified with `npm run typecheck`, `npx eslint` on the touched files,
   `npm test` (52 pass, 1 skipped) and `npm run build:sites`.
+
+- Messaging and Program Builder audit (2026-11-22). `ChatHub` was wired to the
+  chat data layer only by import: it never loaded people or messages, called
+  `useSignedUrl` inside the message `map` (a hook in a loop, the same React
+  #300 failure the portal splash fix addressed), always built a DM target so
+  group sends were unreachable, dropped the conversation name after sending,
+  and had a fake recorder plus dead image/file buttons. It now uses
+  `useConversations(meId, state.users, tick)` and `useChatThread`, keeps a
+  stable conversation object, renders attachments through a `Bubble` child
+  (one signed-URL hook per message), uploads images/files and real
+  `MediaRecorder` voice notes, marks threads seen once messages load, scrolls
+  to the newest message, and has working "New message" and "New group"
+  flows using `createChatGroup`. `createChatGroup` inserts the owner membership
+  row before the other members, because the STABLE admin policy cannot see rows
+  from the same multi-row INSERT. Group unread badges now count only messages
+  after the member's `last_read_at` instead of every group message ever, and
+  `useChatThread` depends on a stable `kind:id` key rather than the target
+  object, so inline targets in `DirectoryMessaging`/`PeopleManagement` no longer
+  cause a refetch loop. The top-bar `PortalInbox` scanned `aoh-dm-*`
+  localStorage keys that nothing writes (the chat layer uses Supabase plus
+  `aoh-dm:v1:`); it now reads `useConversations` and opens the chat dialog
+  directly. Program Builder's wizard dialog scrolls to the top on every step or
+  validation error (the error message moved above the step body) and, after a
+  create or edit, scrolls the affected catalogue card into view with a brief
+  amber ring instead of leaving the user at the top of a long grid.
+  Verified with `npm run typecheck`, `npx eslint` on every touched file and
+  `npm test` (52 pass, 1 skipped). Not verified in a browser: the messaging
+  flows need two signed-in accounts, and the Program Builder create flow was
+  not driven end to end.
+
+- Messaging smoke check (2026-11-22, dev server + signed-in student
+  `test@africaofhopelr.org`). The first pass found one more real defect: on a
+  phone the Messages module started in `view === "conversations"` while the
+  conversation list was `hidden md:flex`, so the whole module showed only the
+  "Select a conversation" placeholder with no list and no New message/New group
+  buttons. The list is now the landing pane on small screens (it yields only
+  when a thread is open) and the placeholder is desktop-only. Verified live:
+  Messages renders the list, the New group dialog lists all 18 portal members,
+  New message opens the DM thread (composer, photo, file and voice controls,
+  "No messages yet"), `direct_messages` loads with HTTP 200 through the
+  `useChatThread` key fix and no React error appears in the console. Not
+  verified: sending a message or creating a group (no second live account), and
+  the Program Builder wizard (the admin role is needed; no admin login here).

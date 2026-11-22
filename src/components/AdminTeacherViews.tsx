@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { courseId } from "@/lib/identifiers";
 import { toast } from "sonner";
 import {
@@ -28,7 +28,6 @@ import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navig
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  DEFAULT_GRADE_EVAL_SETTINGS,
   loadGradeEvalSettings,
   saveGradeEvalSettings,
   validateGradeEvalSettings,
@@ -389,6 +388,10 @@ export function ProgramBuilder() {
   const [form, setForm] = useState(emptyProgram);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const pendingScrollRef = useRef<"new" | string | null>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const [justSavedId, setJustSavedId] = useState<string | null>(null);
 
   const seed = async () => {
     setSeeding(true);
@@ -402,6 +405,7 @@ export function ProgramBuilder() {
     setEditingId(null);
     setStep(0);
     setError(null);
+    pendingScrollRef.current = null;
     setOpen(true);
   };
 
@@ -459,6 +463,40 @@ export function ProgramBuilder() {
         : [...f.deliveryModes, m],
     }));
 
+  // The wizard scrolls inside the dialog: a new step must start at the top,
+  // otherwise Continue leaves the reader halfway down the next step.
+  useEffect(() => {
+    if (!open) return;
+    dialogRef.current?.scrollTo({ top: 0 });
+  }, [step, open, error]);
+
+  // After saving, bring the card that changed into view — the catalogue grid is
+  // long, so a toast alone left the new programme off-screen.
+  useEffect(() => {
+    if (open || !pendingScrollRef.current) return;
+    const pending = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    const targetId =
+      pending === "new"
+        ? state.programs.filter((p) => !knownIdsRef.current.has(p.id)).map((p) => p.id).pop() ?? null
+        : pending;
+    if (!targetId) return;
+    setJustSavedId(targetId);
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`program-card-${targetId}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "center",
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [state.programs, open]);
+
+  useEffect(() => {
+    if (!justSavedId) return;
+    const timer = window.setTimeout(() => setJustSavedId(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [justSavedId]);
+
   const moduleLines = form.modulesRaw.split("\n").map((l) => l.trim()).filter(Boolean);
   const moduleWeeks = moduleLines.reduce(
     (sum, line) => sum + (Number.parseInt(line.split("|")[1]?.trim() ?? "2", 10) || 2),
@@ -499,6 +537,7 @@ export function ProgramBuilder() {
         return;
       }
     }
+    const idsBeforeSave = new Set(state.programs.map((p) => p.id));
     const payload = {
       title: form.title.trim(),
       category: form.category.trim(),
@@ -521,6 +560,7 @@ export function ProgramBuilder() {
         return;
       }
       toast.success(form.published ? "Program updated and published" : "Program updated and kept as draft");
+      pendingScrollRef.current = editingId;
     } else {
       const error = await addProgram(payload);
       if (error) {
@@ -529,6 +569,8 @@ export function ProgramBuilder() {
         return;
       }
       toast.success(form.published ? "Program published to the catalogue" : "Program saved as draft");
+      knownIdsRef.current = idsBeforeSave;
+      pendingScrollRef.current = "new";
     }
     setEditingId(null);
     setForm(emptyProgram);
@@ -564,7 +606,13 @@ export function ProgramBuilder() {
         {state.programs.map((p) => (
           <Reveal key={p.id} className={cn(panelClass, "flex flex-col overflow-hidden")}>
             <ProgramCover program={p} editable className="h-44" />
-            <div className="flex flex-1 flex-col p-5">
+            <div
+              id={`program-card-${p.id}`}
+              className={cn(
+                "flex flex-1 flex-col p-5 transition-shadow",
+                justSavedId === p.id && "ring-2 ring-inset ring-amber-400",
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">{p.title}</h3>
@@ -609,7 +657,10 @@ export function ProgramBuilder() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
+        <DialogContent
+          ref={dialogRef}
+          className="max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
+        >
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit program setup" : "New program setup"}</DialogTitle>
             <DialogDescription>
@@ -634,6 +685,11 @@ export function ProgramBuilder() {
               </li>
             ))}
           </ol>
+          {error && (
+            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+              {error}
+            </p>
+          )}
           {step === 0 && (
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
@@ -769,9 +825,6 @@ export function ProgramBuilder() {
                   : "This program will be saved as a draft and hidden from the public catalogue."}
               </p>
             </div>
-          )}
-          {error && (
-            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>
           )}
           <DialogFooter className="sticky bottom-0 bg-white border-t border-slate-100 flex-col gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => { setError(null); if (step === 0) setOpen(false); else setStep((s) => s - 1); }}>
