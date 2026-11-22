@@ -12,7 +12,7 @@ import {
 import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
 import { panelClass } from "./Navigation";
-import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitives";
+import { Field, Area, Toggle, ImageBox, VideoBox, ListEditor, genId } from "./CmsPrimitives";
 import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
@@ -398,7 +398,7 @@ export default function AdminWebsiteSettings() {
           addLabel="Add hero slide"
           newItem={() => ({
             id: genId("hero"), eyebrow: "New highlight", title: "Headline",
-            highlight: "Accent phrase", description: "Describe this slide.", image: "",
+            highlight: "Accent phrase", description: "Describe this slide.", image: "", video: "",
           })}
           renderItem={(s: WebsiteSettings["heroSlides"][number], update) => (
             <>
@@ -409,6 +409,7 @@ export default function AdminWebsiteSettings() {
               </div>
               <Area label="Description" value={s.description} onChange={(v) => update({ description: v })} rows={2} />
               <ImageBox label="Background image" folder="hero" value={s.image} onChange={(v) => update({ image: v })} />
+              <VideoBox label="Background video (optional)" folder="hero" value={s.video ?? ""} onChange={(v) => update({ video: v })} />
             </>
           )}
         />

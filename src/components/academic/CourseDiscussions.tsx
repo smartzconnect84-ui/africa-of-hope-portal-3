@@ -151,15 +151,26 @@ export default function CourseDiscussions() {
     const patch = { title: editingThreadTitle.trim(), body: editingThreadBody.trim() };
     savingRef.current = true; setSaving(true);
     try {
-      const { error } = await supabase.from("discussion_threads").update({ title: patch.title, body: patch.body }).eq("id", threadId);
+      const { data, error } = await supabase
+        .from("discussion_threads")
+        .update({ title: patch.title, body: patch.body })
+        .eq("id", threadId)
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
-    } catch { /* offline or no table yet — keep the edit on this device */ }
-    patchCachedThread(currentUser.id, threadId, patch);
-    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, ...patch } : t)));
-    setEditingThreadId("");
-    toast.success("Question updated.");
-    savingRef.current = false; setSaving(false);
-    void refresh();
+      // No row back means the policy refused it or the question is gone — do
+      // not show the edit as saved when the server kept the old text.
+      if (!data) throw new Error("You can only edit your own question, and only a moderator can edit someone else's.");
+      patchCachedThread(currentUser.id, threadId, patch);
+      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, ...patch } : t)));
+      setEditingThreadId("");
+      toast.success("Question updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update this question.");
+    } finally {
+      savingRef.current = false; setSaving(false);
+      void refresh();
+    }
   };
 
   const deleteThread = async (threadId: string) => {
@@ -167,16 +178,22 @@ export default function CourseDiscussions() {
     if (!window.confirm("Delete this question and all its replies?")) return;
     savingRef.current = true; setSaving(true);
     try {
-      const { error } = await supabase.from("discussion_threads").delete().eq("id", threadId);
+      const { data, error } = await supabase.from("discussion_threads").delete().eq("id", threadId).select("id").maybeSingle();
       if (error) throw error;
-    } catch { /* offline or no table yet — remove it on this device */ }
-    removeCachedThread(currentUser.id, threadId);
-    setThreads((prev) => prev.filter((t) => t.id !== threadId));
-    if (openThread === threadId) setOpenThread("");
-    if (editingThreadId === threadId) setEditingThreadId("");
-    toast.success("Question deleted.");
-    savingRef.current = false; setSaving(false);
-    void refresh();
+      if (!data) throw new Error("You can only delete your own question, and only a moderator can delete someone else's.");
+      removeCachedThread(currentUser.id, threadId);
+      setThreads((prev) => prev.filter((t) => t.id !== threadId));
+      if (openThread === threadId) setOpenThread("");
+      if (editingThreadId === threadId) setEditingThreadId("");
+      toast.success("Question deleted.");
+    } catch (err) {
+      // Keep the row visible: hiding it would make a refresh look like it
+      // came back from nowhere.
+      toast.error(err instanceof Error ? err.message : "Could not delete this question.");
+    } finally {
+      savingRef.current = false; setSaving(false);
+      void refresh();
+    }
   };
 
   const saveReplyEdit = async () => {
@@ -185,15 +202,19 @@ export default function CourseDiscussions() {
     const next = body.trim();
     savingRef.current = true; setSaving(true);
     try {
-      const { error } = await supabase.from("discussion_replies").update({ body: next }).eq("id", replyId);
+      const { data, error } = await supabase.from("discussion_replies").update({ body: next }).eq("id", replyId).select("id").maybeSingle();
       if (error) throw error;
-    } catch { /* offline or no table yet — keep the edit on this device */ }
-    patchCachedReply(currentUser.id, threadId, replyId, next);
-    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.map((r) => (r.id === replyId ? { ...r, body: next } : r)) } : t)));
-    setEditingReply(null);
-    toast.success("Reply updated.");
-    savingRef.current = false; setSaving(false);
-    void refresh();
+      if (!data) throw new Error("You can only edit your own reply, and only a moderator can edit someone else's.");
+      patchCachedReply(currentUser.id, threadId, replyId, next);
+      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.map((r) => (r.id === replyId ? { ...r, body: next } : r)) } : t)));
+      setEditingReply(null);
+      toast.success("Reply updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update this reply.");
+    } finally {
+      savingRef.current = false; setSaving(false);
+      void refresh();
+    }
   };
 
   const deleteReply = async (threadId: string, replyId: string) => {
@@ -201,14 +222,18 @@ export default function CourseDiscussions() {
     if (!window.confirm("Delete this reply?")) return;
     savingRef.current = true; setSaving(true);
     try {
-      const { error } = await supabase.from("discussion_replies").delete().eq("id", replyId);
+      const { data, error } = await supabase.from("discussion_replies").delete().eq("id", replyId).select("id").maybeSingle();
       if (error) throw error;
-    } catch { /* offline or no table yet — remove it on this device */ }
-    removeCachedReply(currentUser.id, threadId, replyId);
-    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.filter((r) => r.id !== replyId) } : t)));
-    toast.success("Reply deleted.");
-    savingRef.current = false; setSaving(false);
-    void refresh();
+      if (!data) throw new Error("You can only delete your own reply, and only a moderator can delete someone else's.");
+      removeCachedReply(currentUser.id, threadId, replyId);
+      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.filter((r) => r.id !== replyId) } : t)));
+      toast.success("Reply deleted.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete this reply.");
+    } finally {
+      savingRef.current = false; setSaving(false);
+      void refresh();
+    }
   };
 
   return (

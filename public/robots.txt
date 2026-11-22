@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://africaofhopelr.org/sitemap.xml
+Sitemap: https://www.africaofhopelr.org/sitemap.xml

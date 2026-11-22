@@ -1,8 +1,11 @@
 import { useId, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Image as ImageIcon, Plus, Trash2, ArrowUp, ArrowDown, Upload, X, Loader2 } from "lucide-react";
-import { uploadSiteAsset } from "@/lib/storage";
-import { validateFile, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES } from "@/lib/storage";
+import { Image as ImageIcon, Plus, Trash2, ArrowUp, ArrowDown, Upload, X, Loader2, Video as VideoIcon } from "lucide-react";
+import { uploadSiteAsset, uploadSiteVideo } from "@/lib/storage";
+import {
+  validateFile, IMAGE_TYPES, MAX_IMAGE_INPUT_BYTES,
+  SITE_VIDEO_TYPES, MAX_SITE_VIDEO_BYTES, formatBytes,
+} from "@/lib/storage";
 
 import { newId } from "@/lib/ids";
 
@@ -227,6 +230,107 @@ export function ImageBox({
       />
       {preserveFull && <p className="mt-1 text-[11px] leading-4 text-slate-500">Transparent PNG or WebP recommended — backgrounds are never added. Each placement uploads independently.</p>}
       {error && <p id={errorId} className="mt-1 text-xs text-rose-800">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * Public-site video picker. The file goes to the public `site-videos` bucket
+ * (mp4 / webm / mov, 50 MB) and the returned URL is stored in the CMS setting,
+ * exactly like an ImageBox. Pasting an existing video URL also works.
+ */
+export function VideoBox({
+  label,
+  value,
+  onChange,
+  folder = "hero",
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  /** Storage sub-folder inside the public "site-videos" bucket. */
+  folder?: string;
+  hint?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+    const error = validateFile(file, SITE_VIDEO_TYPES, MAX_SITE_VIDEO_BYTES);
+    if (error) {
+      toast.error(`${error} Use MP4, WebM or MOV up to ${formatBytes(MAX_SITE_VIDEO_BYTES)}.`);
+      return;
+    }
+    setBusy(true);
+    try {
+      onChange(await uploadSiteVideo(folder, file));
+      toast.success("Video uploaded. Click Publish changes to make it live.");
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "The video upload could not be confirmed. Check the file type and your connection; the previous video is unchanged.",
+      );
+    } finally {
+      setBusy(false);
+      if (ref.current) ref.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+      <div className="flex items-center gap-3">
+        <div className="grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
+          {busy ? (
+            <Loader2 className="h-5 w-5 animate-spin text-white" />
+          ) : value ? (
+            <video src={value} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+          ) : (
+            <VideoIcon className="h-6 w-6 text-slate-400" />
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => ref.current?.click()}
+            disabled={busy}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+          >
+            <Upload className="h-3.5 w-3.5" /> {busy ? "Uploading…" : "Upload video"}
+          </button>
+          {value && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              disabled={busy}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              <X className="h-3.5 w-3.5" /> Remove
+            </button>
+          )}
+        </div>
+        <input
+          ref={ref}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+          className="hidden"
+          onChange={(e) => void handleFile(e.target.files?.[0])}
+        />
+      </div>
+      <input
+        value={value.startsWith("data:") ? "" : value}
+        aria-label={`${label} video URL`}
+        disabled={busy}
+        placeholder="…or paste a video URL (.mp4 / .webm)"
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-emerald-500"
+      />
+      <p className="mt-1 text-[11px] leading-4 text-slate-500">
+        {hint ?? `Plays behind the hero text on the public homepage. MP4 or WebM, up to ${formatBytes(MAX_SITE_VIDEO_BYTES)}; the background image is used as its poster.`}
+      </p>
     </div>
   );
 }

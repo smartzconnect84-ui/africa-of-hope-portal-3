@@ -198,7 +198,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string): Promise<{ error: string | null }> => {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
-        { redirectTo: window.location.origin }
+        // Full URL with a trailing slash: the project allowlist matches paths.
+        { redirectTo: `${window.location.origin}/` }
       );
       return { error: resetError?.message ?? null };
     },

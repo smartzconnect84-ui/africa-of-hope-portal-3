@@ -98,6 +98,8 @@ interface AppContextValue {
   /** Bumped by resetDemoData(); components that fetch their own data outside `state` (e.g. payments, blog) should include this in their refetch effect's dependencies so the "Reload live data" action refreshes them too. */
   reloadKey: number;
   refresh: () => Promise<void>;
+  /** Re-reads every live table and bumps `reloadKey` so self-fetching modules refresh too. Used by the sidebar's "Reload live data". */
+  reloadLiveData: () => Promise<void>;
   /** Resolves to an error message, or null on success. */
   login: (emailOrUserId: string, password?: string) => Promise<string | null>;
   logout: () => void;
@@ -317,6 +319,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; data.subscription.unsubscribe(); };
   }, []);
 
+  const reloadLiveData = useCallback(async () => {
+    setReloadKey((key) => key + 1);
+    try {
+      await refresh();
+    } catch {
+      // refresh() already reports the failure through `live` and a toast.
+    }
+  }, [refresh]);
+
+  // Older modules dispatch this event after a write; route it to the one
+  // implementation instead of leaving the button inert.
+  useEffect(() => {
+    const handler = () => void reloadLiveData();
+    window.addEventListener("aoh-reload-live-data", handler);
+    return () => window.removeEventListener("aoh-reload-live-data", handler);
+  }, [reloadLiveData]);
+
   const value = useMemo<AppContextValue>(() => {
     const currentUser = state.users.find((u) => u.id === sessionUserId) ?? null;
 
@@ -340,6 +359,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       live,
       reloadKey,
       refresh,
+      reloadLiveData,
       login: async (emailOrUserId, password) => {
         if (!password) return "Enter your portal password to sign in.";
         const email = emailOrUserId.trim().toLowerCase();
@@ -427,8 +447,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { error: null, status: "confirm_email" };
       },
       requestPasswordReset: async (email) => {
+        // The allowlist matches full URLs, so send the origin as a path URL
+        // rather than the bare origin. The app opens its recovery dialog when
+        // Supabase finishes the link.
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/`,
         });
         return error?.message ?? null;
       },
@@ -1186,7 +1209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
     };
     return value;
-  }, [state, sessionUserId, loading, live, refresh, reloadKey]);
+  }, [state, sessionUserId, loading, live, refresh, reloadKey, reloadLiveData]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -1,5 +1,5 @@
 # AFRICA OF HOPE School of Professional Studies — llms.txt
-# Canonical site: https://africaofhopelr.org
+# Canonical site: https://www.africaofhopelr.org
 
 > AFRICA OF HOPE School of Professional Studies is a practical training school at Boystown Junction, Lower Margibi, Liberia. It offers short certificate programmes (two-week, one-month, three-month and six-month tracks) in trades, technology, business and hospitality for high-school leavers and working adults. Tuition is sponsored: learners pay only a one-time registration package of US$5 (two-week), US$10 (one-month), US$30 (three-month) or US$45 (six-month). Strictly online students can enrol anytime; on-site cohorts follow the published term calendar. Every certificate carries a unique serial number verifiable live on the Verify page. The school does not offer degree programmes and never issues a certificate without completed coursework.
 
@@ -26,7 +26,7 @@ Two-week, one-month, three-month and six-month certificate tracks, including com
 Tuition is sponsored. You pay only a one-time registration package: US$5 for two-week courses, US$10 for one-month courses, US$30 for three-month courses and US$45 for six-month courses. A seat can be reserved with half of the package.
 
 ### How do admissions work?
-Admissions for 2026/2027 are open. Strictly online students can enrol anytime once they meet the requirements — pick your 3 training days, attend within them, finish within the course duration and receive your certificate on completion. Apply online in minutes from https://africaofhopelr.org/admissions.
+Admissions for 2026/2027 are open. Strictly online students can enrol anytime once they meet the requirements — pick your 3 training days, attend within them, finish within the course duration and receive your certificate on completion. Apply online in minutes from https://www.africaofhopelr.org/admissions.
 
 ### Who is AFRICA OF HOPE for, and what does it not do?
 It is for high-school leavers and working adults in Liberia who want practical, job-ready skills with a verifiable certificate. It does not offer degree programmes, and it never issues a certificate without completed coursework — any credential can be checked on the Verify page.
@@ -34,22 +34,22 @@ It is for high-school leavers and working adults in Liberia who want practical, 
 ### Where is the school and how do I contact it?
 
 ### How can an employer verify my certificate?
-Every certificate carries a unique serial number. Enter it at https://africaofhopelr.org/verify and it is checked live against the institutional register. A valid result shows the holder's name, programme and issue date; revoked certificates are reported as revoked.
+Every certificate carries a unique serial number. Enter it at https://www.africaofhopelr.org/verify and it is checked live against the institutional register. A valid result shows the holder's name, programme and issue date; revoked certificates are reported as revoked.
 
 ### Where is the school and how do I contact it?
 Boystown Junction, Lower Margibi, Liberia. Phone/WhatsApp +231776679963, email afrohope033@gmail.com.
 
 ## Public pages
-- Home: https://africaofhopelr.org/
-- About: https://africaofhopelr.org/about
-- Programmes: https://africaofhopelr.org/programmes
-- Admissions: https://africaofhopelr.org/admissions
-- Term dates: https://africaofhopelr.org/term-dates
-- Verify a certificate: https://africaofhopelr.org/verify
-- Impact: https://africaofhopelr.org/impact
-- Team: https://africaofhopelr.org/team
-- Blog: https://africaofhopelr.org/blog
-- Campus life: https://africaofhopelr.org/campus-life
-- Transparency: https://africaofhopelr.org/transparency
-- Policies: https://africaofhopelr.org/policies
-- Donate: https://africaofhopelr.org/donate
+- Home: https://www.africaofhopelr.org/
+- About: https://www.africaofhopelr.org/about
+- Programmes: https://www.africaofhopelr.org/programmes
+- Admissions: https://www.africaofhopelr.org/admissions
+- Term dates: https://www.africaofhopelr.org/term-dates
+- Verify a certificate: https://www.africaofhopelr.org/verify
+- Impact: https://www.africaofhopelr.org/impact
+- Team: https://www.africaofhopelr.org/team
+- Blog: https://www.africaofhopelr.org/blog
+- Campus life: https://www.africaofhopelr.org/campus-life
+- Transparency: https://www.africaofhopelr.org/transparency
+- Policies: https://www.africaofhopelr.org/policies
+- Donate: https://www.africaofhopelr.org/donate

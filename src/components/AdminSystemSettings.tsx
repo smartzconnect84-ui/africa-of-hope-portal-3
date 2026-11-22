@@ -25,6 +25,7 @@ import WelcomeEmailTemplates from "./admin/WelcomeEmailTemplates";
 const CURRENCIES = ["$", "₦", "KSh", "€", "GHS", "R"];
 const INTAKES = ["Open", "Closing soon", "Waitlist", "Closed"];
 import { STAFF_ROLES } from "@/lib/permissions";
+import { sidebarPalette, sidebarSize } from "@/lib/portalTheme";
 
 const TAB = "data-[state=active]:bg-emerald-800 data-[state=active]:text-white";
 const SELECT =
@@ -341,7 +342,9 @@ export default function AdminSystemSettings() {
             <div>
               <h3 className="text-sm font-semibold text-slate-800">Portal appearance</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Colors, fonts, icon style and content alignment across the authenticated portal. Changes apply immediately to every signed-in user.
+                Colors, fonts, icon style and content alignment across the authenticated portal. The sidebar settings below restyle the one
+                navigation rail used on desktop and in the phone drawer, the backend background follows the full-backend theme, and the custom
+                modules appear under “Shortcuts” in the sidebar. Changes apply immediately to every signed-in user after Save.
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -537,7 +540,45 @@ export default function AdminSystemSettings() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 p-4" style={{ borderRadius: radiusPx(themeDraft.borderRadius) }}>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live preview</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Sidebar preview</p>
+              {(() => {
+                const preview = sidebarPalette(themeDraft);
+                const previewSize = sidebarSize(themeDraft);
+                return (
+                  <div className={`mt-3 max-w-[240px] overflow-hidden rounded-xl border border-slate-200 ${preview.shell}`}>
+                    <div className={`border-b px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] ${preview.brand} ${preview.brandText}`}>
+                      AFRICA OF HOPE
+                    </div>
+                    <div className="space-y-0.5 p-2">
+                      <p className={`px-1 text-[10px] font-bold uppercase tracking-wider ${preview.groupButton}`}>Overview</p>
+                      <div
+                        className={`flex items-center gap-2 rounded-lg ${previewSize.item}`}
+                        style={{ backgroundColor: themeDraft.primaryColor, color: "#fff" }}
+                      >
+                        <span className={`grid place-items-center rounded-md ${previewSize.icon} ${preview.iconActive}`}>
+                          <Palette className={previewSize.glyph} />
+                        </span>
+                        <span className="truncate">Current module</span>
+                      </div>
+                      <div className={`flex items-center gap-2 rounded-lg ${previewSize.item} ${preview.item}`}>
+                        <span className={`grid place-items-center rounded-md ${previewSize.icon} ${preview.icon}`}>
+                          <Globe className={previewSize.glyph} />
+                        </span>
+                        <span className="truncate">Another module</span>
+                      </div>
+                      {(themeDraft.customModules ?? []).slice(0, 2).map((m) => (
+                        <div key={m.id} className={`flex items-center gap-2 rounded-lg ${previewSize.item} ${preview.item}`}>
+                          <span className={`grid place-items-center rounded-md ${previewSize.icon} ${preview.icon}`}>
+                            <Megaphone className={previewSize.glyph} />
+                          </span>
+                          <span className="truncate">{m.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+              <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live preview</p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <span
                   className="inline-flex items-center px-4 py-2 text-sm font-medium text-white"

@@ -174,6 +174,8 @@ export interface HeroSlide {
   highlight: string;
   description: string;
   image: string;
+  /** Optional public background video; `image` stays the poster/fallback. */
+  video?: string;
 }
 
 export interface FeatureHighlight {

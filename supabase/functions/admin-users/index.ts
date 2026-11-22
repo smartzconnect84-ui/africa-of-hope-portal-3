@@ -42,6 +42,13 @@ Deno.serve(async (req: Request) => {
     if (actor.status !== "Active") return json({ error: "Your account is not active, so it cannot manage accounts.", code: "actor_inactive" }, 403);
     const superAdmin = actor.role === "Super Admin";
 
+    // Email links (invites, password resets) must return to the running app.
+    // The project Site URL is a stale apex domain, so an explicit redirect is
+    // required; the allowlist matches full URLs, hence the trailing slash.
+    const appBase = (Deno.env.get("APP_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? req.headers.get("origin") ?? "")
+      .trim().replace(/\/+$/, "");
+    const emailRedirectTo = appBase ? `${appBase}/` : undefined;
+
     const hasPermission = async (perm: string): Promise<boolean> => {
       if (superAdmin) return true;
       try {
@@ -99,7 +106,7 @@ Deno.serve(async (req: Request) => {
         }
         userId = created.data.user.id;
       } else {
-        const invited = await admin.auth.admin.inviteUserByEmail(email, { data: meta });
+        const invited = await admin.auth.admin.inviteUserByEmail(email, { data: meta, redirectTo: emailRedirectTo });
         if (!invited.error && invited.data?.user) {
           userId = invited.data.user.id;
         } else {
@@ -199,7 +206,10 @@ Deno.serve(async (req: Request) => {
         return json({ ok: true, temporary_password: body.password ? undefined : password });
       }
       if (!target.email) return json({ error: "No account email is recorded", code: "bad_input" }, 400);
-      const { error } = await caller.auth.resetPasswordForEmail(target.email);
+      const { error } = await caller.auth.resetPasswordForEmail(
+        target.email,
+        emailRedirectTo ? { redirectTo: emailRedirectTo } : undefined,
+      );
       return error ? json({ error: error.message, code: "reset_failed" }, 400) : json({ ok: true });
     }
     return json({ error: "Permanent deletion is disabled to preserve school records. Suspend this account instead.", code: "delete_disabled" }, 409);

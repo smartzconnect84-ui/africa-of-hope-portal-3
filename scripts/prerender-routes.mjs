@@ -21,7 +21,9 @@ if (!existsSync(baseFile)) {
   process.exit(0);
 }
 
-const ORIGIN = "https://africaofhopelr.org";
+// Must match CANONICAL_ORIGIN in src/lib/seo.ts and the live host: the apex
+// domain does not resolve, so canonicals use the www origin.
+const ORIGIN = "https://www.africaofhopelr.org";
 
 const OFFICIAL_NAME = "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
 

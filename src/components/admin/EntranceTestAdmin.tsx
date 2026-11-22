@@ -227,15 +227,19 @@ export default function EntranceTestAdmin() {
         { id: 1, require_pass: requirePass, pass_mark: passMark, time_minutes: timeLimit, max_attempts: maxAttempts },
         { onConflict: "id" },
       );
-      if (aptError && legError) {
-        toast.success("Aptitude rules saved on this device. Backend save needs the new migration applied.");
+      if (aptError) {
+        // The rules were cached locally above, but the canonical row did not
+        // change, so say so instead of claiming they were published.
+        toast.error(`Aptitude rules saved on this device only — the backend rejected the change (${aptError.message}).`);
         return;
       }
       setBackendReady(true);
       setPasses(loadEntrancePasses());
-      toast.success("Aptitude Control rules published to the backend.");
+      toast.success(legError
+        ? "Aptitude Control rules published. The older entrance-settings copy could not be updated."
+        : "Aptitude Control rules published to the backend.");
     } catch {
-      toast.success("Aptitude rules saved on this device.");
+      toast.error("Aptitude rules saved on this device only — the backend is unreachable.");
     } finally {
       setSaving(false);
     }
@@ -250,11 +254,15 @@ export default function EntranceTestAdmin() {
       const next = preps.map((p) => (p.id === prepDraft.id ? { ...p, title: prepDraft.title.trim(), body: prepDraft.body } : p));
       setPreps(next);
       try { localStorage.setItem(PREP_LS, JSON.stringify(next)); } catch { /* optional */ }
+      let saved = false;
       try {
-        await supabase.from("aptitude_preparations").update({ title: prepDraft.title.trim(), body: prepDraft.body }).eq("id", prepDraft.id);
-      } catch { /* offline */ }
+        const { error } = await supabase.from("aptitude_preparations").update({ title: prepDraft.title.trim(), body: prepDraft.body }).eq("id", prepDraft.id);
+        if (error) throw error;
+        saved = true;
+      } catch { /* offline or rejected — the local copy above still shows */ }
       setPrepDraft({ id: "", title: "", body: "" });
-      toast.success("Preparation updated.");
+      if (saved) toast.success("Preparation updated.");
+      else toast.error("Preparation updated on this device only — the backend did not save it.");
       return;
     }
     const item: Prep = {
@@ -267,11 +275,15 @@ export default function EntranceTestAdmin() {
     const next = [...preps, item];
     setPreps(next);
     try { localStorage.setItem(PREP_LS, JSON.stringify(next)); } catch { /* optional */ }
+    let saved = false;
     try {
-      await supabase.from("aptitude_preparations").insert({ title: item.title, body: item.body, sort_order: item.sortOrder, published: true });
-    } catch { /* offline */ }
+      const { error } = await supabase.from("aptitude_preparations").insert({ title: item.title, body: item.body, sort_order: item.sortOrder, published: true });
+      if (error) throw error;
+      saved = true;
+    } catch { /* offline or rejected — the local copy above still shows */ }
     setPrepDraft({ id: "", title: "", body: "" });
-    toast.success("Preparation added to Entrance Preparations.");
+    if (saved) toast.success("Preparation added to Entrance Preparations.");
+    else toast.error("Preparation added on this device only — the backend did not save it.");
   }
 
   async function removePrep(id: string) {
@@ -280,10 +292,14 @@ export default function EntranceTestAdmin() {
       try { localStorage.setItem(PREP_LS, JSON.stringify(next)); } catch { /* optional */ }
       return next;
     });
+    let saved = false;
     try {
-      await supabase.from("aptitude_preparations").delete().eq("id", id);
-    } catch { /* offline */ }
-    toast.success("Preparation removed.");
+      const { error } = await supabase.from("aptitude_preparations").delete().eq("id", id);
+      if (error) throw error;
+      saved = true;
+    } catch { /* offline or rejected — the local copy above is already gone */ }
+    if (saved) toast.success("Preparation removed.");
+    else toast.error("Preparation removed on this device only — the backend did not delete it.");
   }
 
   return (

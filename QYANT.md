@@ -572,3 +572,91 @@ reads.
   to the local build (sha256 match), contains no "Teachers-Instructors" string,
   and `/`, `/portal/`, `/login/` answer 200. `aoh.freebuff.site` 307s to the
   custom domain.
+
+- Backend write-path audit and completion (2026-11-22). Every table and RPC the
+  client calls was diffed against the live project: 64 tables all exist, all 29
+  `.rpc()` names exist with EXECUTE granted to `authenticated`, all three public
+  views are `security_invoker`, and 51 client-written tables were checked
+  policy-by-policy. Four write paths the UI offers had no RLS policy, so
+  Postgres rejected them while the screens still toasted success and the change
+  disappeared on reload: editing/deleting a discussion question, editing a
+  reply body, deleting a reply, and the Aptitude Control `upsert` (an upsert is
+  INSERT ... ON CONFLICT DO UPDATE, so it needs an INSERT policy). Migration
+  `20261122120000_discussion_and_aptitude_write_paths.sql` is applied live: it
+  adds `discussion_threads_edit` / `_delete`, `discussion_replies_edit` /
+  `_delete` (author, cohort instructor, or `academic_plans.approve` moderator),
+  `aptitude_settings_insert_staff`, and widens the aptitude write policy to
+  include Super Admin, who could not publish rules before. `discussion_guard`
+  now handles UPDATE: identity columns are immutable, an author edits their
+  own text and a cohort instructor or academic administrator may moderate it,
+  while the answer flag stays instructor-only. `CourseDiscussions` no
+  longer swallows those errors — it selects the row back and reports the real
+  refusal instead of claiming the edit was saved; `EntranceTestAdmin` says
+  "saved on this device only" when the canonical row was rejected and now
+  checks the error on preparation create/update/delete too. Device audit: all
+  23 student views render at 390–432px with zero horizontal overflow and no
+  page errors, every wide table is inside an `overflow-x-auto` container, and
+  the portal shell keeps `main` as the only vertical scroller. Verified with
+  `npm run typecheck`, `npx eslint` on both touched files, `npm test` (52 pass,
+  1 skipped) and `VERCEL=1 npm run build:sites`. Not verified: staff/admin
+  modules in a browser (no staff login available), and an end-to-end author
+  edit of a real discussion (the project currently has no cohorts or threads).
+
+- Sidebar redesign, working system theme, video uploads and the reset/email audit
+  (2026-11-22). The desktop rail and the phone drawer were two different
+  components with two palettes; the drawer also lost its "Reload live data"
+  button to `resetDemoData()` while the desktop one dispatched
+  `aoh-reload-live-data`, an event nothing listened to. `PortalSidebar` is now
+  the single navigation rendered by both (`Navigation`'s bespoke drawer nav is
+  deleted), driven by `themeSettings` through the new
+  `src/lib/portalTheme.ts`: `sidebarTheme` (emerald / gold / midnight / light),
+  `fontSize` (compact / comfortable / large), `sidebarAlign`, `backendTheme`
+  for the portal background, and the admin-defined `customModules` under a
+  "Shortcuts" group. The active item uses `--portal-primary` so the primary
+  colour from Appearance is real. `AppContext.reloadLiveData()` refreshes every
+  live table, bumps `reloadKey` for self-fetching modules and also answers the
+  legacy `aoh-reload-live-data` event; both sidebars show a spinner and only
+  report after the refresh settles. Admin → System Settings → Appearance gains
+  a sidebar preview so the admin sees the palette/altitude before saving.
+  Public video: `site-assets` only accepts images, so hero videos could never
+  upload. New public bucket `site-videos` (mp4/webm/quicktime, 50 MB) with
+  read-for-all and cms.manage / is_portal_admin write policies (migration
+  `20261122130000_site_videos_and_email_audit.sql`, applied live),
+  `uploadSiteVideo` in `src/lib/storage.ts`, a `VideoBox` in `CmsPrimitives`,
+  `HeroSlide.video` and a poster-backed `<video>` in `HeroSlider` for the
+  active slide (skipped under reduced motion). Password reset had a dead root
+  cause: the project Site URL was `https://africaofhopelr.org`, which no longer
+  resolves (DNS), so every admin reset/invite email without an explicit
+  `redirectTo` pointed at a dead host; the live Auth config now uses
+  `https://www.africaofhopelr.org`, SMTP rate limit went from 1/minute (which
+  throttled bulk resets and confirmations) to 60/minute with
+  `rate_limit_email_sent` 60, and `admin-users` passes `redirectTo` for invites
+  and resets (uses APP_URL / PUBLIC_SITE_URL / the request Origin). The client
+  reset link sends `${origin}/` to match the allowlist. Email audit: the
+  outbox is readable by `email.manage` holders too (new policy) and the panel
+  names a provider "sender not authorised" rejection instead of leaving a bare
+  failed count; 11 failed rows are all provider-side (Resend key not authorised
+  for `africaofhopelr.online`), which needs the owner to verify the domain or
+  replace the key, then Retry failed. Public-site audit: canonicals, OG/Twitter
+  images, JSON-LD, sitemap, robots, llms.txt and the Cloudflare `_redirects`
+  all pointed at the dead apex and `_redirects` actively 301'd www → apex;
+  `CANONICAL_ORIGIN`, `OG_IMAGE`, `scripts/prerender-routes.mjs` and those
+  public files now use `https://www.africaofhopelr.org`, and `_redirects`
+  canonicalises to www. Verified: `npm run typecheck`, `npm test` (52 pass, 1
+  skipped), `VERCEL=1 npm run build:sites`, and in the cloud browser at 432px
+  + 1440px (student account): public home renders live data, the drawer and
+  desktop rail are the same themed sidebar, the desktop rail is 288px with
+  background `#0b241c`, active item highlighted, no horizontal overflow, and
+  Reload live data issued 42 REST reads. Not verified: uploading a video or
+  changing the theme in the admin UI (no staff login), and the manifest 403 on
+  the style.dev preview is the preview proxy refusing `.webmanifest` (local
+  Vite serves it 200).
+
+- Discussion write paths and entrance-test writes now report the real backend
+  refusal instead of toasting a false success. `CourseDiscussions` selects the
+  row back on edit/delete and throws when RLS or the `discussion_guard` denies
+  it; `EntranceTestAdmin` reports "saved on this device only" when the canonical
+  aptitude row was rejected, and the same pattern is applied to preparation
+  create/update/delete. The write-path migration included here
+  (`20261122120000_discussion_and_aptitude_write_paths.sql`) is the same family
+  the previous audit applied.

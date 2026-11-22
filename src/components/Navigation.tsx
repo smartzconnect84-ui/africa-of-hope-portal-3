@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  AlertTriangle, Bell, ChevronDown, LogOut, Menu, Search, X,
-  RefreshCw, Globe, Megaphone, Sparkles, type LucideIcon,
+  AlertTriangle, Bell, LogOut, Menu, Search, X,
+  RefreshCw, Globe, Megaphone, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
 import PortalInbox from "./portal/PortalInbox";
-import { portalViewLabel, PORTAL_NAV_GROUPS, useVisiblePortalViews } from "../portalViews";
-import { LanguageSwitcher, useLocale } from "@/lib/locale";
+
+import { LanguageSwitcher } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
-import { displayRole, isInstructorRole } from "@/lib/roleDisplay";
+import { displayRole } from "@/lib/roleDisplay";
+import { backendBackground } from "@/lib/portalTheme";
 import { lockPageScroll } from "@/lib/scrollLock";
 import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
@@ -168,12 +169,6 @@ export function SetupError({ message, retry }: { message: string; retry: () => v
   );
 }
 
-function sidebarGroupLabel(role: string | null): string {
-  if (role === "Student") return "Student Desk";
-  if (isInstructorRole(role)) return "Instructors";
-  return "Administration";
-}
-
 function Pop({
   trigger,
   align = "right",
@@ -304,24 +299,9 @@ export default function Navigation({
   onExitToPublic?: () => void;
   children: ReactNode;
 }) {
-  const { state, currentUser, logout, resetDemoData } = useApp();
-  // Use the same permission-filtered list as the router and desktop sidebar so
-  // the drawer can never show a different set of modules. The previous mock
-  // context reported every permission as false, which hid staff tools on mobile.
-  const { ctx, views } = useVisiblePortalViews();
+  const { state, currentUser, logout } = useApp();
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    overview: true,
-    administration: true,
-    learning: true,
-    finance: true,
-    community: true,
-    system: true,
-    more: true,
-  });
-  const toggleGroup = (id: string) =>
-    setOpenGroups((prev) => ({ ...prev, [id]: prev[id] === false ? true : false }));
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -402,8 +382,6 @@ export default function Navigation({
     return state.announcements.filter((item) => isAnnouncementLiveFor(item, role, now)).length;
   }, [state.announcements, currentUser?.role]);
 
-  const { t } = useLocale();
-
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -419,130 +397,8 @@ export default function Navigation({
     setQuery("");
   };
 
-  const viewByKey = useMemo(() => new Map(views.map((v) => [v.key, v])), [views]);
-  const groupedNav = useMemo(() => {
-    const seen = new Set<string>();
-    const groups: { id: string; label: string; items: string[] }[] = PORTAL_NAV_GROUPS.map((g) => {
-      const items = g.keys.filter((key) => viewByKey.has(key));
-      items.forEach((key) => seen.add(key));
-      return { id: g.id, label: g.label, items };
-    }).filter((g) => g.items.length > 0);
-    const leftover = views.filter((v) => !seen.has(v.key));
-    if (leftover.length > 0) {
-      groups.push({ id: "more", label: "More", items: leftover.map((v) => v.key) });
-    }
-    return groups;
-  }, [viewByKey, views]);
-
-  const renderNavButton = (key: string) => {
-    const v = viewByKey.get(key);
-    if (!v) return null;
-    const Icon = v.icon;
-    const label = portalViewLabel(v, ctx);
-    const active = view === v.key;
-    return (
-      <button
-        key={v.key}
-        type="button"
-        onClick={() => go(v.key)}
-        data-component-id={`nav-${v.key}`}
-        aria-current={active ? "page" : undefined}
-        title={t(label)}
-        className={cn(
-          "group flex min-h-[36px] w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left text-[13px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50",
-          active
-            ? "bg-emerald-800 text-white shadow-sm shadow-emerald-900/25 ring-1 ring-emerald-900/20"
-            : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-950 dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
-        )}
-      >
-        <span
-          className={cn(
-            "grid h-7 w-7 shrink-0 place-items-center rounded-md transition-all",
-            active
-              ? "bg-white/15 text-white ring-1 ring-white/25"
-              : "bg-emerald-800/10 text-emerald-700 ring-1 ring-emerald-900/10 group-hover:bg-emerald-800 group-hover:text-white",
-          )}
-        >
-          <Icon className="h-4 w-4 shrink-0" />
-        </span>
-        <span className="min-w-0 flex-1 truncate">{t(label)}</span>
-        {active && <span className="h-5 w-1 shrink-0 rounded-full bg-white/70" aria-hidden="true" />}
-      </button>
-    );
-  };
-
-  const sidebar = (
-    <nav
-      aria-label="Portal sections"
-      className="flex h-full min-h-0 flex-1 touch-pan-y flex-col gap-0.5 overflow-y-auto overscroll-contain bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/40 px-1.5 pb-2 pt-2 [-webkit-overflow-scrolling:touch] [scrollbar-color:rgba(4,120,87,.35)_transparent] [scrollbar-width:thin] dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
-      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
-    >
-      <p className="mx-1 mb-1 flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 px-3 py-2 text-[13px] font-bold uppercase tracking-[0.14em] text-white shadow-sm shadow-emerald-900/20">
-        <Sparkles className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
-        <span className="truncate">{sidebarGroupLabel(ctx.role)}</span>
-      </p>
-      {groupedNav.map((group) => {
-        const isOpen = openGroups[group.id] !== false;
-        return (
-          <div
-            key={group.id}
-            className="flex flex-col gap-1 rounded-2xl ring-1 ring-emerald-900/5 bg-white/60 p-1 dark:bg-white/5 dark:ring-white/10"
-          >
-            <button
-              type="button"
-              onClick={() => toggleGroup(group.id)}
-              aria-expanded={isOpen}
-              aria-controls={`portal-nav-group-${group.id}`}
-              className="flex min-h-[36px] items-center gap-1.5 rounded-xl bg-emerald-800 px-2 py-1 text-left text-[12px] font-bold uppercase tracking-wider text-white ring-1 ring-emerald-900/20 transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50"
-            >
-              <span className="flex-1 truncate">{group.label}</span>
-              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-white">
-                {group.items.length}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 text-white transition-transform",
-                  isOpen ? "rotate-180" : "rotate-0",
-                )}
-              />
-            </button>
-            {isOpen && (
-              <div id={`portal-nav-group-${group.id}`} className="ml-2 flex flex-col gap-1 border-l-2 border-emerald-600/20 py-1 pl-2">
-                {group.items.map((key) => renderNavButton(key))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-      <div className="mt-1 border-t border-slate-100 pt-1.5 dark:border-white/10">
-        {onExitToPublic && (
-          <button
-            type="button"
-            onClick={onExitToPublic}
-            className="flex min-h-[40px] w-full items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[13px] font-medium leading-snug text-white shadow-sm shadow-emerald-900/20 transition hover:brightness-110 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800"
-          >
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25">
-              <Globe className="h-[20px] w-[20px] shrink-0" />
-            </span>
-            View public website
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => resetDemoData()}
-          className="flex min-h-[40px] w-full items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/80 px-2.5 py-1.5 text-[13px] font-medium leading-snug text-slate-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-slate-700"
-        >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-slate-100 to-emerald-100/60 text-emerald-700 ring-1 ring-emerald-900/10">
-            <RefreshCw className="h-[20px] w-[20px] shrink-0" />
-          </span>
-          Reload live data
-        </button>
-      </div>
-    </nav>
-  );
-
   return (
-    <div className="min-h-[100dvh] bg-[#f6f8f7] text-slate-900">
+    <div className={cn("min-h-[100dvh] text-slate-900", backendBackground(state.themeSettings))}>
       <header
         ref={headerRef}
         className="sticky top-0 z-30 border-b border-slate-800 bg-black/95 pt-[env(safe-area-inset-top)] text-white backdrop-blur-md print:hidden"
@@ -718,24 +574,10 @@ export default function Navigation({
 
       <div className="mx-auto flex max-w-[1600px]">
         <aside
-          className="sticky hidden w-72 shrink-0 overflow-hidden border-r border-emerald-100/70 bg-gradient-to-b from-white via-emerald-50/50 to-amber-50/40 shadow-[4px_0_24px_-12px_rgba(6,78,59,0.25)] lg:block print:hidden dark:border-white/10 dark:from-slate-950 dark:via-emerald-950/30 dark:to-slate-950"
+          className="sticky hidden w-72 shrink-0 overflow-hidden border-r border-emerald-900/10 shadow-[4px_0_24px_-12px_rgba(6,78,59,0.25)] lg:block print:hidden"
           style={{ top: topOffset, height: `calc(100dvh - ${topOffset}px)` }}
         >
-          <div className="flex h-full min-h-0 flex-col">
-            <div className="shrink-0 border-b border-slate-100 p-3">
-              <BrandLockup
-                logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
-                academyName={state.websiteSettings.academyName}
-                displayName="AOH-PORTAL"
-                size="sm"
-                showTagline={false}
-                className="w-full min-w-0 items-center gap-2"
-                logoClassName="h-7 w-auto shrink-0"
-                nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-xs leading-none tracking-[0.12em]"
-              />
-            </div>
-            <PortalSidebar view={view} onNavigate={go} />
-          </div>
+          <PortalSidebar view={view} onNavigate={go} onExitToPublic={onExitToPublic} />
         </aside>
         <main className="min-w-0 max-w-full flex-1 overflow-x-clip p-4 sm:p-5 lg:p-6 xl:p-8">
           {view !== "announcements" && <PortalAnnouncementTicker onOpenBoard={() => go("announcements")} />}
@@ -754,30 +596,12 @@ export default function Navigation({
             aria-label="Portal navigation"
             className="aoh-drawer absolute inset-y-0 left-0 flex max-h-[100dvh] w-[min(16.1rem,96vw)] flex-col overflow-hidden rounded-r-3xl border-r-[3px] border-[#D4AF37] bg-gradient-to-b from-white via-emerald-50/40 to-amber-50/50 shadow-2xl shadow-emerald-950/30 dark:from-slate-950 dark:via-emerald-950/40 dark:to-slate-950"
           >
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-800 p-3 shadow-md shadow-emerald-950/20">
-              <div className="flex min-w-0 flex-1 items-center overflow-hidden">
-                <BrandLockup
-                  logoUrl={state.websiteSettings.logos?.portal || state.websiteSettings.logoUrl}
-                  academyName={state.websiteSettings.academyName || state.settings.academyName}
-                  displayName="AOH-PORTAL"
-                  tone="dark"
-                  size="sm"
-                  showTagline={false}
-                  className="w-full min-w-0 max-w-full items-center gap-2 overflow-hidden"
-                  logoClassName="h-8 w-auto max-w-full shrink-0 bg-transparent"
-                  nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-sm leading-none tracking-[0.12em] self-center"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setDrawer(false)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-white outline-none transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-300/70"
-                aria-label="Close navigation"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col">{sidebar}</div>
+            <PortalSidebar
+              view={view}
+              onNavigate={go}
+              onExitToPublic={onExitToPublic}
+              onClose={() => setDrawer(false)}
+            />
           </div>
         </div>
       )}

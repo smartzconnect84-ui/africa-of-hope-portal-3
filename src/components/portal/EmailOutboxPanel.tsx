@@ -56,6 +56,12 @@ export default function EmailOutboxPanel() {
   // configured yet).
   const counts = statusCounts ?? emailOutboxApi.countsByStatus(rows);
 
+  // A rejected sender is the one failure staff cannot fix from this screen:
+  // name it clearly instead of leaving a generic "failed" count.
+  const failedProviderError = rows.find(
+    (r) => r.status === "failed" && r.lastError && /not authorized|domain|verified|api key/i.test(r.lastError),
+  )?.lastError;
+
   const sendNow = async () => {
     setSending(true);
     try {
@@ -128,6 +134,17 @@ export default function EmailOutboxPanel() {
       </div>
 
       {error && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{error}</div>}
+
+      {failedProviderError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+          <p className="font-semibold">The email provider rejected the sender</p>
+          <p className="mt-1 text-xs leading-5">
+            {failedProviderError} — verify the sending domain in the provider account and make sure the function's
+            EMAIL_FROM address uses that verified domain. Until then every queued message stays failed; use Retry
+            failed once the provider key or sender is corrected.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-slate-500">Loading…</div>
