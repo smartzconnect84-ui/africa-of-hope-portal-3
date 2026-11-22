@@ -21,7 +21,9 @@ createRoot(document.getElementById("root")!).render(
 );
 
 // The branded splash lives in index.html so it paints before the bundle loads.
-// Fade it out once React has committed the first screen.
-requestAnimationFrame(() => {
+// Fade it out once React has committed the first screen. Use setTimeout (not
+// requestAnimationFrame) so the splash is dismissed even when the tab is
+// backgrounded and rAF callbacks are throttled.
+window.setTimeout(() => {
   window.setTimeout(dismissSplash, 150);
-});
+}, 0);

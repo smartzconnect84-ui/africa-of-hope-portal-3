@@ -304,7 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSessionUserId(nextId);
       setAuthReady(true);
     };
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       gotEvent = true;
       acceptIdentity(session?.user.id ?? null);
     });

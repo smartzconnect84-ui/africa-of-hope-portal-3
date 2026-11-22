@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, Component, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";
 import { AppProvider, useApp } from "@/context/AppContext";

@@ -259,8 +259,13 @@
 </noscript>
 <script src="/src/main.tsx" type="module"></script>
 <script>
-  /* Safety net: if the app bundle never mounts, remove the launch splash so the
-     static HTML (error copy, noscript content) is never hidden behind it. */
+  /* Safety net: never leave the launch splash covering the app. Remove it
+     unconditionally after a short delay, and immediately if the bundle never
+     mounts. */
+  window.setTimeout(function () {
+    var splash = document.getElementById("aoh-splash");
+    if (splash) splash.remove();
+  }, 3000);
   window.setTimeout(function () {
     var splash = document.getElementById("aoh-splash");
     if (splash && !document.querySelector("#root > *")) splash.remove();

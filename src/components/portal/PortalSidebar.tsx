@@ -45,7 +45,8 @@ import { cn } from "@/lib/utils";
  * Palette lives in src/index.css as CSS variables.
  */
 export default function PortalSidebar() {
-  const { ctx } = useVisiblePortalViews();
+  const { ctx, views } = useVisiblePortalViews();
+  const viewsByKey = new Map(views.map((v) => [v.key, v]));
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     overview: true,
     administration: true,
@@ -60,7 +61,7 @@ export default function PortalSidebar() {
   };
 
   const renderNavButton = (key: string) => {
-    const v = useVisiblePortalViews().views.find((x) => x.key === key);
+    const v = viewsByKey.get(key);
     if (!v) return null;
     const Icon = v.icon;
     const label = v.label;
@@ -149,19 +150,19 @@ export default function PortalSidebar() {
       },
     ].map((g) => {
       const items = g.keys.filter((key) => {
-        const v = useVisiblePortalViews().views.find((x) => x.key === key);
+        const v = viewsByKey.get(key);
         if (!v) return false;
         seen.add(v.key);
         return true;
       });
       return { id: g.id, label: g.label, items };
     });
-    const leftover = useVisiblePortalViews().views.filter((v) => !seen.has(v.key));
+    const leftover = views.filter((v) => !seen.has(v.key));
     if (leftover.length > 0) {
       groups.push({ id: "more", label: "More", items: leftover.map((v) => v.key) });
     }
     return groups;
-  }, [ctx.role]);
+  }, [ctx.role, views]);
 
   const groupLabel = displayGroupForRole(ctx.role);
 
