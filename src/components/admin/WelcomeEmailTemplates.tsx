@@ -23,7 +23,7 @@ const LABELS: Record<Audience, { title: string; hint: string }> = {
   },
   staff: {
     title: "Staff and volunteers",
-    hint: "Sent to every non-student account: teachers, registrars, officers, coordinators and volunteers.",
+    hint: "Sent to every non-student account: instructors, registrars, officers, coordinators and volunteers.",
   },
 };
 

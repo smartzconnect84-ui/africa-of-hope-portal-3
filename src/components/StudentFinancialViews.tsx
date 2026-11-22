@@ -261,7 +261,7 @@ export function StudentAssignments() {
     <div className="space-y-5">
       <SectionHeader title="Assignments" subtitle="Briefs, submission status and graded feedback" />
       {rows.length === 0 ? (
-        <EmptyState icon={BookOpen} title="No assignments yet" hint="Your Teachers-Instructors have not published any briefs." />
+        <EmptyState icon={BookOpen} title="No assignments yet" hint="Your instructors have not published any briefs." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map(({ a, sub, cohort }) => {
