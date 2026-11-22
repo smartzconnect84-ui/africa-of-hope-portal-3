@@ -857,8 +857,13 @@ function ResetDialog({ open, onOpenChange, initialEmail }: {
     setBusy(true);
     const err = await requestPasswordReset(email);
     setBusy(false);
-    if (err) setError(err);
-    else setSent(true);
+    if (err) {
+      setError(err);
+      return;
+    }
+    // Supabase hides non-existent addresses for anti-enumeration, so "sent"
+    // only means the request was accepted — not that a real inbox received it.
+    setSent(true);
   };
 
   return (
@@ -872,7 +877,7 @@ function ResetDialog({ open, onOpenChange, initialEmail }: {
             <DialogTitle className="mt-4 text-lg">Check your inbox</DialogTitle>
             <DialogDescription className="mt-2">
               If an account exists for <span className="font-medium text-slate-700">{email.trim()}</span>, we sent a
-              secure link to reset your password.
+              secure link to reset your password. Check your inbox and spam folder.
             </DialogDescription>
             <Button className={cn(PRIMARY, "mt-6 w-full")} onClick={() => onOpenChange(false)}>
               Back to sign in

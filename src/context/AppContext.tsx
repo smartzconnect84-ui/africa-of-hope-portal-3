@@ -453,7 +453,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: `${window.location.origin}/`,
         });
-        return error?.message ?? null;
+        if (error) {
+          // Give the user a way forward when their address is still unconfirmed.
+          if (/email[_ ]?not[_ ]?confirmed/i.test(error.message)) {
+            return "This email has not been confirmed yet. Check your inbox for the confirmation link we sent when you signed up, then try again. If you can't find it, ask the school office to resend it.";
+          }
+          return error.message;
+        }
+        return null;
       },
       changePassword: async (password) => {
         const { error } = await supabase.auth.updateUser({ password });

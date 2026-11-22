@@ -139,8 +139,12 @@ function ForgotForm({ onBackToLogin }: { onBackToLogin: () => void }) {
         toast.error(result.error);
         return;
       }
+      // Supabase hides non-existent addresses for anti-enumeration, so "sent"
+      // only means the request was accepted — not that a real inbox received it.
       setSent(true);
-      toast.success("Password reset link sent.");
+      toast.success(
+        "If an account exists for that email, we sent a password reset link. Check your inbox (and spam folder) in a few minutes."
+      );
     } finally {
       setSubmitting(false);
     }

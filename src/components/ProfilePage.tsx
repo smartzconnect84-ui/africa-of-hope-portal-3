@@ -566,8 +566,15 @@ function SecurityPanel({ user }: { user: User }) {
 
   const sendReset = async () => {
     const err = await requestPasswordReset(user.email);
-    if (err) toast.error(err);
-    else toast.success(`Reset link sent to ${user.email}`);
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    // Supabase hides non-existent addresses for anti-enumeration, so this
+    // only confirms the request was accepted, not that a real inbox got it.
+    toast.success(
+      `If this account exists, we sent a reset link to ${user.email}. Check your inbox and spam folder.`
+    );
   };
 
   return (
