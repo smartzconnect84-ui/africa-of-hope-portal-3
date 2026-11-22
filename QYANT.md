@@ -561,3 +561,14 @@ reads.
   was available; a `Teacher`-role profile ("Samfort Kan") exists in
   `profiles` and the Super Admin profile has a real avatar, so both changes
   will show once a staff member signs in.
+
+- Instructor wording completed and shipped to production (2026-11-22).
+  Three module empty states, the CohortTimetable labels/placeholder and the
+  AnnouncementManager audience option still said "Teachers-Instructors"; they
+  now read "Instructors"/"instructor", and the welcome-email hint says
+  instructors. Deployed to production (site 9c1d5f42, operation
+  e8210b05… for 8016dea then 11f99c9b… for 22a9d33): the live bundle at
+  https://www.africaofhopelr.org is `assets/index-BxOXBePY.js`, byte-identical
+  to the local build (sha256 match), contains no "Teachers-Instructors" string,
+  and `/`, `/portal/`, `/login/` answer 200. `aoh.freebuff.site` 307s to the
+  custom domain.
