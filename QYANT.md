@@ -660,3 +660,16 @@ reads.
   create/update/delete. The write-path migration included here
   (`20261122120000_discussion_and_aptitude_write_paths.sql`) is the same family
   the previous audit applied.
+
+- Auth-page background image added for login, sign-up and password reset.
+  `src/lib/storage.ts` gets `uploadAuthBackground(folder, file)` and
+  `pruneAuthBackground(folder, keepUrl)`, which store into the public
+  `site-assets` bucket under `auth-background/<folder>` as PNG/JPEG/WebP,
+  preserving transparency for transparent backgrounds (same `uploadPublicImage`
+  path as `uploadSiteAsset`). `AuthSettings.authBackgroundImage` is the new CMS
+  field, the auth tab in `AdminWebsiteSettings` gets its own `AuthBackgroundBox`
+  editor kept separate from the existing showcase image, and
+  `src/components/AuthPortal.tsx` renders the published background on the
+  desktop showcase side and keeps the form page on mobile. Typecheck and tests
+  pass.
+

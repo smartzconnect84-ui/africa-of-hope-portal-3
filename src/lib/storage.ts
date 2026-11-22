@@ -141,6 +141,19 @@ export const pruneSiteAssets = (folder: string, keepUrl?: string) =>
   pruneFolder(SITE_ASSETS_BUCKET, folder, keepUrl);
 
 /**
+ * Uploads a public authentication-page background (login/sign-up/password reset)
+ * into the public `site-assets` bucket under `auth-background/<folder>`.
+ * Branded pages keep transparent PNG/WebP backgrounds; opaque images are still
+ * accepted so a photo-style backdrop is usable.
+ */
+export const uploadAuthBackground = (folder: string, file: File) =>
+  uploadPublicImage(SITE_ASSETS_BUCKET, `auth-background/${folder}`, file);
+
+/** Removes stale auth-background images in `folder`, keeping only `keepUrl`. Best effort, never throws. */
+export const pruneAuthBackground = (folder: string, keepUrl?: string) =>
+  pruneFolder(SITE_ASSETS_BUCKET, `auth-background/${folder}`, keepUrl);
+
+/**
  * Uploads a public site video (hero background) and returns its public URL.
  * Videos are not re-encoded in the browser: the bucket accepts mp4, webm and
  * mov up to 50 MB, and the editor tells the member when a file is too large.

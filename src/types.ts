@@ -286,6 +286,7 @@ export interface AuthTestimonial {
 
 export interface AuthSettings {
   showcaseImage: string;
+  authBackgroundImage: string;
   eyebrow: string;
   headline: string;
   highlight: string;

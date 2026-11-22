@@ -13,6 +13,8 @@ import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
 import { panelClass } from "./Navigation";
 import { Field, Area, Toggle, ImageBox, VideoBox, ListEditor, genId } from "./CmsPrimitives";
+import { uploadAuthBackground, pruneAuthBackground } from "../lib/storage";
+import AuthBackgroundBox from "./AuthBackgroundBox";
 import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
@@ -769,6 +771,17 @@ export default function AdminWebsiteSettings() {
 
       {tab === "auth" && (
         <div className="space-y-6">
+          <div className={`${panelClass} space-y-4 p-5`}>
+            <p className="text-sm font-semibold text-slate-700">Auth page background (login, sign-up and password reset)</p>
+            <p className="text-xs text-slate-500">
+              A full-bleed background image shared by the sign-in, register and password-recovery screens. Set separately from the showcase panel so the form and the decorative side can use different art. Transparent PNG/WebP keeps any soft edges; opaque images are displayed as-is.
+            </p>
+            <AuthBackgroundBox
+              value={draft.auth.authBackgroundImage ?? ""}
+              onChange={(v) => patchAuth({ authBackgroundImage: v })}
+            />
+          </div>
+
           <div className={`${panelClass} grid gap-4 p-5`}>
             <p className="text-sm font-semibold text-slate-700">Showcase panel (left side of the login screen)</p>
             <ImageBox label="Showcase image" folder="auth" value={draft.auth.showcaseImage} onChange={(v) => patchAuth({ showcaseImage: v })} />

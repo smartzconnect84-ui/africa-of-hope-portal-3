@@ -201,6 +201,7 @@ function Showcase() {
   const { state } = useApp();
   const w = state.websiteSettings;
   const auth = w.auth;
+  const bgImage = w.auth.authBackgroundImage || "";
   const image = auth.showcaseImage || w.heroSlides[0]?.image || "/programs/default.webp";
   const testimonial = auth.testimonial;
   const stats = auth.stats.length
@@ -213,6 +214,9 @@ function Showcase() {
 
   return (
     <aside className="relative hidden overflow-hidden lg:block">
+      {bgImage && (
+        <img src={bgImage} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+      )}
       <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/95 via-emerald-900/85 to-emerald-950/70" />
       <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-amber-400/20 blur-3xl" />
@@ -221,9 +225,9 @@ function Showcase() {
         <div className="flex items-center gap-3">
           <BrandLockup
             logoUrl={w.logos?.auth || w.logoUrl}
-              academyName={w.academyName || state.settings.academyName}
-              displayName="AFRICA OF HOPE"
-              tagline={w.tagline || "Institutional Training Academy"}
+            academyName={w.academyName || state.settings.academyName}
+            displayName="AFRICA OF HOPE"
+            tagline={w.tagline || "Institutional Training Academy"}
             tone="dark"
             size="md"
           />
