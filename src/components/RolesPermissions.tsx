@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ShieldCheck, RotateCcw, Lock } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { usePermissions } from "../hooks/usePermission";
+import { displayRole } from "@/lib/roleDisplay";
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSIONS, PERMISSION_GROUPS, ROLES, type PermissionKey } from "../lib/permissions";
 import type { Role } from "../types";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +80,7 @@ export default function RolesPermissions() {
                     key={role}
                     className="px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                   >
-                    {role}
+                    {displayRole(role)}
                   </th>
                 ))}
               </tr>
@@ -112,7 +113,7 @@ export default function RolesPermissions() {
                             <Switch
                               checked={checked}
                               onCheckedChange={(on) => setRolePermission(role, perm.key as PermissionKey, on)}
-                              aria-label={`${role}: ${perm.key}`}
+                              aria-label={`${displayRole(role)}: ${perm.key}`}
                               data-component-id={`perm-${perm.key}-${role.toLowerCase().replace(/\s+/g, "-")}`}
                             />
                           </td>
@@ -132,7 +133,7 @@ export default function RolesPermissions() {
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {STAFF_ROLE_GUIDE.map((g) => (
             <div key={g.role} className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-sm font-semibold text-slate-800">{g.role}</p>
+              <p className="text-sm font-semibold text-slate-800">{displayRole(g.role)}</p>
               <p className="mt-0.5 text-xs text-slate-600">{g.duty}</p>
               <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">Portal modules</p>
               <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-slate-600">
@@ -158,7 +159,7 @@ export default function RolesPermissions() {
               data-component-id={`roles-reset-${role.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-              Reset {role}
+              Reset {displayRole(role)}
             </Button>
           ))}
         </div>

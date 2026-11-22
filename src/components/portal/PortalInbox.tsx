@@ -5,18 +5,8 @@ import { DirectMessageDialog } from "../DirectoryMessaging";
 import { useConversations, type ChatConversation } from "@/lib/chat";
 import type { User } from "@/types";
 import { cn } from "@/lib/utils";
-
-function initialsOf(name: string) {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "?"
-  );
-}
+import UserAvatar from "../UserAvatar";
+import { displayRole } from "@/lib/roleDisplay";
 
 /** Top-bar messages bell: unread direct messages, with a live thread dialog. */
 export default function PortalInbox() {
@@ -108,12 +98,10 @@ export default function PortalInbox() {
                       onClick={() => openChat(u)}
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-emerald-50"
                     >
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-800 text-[11px] font-bold text-amber-400">
-                        {initialsOf(u.name)}
-                      </span>
+                      <UserAvatar user={u} className="h-8 w-8 text-[11px]" />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium text-slate-800">{u.name}</span>
-                        <span className="block truncate text-[11px] text-slate-500">New conversation · {u.role}</span>
+                        <span className="block truncate text-[11px] text-slate-500">New conversation · {displayRole(u.role)}</span>
                       </span>
                     </button>
                   ))}
@@ -139,8 +127,8 @@ export default function PortalInbox() {
                         c.unread > 0 && "bg-red-50/70",
                       )}
                     >
-                      <span className="relative grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-800 text-[11px] font-bold text-amber-400">
-                        {initialsOf(c.name)}
+                      <span className="relative block h-8 w-8 shrink-0">
+                        <UserAvatar user={{ name: c.name, avatarUrl: c.avatarUrl }} className="h-8 w-8 text-[11px]" />
                         {c.unread > 0 && (
                           <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-600 ring-2 ring-white" />
                         )}

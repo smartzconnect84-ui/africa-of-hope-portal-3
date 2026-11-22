@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { isInstructorRole } from "@/lib/roleDisplay";
 import { BadgeCheck, Loader2, MessageCircle, Pencil, Plus, Reply, Send, Trash2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type DiscussionReply as ReplyRow, type DiscussionThread as Thread } from "@/lib/academics";
@@ -44,7 +45,7 @@ export default function CourseDiscussions() {
     if (!currentUser) return [];
     return state.cohorts.filter((c) => currentUser.role === "Student"
       ? currentUser.cohortIds.includes(c.id)
-      : currentUser.role === "Instructor" ? c.teacherId === currentUser.id : true).map((c) => c.id);
+      : isInstructorRole(currentUser.role) ? c.teacherId === currentUser.id : true).map((c) => c.id);
   }, [state.cohorts, currentUser]);
   const cohortKey = allowedCohortIds.join(",");
   const refresh = async () => {

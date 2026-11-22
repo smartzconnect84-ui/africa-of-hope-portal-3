@@ -1,4 +1,5 @@
 import type { Role } from "../types";
+import { canonicalRole } from "./roleDisplay";
 
 /**
  * Single source of truth for the permission catalogue, the fixed roles
@@ -107,10 +108,10 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "students.manage", group: "People", label: "Manage students", description: "Approve applicants, suspend/reinstate students, assign programmes and cohorts.", sort: 20 },
   { key: "staff.manage", group: "People", label: "Manage staff", description: "Add staff accounts, change roles, suspend, reset passwords and delete people.", sort: 30 },
   { key: "programs.manage", group: "Academics", label: "Manage programmes", description: "Create and edit programmes and their modules.", sort: 40 },
-  { key: "cohorts.manage", group: "Academics", label: "Manage cohorts", description: "Create and edit cohorts, assign teachers and students.", sort: 50 },
+  { key: "cohorts.manage", group: "Academics", label: "Manage cohorts", description: "Create and edit cohorts, assign instructors and students.", sort: 50 },
   { key: "courses.enroll", group: "Academics", label: "Plan own courses", description: "Check conflicts and submit course enrollment plans.", sort: 51 },
   { key: "academic_plans.manage", group: "Academics", label: "Create academic plans", description: "Create course plans, lessons and class timetables for assigned cohorts.", sort: 52 },
-  { key: "academic_plans.approve", group: "Academics", label: "Approve academic plans", description: "Review student enrollments and teacher plans, lessons and schedules.", sort: 53 },
+  { key: "academic_plans.approve", group: "Academics", label: "Approve academic plans", description: "Review student enrollments and instructor plans, lessons and schedules.", sort: 53 },
   { key: "lessons.manage", group: "Academics", label: "Manage lessons", description: "Create chapters, modules and topics for assigned courses.", sort: 54 },
   { key: "materials.manage", group: "Academics", label: "Manage training materials", description: "Submit files and educational resources for assigned courses.", sort: 55 },
   { key: "materials.approve", group: "Academics", label: "Approve training materials", description: "Review training resources before students can access them.", sort: 56 },
@@ -134,7 +135,7 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "blog.manage", group: "Website", label: "Manage blog", description: "Write, schedule, publish and archive public blog posts.", sort: 185 },
   { key: "aptitude.manage", group: "Admissions", label: "Manage aptitude & entrances", description: "Run Aptitude Control: preparations, entrance results and setup.", sort: 186 },
   { key: "reports.manage", group: "Academics", label: "Manage report cards", description: "Generate term report cards with totals, grades and comments.", sort: 187 },
-  { key: "timetable.manage", group: "Academics", label: "Manage timetables", description: "Build weekly class timetables with rooms, teachers and times.", sort: 188 },
+  { key: "timetable.manage", group: "Academics", label: "Manage timetables", description: "Build weekly class timetables with rooms, instructors and times.", sort: 188 },
   { key: "transparency.manage", group: "Website", label: "Manage transparency library", description: "Publish audits, reports and accountability documents.", sort: 189 },
   { key: "policies.manage", group: "Website", label: "Manage policies", description: "Edit school policies shown on the public site and portal.", sort: 190 },
   { key: "discussions.moderate", group: "Comms", label: "Moderate discussions", description: "Moderate class discussions and remove unsuitable posts.", sort: 191 },
@@ -389,7 +390,12 @@ export function roleHasPermission(
 ): boolean {
   if (!role) return false;
   if (role === "Super Admin") return true;
-  return (rolePermissions[role] ?? DEFAULT_ROLE_PERMISSIONS[role as Exclude<Role, "Super Admin">] ?? []).includes(
-    key,
-  );
+  const key0 = canonicalRole(role);
+  return (
+    rolePermissions[key0] ??
+    rolePermissions[role] ??
+    DEFAULT_ROLE_PERMISSIONS[key0 as Exclude<Role, "Super Admin">] ??
+    DEFAULT_ROLE_PERMISSIONS[role as Exclude<Role, "Super Admin">] ??
+    []
+  ).includes(key);
 }

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
+import { isInstructorRole } from "@/lib/roleDisplay";
 import { academicApi, TRAINING_MATERIAL_ACCEPT, type ApprovalItem, type ClassSession, type CourseEnrollment, type CoursePlan, type EnrollmentPreview, type LearningUnit, type PortalNotification, type TrainingMaterial } from "@/lib/academics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,7 +185,7 @@ export default function AcademicPlanning() {
   const loadNotifications=useCallback(async()=>{if(!currentUser)return;try{setNotifications(await academicApi.notifications(currentUser.id));}catch{/* the main panel reports missing migrations */}},[currentUser]);
   useEffect(()=>{void loadNotifications();},[loadNotifications,reloadKey]);
   const markRead=async(id:string)=>{try{await academicApi.markNotificationRead(id);setNotifications(rows=>rows.map(row=>row.id===id?{...row,read_at:new Date().toISOString()}:row));}catch(err){toast.error(err instanceof Error?err.message:String(err));}};
-  const title=currentUser?.role==="Student"?"My Course Plan":currentUser?.role==="Instructor"?"Course Planning Studio":"Academic Approval Centre";
-  const subtitle=currentUser?.role==="Student"?"Plan multiple courses, check timetable conflicts, follow lessons and track attendance.":currentUser?.role==="Instructor"?"Build plans, lessons, official timetables and approved training resources.":"Review student plans, Instructors schedules, lessons and training materials.";
-  return <div className="space-y-5"><SectionHeader title={title} subtitle={subtitle} action={<Button variant="outline" size="sm" onClick={()=>setReloadKey(k=>k+1)}><RefreshCw className="mr-1 h-3.5 w-3.5"/>Refresh</Button>}/>{currentUser?.role==="Student"?<StudentPlanning reloadKey={reloadKey}/>:currentUser?.role==="Instructor"?<TeacherPlanning reloadKey={reloadKey}/>:<AdminApprovals reloadKey={reloadKey}/>}<Notifications rows={notifications} onRead={(id)=>void markRead(id)}/></div>;
+  const title=currentUser?.role==="Student"?"My Course Plan":isInstructorRole(currentUser?.role)?"Course Planning Studio":"Academic Approval Centre";
+  const subtitle=currentUser?.role==="Student"?"Plan multiple courses, check timetable conflicts, follow lessons and track attendance.":isInstructorRole(currentUser?.role)?"Build plans, lessons, official timetables and approved training resources.":"Review student plans, instructor schedules, lessons and training materials.";
+  return <div className="space-y-5"><SectionHeader title={title} subtitle={subtitle} action={<Button variant="outline" size="sm" onClick={()=>setReloadKey(k=>k+1)}><RefreshCw className="mr-1 h-3.5 w-3.5"/>Refresh</Button>}/>{currentUser?.role==="Student"?<StudentPlanning reloadKey={reloadKey}/>:isInstructorRole(currentUser?.role)?<TeacherPlanning reloadKey={reloadKey}/>:<AdminApprovals reloadKey={reloadKey}/>}<Notifications rows={notifications} onRead={(id)=>void markRead(id)}/></div>;
 }

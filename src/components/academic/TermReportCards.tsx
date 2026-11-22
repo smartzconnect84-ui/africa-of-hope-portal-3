@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { isInstructorRole } from "@/lib/roleDisplay";
 import { Printer, Award, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useApp, letterGrade } from "@/context/AppContext";
@@ -39,7 +40,7 @@ export default function TermReportCards() {
   const visibleCohorts = useMemo(() => {
     if (!currentUser) return [];
     if (isStudent) return state.cohorts.filter((c) => c.studentIds.includes(currentUser.id));
-    if (currentUser.role === "Instructor") return state.cohorts.filter((c) => c.teacherId === currentUser.id);
+    if (isInstructorRole(currentUser.role)) return state.cohorts.filter((c) => c.teacherId === currentUser.id);
     return state.cohorts;
   }, [state.cohorts, currentUser, isStudent]);
 

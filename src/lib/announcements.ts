@@ -1,3 +1,5 @@
+import { isInstructorRole } from "./roleDisplay";
+
 /**
  * Shared visibility rule for a signed-in user's own announcements: an
  * audience/role match, excluding drafts, and respecting the scheduled/expiry
@@ -14,7 +16,7 @@ export function isAnnouncementLiveFor(
 ): boolean {
   const audience = item.audience ?? "all";
   if (audience === "students" && role !== "Student") return false;
-  if (audience === "teachers" && role !== "Teacher") return false;
+  if (audience === "teachers" && !isInstructorRole(role)) return false;
   if (item.status === "draft") return false;
   if (item.scheduledAt && new Date(item.scheduledAt).getTime() > now) return false;
   if (item.expiresAt && new Date(item.expiresAt).getTime() <= now) return false;

@@ -42,6 +42,7 @@ import { useApp } from "./context/AppContext";
 import { usePermissions, type PermissionsApi } from "./hooks/usePermission";
 import type { PermissionKey } from "./lib/permissions";
 import type { Role, User } from "./types";
+import { isInstructorRole } from "./lib/roleDisplay";
 import {
   AdminDashboard,
   ProgramBuilder,
@@ -173,7 +174,7 @@ function PeopleHub({ ctx }: { ctx: PortalViewContext }) {
 
 function DashboardView({ role }: { role: Role | null }) {
   if (role === "Student") return <StudentPortal />;
-  if (role === "Instructor") return <TeacherDashboard />;
+  if (isInstructorRole(role)) return <TeacherDashboard />;
   if (role === "Admission Officer") return <PeopleManagement initialTab="applicants" />;
   if (role === "Customer Care Officer") return <Helpdesk key="dashboard-helpdesk" />;
   if (role === "Data Entry Officer") return <PeopleManagement />;
@@ -206,7 +207,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "dashboard",
     label: (ctx) =>
-      ctx.role === "Student" ? "My Portal" : ctx.role === "Instructor" ? "My Workspace" : "Dashboard",
+      ctx.role === "Student" ? "My Portal" : isInstructorRole(ctx.role) ? "My Workspace" : "Dashboard",
     icon: LayoutDashboard,
     visible: () => true,
     render: (ctx) => <DashboardView role={ctx.role} />,
@@ -227,7 +228,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "academic-planning",
-    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : ctx.role === "Instructor" ? "Course Planning" : "Academic Approvals",
+    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : isInstructorRole(ctx.role) ? "Course Planning" : "Academic Approvals",
     icon: CalendarRange,
     visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve"),
     render: () => <AcademicPlanning />,
@@ -308,7 +309,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: TrendingUp,
     visible: (ctx) =>
       ctx.canAny("reports.manage", "grades.manage", "attendance.manage", "academic_plans.manage", "academic_plans.approve") ||
-      ctx.role === "Instructor" ||
+      isInstructorRole(ctx.role) ||
       ctx.role === "School Admin" ||
       ctx.role === "Super Admin" ||
       ctx.role === "Director of Education" ||

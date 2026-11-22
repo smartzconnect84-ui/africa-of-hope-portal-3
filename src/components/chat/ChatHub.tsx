@@ -40,21 +40,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import UserAvatar from "../UserAvatar";
+import { displayRole } from "@/lib/roleDisplay";
 import type { User } from "@/types";
-
-function initialsOf(name: string) {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "?"
-  );
-}
 
 function ConversationRow({
   conv,
@@ -74,9 +63,10 @@ function ConversationRow({
         active && "bg-emerald-100",
       )}
     >
-      <Avatar className="h-8 w-8 shrink-0">
-        <AvatarFallback className="bg-emerald-800 text-amber-400">{initialsOf(conv.name)}</AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        user={{ name: conv.name, avatarUrl: conv.avatarUrl }}
+        className="h-8 w-8 text-[11px]"
+      />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{conv.name}</span>
@@ -277,12 +267,10 @@ function NewGroupDialog({
                       on && "bg-emerald-50",
                     )}
                   >
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-800 text-[11px] font-bold text-amber-400">
-                      {initialsOf(u.name)}
-                    </span>
+                    <UserAvatar user={u} className="h-6 w-6 text-[10px]" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-slate-800">{u.name}</span>
-                      <span className="block truncate text-[11px] text-slate-500">{u.role}</span>
+                      <span className="block truncate text-[11px] text-slate-500">{displayRole(u.role)}</span>
                     </span>
                     {on && <Check className="h-4 w-4 shrink-0 text-emerald-700" />}
                   </button>
@@ -360,12 +348,10 @@ function NewMessageDialog({
               }}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-emerald-50"
             >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-800 text-[11px] font-bold text-amber-400">
-                {initialsOf(u.name)}
-              </span>
+              <UserAvatar user={u} className="h-8 w-8 text-[11px]" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-slate-800">{u.name}</span>
-                <span className="block truncate text-[11px] text-slate-500">{u.role}</span>
+                <span className="block truncate text-[11px] text-slate-500">{displayRole(u.role)}</span>
               </span>
             </button>
           ))}
@@ -592,15 +578,13 @@ function ChatHub() {
               <Button variant="ghost" size="sm" onClick={() => setView("conversations")} aria-label="Back to conversations">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-emerald-800 text-amber-400">{initialsOf(active.name)}</AvatarFallback>
-              </Avatar>
+              <UserAvatar user={{ name: active.name, avatarUrl: active.avatarUrl }} className="h-8 w-8 text-[11px]" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-800">{active.name}</p>
                 <p className="text-[11px] text-slate-500">
                   {active.kind === "group"
                     ? `${active.memberCount ?? 0} member${(active.memberCount ?? 0) === 1 ? "" : "s"}`
-                    : active.role || "Direct message"}
+                    : displayRole(active.role) || "Direct message"}
                 </p>
               </div>
             </div>

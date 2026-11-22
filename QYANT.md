@@ -517,3 +517,47 @@ reads.
   `useChatThread` key fix and no React error appears in the console. Not
   verified: sending a message or creating a group (no second live account), and
   the Program Builder wizard (the admin role is needed; no admin login here).
+
+- Module/backend audit, instructor role and photo avatars (2026-11-22).
+  Every module now renders a person's uploaded photo instead of initials
+  (`UserAvatar`, which already falls back to initials when there is no photo):
+  the Staff & Students directory rows (staff, students, applicants), the
+  Applicant queue and Student Directory in `AdminTeacherViews`, both member
+  pickers and the thread header in `ChatHub`, conversation rows and search
+  results in the top-bar `PortalInbox`, the member profile dialog in
+  `DirectoryMessaging`. Chat conversations already carried `avatarUrl` from
+  `profiles.avatar_url`; groups keep an initials badge because they have no
+  photo. The directory previously drew its own gradient initials bubble in
+  four places, which hid the uploaded photo entirely.
+  The stored Role value is still exactly `Teacher`: RLS policies, the
+  `role_permissions` matrix, cohort triggers and the `admin-users` worker all
+  key off it, so renaming the rows would have locked instructors out. Instead
+  `src/lib/roleDisplay.ts` is now the single display layer (`displayRole` →
+  "Instructor", `isInstructorRole`, `canonicalRole`) and every screen uses it:
+  the staff directory's role filter, role select and badges, the Add staff
+  role buttons and duplicate-email message, role/permission matrix columns and
+  guide, chat and inbox role labels, and the sidebar group heading. This also
+  fixed a real functional bug: the portal's instructor checks compared against
+  `"Instructor"` while the database stores `"Teacher"`, so a teacher signing in
+  got the admin dashboard, the Academic Approval Centre, an unfiltered
+  timetable/report-card list, and — worst — `CohortCoordinator`'s teacher
+  picker was empty, so a cohort could not be assigned to any instructor at all.
+  Those checks now go through `isInstructorRole` (`DashboardView`, view labels,
+  insights, `AcademicPlanning`, `CohortTimetable`, `TermReportCards`,
+  `CourseDiscussions`, `HopeAssistant`, sidebar heading, cohort coordinator),
+  announcements addressed to instructors match again, `usePermissions`
+  resolves an `Instructor` role onto the stored `Teacher` grants, and the AOH
+  AI staff allowlist accepts both spellings. Permission descriptions now say
+  instructors.
+  Backend audit with a live signed-in session: all 55 tables the client reads
+  answer (the 12 that deny anon are readable to a member), all 21 `.rpc()`
+  names have matching `create function` definitions in `supabase/migrations`
+  and `finalize_expired_quiz_attempts` answered 200, and 58 of 59
+  `.from().select()` column lists matched the live schema exactly (the 59th
+  failed only because the probe URL was not encoded). Verified with
+  `npm run typecheck`, `npx eslint` on the touched files, `npm test` (52 pass,
+  1 skipped) and `VERCEL=1 npm run build:sites`. Not verified in a browser:
+  the directory and chat need a staff login, and only the student QA account
+  was available; a `Teacher`-role profile ("Samfort Kan") exists in
+  `profiles` and the Super Admin profile has a real avatar, so both changes
+  will show once a staff member signs in.

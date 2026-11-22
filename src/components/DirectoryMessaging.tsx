@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import UserAvatar from "./UserAvatar";
+import { displayRole } from "@/lib/roleDisplay";
 import { cn } from "@/lib/utils";
 
 export function PresenceDot({ online, className = "" }: { online: boolean; className?: string }) {
@@ -28,10 +29,6 @@ export function PresenceDot({ online, className = "" }: { online: boolean; class
       )}
     />
   );
-}
-
-function initials(name: string) {
-  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
 export function UserProfileDialog({
@@ -60,13 +57,7 @@ export function UserProfileDialog({
             </DialogHeader>
             <div className="flex items-start gap-4">
               <div className="relative">
-                {user.avatarUrl ? (
-                  <UserAvatar user={user} className="h-16 w-16 text-lg" />
-                ) : (
-                  <span className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-lg font-semibold text-amber-400">
-                    {initials(user.name)}
-                  </span>
-                )}
+                <UserAvatar user={user} className="h-16 w-16 text-lg" />
                 <span className="absolute -bottom-0.5 -right-0.5">
                   <PresenceDot online={online} />
                 </span>
@@ -83,7 +74,7 @@ export function UserProfileDialog({
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-700/15">
-                    {user.role}
+                    {displayRole(user.role)}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                     {user.status}

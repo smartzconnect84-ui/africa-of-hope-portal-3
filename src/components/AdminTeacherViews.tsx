@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isInstructorRole } from "@/lib/roleDisplay";
+import UserAvatar from "./UserAvatar";
 import { courseId } from "@/lib/identifiers";
 import { toast } from "sonner";
 import {
@@ -163,9 +165,7 @@ export function AdminDashboard() {
             pending.map((u) => (
               <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">
-                    {u.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-                  </span>
+                  <UserAvatar user={u} className="h-10 w-10 text-xs" />
                   <div>
                     <p className="text-sm font-medium text-slate-800">{u.name}</p>
                     <p className="text-[11px] text-slate-500">
@@ -271,9 +271,7 @@ export function StudentDirectory() {
                 <tr key={u.id} className="border-b border-slate-50 last:border-0 hover:bg-emerald-50/40">
                   <td className={TD}>
                     <button type="button" onClick={() => setSelected(u)} className="flex items-center gap-3 text-left">
-                      <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
-                        {u.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-                      </span>
+                      <UserAvatar user={u} className="h-9 w-9 text-[11px]" />
                       <span className="font-medium text-slate-800">{u.name}</span>
                     </button>
                   </td>
@@ -852,7 +850,7 @@ export function CohortCoordinator() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyCohort);
   const [roster, setRoster] = useState<string[]>([]);
-  const teachers = state.users.filter((u) => u.role === "Instructor");
+  const teachers = state.users.filter((u) => isInstructorRole(u.role));
 
   const toggleStudent = (id: string) =>
     setRoster((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));

@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { resendConfirmationEmail, supabase } from "@/integrations/supabase/client";
 import { fetchState, mergeThemeSettings, mergeWebsiteSettings, persistSettingsPatch, settingsRow, today, uid, type Row } from "@/data/liveData";
+import { displayRole } from "@/lib/roleDisplay";
 import type {
   Announcement,
   AppState,
@@ -1180,7 +1181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               return;
             }
           }
-          toast.success(`${role} reset to defaults.`);
+          toast.success(`${displayRole(role)} reset to defaults.`);
         })();
       },
     };

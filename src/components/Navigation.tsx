@@ -12,7 +12,7 @@ import { portalViewLabel, PORTAL_NAV_GROUPS, useVisiblePortalViews } from "../po
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
-import { displayRole } from "@/lib/roleDisplay";
+import { displayRole, isInstructorRole } from "@/lib/roleDisplay";
 import { lockPageScroll } from "@/lib/scrollLock";
 import { Button } from "@/components/ui/button";
 import Marquee from "./animata/container/marquee";
@@ -170,7 +170,7 @@ export function SetupError({ message, retry }: { message: string; retry: () => v
 
 function sidebarGroupLabel(role: string | null): string {
   if (role === "Student") return "Student Desk";
-  if (role === "Instructor") return "Instructors";
+  if (isInstructorRole(role)) return "Instructors";
   return "Administration";
 }
 
