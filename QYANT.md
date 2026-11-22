@@ -458,3 +458,19 @@ reads.
   close, and iOS restores the previous scroll offset. Quiz consent/submit modals,
   the WhatsApp enquiry sheet and the programme popup use the same capped scroll.
   Verified with `npm run typecheck`, `npm test` and `VERCEL=1 npm run build:sites`.
+
+- Portal navigation audit (2026-11-22). The desktop sidebar was inert: `PortalSidebar`
+  rendered nav buttons with no click handler and computed `active` by comparing
+  `ctx.role` to the view key, so clicking a module did nothing and the current
+  page never highlighted. It now takes `view`/`onNavigate`, routes on click and
+  marks the active item. The mobile drawer was worse: `Navigation` filtered
+  `PORTAL_VIEWS` through a mock context whose `can`/`canAny`/`canAll` always
+  returned false, so staff lost every permission-gated module on mobile; the
+  drawer now uses `useVisiblePortalViews()` and matches the desktop list. Also
+  removed unused icon/component imports (`FileText`, `Lightbulb`,
+  `StudentAssignments`, dead `HubTabs`), added `messages`, `timetable` and
+  `report-cards` to the sidebar relevance order, and fixed the two hook-deps
+  warnings. Backend/client audit found the Supabase client and `fetchState`
+  per-table failure handling sound; RPC usage is covered by the existing tests.
+  Verified with `npm run typecheck`, `npx eslint` on the touched files,
+  `npm test` (52 pass, 1 skipped) and `npm run build:sites`.

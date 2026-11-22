@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components -- registry module: it
+   intentionally exports the view list, nav groups and the hooks that read them
+   alongside the small hub components that render inside those views. */
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -33,8 +36,6 @@ import {
   ReceiptText,
   Briefcase,
   FolderOpen,
-  FileText,
-  Lightbulb,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -51,7 +52,6 @@ import {
 } from "./components/AdminTeacherViews";
 import {
   StudentPortal,
-  StudentAssignments,
   FeeRegister,
 } from "./components/StudentFinancialViews";
 import { CertificateStudio, VerificationPortal } from "./components/CertificateVerification";
@@ -103,27 +103,6 @@ export interface PortalView {
   icon: LucideIcon;
   visible: (ctx: PortalViewContext) => boolean;
   render: (ctx: PortalViewContext) => ReactNode;
-}
-
-function HubTabs({ tabs, initial }: { tabs: { key: string; label: string }[]; initial?: string }) {
-  const [active, setActive] = useState(initial ?? tabs[0]?.key);
-  return (
-    <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Section">
-      {tabs.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          role="tab"
-          aria-selected={active === t.key}
-          onClick={() => setActive(t.key)}
-          className={active === t.key ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}
-        >
-          {t.label}
-        </button>
-      ))}
-      <span className="hidden" data-hub-active={active} />
-    </div>
-  );
 }
 
 function AptitudeControlHub({ ctx }: { ctx: PortalViewContext }) {
@@ -511,7 +490,9 @@ const NAV_RELEVANCE_ORDER = [
   "academic-planning",
   "study-plan",
   "study-calendar",
+  "timetable",
   "assignments",
+  "report-cards",
   "quizzes",
   "training-library",
   "entrance-control",
@@ -522,6 +503,7 @@ const NAV_RELEVANCE_ORDER = [
   "verification",
   "announcements",
   "helpdesk",
+  "messages",
   "grade-appeals",
   "policies",
   "blog",

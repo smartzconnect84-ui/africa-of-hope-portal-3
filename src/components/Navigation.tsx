@@ -8,8 +8,7 @@ import { useApp } from "../context/AppContext";
 import { isAnnouncementLiveFor } from "@/lib/announcements";
 import { cn } from "@/lib/utils";
 import PortalInbox from "./portal/PortalInbox";
-import { portalViewLabel, PORTAL_NAV_GROUPS, PORTAL_VIEWS } from "../portalViews";
-import { NAV_RELEVANCE_RANK } from "../portalViews";
+import { portalViewLabel, PORTAL_NAV_GROUPS, useVisiblePortalViews } from "../portalViews";
 import { LanguageSwitcher, useLocale } from "@/lib/locale";
 import UserAvatar from "./UserAvatar";
 import BrandLockup from "./brand/BrandLockup";
@@ -306,15 +305,10 @@ export default function Navigation({
   children: ReactNode;
 }) {
   const { state, currentUser, logout, resetDemoData } = useApp();
-  // Build the visible views list directly from the static registry using the
-  // current user context. This avoids calling useVisiblePortalViews() here
-  // (which internally calls useApp() again) to keep the hook chain simple.
-  const ctx = { currentUser, state, role: currentUser?.role ?? null, isSignedIn: !!currentUser, isSuperAdmin: currentUser?.role === "Super Admin", can: (key: any) => false, canAny: (...keys: any[]) => false, canAll: (...keys: any[]) => false } as any;
-  const views = PORTAL_VIEWS.filter((v) => v.visible(ctx)).sort((a, b) => {
-    const ra = NAV_RELEVANCE_RANK.get(a.key) ?? 999;
-    const rb = NAV_RELEVANCE_RANK.get(b.key) ?? 999;
-    return ra - rb;
-  });
+  // Use the same permission-filtered list as the router and desktop sidebar so
+  // the drawer can never show a different set of modules. The previous mock
+  // context reported every permission as false, which hid staff tools on mobile.
+  const { ctx, views } = useVisiblePortalViews();
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -336,6 +330,8 @@ export default function Navigation({
   // focus back to the menu button on close.
   useEffect(() => {
     if (!drawer) return;
+    // Capture the trigger now; the ref may point at another node by cleanup.
+    const menuButton = menuButtonRef.current;
     // Shared lock: only the last overlay to close releases the page.
     const releaseScroll = lockPageScroll();
 
@@ -379,7 +375,7 @@ export default function Navigation({
       desktop.removeEventListener("change", onDesktop);
       window.cancelAnimationFrame(raf);
       releaseScroll();
-      menuButtonRef.current?.focus();
+      menuButton?.focus();
     };
   }, [drawer]);
 
@@ -738,7 +734,7 @@ export default function Navigation({
                 nameClassName="min-w-0 flex-1 truncate whitespace-nowrap text-xs leading-none tracking-[0.12em]"
               />
             </div>
-            <PortalSidebar />
+            <PortalSidebar view={view} onNavigate={go} />
           </div>
         </aside>
         <main className="min-w-0 max-w-full flex-1 overflow-x-clip p-4 sm:p-5 lg:p-6 xl:p-8">

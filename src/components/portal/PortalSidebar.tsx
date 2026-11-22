@@ -1,35 +1,7 @@
 import { useMemo, useState } from "react";
-import { useApp } from "@/context/AppContext";
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  Boxes,
-  Award,
-  ShieldCheck,
-  Banknote,
-  LifeBuoy,
-  Gavel,
-  Scale,
-  LibraryBig,
-  Megaphone,
-  NotebookPen,
-  CalendarRange,
-  CalendarDays,
-  GraduationCap,
-  FileQuestion,
-  Globe,
-  UserCircle,
-  FolderOpen,
-  Activity,
-  Mail,
-  MessageCircle,
-  TrendingUp,
-  Briefcase,
-  ClipboardCheck,
-} from "lucide-react";
-import { useVisiblePortalViews, usePortalViewContext } from "@/portalViews";
-import { displayGroupForRole, displayRole } from "@/lib/roleDisplay";
+import { Globe, Activity } from "lucide-react";
+import { useVisiblePortalViews } from "@/portalViews";
+import { displayGroupForRole } from "@/lib/roleDisplay";
 import BrandLockup from "@/components/brand/BrandLockup";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -44,7 +16,7 @@ import { cn } from "@/lib/utils";
  *
  * Palette lives in src/index.css as CSS variables.
  */
-export default function PortalSidebar() {
+export default function PortalSidebar({ view, onNavigate }: { view: string; onNavigate: (v: string) => void }) {
   const { ctx, views } = useVisiblePortalViews();
   const viewsByKey = new Map(views.map((v) => [v.key, v]));
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -65,11 +37,12 @@ export default function PortalSidebar() {
     if (!v) return null;
     const Icon = v.icon;
     const label = v.label;
-    const active = ctx.role === key;
+    const active = view === v.key;
     return (
       <button
         key={v.key}
         type="button"
+        onClick={() => onNavigate(v.key)}
         aria-current={active ? "page" : undefined}
         className={cn(
           "group flex min-h-[36px] w-full items-center gap-1.5 rounded-xl px-2 py-1 text-left text-[13px] font-medium leading-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40",
@@ -150,7 +123,7 @@ export default function PortalSidebar() {
       },
     ].map((g) => {
       const items = g.keys.filter((key) => {
-        const v = viewsByKey.get(key);
+        const v = views.find((x) => x.key === key);
         if (!v) return false;
         seen.add(v.key);
         return true;
@@ -162,7 +135,7 @@ export default function PortalSidebar() {
       groups.push({ id: "more", label: "More", items: leftover.map((v) => v.key) });
     }
     return groups;
-  }, [ctx.role, views]);
+  }, [views]);
 
   const groupLabel = displayGroupForRole(ctx.role);
 
