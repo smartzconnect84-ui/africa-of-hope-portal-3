@@ -33,6 +33,25 @@ let scriptPromise: Promise<void> | null = null;
 /** Why the last init attempt failed, so Enable can name the real cause
  *  instead of a generic "push library could not start". Never includes secrets. */
 let lastInitError: string | null = null;
+/** OneSignal's SDK initialises exactly once per page load. A second init()
+ *  rejects with "SDK already initialized", which would otherwise overwrite the
+ *  real failure reason on every retry. */
+let initInvoked = false;
+let initFailure: string | null = null;
+
+/** Turn an SDK init error into something a member or admin can act on. */
+function describeInitError(raw: string): string {
+  const mismatch = /Can only be used on:\s*(\S+)/i.exec(raw);
+  if (mismatch) {
+    const expected = mismatch[1].replace(/\/+$/, "");
+    const actual = typeof window === "undefined" ? "this origin" : window.location.origin;
+    return `OneSignal is registered for ${expected}, but this site runs on ${actual}. `
+      + `An administrator must set the OneSignal Web Push "Site URL" (Settings > Push & in-app setup > Web) to exactly ${actual}`;
+  }
+  if (raw === "blocked") return "cdn.onesignal.com is blocked on this device";
+  if (raw === "timeout") return "cdn.onesignal.com did not finish loading (network or content blocker)";
+  return raw.trim() || "unknown SDK error";
+}
 /** SDK instance handed to window.OneSignalDeferred. Kept separately because the
  *  real bundle can finish loading (and drain the deferred queue) a tick before
  *  it assigns window.OneSignal on slower mobile browsers. */
@@ -140,31 +159,41 @@ export function initOneSignal(): Promise<boolean> {
     const appId = oneSignalAppId();
     if (!appId || typeof window === "undefined") { lastInitError = "the push app id is missing"; return false; }
     if (!pushSupported()) { lastInitError = "this browser has no push support (HTTPS, service worker and PushManager are required)"; return false; }
-    lastInitError = null;
+    lastInitError = initFailure;
+    if (initInvoked) {
+      // Never init the SDK twice: report the first real failure instead of the
+      // SDK's "already initialized" error, and never pretend it recovered.
+      return !initFailure;
+    }
     try {
       await loadPageSdk();
       const OS = currentSdk();
       if (!OS?.init) { lastInitError = "the OneSignal library loaded without an init function"; return false; }
-      const safariWebId = oneSignalSafariWebId() || undefined;
-      await OS.init({
-        appId,
-        ...(safariWebId ? { safari_web_id: safariWebId } : {}),
-        allowLocalhostAsSecureOrigin: true,
-        // Custom branded subscription UI (OneSignalPanel) replaces the default bell.
-        notifyButton: { enable: false },
-        promptOptions: { slidedown: { enabled: false } },
-        welcomeNotification: { disable: true },
-      });
+      initInvoked = true;
+      try {
+        const safariWebId = oneSignalSafariWebId() || undefined;
+        await OS.init({
+          appId,
+          ...(safariWebId ? { safari_web_id: safariWebId } : {}),
+          allowLocalhostAsSecureOrigin: true,
+          // Custom branded subscription UI (OneSignalPanel) replaces the default bell.
+          notifyButton: { enable: false },
+          promptOptions: { slidedown: { enabled: false } },
+          welcomeNotification: { disable: true },
+        });
+      } catch (e) {
+        const raw = e instanceof Error ? e.message : String(e ?? "");
+        // Another copy of the SDK already ran init; it is usable as-is.
+        if (!/already initialized/i.test(raw)) throw e;
+      }
       return true;
     } catch (e) {
       // Graceful: portal + local reminders keep working; OneSignal stays off.
       // Keep the reason (safe, public SDK text) so the user is not told to
       // "check your connection" when the domain or app id is the real problem.
       const raw = e instanceof Error ? e.message : String(e ?? "");
-      lastInitError =
-        raw === "blocked" ? "cdn.onesignal.com is blocked on this device"
-        : raw === "timeout" ? "cdn.onesignal.com did not finish loading (network or content blocker)"
-        : raw.trim() || "unknown SDK error";
+      initFailure = describeInitError(raw);
+      lastInitError = initFailure;
       return false;
     }
   })().catch(() => false);
@@ -279,7 +308,10 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
   const OS = currentSdk();
   if (!ready || !OS) {
     const why = lastInitError ? ` Reason: ${lastInitError}.` : "";
-    return { subscribed: false, message: `Push could not start on this device.${why} If it names cdn.onesignal.com, allow that domain (turn off any ad/tracker blocker or DNS filter for this site), reload, then press Enable again.` };
+    const next = !lastInitError || /cdn\.onesignal\.com/i.test(lastInitError)
+      ? " If it names cdn.onesignal.com, allow that domain (turn off any ad/tracker blocker or DNS filter for this site), reload, then press Enable again."
+      : " Fix that setting, then reload this page and press Enable again.";
+    return { subscribed: false, message: `Push could not start on this device.${why}${next}` };
   }
   try {
     let subscription = OS?.User?.PushSubscription;

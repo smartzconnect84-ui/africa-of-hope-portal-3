@@ -800,3 +800,19 @@ reads.
   support, or the SDK's own public message — e.g. a domain/app-id mismatch) and
   Enable reports that reason instead of blaming the connection. Typecheck and
   `build:sites` pass; device delivery still needs one real "Finish setup" press.
+
+- Push origin mismatch identified and surfaced (2026-11-23, `src/lib/onesignal.ts`).
+  After the loader race was fixed, a real browser check on
+  `https://www.africaofhopelr.org` showed `OneSignal.init()` rejecting with
+  `Can only be used on: https://africaofhopelr.org`: the OneSignal app's Web
+  Push Site URL is the apex, while the site is served on `www`. OneSignal allows
+  exactly one origin per app and support cannot change it, so this needs the
+  dashboard — Settings > Push & in-app setup > Web > Site URL must be set to
+  `https://www.africaofhopelr.org` (protocol, domain and subdomain must match
+  the browser exactly). Code changes: `describeInitError()` turns that SDK text
+  into an explicit admin instruction naming both origins, the CDN-blocked and
+  timeout cases stay distinct, and `initInvoked`/`initFailure` stop the SDK
+  being initialised twice per page (the retry used to replace the real reason
+  with "SDK already initialized"). Verify once the dashboard is changed by
+  reloading the site and pressing Finish setup — `onesignal_devices` should stop
+  being 0.
