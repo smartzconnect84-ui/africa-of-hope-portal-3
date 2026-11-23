@@ -30,6 +30,13 @@ const DEFAULT_SAFARI_WEB_ID = "web.onesignal.auto.3431b9a6-8377-4186-9b23-bf65db
 
 let initPromise: Promise<boolean> | null = null;
 let scriptPromise: Promise<void> | null = null;
+/** Why the last init attempt failed, so Enable can name the real cause
+ *  instead of a generic "push library could not start". Never includes secrets. */
+let lastInitError: string | null = null;
+/** SDK instance handed to window.OneSignalDeferred. Kept separately because the
+ *  real bundle can finish loading (and drain the deferred queue) a tick before
+ *  it assigns window.OneSignal on slower mobile browsers. */
+let sdkInstance: any = typeof window === "undefined" ? null : (window.OneSignal ?? null);
 
 declare global {
   interface Window {
@@ -52,6 +59,14 @@ export function isOneSignalConfigured(): boolean {
   return oneSignalAppId().length > 0;
 }
 
+/** Whichever copy of the SDK exists: the window global or the deferred instance. */
+function currentSdk(): any {
+  if (typeof window === "undefined") return null;
+  const os = window.OneSignal ?? sdkInstance;
+  if (os) sdkInstance = os;
+  return os;
+}
+
 export function pushSupported(): boolean {
   if (typeof window === "undefined") return false;
   return window.isSecureContext && "serviceWorker" in navigator && "Notification" in window && "PushManager" in window;
@@ -59,41 +74,55 @@ export function pushSupported(): boolean {
 
 function loadPageSdk(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("No window"));
-  if (window.OneSignal) return Promise.resolve();
+  if (currentSdk()?.init) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
   const promise = new Promise<void>((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[data-onesignal="v16"]`);
     const tag = existing ?? document.createElement("script");
+    const queuedAt = Date.now();
     let settled = false;
     let timer: number | undefined;
     const finish = (error?: Error) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      tag.removeEventListener("load", onLoad);
       tag.removeEventListener("error", onError);
       if (!error) { resolve(); return; }
       // A failed or blocked load must not poison later retries: forget the
-      // cached promise and drop the dead tag so Enable can genuinely try again.
+      // cached promise and drop a dead tag so Enable can genuinely try again.
       scriptPromise = null;
-      if (!window.OneSignal) tag.remove();
+      if (!currentSdk()) tag.remove();
       reject(error);
     };
-    const onLoad = () => {
-      if (window.OneSignal) finish();
-      else finish(new Error("Push library loaded but did not start."));
+    /**
+     * OneSignal's page.js is only a tiny loader: it appends the real bundle
+     * (OneSignalSDK.page.es6.js, ~150 KB) as a separate deferred script. Its
+     * own `load` event therefore fires while window.OneSignal is still
+     * undefined, so that event proves only that the loader arrived — it must
+     * never be read as "the library started". Success is the SDK instance
+     * actually appearing, reported here by polling and by OneSignalDeferred.
+     */
+    const onError = () => finish(new Error("blocked"));
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push((os: any) => {
+      if (os) sdkInstance = os;
+      finish();
+    });
+    const poll = () => {
+      if (settled) return;
+      const os = currentSdk();
+      if (os?.init) { finish(); return; }
+      if (Date.now() - queuedAt >= SDK_LOAD_TIMEOUT_MS) { finish(new Error("timeout")); return; }
+      timer = window.setTimeout(poll, 60);
     };
-    const onError = () => finish(new Error("Push library could not be downloaded."));
-    tag.addEventListener("load", onLoad, { once: true });
     tag.addEventListener("error", onError, { once: true });
-    timer = window.setTimeout(() => finish(new Error("Push library download timed out.")), SDK_LOAD_TIMEOUT_MS);
     if (!existing) {
       tag.src = PAGE_SDK_URL;
       tag.async = true;
-      tag.defer = true;
       tag.dataset.onesignal = "v16";
       document.head.appendChild(tag);
     }
+    poll();
   });
   scriptPromise = promise;
   return promise;
@@ -109,12 +138,13 @@ export function initOneSignal(): Promise<boolean> {
       if (isNativeWrapper()) return false;
     } catch { /* fall through to web path */ }
     const appId = oneSignalAppId();
-    if (!appId || typeof window === "undefined") return false;
-    if (!pushSupported()) return false;
+    if (!appId || typeof window === "undefined") { lastInitError = "the push app id is missing"; return false; }
+    if (!pushSupported()) { lastInitError = "this browser has no push support (HTTPS, service worker and PushManager are required)"; return false; }
+    lastInitError = null;
     try {
       await loadPageSdk();
-      const OS = window.OneSignal;
-      if (!OS?.init) return false;
+      const OS = currentSdk();
+      if (!OS?.init) { lastInitError = "the OneSignal library loaded without an init function"; return false; }
       const safariWebId = oneSignalSafariWebId() || undefined;
       await OS.init({
         appId,
@@ -126,8 +156,15 @@ export function initOneSignal(): Promise<boolean> {
         welcomeNotification: { disable: true },
       });
       return true;
-    } catch {
+    } catch (e) {
       // Graceful: portal + local reminders keep working; OneSignal stays off.
+      // Keep the reason (safe, public SDK text) so the user is not told to
+      // "check your connection" when the domain or app id is the real problem.
+      const raw = e instanceof Error ? e.message : String(e ?? "");
+      lastInitError =
+        raw === "blocked" ? "cdn.onesignal.com is blocked on this device"
+        : raw === "timeout" ? "cdn.onesignal.com did not finish loading (network or content blocker)"
+        : raw.trim() || "unknown SDK error";
       return false;
     }
   })().catch(() => false);
@@ -168,8 +205,8 @@ export async function oneSignalStatus(): Promise<OneSignalStatus> {
   const permission: NotificationPermission = "Notification" in window ? Notification.permission : "default";
   try {
     const ready = await initOneSignal();
-    if (!ready || !window.OneSignal) return { configured, supported: true, permission, subscribed: false, externalId: null };
-    const OS = window.OneSignal;
+    const OS = currentSdk();
+    if (!ready || !OS) return { configured, supported: true, permission, subscribed: false, externalId: null };
     const subId = await resolveValue<string | null>(OS.User?.PushSubscription?.id, null);
     const optedIn = await resolveValue<boolean>(OS.User?.PushSubscription?.optedIn, false);
     const externalId = await resolveValue<string | null>(OS.login?.externalId ?? OS.User?.externalId, null);
@@ -183,8 +220,8 @@ export async function oneSignalStatus(): Promise<OneSignalStatus> {
 export async function oneSignalLogin(userId: string, tags?: Record<string, string>): Promise<void> {
   if (!userId || !isOneSignalConfigured()) return;
   const ready = await initOneSignal();
-  if (!ready || !window.OneSignal) return;
-  const OS = window.OneSignal;
+  const OS = currentSdk();
+  if (!ready || !OS) return;
   try {
     await OS.login(userId);
   } catch { /* identity sync is best-effort; in-app records remain authoritative */ }
@@ -206,7 +243,8 @@ export async function oneSignalLogin(userId: string, tags?: Record<string, strin
 export async function oneSignalSetTags(tags: Record<string, string>): Promise<void> {
   if (!isOneSignalConfigured()) return;
   const ready = await initOneSignal();
-  if (!ready || !window.OneSignal?.User?.addTags) return;
+  const OS = currentSdk();
+  if (!ready || !OS?.User?.addTags) return;
   const clean: Record<string, string> = {};
   for (const [k, v] of Object.entries(tags)) {
     const key = String(k).slice(0, 64);
@@ -214,13 +252,14 @@ export async function oneSignalSetTags(tags: Record<string, string>): Promise<vo
     if (key && val) clean[key] = val;
   }
   if (!Object.keys(clean).length) return;
-  try { await window.OneSignal.User.addTags(clean); } catch { /* non-fatal */ }
+  try { await OS.User.addTags(clean); } catch { /* non-fatal */ }
 }
 
 /** Unlink identity on sign-out WITHOUT deleting the browser subscription. */
 export async function oneSignalLogout(): Promise<void> {
-  if (!isOneSignalConfigured() || !window.OneSignal) return;
-  try { await window.OneSignal.logout(); } catch { /* best-effort */ }
+  const OS = currentSdk();
+  if (!isOneSignalConfigured() || !OS) return;
+  try { await OS.logout(); } catch { /* best-effort */ }
 }
 
 /** Explicit opt-in from a user gesture. Respects prior deny; never auto-prompts. */
@@ -237,11 +276,12 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
     return { subscribed: false, message: "Notifications are blocked for this site. Allow them in your browser / device settings, then retry." };
   }
   const ready = await initOneSignal();
-  if (!ready || !window.OneSignal) {
-    return { subscribed: false, message: "The push library could not start on this device. Check your connection or a content blocker, reload the page, then press Enable again." };
+  const OS = currentSdk();
+  if (!ready || !OS) {
+    const why = lastInitError ? ` Reason: ${lastInitError}.` : "";
+    return { subscribed: false, message: `Push could not start on this device.${why} If it names cdn.onesignal.com, allow that domain (turn off any ad/tracker blocker or DNS filter for this site), reload, then press Enable again.` };
   }
   try {
-    const OS = window.OneSignal;
     let subscription = OS?.User?.PushSubscription;
     // Some v16 builds only expose the push-subscription object after the
     // notification gate has been asked once, so ask through it and re-read
@@ -274,8 +314,9 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
 }
 
 export async function oneSignalOptOut(): Promise<void> {
-  if (!window.OneSignal) return;
-  try { await window.OneSignal.User?.PushSubscription?.optOut?.(); } catch { /* best-effort */ }
+  const OS = currentSdk();
+  if (!OS) return;
+  try { await OS.User?.PushSubscription?.optOut?.(); } catch { /* best-effort */ }
 }
 
 /** Foreground click routing: OneSignal notification tap inside the running app.
@@ -284,8 +325,8 @@ export async function oneSignalOptOut(): Promise<void> {
 export async function initOneSignalClickRouting(): Promise<void> {
   try {
     const ready = await initOneSignal();
-    if (!ready || !window.OneSignal) return;
-    const OS = window.OneSignal;
+    const OS = currentSdk();
+    if (!ready || !OS) return;
     const handler = (event: any) => {
       try {
         const url = event?.notification?.additionalData?.target_url

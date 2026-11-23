@@ -780,3 +780,23 @@ reads.
   notification gate, for v16 builds that only expose it afterwards. Typecheck
   passes; a real device must press "Finish setup"/"Enable" on the production
   origin once before any push can be delivered (still zero OneSignal players).
+
+- OneSignal SDK loader race repaired (2026-11-23, `src/lib/onesignal.ts`).
+  Pressing "Finish setup" answered "The push library could not start on this
+  device" every time. Cause: `https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js`
+  is only a ~590-byte loader — it appends the real ~150 KB
+  `OneSignalSDK.page.es6.js` as a separate script — so the loader's own `load`
+  event fires while `window.OneSignal` is still undefined. `loadPageSdk()` read
+  that event as "library started" and rejected immediately, so `initOneSignal()`
+  never reached `OS.init()`. It now treats `load` as "loader arrived" only and
+  resolves when the SDK instance actually appears, via `window.OneSignalDeferred`
+  plus a 60 ms poll bounded by the existing 12 s timeout; the instance from the
+  deferred callback is kept in `sdkInstance` and read through `currentSdk()`
+  everywhere (`oneSignalStatus`, login, tags, logout, opt-in/out, click routing)
+  because some mobile browsers attach `window.OneSignal` a tick later.
+  A blocked CDN request (`error` event) and a stalled download (timeout) still
+  reset `scriptPromise` so retrying genuinely retries. `initOneSignal()` now
+  records why it failed (`lastInitError`: blocked CDN, timeout, missing push
+  support, or the SDK's own public message — e.g. a domain/app-id mismatch) and
+  Enable reports that reason instead of blaming the connection. Typecheck and
+  `build:sites` pass; device delivery still needs one real "Finish setup" press.
