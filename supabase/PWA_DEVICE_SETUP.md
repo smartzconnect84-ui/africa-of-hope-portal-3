@@ -23,7 +23,7 @@ Every signed-in role can use Profile → Device & updates. Notification access i
 ## Real-device acceptance checks (pending)
 
 1. On Android, installed iPhone/iPad, and desktop: install, launch, resize/rotate, verify offline banner, navigate offline and reconnect.
-2. Keep version A open, deploy a changed `/sw.js` (increment VERSION). Resume app or Profile → Device & updates → Check for updates. Save work and press Refresh. Confirm new version loads once; dismiss must not reload. Test offline activation error/retry.
+2. Keep version A open, deploy a changed build (`npm run build` stamps a new `VERSION` into `dist/sw.js` via `scripts/stamp-service-worker.mjs`; no manual bump needed). Resume app or Profile → Device & updates → Check for updates. Save work and press Refresh. Confirm new version loads once; dismiss must not reload. Test offline activation error/retry.
 3. Test default, granted and denied permission states; verify no permission prompt on render. Enable, send local test, reload and verify registration restored; pause and verify disabled backend row.
 4. With a real test account, queue an eligible reminder, run authorized cron, confirm receipt while the PWA is closed and tap opens a same-origin URL. Repeat for denied/paused permissions and multiple devices. Verify expired endpoints are removed and unauthenticated worker calls return 401.
 

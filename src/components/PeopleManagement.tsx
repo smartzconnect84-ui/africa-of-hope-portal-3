@@ -422,7 +422,7 @@ function AddStaffDialog({
           <DialogDescription>Create a staff account and assign a role. One email = one account (User, Admin or Staff). Email addresses can only be changed at the user's request via the school office.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Full name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} data-component-id="add-staff-name" />
@@ -433,7 +433,7 @@ function AddStaffDialog({
               <p className="mt-1 text-xs text-slate-500">One email = one account across User, Admin and Staff.</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Phone</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} data-component-id="add-staff-phone" />

@@ -24,12 +24,23 @@ export interface ChatMessage {
   duration_seconds: number | null;
   created_at: string;
   seen_at: string | null;
+  reply_to: string | null;
+  edited_at: string | null;
+  deleted_at: string | null;
+  pinned_at: string | null;
+  pinned_by: string | null;
+  starred: boolean;
+  scheduled_at: string | null;
+  expires_at: string | null;
+  reactions: { emoji: string; user_ids: string[] }[];
 }
 
 export interface ChatGroup {
   id: string;
   name: string;
   description: string;
+  avatar_url: string | null;
+  background_url: string | null;
   created_by: string;
   created_at: string;
   /** When the signed-in member last opened this group; drives the unread badge. */
@@ -50,7 +61,10 @@ export interface ChatConversation {
   lastAt: string;
   unread: number;
   memberCount?: number;
+  memberIds?: string[];
   avatarUrl?: string;
+  backgroundUrl?: string;
+  online?: boolean;
 }
 
 type Row = Record<string, unknown>;
@@ -72,6 +86,15 @@ function mapMessage(row: Row): ChatMessage {
     duration_seconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
     created_at: str(row.created_at),
     seen_at: row.seen_at ? str(row.seen_at) : null,
+    reply_to: row.reply_to ? str(row.reply_to) : null,
+    edited_at: row.edited_at ? str(row.edited_at) : null,
+    deleted_at: row.deleted_at ? str(row.deleted_at) : null,
+    pinned_at: row.pinned_at ? str(row.pinned_at) : null,
+    pinned_by: row.pinned_by ? str(row.pinned_by) : null,
+    starred: row.starred === true,
+    scheduled_at: row.scheduled_at ? str(row.scheduled_at) : null,
+    expires_at: row.expires_at ? str(row.expires_at) : null,
+    reactions: [],
   };
 }
 
@@ -146,6 +169,8 @@ export async function loadMyGroups(meId: string): Promise<ChatGroup[]> {
       id: str(g.id),
       name: str(g.name),
       description: str(g.description),
+      avatar_url: g.avatar_url ? str(g.avatar_url) : null,
+      background_url: g.background_url ? str(g.background_url) : null,
       created_by: str(g.created_by),
       created_at: str(g.created_at),
       lastReadAt: lastReadByGroup.get(str(g.id)) || str(g.created_at),
@@ -191,6 +216,9 @@ export interface OutgoingMessage {
   attachment_type?: ChatAttachmentType | null;
   attachment_name?: string | null;
   duration_seconds?: number | null;
+  reply_to?: string | null;
+  scheduled_at?: string | null;
+  expires_at?: string | null;
 }
 
 export async function sendDirectMessage(
@@ -208,6 +236,9 @@ export async function sendDirectMessage(
       attachment_type: payload.attachment_type ?? null,
       attachment_name: payload.attachment_name ?? null,
       duration_seconds: payload.duration_seconds ?? null,
+      reply_to: payload.reply_to ?? null,
+      scheduled_at: payload.scheduled_at ?? null,
+      expires_at: payload.expires_at ?? null,
     })
     .select("*")
     .single();
@@ -230,11 +261,275 @@ export async function sendGroupMessage(
       attachment_type: payload.attachment_type ?? null,
       attachment_name: payload.attachment_name ?? null,
       duration_seconds: payload.duration_seconds ?? null,
+      reply_to: payload.reply_to ?? null,
+      scheduled_at: payload.scheduled_at ?? null,
+      expires_at: payload.expires_at ?? null,
     })
     .select("*")
     .single();
   if (error) throw error;
   return mapMessage(data as Row);
+}
+
+export async function editMessage(
+  kind: "dm" | "group",
+  id: string,
+  body: string,
+): Promise<void> {
+  const table = kind === "dm" ? "direct_messages" : "group_messages";
+  const { error } = await supabase
+    .from(table)
+    .update({ body: body.slice(0, 2000), edited_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteMessage(kind: "dm" | "group", id: string): Promise<void> {
+  const table = kind === "dm" ? "direct_messages" : "group_messages";
+  const { error } = await supabase
+    .from(table)
+    .update({ deleted_at: new Date().toISOString(), body: "" })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function toggleStarred(kind: "dm" | "group", id: string, star: boolean): Promise<void> {
+  const table = kind === "dm" ? "direct_messages" : "group_messages";
+  const { error } = await supabase.from(table).update({ starred: star }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateLastSeen(userId: string): Promise<void> {
+  await supabase.from("profiles").update({ last_seen_at: new Date().toISOString(), is_online: true }).eq("id", userId);
+}
+
+export async function saveDraft(userId: string, threadKey: string, body: string): Promise<void> {
+  if (!body.trim()) {
+    await supabase.from("chat_drafts").delete().eq("user_id", userId).eq("thread_key", threadKey);
+    return;
+  }
+  await supabase
+    .from("chat_drafts")
+    .upsert({ user_id: userId, thread_key: threadKey, body, updated_at: new Date().toISOString() }, { onConflict: "user_id,thread_key" });
+}
+
+export async function loadDraft(userId: string, threadKey: string): Promise<string> {
+  const { data } = await supabase.from("chat_drafts").select("body").eq("user_id", userId).eq("thread_key", threadKey).maybeSingle();
+  return (data as { body?: string } | null)?.body ?? "";
+}
+
+export async function createPoll(input: {
+  groupId?: string | null;
+  dmThread?: string | null;
+  creatorId: string;
+  question: string;
+  options: string[];
+  multiple?: boolean;
+  expiresAt?: string | null;
+}): Promise<void> {
+  const { error } = await supabase.from("chat_polls").insert({
+    group_id: input.groupId ?? null,
+    dm_thread: input.dmThread ?? null,
+    creator_id: input.creatorId,
+    question: input.question,
+    options: input.options.map((o) => ({ text: o })),
+    multiple: input.multiple ?? false,
+    expires_at: input.expiresAt ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function votePoll(pollId: string, userId: string, optionIndex: number, multiple = false): Promise<void> {
+  if (!multiple) {
+    // Single-choice: replace any prior vote by this user.
+    await supabase.from("chat_poll_votes").delete().eq("poll_id", pollId).eq("user_id", userId);
+    const { error } = await supabase.from("chat_poll_votes").insert({ poll_id: pollId, user_id: userId, option_index: optionIndex });
+    if (error && !/duplicate|unique/i.test(error.message)) throw error;
+    return;
+  }
+  // Multiple-choice: toggle this option (vote once per option, never duplicate).
+  const { data: existing } = await supabase
+    .from("chat_poll_votes")
+    .select("poll_id")
+    .eq("poll_id", pollId)
+    .eq("user_id", userId)
+    .eq("option_index", optionIndex)
+    .maybeSingle();
+  if (existing) {
+    const { error } = await supabase
+      .from("chat_poll_votes")
+      .delete()
+      .eq("poll_id", pollId)
+      .eq("user_id", userId)
+      .eq("option_index", optionIndex);
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase.from("chat_poll_votes").insert({ poll_id: pollId, user_id: userId, option_index: optionIndex });
+  if (error && !/duplicate|unique/i.test(error.message)) throw error;
+}
+
+export interface ChatPoll {
+  id: string;
+  group_id: string | null;
+  dm_thread: string | null;
+  creator_id: string;
+  question: string;
+  options: { text: string }[];
+  multiple: boolean;
+  expires_at: string | null;
+  created_at: string;
+}
+
+function mapPoll(row: Row): ChatPoll {
+  const opts = Array.isArray(row.options) ? (row.options as unknown[]) : [];
+  return {
+    id: str(row.id),
+    group_id: row.group_id ? str(row.group_id) : null,
+    dm_thread: row.dm_thread ? str(row.dm_thread) : null,
+    creator_id: str(row.creator_id),
+    question: str(row.question),
+    options: opts.map((o) => ({ text: typeof o === "object" && o ? str((o as Row).text) : String(o) })),
+    multiple: row.multiple === true,
+    expires_at: row.expires_at ? str(row.expires_at) : null,
+    created_at: str(row.created_at),
+  };
+}
+
+export async function loadPolls(groupId?: string | null, dmThread?: string | null): Promise<ChatPoll[]> {
+  let q = supabase.from("chat_polls").select("*").order("created_at", { ascending: false }).limit(50);
+  if (groupId) q = q.eq("group_id", groupId);
+  else if (dmThread) q = q.eq("dm_thread", dmThread);
+  const { data, error } = await q;
+  if (error) throw error;
+  return ((data ?? []) as Row[]).map(mapPoll);
+}
+
+export async function loadPollVotes(pollId: string): Promise<{ user_id: string; option_index: number }[]> {
+  const { data, error } = await supabase.from("chat_poll_votes").select("user_id, option_index").eq("poll_id", pollId);
+  if (error) throw error;
+  return ((data ?? []) as Row[]).map((r) => ({ user_id: str(r.user_id), option_index: Number(r.option_index) }));
+}
+
+export async function sendGroupInvite(groupId: string, inviterId: string, inviteeId: string): Promise<void> {
+  const { error } = await supabase.from("chat_group_invites").insert({ group_id: groupId, inviter_id: inviterId, invitee_id: inviteeId });
+  if (error) throw error;
+}
+
+export async function requestJoinGroup(groupId: string, userId: string, message?: string): Promise<void> {
+  const { error } = await supabase.from("chat_group_join_requests").insert({ group_id: groupId, user_id: userId, message: message ?? null });
+  if (error) throw error;
+}
+
+export interface ChatJoinRequest {
+  id: string;
+  group_id: string;
+  user_id: string;
+  message: string | null;
+  status: string;
+  created_at: string;
+}
+
+export async function loadJoinRequests(groupId: string): Promise<ChatJoinRequest[]> {
+  const { data, error } = await supabase
+    .from("chat_group_join_requests")
+    .select("*")
+    .eq("group_id", groupId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return ((data ?? []) as Row[]).map((r) => ({
+    id: str(r.id),
+    group_id: str(r.group_id),
+    user_id: str(r.user_id),
+    message: r.message ? str(r.message) : null,
+    status: str(r.status),
+    created_at: str(r.created_at),
+  }));
+}
+
+export async function approveJoinRequest(requestId: string, groupId: string, userId: string): Promise<void> {
+  const { error: memberErr } = await supabase.from("chat_group_members").insert({ group_id: groupId, user_id: userId, member_role: "member" });
+  if (memberErr && !/duplicate|unique/i.test(memberErr.message)) throw memberErr;
+  const { error } = await supabase.from("chat_group_join_requests").update({ status: "approved" }).eq("id", requestId);
+  if (error) throw error;
+}
+
+export async function rejectJoinRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.from("chat_group_join_requests").update({ status: "rejected" }).eq("id", requestId);
+  if (error) throw error;
+}
+
+export async function updateGroupPermissions(groupId: string, permissions: Record<string, unknown>, joinPolicy: string): Promise<void> {
+  const { error } = await supabase.from("chat_groups").update({ permissions, join_policy: joinPolicy }).eq("id", groupId);
+  if (error) throw error;
+}
+
+export async function renameGroup(groupId: string, name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Group name is required");
+  const { error } = await supabase.from("chat_groups").update({ name: trimmed }).eq("id", groupId);
+  if (error) throw error;
+}
+
+export async function pinMessage(kind: "dm" | "group", id: string, userId: string, pin: boolean): Promise<void> {
+  const table = kind === "dm" ? "direct_messages" : "group_messages";
+  const { error } = await supabase
+    .from(table)
+    .update({ pinned_at: pin ? new Date().toISOString() : null, pinned_by: pin ? userId : null })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function loadReactions(
+  messageIds: string[],
+  kind: "dm" | "group",
+): Promise<Record<string, { emoji: string; user_ids: string[] }[]>> {
+  if (messageIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("message_reactions")
+    .select("message_id, emoji, user_id")
+    .eq("message_kind", kind)
+    .in("message_id", messageIds);
+  if (error) throw error;
+  const out: Record<string, { emoji: string; user_ids: string[] }[]> = {};
+  for (const r of (data ?? []) as Row[]) {
+    const mid = str(r.message_id);
+    const emoji = str(r.emoji);
+    const uid = str(r.user_id);
+    if (!out[mid]) out[mid] = [];
+    let entry = out[mid].find((e) => e.emoji === emoji);
+    if (!entry) {
+      entry = { emoji, user_ids: [] };
+      out[mid].push(entry);
+    }
+    entry.user_ids.push(uid);
+  }
+  return out;
+}
+
+export async function toggleReaction(
+  messageId: string,
+  kind: "dm" | "group",
+  userId: string,
+  emoji: string,
+  add: boolean,
+): Promise<void> {
+  if (add) {
+    const { error } = await supabase
+      .from("message_reactions")
+      .insert({ message_id: messageId, message_kind: kind, user_id: userId, emoji });
+    if (error && !/duplicate|unique/i.test(error.message)) throw error;
+  } else {
+    const { error } = await supabase
+      .from("message_reactions")
+      .delete()
+      .eq("message_id", messageId)
+      .eq("message_kind", kind)
+      .eq("user_id", userId)
+      .eq("emoji", emoji);
+    if (error) throw error;
+  }
 }
 
 export async function markDirectSeen(meId: string, peerId: string) {
@@ -254,6 +549,49 @@ export async function markGroupRead(groupId: string, meId: string) {
     .eq("group_id", groupId)
     .eq("user_id", meId);
   if (error) throw error;
+}
+
+export async function markGroupUnread(groupId: string, meId: string) {
+  const { error } = await supabase
+    .from("chat_group_members")
+    .update({ last_read_at: "1970-01-01T00:00:00.000Z" })
+    .eq("group_id", groupId)
+    .eq("user_id", meId);
+  if (error) throw error;
+}
+
+export async function markDirectRead(meId: string, peerId: string) {
+  const { error } = await supabase
+    .from("direct_messages")
+    .update({ seen_at: new Date().toISOString() })
+    .eq("receiver_id", meId)
+    .eq("sender_id", peerId)
+    .is("seen_at", null);
+  if (error) throw error;
+}
+
+export async function markDirectUnread(meId: string, peerId: string) {
+  const { error } = await supabase
+    .from("direct_messages")
+    .update({ seen_at: null })
+    .eq("receiver_id", meId)
+    .eq("sender_id", peerId);
+  if (error) throw error;
+}
+
+export async function clearConversation(kind: "dm" | "group", conversationId: string, meId: string): Promise<void> {
+  const table = kind === "dm" ? "direct_messages" : "group_messages";
+  const column = kind === "dm" ? "sender_id,receiver_id" : "group_id";
+  if (kind === "dm") {
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .or(`and(sender_id.eq.${meId},receiver_id.eq.${conversationId}),and(sender_id.eq.${conversationId},receiver_id.eq.${meId})`);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from(table).delete().eq("group_id", conversationId);
+    if (error) throw error;
+  }
 }
 
 export async function createChatGroup(input: {
@@ -309,6 +647,8 @@ export async function createChatGroup(input: {
     id: str(group.id),
     name: str(group.name),
     description: str(group.description),
+    avatar_url: null,
+    background_url: null,
     created_by: str(group.created_by),
     created_at: str(group.created_at),
     lastReadAt: str(group.created_at),
@@ -334,6 +674,50 @@ export async function leaveChatGroup(groupId: string, meId: string) {
     .eq("group_id", groupId)
     .eq("user_id", meId);
   if (error) throw error;
+}
+
+export async function uploadGroupPhoto(groupId: string, file: File): Promise<string> {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-80) || "photo";
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const userId = (await supabase.auth.getUser()).data.user?.id ?? "anon";
+  const fullPath = `${userId}/group-${groupId}-${unique}-${safeName}`;
+  const { error } = await supabase.storage.from("avatars").upload(fullPath, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("avatars").getPublicUrl(fullPath);
+  const url = data?.publicUrl;
+  if (!url) throw new Error("Could not get photo URL.");
+  const { error: updateError } = await supabase
+    .from("chat_groups")
+    .update({ avatar_url: url })
+    .eq("id", groupId);
+  if (updateError) throw updateError;
+  return url;
+}
+
+export async function uploadGroupBackground(groupId: string, file: File): Promise<string> {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-80) || "photo";
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const userId = (await supabase.auth.getUser()).data.user?.id ?? "anon";
+  const fullPath = `${userId}/chat-bg-${groupId}-${unique}-${safeName}`;
+  const { error } = await supabase.storage.from("site-assets").upload(fullPath, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("site-assets").getPublicUrl(fullPath);
+  const url = data?.publicUrl;
+  if (!url) throw new Error("Could not get background URL.");
+  const { error: updateError } = await supabase
+    .from("chat_groups")
+    .update({ background_url: url })
+    .eq("id", groupId);
+  if (updateError) throw updateError;
+  return url;
 }
 
 export async function renameChatGroup(groupId: string, name: string, description: string) {
@@ -542,8 +926,16 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
         current.kind === "dm"
           ? await loadDirectMessages(meId, current.id)
           : await loadGroupMessages(current.id);
-      rowsRef.current = rows;
-      setMessages(rows);
+      const reactionMap = await loadReactions(
+        rows.map((m) => m.id),
+        current.kind === "dm" ? "dm" : "group",
+      );
+      const withReactions = rows.map((m) => ({
+        ...m,
+        reactions: reactionMap[m.id] ?? [],
+      }));
+      rowsRef.current = withReactions;
+      setMessages(withReactions);
     } catch (err) {
       setError(chatErrorMessage(err, "This conversation could not be loaded."));
     } finally {
@@ -582,6 +974,32 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
       )
       .subscribe();
 
+    const reactionsCh = supabase
+      .channel(`chat-reactions:${key}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "message_reactions" },
+        async () => {
+          try {
+            const current = targetRef.current;
+            if (!current || rowsRef.current.length === 0) return;
+            const rmap = await loadReactions(
+              rowsRef.current.map((m) => m.id),
+              current.kind === "dm" ? "dm" : "group",
+            );
+            const updated = rowsRef.current.map((m) => ({
+              ...m,
+              reactions: rmap[m.id] ?? [],
+            }));
+            rowsRef.current = updated;
+            setMessages(updated);
+          } catch {
+            /* best effort */
+          }
+        },
+      )
+      .subscribe();
+
     const broadcast = supabase
       .channel(`chat-live:${key}`, { config: { broadcast: { self: false } } })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
@@ -599,6 +1017,11 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
       setPeerTyping(false);
       try {
         void ch.unsubscribe();
+      } catch {
+        /* noop */
+      }
+      try {
+        void reactionsCh.unsubscribe();
       } catch {
         /* noop */
       }
@@ -660,7 +1083,7 @@ export function useChatThread(meId: string | undefined, target: ChatThreadTarget
 /** Aggregate the conversation list (DMs + groups) with unread counts. */
 export function useConversations(
   meId: string | undefined,
-  users: { id: string; name: string; role: string; avatarUrl?: string }[],
+  users: { id: string; name: string; role: string; avatarUrl?: string; isOnline?: boolean }[],
   tick: number,
   navigateToMessages = false,
 ) {
@@ -715,6 +1138,7 @@ export function useConversations(
         name: user?.name ?? "Portal member",
         role: user?.role,
         avatarUrl: user?.avatarUrl,
+        online: user?.isOnline === true,
         lastBody: body,
         lastAt: str(row.created_at),
         unread,
@@ -746,10 +1170,13 @@ export function useConversations(
       kind: "group" as const,
       groupId: group.id,
       name: group.name,
+      avatarUrl: group.avatar_url ?? undefined,
+      backgroundUrl: group.background_url ?? undefined,
       lastBody: body,
       lastAt: latest ? str(latest.created_at) : group.created_at,
       unread,
       memberCount: group.memberIds.length,
+      memberIds: group.memberIds,
     } satisfies ChatConversation;
   });
 

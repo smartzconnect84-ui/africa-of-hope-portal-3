@@ -107,7 +107,7 @@ export default function AdminOpportunities() {
             <h3 className="font-bold text-emerald-950">{editing ? "Edit vacancy" : "Add vacancy"}</h3>
             <div className="mt-3 space-y-3">
               <div><label className={labelCls} htmlFor="adm-vac-title">Title</label><input id="adm-vac-title" className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><label className={labelCls} htmlFor="adm-vac-dept">Department</label><input id="adm-vac-dept" className={inputCls} value={form.dept} onChange={(e) => setForm({ ...form, dept: e.target.value })} /></div>
                 <div><label className={labelCls} htmlFor="adm-vac-loc">Location</label><input id="adm-vac-loc" className={inputCls} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
               </div>

@@ -985,6 +985,7 @@ export default function AuthPortal({
   const [done, setDone] = useState<string | null>(null);
 
   const auth = state.websiteSettings.auth;
+  const bgImage = state.websiteSettings.auth.authBackgroundImage || "";
   const heading =
     done ? "Confirm your email" : tab === "signin" ? (auth.signinTitle || "Welcome to our School Portal") : (auth.registerTitle || "Create your account");
   const sub = done
@@ -996,7 +997,13 @@ export default function AuthPortal({
         : "Self-registration is currently closed. Please contact the admissions office.";
 
   return (
-    <div className="grid min-h-[100dvh] w-full max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden bg-[#f6f8f7] lg:grid-cols-2">
+    <div className="relative grid min-h-[100dvh] w-full max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden bg-[#f6f8f7] lg:grid-cols-2">
+      {bgImage && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
+          <img src={bgImage} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-white/40 backdrop-blur-sm" />
+        </div>
+      )}
       <Showcase />
 
       <main className="flex min-h-[100dvh] min-w-0 flex-col px-4 py-6 sm:px-8">
@@ -1028,7 +1035,7 @@ export default function AuthPortal({
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
             </div>
 
-            <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-b from-amber-50/70 via-white to-white p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
+            <div className="rounded-3xl border-2 border-[#D4AF37] bg-white/70 backdrop-blur-md p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
               {!isSupabaseConfigured() && (
                 <div role="alert" className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left">
                   <p className="text-sm font-semibold text-rose-800">Portal sign-in is offline — the school database is not connected in this build.</p>

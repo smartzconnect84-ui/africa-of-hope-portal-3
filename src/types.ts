@@ -46,6 +46,9 @@ export interface User {
   /** Highest completed schooling, captured at registration. */
   educationLevel?: string;
   avatarUrl?: string;
+  lastSeenAt?: string;
+  schoolPolicyAcceptedAt?: string;
+  isOnline?: boolean;
   bio?: string;
   address?: string;
   dateOfBirth?: string;
@@ -75,6 +78,12 @@ export interface Program {
   entryRequirements: string;
   modules: Module[];
   imageUrl?: string;
+  /** Whether optional self-paced learning is enabled for this program. */
+  selfPacedEnabled?: boolean;
+  /** Whether student self-paced participation requires admin approval. */
+  selfPacedRequiresApproval?: boolean;
+  /** Minimum completion percent for a week to count as complete. */
+  selfPacedMinCompletionPercent?: number;
   /** Full-setup study plan line, e.g. delivery + schedule summary chosen in Program Builder. */
   studyPlan?: string;
   /** Explicit backend publication state; legacy records without a flag remain public. */
@@ -90,6 +99,7 @@ export interface Cohort {
   endDate: string;
   room: string;
   studentIds: string[];
+  avatarUrl?: string;
 }
 
 export interface AttendanceRecord {

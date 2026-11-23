@@ -8,6 +8,7 @@ import {
   FileText,
   Pencil,
   LineChart,
+  Mail,
   Printer,
   Search,
   ShieldCheck,
@@ -40,15 +41,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
+import { submitFileForReview, listSubmissions, reviewSubmission, publishApprovedSubmission, type FileSubmission } from "@/lib/studyMaterials";
+import { emailOutboxApi, type EmailOutboxRow } from "@/lib/emailOutbox";
 import EnquiryInbox from "./portal/EnquiryInbox";
 import OneSignalAdminPanel from "./admin/OneSignalAdminPanel";
 import EngagementInbox from "./portal/EngagementInbox";
 import { MessageCircle, HeartHandshake } from "lucide-react";
 
-type HubTab = "resources" | "notifications" | "timetable" | "analytics" | "audit" | "enquiries" | "support";
+type HubTab = "resources" | "submissions" | "emailqueue" | "notifications" | "timetable" | "analytics" | "audit" | "enquiries" | "support";
 
 const tabs: { key: HubTab; label: string; icon: typeof FileText }[] = [
   { key: "resources", label: "Resources", icon: FileText },
+  { key: "submissions", label: "Submissions", icon: ShieldCheck },
+  { key: "emailqueue", label: "Email queue", icon: Mail },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "timetable", label: "Timetable", icon: CalendarDays },
   { key: "analytics", label: "Analytics", icon: LineChart },
@@ -104,6 +109,9 @@ export default function OperationsHub({ personalOnly = false }: { personalOnly?:
   // The personal view must never inherit a previously selected staff tab.
   const tab = personalOnly ? "resources" : selectedTab;
   const [documents, setDocuments] = useState<ProfileDocument[]>([]);
+  const [submissions, setSubmissions] = useState<FileSubmission[]>([]);
+  const [emailRows, setEmailRows] = useState<EmailOutboxRow[]>([]);
+  const [emailStatus, setEmailStatus] = useState<{ configured: boolean; counts?: Record<string, number> } | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<DocumentCategory>("Other");
   const [busy, setBusy] = useState(false);
@@ -124,6 +132,24 @@ export default function OperationsHub({ personalOnly = false }: { personalOnly?:
     void listDocuments(currentUser.id).then((items) => { if (active) setDocuments(items); })
       .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : "Could not load resources."); })
       .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [currentUser?.id, reload]);
+
+  useEffect(() => {
+    if (tab !== "emailqueue") return;
+    let active = true;
+    void Promise.all([emailOutboxApi.recent(50), emailOutboxApi.status()])
+      .then(([rows, st]) => { if (active) { setEmailRows(rows); setEmailStatus(st); } })
+      .catch(() => { /* ignore */ });
+    return () => { active = false; };
+  }, [tab, reload]);
+
+  useEffect(() => {
+    let active = true;
+    if (!currentUser) return;
+    void listSubmissions()
+      .then((items) => { if (active) setSubmissions(items); })
+      .catch(() => { /* ignore */ });
     return () => { active = false; };
   }, [currentUser?.id, reload]);
 
@@ -194,6 +220,55 @@ export default function OperationsHub({ personalOnly = false }: { personalOnly?:
     } finally { setBusy(false); }
   }
 
+  async function handleSubmit(doc: ProfileDocument) {
+    if (!currentUser || busy) return;
+    setBusy(true);
+    try {
+      await submitFileForReview({
+        submitterId: currentUser.id,
+        filePath: doc.path,
+        fileName: doc.name,
+        category: doc.category,
+        sizeBytes: doc.size,
+        targetAudience: "all",
+      });
+      setReload((v) => v + 1);
+      toast.success("Submitted for approval.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not submit.");
+    } finally { setBusy(false); }
+  }
+
+  async function handleApprove(sub: FileSubmission) {
+    if (!currentUser || busy) return;
+    setBusy(true);
+    try {
+      await reviewSubmission(sub.id, currentUser.id, "approved");
+      await publishApprovedSubmission(sub, {
+        title: sub.file_name,
+        materialType: sub.category || "study_material",
+        audience: sub.target_audience,
+        createdBy: currentUser.id,
+      });
+      setReload((v) => v + 1);
+      toast.success("Approved and published as study material.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not approve.");
+    } finally { setBusy(false); }
+  }
+
+  async function handleReject(sub: FileSubmission) {
+    if (!currentUser || busy) return;
+    setBusy(true);
+    try {
+      await reviewSubmission(sub.id, currentUser.id, "rejected");
+      setReload((v) => v + 1);
+      toast.success("Rejected.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not reject.");
+    } finally { setBusy(false); }
+  }
+
   async function saveEdit() {
     if (!currentUser || !editTarget || busy) return;
     setBusy(true);
@@ -236,7 +311,7 @@ export default function OperationsHub({ personalOnly = false }: { personalOnly?:
             </div>
           </div>
           <div className="relative mt-5"><Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search resources" className="pl-9" /></div>
-          {loading ? <p role="status" className="mt-4 text-sm text-slate-600">Loading private files…</p> : loadError ? <div role="alert" className="mt-4 text-sm text-rose-700">{loadError}<Button variant="outline" className="ml-2" onClick={() => setReload((value) => value + 1)}>Retry</Button></div> : filteredDocuments.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{filteredDocuments.map((doc) => <div key={doc.path} className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-3"><FileText className="h-5 w-5 shrink-0 text-emerald-700" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-800">{doc.name}</p><p className="text-xs text-slate-500">{doc.category} · {formatBytes(doc.size)}</p></div><Button size="icon" variant="ghost" aria-label={`Download ${doc.name}`} onClick={() => void openDocument(doc, true)}><Download /></Button>{canManageResources && <><Button size="icon" variant="ghost" disabled={busy} aria-label={`Edit ${doc.name}`} onClick={() => { setEditTarget(doc); setEditName(doc.name); setEditCategory(doc.category); }}><Pencil /></Button><Button size="icon" variant="ghost" disabled={busy} aria-label={`Remove ${doc.name}`} onClick={() => void removeDocument(doc)}><X /></Button></>}</div>)}</div> : <div className="mt-5"><EmptyState icon={FileText} title="No resources found" hint="Upload a PDF, image or Word document to get started." /></div>}
+          {loading ? <p role="status" className="mt-4 text-sm text-slate-600">Loading private files…</p> : loadError ? <div role="alert" className="mt-4 text-sm text-rose-700">{loadError}<Button variant="outline" className="ml-2" onClick={() => setReload((value) => value + 1)}>Retry</Button></div> : filteredDocuments.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{filteredDocuments.map((doc) => <div key={doc.path} className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-3"><FileText className="h-5 w-5 shrink-0 text-emerald-700" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-800">{doc.name}</p><p className="text-xs text-slate-500">{doc.category} · {formatBytes(doc.size)}</p></div><Button size="icon" variant="ghost" aria-label={`Download ${doc.name}`} onClick={() => void openDocument(doc, true)}><Download /></Button><Button size="icon" variant="ghost" aria-label={`Submit ${doc.name} for approval`} onClick={() => void handleSubmit(doc)}><ShieldCheck /></Button>{canManageResources && <><Button size="icon" variant="ghost" disabled={busy} aria-label={`Edit ${doc.name}`} onClick={() => { setEditTarget(doc); setEditName(doc.name); setEditCategory(doc.category); }}><Pencil /></Button><Button size="icon" variant="ghost" disabled={busy} aria-label={`Remove ${doc.name}`} onClick={() => void removeDocument(doc)}><X /></Button></>}</div>)}</div> : <div className="mt-5"><EmptyState icon={FileText} title="No resources found" hint="Upload a PDF, image or Word document to get started." /></div>}
         </section>
       )}
 
@@ -247,6 +322,75 @@ export default function OperationsHub({ personalOnly = false }: { personalOnly?:
           <DialogFooter><Button variant="outline" disabled={busy} onClick={() => setEditTarget(null)}>Cancel</Button><Button disabled={busy || !editName.trim()} onClick={() => void saveEdit()}>{busy ? "Saving…" : "Save changes"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {tab === "submissions" && (
+        <section className={cn(panelClass, "p-4 sm:p-6")}>
+          <SectionHeader title="File submissions" subtitle="Review and approve submitted resources. Approved files become study materials." />
+          {submissions.length === 0 ? (
+            <div className="mt-4"><EmptyState icon={ShieldCheck} title="No submissions" hint="Submitted resources will appear here for review." /></div>
+          ) : (
+            <div className="mt-4 grid gap-3">
+              {submissions.map((sub) => (
+                <div key={sub.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-800">{sub.file_name}</p>
+                    <p className="text-xs text-slate-500">{sub.category} · {sub.status} · {new Date(sub.created_at).toLocaleDateString()}</p>
+                    {sub.review_notes && <p className="text-xs text-slate-400">{sub.review_notes}</p>}
+                  </div>
+                  {sub.status === "pending" && permissions.canAny("students.manage", "settings.manage") && (
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => void handleApprove(sub)} disabled={busy}>Approve</Button>
+                      <Button size="sm" variant="outline" onClick={() => void handleReject(sub)} disabled={busy}>Reject</Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === "emailqueue" && (
+        <section className={cn(panelClass, "p-4 sm:p-6")}>
+          <SectionHeader title="Email queue" subtitle="Inspect queued/sent/failed emails and trigger delivery." />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" disabled={busy} onClick={async () => {
+              setBusy(true);
+              try { const r = await emailOutboxApi.sendQueuedNow(); toast.success(`Sent ${r.sent ?? 0} of ${r.queued ?? 0} queued`); setReload((v) => v + 1); } catch (e) { toast.error(e instanceof Error ? e.message : "Could not send"); } finally { setBusy(false); }
+            }}>Send queued now</Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={async () => {
+              setBusy(true);
+              try { const n = await emailOutboxApi.retryFailed(); toast.success(`Reset ${n} failed rows`); setReload((v) => v + 1); } catch (e) { toast.error(e instanceof Error ? e.message : "Could not retry"); } finally { setBusy(false); }
+            }}>Retry failed</Button>
+          </div>
+          {emailStatus && (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+              {Object.entries(emailStatus.counts ?? {}).map(([k, v]) => (
+                <span key={k} className="rounded-full bg-slate-100 px-2 py-0.5">{k}: {v}</span>
+              ))}
+              {!emailStatus.configured && <span className="text-rose-700">Provider not configured (RESEND_API_KEY / EMAIL_FROM).</span>}
+            </div>
+          )}
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-xs text-slate-500"><th className="py-1">To</th><th>Template</th><th>Status</th><th>Attempts</th><th>Sent</th><th>Error</th></tr></thead>
+              <tbody>
+                {emailRows.map((r) => (
+                  <tr key={r.id} className="border-t border-slate-100">
+                    <td className="py-1 pr-2 truncate max-w-[10rem]">{r.toEmail}</td>
+                    <td className="pr-2">{r.template}</td>
+                    <td className="pr-2">{r.status}</td>
+                    <td className="pr-2">{r.attempts}</td>
+                    <td className="pr-2">{r.sentAt ? new Date(r.sentAt).toLocaleString() : "—"}</td>
+                    <td className="pr-2 text-rose-700 truncate max-w-[12rem]">{r.lastError ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {emailRows.length === 0 && <div className="mt-4"><EmptyState icon={Mail} title="No emails yet" hint="Queued emails will appear here." /></div>}
+          </div>
+        </section>
+      )}
 
       {tab === "notifications" && <><section className={cn(panelClass, "p-4 sm:p-6")}><SectionHeader title="Notifications" subtitle="Published announcements currently visible in the portal." action={<div className="flex gap-2"><Button variant="outline" onClick={() => exportRows("announcements.csv", notificationRows)}><FileDown data-icon="inline-start" /> CSV</Button><Button variant="outline" onClick={() => exportPdf("announcements.pdf", "Notifications", notificationRows)}><FileText data-icon="inline-start" /> PDF</Button></div>} />{activeAnnouncements.length ? <div className="mt-5 grid gap-3">{activeAnnouncements.map((item) => <article key={item.id} className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-medium text-slate-800">{item.title}</p><p className="mt-1 text-sm text-slate-600">{item.body}</p></div><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">{item.category}</span></div><p className="mt-3 text-xs text-slate-500">{item.date} · {item.audience ?? "all"}</p></article>)}</div> : <div className="mt-5"><EmptyState icon={Bell} title="No notifications" /></div>}</section><div className="mt-4"><OneSignalAdminPanel /></div></>}
 

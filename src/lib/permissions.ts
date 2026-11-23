@@ -91,6 +91,7 @@ export const PERMISSION_KEYS = [
   "settings.manage",
   "assistant.use",
   "assistant.admin_help",
+  "chat.use",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -150,6 +151,7 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "settings.manage", group: "Settings", label: "Manage system settings", description: "Edit academy details, academic calendar and portal-wide settings.", sort: 190 },
   { key: "assistant.use", group: "AI", label: "Use AOH AI", description: "Chat with AOH AI for general help and authorized school information.", sort: 200 },
   { key: "assistant.admin_help", group: "AI", label: "Assistant screen help & stats", description: "Get screen guidance and authorized aggregate statistics from AOH AI.", sort: 210 },
+  { key: "chat.use", group: "Comms", label: "Use chat & messages", description: "Open and use direct messages and group chat.", sort: 193 },
 ];
 
 export const PERMISSION_GROUPS = Array.from(new Set(PERMISSIONS.map((p) => p.group)));
@@ -199,6 +201,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "settings.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Teacher": [
     "academic_plans.manage",
@@ -218,6 +221,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Instructor": [
     "academic_plans.manage",
@@ -237,6 +241,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   Registrar: [
     "people.view",
@@ -257,6 +262,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Admission Officer": [
     "people.view",
@@ -264,6 +270,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "aptitude.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Finance Officer": [
     "people.view",
@@ -274,6 +281,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Public Relations Officer": [
     "people.view",
@@ -291,6 +299,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "helpdesk.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Data Entry Officer": [
     "people.view",
@@ -305,6 +314,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "certificates.manage",
     "announcements.manage",
     "assistant.use",
+    "chat.use",
   ],
   "Executive Assistant": [
     "people.view",
@@ -321,6 +331,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "cms.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Research Officer": [
     "people.view",
@@ -339,6 +350,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "blog.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
   "Customer Care Officer": [
     "people.view",
@@ -349,6 +361,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "helpdesk.manage",
     "assistant.use",
+    "chat.use",
   ],
   "Director of Education": [
     "people.view",
@@ -378,8 +391,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "blog.manage",
     "assistant.use",
     "assistant.admin_help",
+    "chat.use",
   ],
-  Student: ["courses.enroll", "quizzes.take", "payments.submit", "assistant.use"],
+  Student: ["courses.enroll", "quizzes.take", "payments.submit", "assistant.use", "chat.use"],
 };
 
 /** True when `role` has `key`, using Super Admin's implicit all-access rule. */

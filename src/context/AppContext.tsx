@@ -729,6 +729,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
           if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
           if (rest.published !== undefined) row.published = rest.published;
+          if (rest.selfPacedEnabled !== undefined) row.self_paced_enabled = rest.selfPacedEnabled;
+          if (rest.selfPacedRequiresApproval !== undefined) row.self_paced_requires_approval = rest.selfPacedRequiresApproval;
+          if (rest.selfPacedMinCompletionPercent !== undefined) row.self_paced_min_completion_percent = rest.selfPacedMinCompletionPercent;
           if (!Object.keys(row).length && !nextModules) return null;
           if (Object.keys(row).length) {
             let res = await supabase.from("programs").update(row).eq("id", id);
@@ -764,7 +767,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           setState((s) => ({
             ...s,
-            programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(nextModules ? { modules: nextModules } : null) } : p)),
+            programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(rest.selfPacedEnabled !== undefined ? { selfPacedEnabled: rest.selfPacedEnabled } : {}), ...(rest.selfPacedRequiresApproval !== undefined ? { selfPacedRequiresApproval: rest.selfPacedRequiresApproval } : {}), ...(rest.selfPacedMinCompletionPercent !== undefined ? { selfPacedMinCompletionPercent: rest.selfPacedMinCompletionPercent } : {}), ...(nextModules ? { modules: nextModules } : null) } : p)),
           }));
           await refresh();
           return null;
@@ -823,6 +826,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (payload.startDate !== undefined) row.start_date = payload.startDate;
           if (payload.endDate !== undefined) row.end_date = payload.endDate;
           if (payload.room !== undefined) row.room = payload.room;
+          if (payload.avatarUrl !== undefined) row.avatar_url = payload.avatarUrl;
           if (Object.keys(row).length) {
             const { error } = await supabase.from("cohorts").update(row).eq("id", id);
             if (error) return migrationHint(error.message, "Cohorts");

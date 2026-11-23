@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { toast } from "sonner";
 import {
   CalendarDays, Camera, CheckCircle2, Download, Eye, FileText, FolderOpen, Image as ImageIcon,
-  KeyRound, Loader2, Lock, Mail, MapPin, Phone, RefreshCw, Save, ShieldCheck, Trash2, Upload,
+  KeyRound, Loader2, Lock, Mail, MapPin, Pencil, Phone, RefreshCw, Save, ShieldCheck, Trash2, Upload,
   User as UserIcon, UserCircle, X, type LucideIcon,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
@@ -10,7 +10,7 @@ import type { User } from "@/types";
 import { cn } from "@/lib/utils";
 import {
   DOCUMENT_CATEGORIES, DOCUMENT_TYPES, IMAGE_TYPES, MAX_DOCUMENT_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_INPUT_BYTES,
-  deleteDocument, documentUrl, formatBytes, listDocuments, pruneAvatars, uploadAvatar, uploadDocument,
+  deleteDocument, documentUrl, editDocument, formatBytes, listDocuments, pruneAvatars, uploadAvatar, uploadDocument,
   validateFile, type DocumentCategory, type ProfileDocument,
 } from "@/lib/storage";
 import { panelClass, Reveal, SectionHeader } from "./Navigation";
@@ -20,13 +20,13 @@ import UserAvatar from "./UserAvatar";
 import ReminderSettings from "./academic/ReminderSettings";
 import OneSignalPanel from "./notifications/OneSignalPanel";
 import { accountId } from "@/lib/identifiers";
-import { useServiceWorkerUpdate } from "@/lib/pwa";
+import { usePwaInstall, useServiceWorkerUpdate } from "@/lib/pwa";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const PRIMARY = "h-10 rounded-xl bg-emerald-700 text-white hover:bg-emerald-800";
 
@@ -79,6 +79,7 @@ export default function ProfilePage() {
 function DeviceSettings() {
   const update = useServiceWorkerUpdate();
   return <div className="space-y-5">
+    <InstallAppCard />
     <section className={`${panelClass} p-5`} aria-label="App updates">
       <h2 className="font-semibold text-slate-900">App updates</h2>
       <p className="mt-1 text-sm text-slate-600">Check for a new version on any supported device. Save forms and finish assessments before installing an update. Your app will not reload without your action.</p>
@@ -92,6 +93,56 @@ function DeviceSettings() {
     <ReminderSettings />
     <OneSignalPanel />
   </div>;
+}
+
+/**
+ * Explicit install entry point. The floating card is triggered by the browser's
+ * install event, which some browsers only fire once, or never; this button lets
+ * anyone install on purpose and tells them the manual steps when the browser
+ * does not offer a prompt (iPhone/iPad, desktop Safari or Firefox).
+ */
+function InstallAppCard() {
+  const { canPrompt, isInstalled, isIos, install } = usePwaInstall();
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      const outcome = await install();
+      if (outcome === "accepted") setNotice("Installed. Open AOH from your home screen or app list from now on.");
+      else if (outcome === "dismissed") setNotice("Installation was cancelled — press Install app to try again.");
+      else setNotice(manualInstallHint(isIos));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className={`${panelClass} p-5`} aria-label="Install the app">
+      <h2 className="font-semibold text-slate-900">Install the app</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        {isInstalled
+          ? "The app is installed on this device. Open it from your home screen or app list to get notifications and offline access."
+          : "Add AOH to your home screen or desktop for faster loading, offline access and reliable notifications. Nothing is downloaded from an app store."}
+      </p>
+      {!isInstalled && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button className={PRIMARY} disabled={busy} onClick={() => void run()}>
+            <Download className="mr-2 h-4 w-4" /> {busy ? "Opening…" : "Install app"}
+          </Button>
+        </div>
+      )}
+      {!isInstalled && !canPrompt && <p className="mt-2 text-xs text-slate-600">{manualInstallHint(isIos)}</p>}
+      {notice && <p role="status" className="mt-2 text-xs text-slate-600">{notice}</p>}
+    </section>
+  );
+}
+
+function manualInstallHint(ios: boolean) {
+  return ios
+    ? "On iPhone or iPad: open this site in Safari, tap the Share button, then choose “Add to Home Screen” and confirm with Add."
+    : "If your browser does not show an install prompt, open its menu (⋮ or File) and choose “Install app”, “Install site” or “Add to Home screen”. Chrome, Edge and Samsung Internet support this; desktop Safari and Firefox do not.";
 }
 
 // ── Header with avatar upload ────────────────────────────────────────────────
@@ -312,6 +363,9 @@ function DocumentsPanel({ user }: { user: User }) {
   const [dragging, setDragging] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ProfileDocument | null>(null);
+  const [editTarget, setEditTarget] = useState<ProfileDocument | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState<DocumentCategory>("ID card");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -378,6 +432,21 @@ function DocumentsPanel({ user }: { user: User }) {
       toast.success("Document deleted");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not delete the file");
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget) return;
+    setPending(editTarget.path);
+    try {
+      await editDocument(user.id, editTarget, editName, editCategory);
+      setEditTarget(null);
+      void load();
+      toast.success("Document updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update the file");
     } finally {
       setPending(null);
     }
@@ -472,6 +541,7 @@ function DocumentsPanel({ user }: { user: User }) {
                   <div className="flex shrink-0 items-center gap-1">
                     <IconAction label="View" icon={Eye} disabled={busy} onClick={() => void open(doc, false)} />
                     <IconAction label="Download" icon={Download} disabled={busy} onClick={() => void open(doc, true)} />
+                    <IconAction label="Edit" icon={Pencil} disabled={busy} onClick={() => { setEditTarget(doc); setEditName(doc.name); setEditCategory(doc.category); }} />
                     <IconAction label="Delete" icon={busy ? Loader2 : Trash2} spin={busy} danger disabled={busy} onClick={() => setConfirm(doc)} />
                   </div>
                 </li>
@@ -500,6 +570,28 @@ function DocumentsPanel({ user }: { user: User }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={Boolean(editTarget)} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit document</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-slate-700">File name (include extension)</label>
+              <input className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Category</label>
+              <select className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" value={editCategory} onChange={(e) => setEditCategory(e.target.value as DocumentCategory)}>
+                {DOCUMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button className="rounded-md border border-slate-200 px-3 py-1.5 text-sm" onClick={() => setEditTarget(null)}>Cancel</button>
+            <button className="rounded-md bg-emerald-700 px-3 py-1.5 text-sm text-white" onClick={() => void saveEdit()} disabled={!editName.trim() || !!pending}>Save</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

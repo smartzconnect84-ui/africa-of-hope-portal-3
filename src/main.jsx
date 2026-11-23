@@ -786,6 +786,16 @@ function PortalRoute({ session, profile }) {
     if (error) setStatus({ kind: "error", text: error.message });
     else setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
   };
+  const markAllRead = async () => {
+    const { error } = await supabase.from("notifications").update({ read: true }).eq("recipient_id", profile?.id ?? studentId);
+    if (error) setStatus({ kind: "error", text: error.message });
+    else setNotifications((prev) => prev.map((x) => ({ ...x, read: true })));
+  };
+  const markAllUnread = async () => {
+    const { error } = await supabase.from("notifications").update({ read: false }).eq("recipient_id", profile?.id ?? studentId);
+    if (error) setStatus({ kind: "error", text: error.message });
+    else setNotifications((prev) => prev.map((x) => ({ ...x, read: false })));
+  };
 
   const unread = notifications.filter((n) => !n.read);
 
@@ -822,6 +832,12 @@ function PortalRoute({ session, profile }) {
           </div>
           <div className="app-panel">
             <h2 className="app-h2">Notifications <span className="app-badge">realtime</span></h2>
+            {notifications.length > 0 ? (
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <button className="app-btn app-btn-ghost" onClick={() => void markAllRead()}>Mark all read</button>
+                <button className="app-btn app-btn-ghost" onClick={() => void markAllUnread()}>Mark all unread</button>
+              </div>
+            ) : null}
             {notifications.length === 0 ? <Empty>No notifications yet. New ones appear here instantly.</Empty> : null}
             {notifications.map((n) => (
               <div key={n.id} style={{ borderBottom: "1px solid #eceee6", padding: "10px 0" }}>

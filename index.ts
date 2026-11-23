@@ -33,6 +33,9 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    const mailer = createClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
     const { data: authData, error: authError } = await caller.auth.getUser();
     const user = authData?.user;
     if (authError || !user) return json({ error: "Not authenticated. Sign in again, then retry.", code: "bad_token" }, 401);
@@ -199,8 +202,16 @@ Deno.serve(async (req: Request) => {
         return json({ ok: true, temporary_password: body.password ? undefined : password });
       }
       if (!target.email) return json({ error: "No account email is recorded", code: "bad_input" }, 400);
-      const { error } = await caller.auth.resetPasswordForEmail(target.email);
-      return error ? json({ error: error.message, code: "reset_failed" }, 400) : json({ ok: true });
+      const { error } = await mailer.auth.resetPasswordForEmail(target.email);
+      if (error) {
+        const raw = error.message ?? "";
+        let msg = raw || "Could not send the recovery email.";
+        if (/email_address_invalid/i.test(raw)) {
+          msg = "That email address cannot receive the reset link (the domain is blocked or has no mail server). Update the account's email to a deliverable address, or use \"Temporary password\" instead.";
+        }
+        return json({ error: msg, code: "reset_failed" }, 400);
+      }
+      return json({ ok: true });
     }
     return json({ error: "Permanent deletion is disabled to preserve school records. Suspend this account instead.", code: "delete_disabled" }, 409);
   } catch (err) {

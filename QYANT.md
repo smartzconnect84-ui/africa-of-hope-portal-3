@@ -102,6 +102,17 @@ reads.
 - Replaced compiled-snapshot serving with Vite's React source entry, explicitly imported the global stylesheet, and declared React runtime dependencies; the recovery snapshot remains untouched. Build and visual verification are pending.
 
 - Memory file added to an existing project; pending reconstruction.
+
+- Apex redirect live (2026-11-23). Created a proxied placeholder A record
+  (africaofhopelr.org -> 192.0.2.1) and a Single Redirect rule
+  (http.host eq "africaofhopelr.org" -> 301 to
+  https://www.africaofhopelr.org + original path, preserve query string) in
+  Cloudflare zone c3bdaaece6b1a9d413f462d0b618cfd5 via
+  artifacts/cf-apex-redirect.mjs. Verified: dig returns Cloudflare proxied
+  IPs and curl -sI https://africaofhopelr.org/portal/ returns 301 with
+  location https://www.africaofhopelr.org/portal/. Apex is now served by
+  Cloudflare and redirects to www; the Freebuff site continues to serve only
+  www.africaofhopelr.org.
 - Reconstructed memory from the available documentation snapshot and added a standalone React/Vite public homepage and build manifest.
 - Supabase backend reconciled against the live project (`gatnzfjpuokopqyksqoy`,
   78 tables + 3 views, all RLS; 45 realtime tables covering every channel the
@@ -662,6 +673,9 @@ reads.
   the previous audit applied.
 
 - Auth-page background image added for login, sign-up and password reset.
+
+- Self-paced learning hardened: RLS policies replaced permissive `using (true)` staff rules with `public.is_staff()` / ownership checks; added `published` state to weeks/lessons/activities and a `self_paced_resources` table for media/documents/links; component gained upload/link add, edit/delete, in-app link viewer and Live publish/unpublish toggles across content.
+- Chat hub: moved poll creation into the message composer, removed the thread search box, moved group photo upload into group settings, added chat background image upload (migration `20261124100000_chat_group_background.sql`) and a wired Save button in group settings, and added online (green/faded) status dots plus live online member counts in group chat headers.
   `src/lib/storage.ts` gets `uploadAuthBackground(folder, file)` and
   `pruneAuthBackground(folder, keepUrl)`, which store into the public
   `site-assets` bucket under `auth-background/<folder>` as PNG/JPEG/WebP,
@@ -673,3 +687,73 @@ reads.
   desktop showcase side and keeps the form page on mobile. Typecheck and tests
   pass.
 
+- Self-paced submission file upload wired (2026-11-23): `uploadDocument` now
+  returns its storage path; `SelfPacedLearning` adds an "Attach file" control
+  per activity, uploads via `uploadDocument`, stores the path in `file_url`, and
+  `ActivityGrading` shows an "Open attachment" link (signed URL via
+  `documentUrl`). `submitActivity` receives `fileUrl`.
+
+- Chat settings pass (2026-11-23).
+- Roles/permissions and PWA enforcement pass (2026-11-23). Added chat.use permission granted to all roles including Student; added Messages, Donate and Student Policy modules to every staff role guide. PWA install prompt re-prompts every 30s until accepted/declined; update and push-notification prompts re-prompt every 30s; push permission prompt added across public and portal shells. Group settings now load and save name/description/join policy, group member count opens a member list, upload preview shows for every file type, poll voting toggles options safely in multiple mode, and the Clear control was removed from the thread top bar.
+- Donate, student policy and chat UX pass (2026-11-23). Donate page now shows verified Orange Money (0776679963) and MTN Mobile Money (0888061379) details to recipient Sheddrick K. Nungehn. School Policy renamed to Student Policy and made admin-editable. Chat composer gained a full emoji picker and a language switcher in the thread header.
+
+- Knock notification foundation (2026-11-23). Added @knocklabs/client and @knocklabs/react, env vars VITE_KNOCK_PUBLIC_API_KEY and VITE_KNOCK_FEED_CHANNEL_ID, src/lib/knock.ts service wrapper, KnockProviderShell wrapping the portal, a conditional KnockNotificationBell in the header, src/lib/knockNotify.ts client helper, supabase/functions/knock-notify Edge Function scaffold for secure workflow triggers, and migration 20261124130000_knock_notification_audit.sql. Full Knock feed UI and per-module event wiring remain pending Knock credentials.
+- Backend completion pass (2026-11-23). Applied pending Supabase migrations
+  `20261124000000_self_paced_rls_media_publish` (RLS hardening, `published`
+  columns, `self_paced_resources` table) and `20261124100000_chat_group_background`
+  (`chat_groups.background_url`), plus a new `notifications_insert_self` /
+  `_staff` insert policy so self-paced notifications can be written. Self-paced
+  UI: unpublished weeks no longer leak to students; per-activity submission text
+  is now independent (no shared input state). Backend/admin views: bare
+  `grid grid-cols-2` layouts now stack on phones. Typecheck, tests (52/53,
+  1 skipped) and build pass.
+
+
+- Knock all-notifications rollout (2026-11-23). Added `knock-dispatch` Edge Function (verify_jwt=false, internal-token gated) that reads a `notifications` row and triggers the Knock workflow `in-app-notification` (configurable via KNOCK_WORKFLOW). Added DB trigger `notifications_dispatch_knock` so every inserted notification (DMs, payments, classwork, attendance, schedule, academic status, self-paced, etc.) is dispatched to Knock automatically, mirroring the existing push dispatch. Full in-app feed UI (`NotificationIconButton` + popover, `NotificationFeed`, notifications portal view), signed user-token minting (`knock-user-token`), and env wiring remain. Typecheck, tests (52/53, 1 skipped) and build pass.
+
+- Knock workflow created: `in-app-notification` (in-app feed channel `africa-of-hope`) committed in development and promoted to production. Verified end-to-end: a test notification row triggered `knock-dispatch` which returned 200, and the temporary test row was removed. Helper function `knock-setup-workflow` deleted.
+
+- UI polish pass (2026-11-23): removed stale bulletin Bell icon from portal header; message icon now navigates to the full Messages module (ChatHub) with unread badge; announcement scrolling banner enabled for all users when configured in admin (no longer gated on sitePublished); auth login card made translucent (bg-white/70 + backdrop-blur) over the published auth background image. Typecheck and build pass; deployed to production https://aoh.freebuff.site.
+
+- Messaging for every role + PWA prompt reliability (2026-11-24). Root cause of
+  "Messages is missing for everyone except Super Admin": `chat.use` existed only
+  in the code defaults, never in `public.permissions` / `public.role_permissions`,
+  and `src/data/liveData.ts` prefers the DB matrix whenever it has rows, so
+  `can("chat.use")` was false for all 12 non-super-admin roles (40 of 41 accounts).
+  Fixed by migration `20261124150000_chat_use_all_roles.sql`, which seeds the
+  permission catalogue row and grants `chat.use` to every role except Super Admin
+  (implicit). Verified live as a Student account: Messages appears in the sidebar
+  and the ChatHub opens with New message / New group. Root cause of "the Feature
+  update prompt never appears": `public/sw.js` had a hardcoded `VERSION` that never
+  changed between deploys, so every release served a byte-identical worker, the
+  browser never produced a waiting worker and `UpdatePrompt` had nothing to show.
+  `scripts/stamp-service-worker.mjs` now runs last in `npm run build` (and
+  `build:strict`) and rewrites `dist/sw.js` `VERSION` to `build-<hash of
+  index.html + assets>`, so each real change ships a new worker. Verified on
+  www.africaofhopelr.org: waiting worker found, "Update available / Refresh now"
+  rendered, activation reloaded once and the old `v8-cms-brand` caches were
+  replaced by `build-7ba9a69360c2`. Also: `beforeinstallprompt` is now captured at
+  module scope in `src/lib/pwa.ts` (it can fire before React mounts, which lost the
+  install card), the stale `aoh-pwa-installed` localStorage flag no longer
+  suppresses the card after an uninstall, and Profile → Device & updates gained an
+  explicit "Install app" card with manual Add-to-Home-Screen steps for browsers
+  that never fire the event. Apex `africaofhopelr.org` still has no DNS record, so
+  it cannot be served or redirected; the owner must add it in Cloudflare.
+
+- Permission catalogue completed for every role (2026-11-24). The same drift that
+  hid Messages also hid 14 more modules: `timetable.manage`, `reports.manage`,
+  `grades.manage`, `library.manage`, `aptitude.manage`, `email.manage`,
+  `transparency.manage`, `policies.manage`, `discussions.moderate`,
+  `operations.manage`, `verification.manage`, `impact.manage`, `campus.manage`
+  and `donations.manage` were defined in `src/lib/permissions.ts` but had no row
+  in `public.permissions`, so no role could hold them and the client matrix
+  (`src/data/liveData.ts`) left those screens hidden for everyone except Super
+  Admin. Migration `20261124160000_seed_missing_permissions_all_roles.sql` seeds
+  the 14 catalogue rows (labels, groups and sort orders mirrored from
+  `PERMISSIONS`) and inserts 70 `role_permissions` grants mirrored from
+  `DEFAULT_ROLE_PERMISSIONS`, joined against `public.roles` so the code-only
+  `Instructor` role is skipped rather than failing the foreign key. Applied live:
+  the catalogue now holds all 47 keys with zero missing or extra against the
+  code, 64 grants landed (144 → 208 rows) and every profile role matches a row in
+  `public.roles`. Super Admin stays implicit; no existing grant was removed, so
+  owner edits made in Roles & Permissions are preserved.

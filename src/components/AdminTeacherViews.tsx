@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isInstructorRole } from "@/lib/roleDisplay";
+import { uploadAvatar } from "@/lib/storage";
 import UserAvatar from "./UserAvatar";
 import { courseId } from "@/lib/identifiers";
 import { toast } from "sonner";
@@ -9,7 +10,7 @@ import {
 import {
   Users, Award, Banknote, Search, Plus, Check, X, BookOpen, Pencil, Trash2,
   Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, GraduationCap,
-  Percent, Mail, Phone, BadgeAlert, RefreshCw,
+  Percent, Mail, Phone, BadgeAlert, RefreshCw, Camera,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
 import { DELIVERY_META, durationLabel, programModes, scheduleLabel } from "@/lib/programDelivery";
@@ -321,7 +322,7 @@ export function StudentDirectory() {
                   </Badge>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <p className="flex items-center gap-2 text-slate-600"><Mail className="h-4 w-4 text-emerald-700" /> {selected.email}</p>
                 <p className="flex items-center gap-2 text-slate-600"><Phone className="h-4 w-4 text-emerald-700" /> {selected.phone}</p>
               </div>
@@ -689,7 +690,7 @@ export function ProgramBuilder() {
             </p>
           )}
           {step === 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
                 <Label>Program title</Label>
                 <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Data Analytics with Python" />
@@ -714,7 +715,7 @@ export function ProgramBuilder() {
           )}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Duration (weeks)</Label>
                   <Input type="number" min={1} value={form.durationWeeks} onChange={(e) => setForm({ ...form, durationWeeks: e.target.value })} placeholder="26" />
@@ -943,13 +944,42 @@ export function CohortCoordinator() {
           return (
             <Reveal key={c.id} className={cn(panelClass, "p-5")}>
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
-                  <p className="text-xs text-slate-500">{program?.title}</p>
+                <div className="flex items-center gap-3">
+                  {c.avatarUrl ? (
+                    <img src={c.avatarUrl} alt={c.name} className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-emerald-800"><GraduationCap className="h-5 w-5" /></span>
+                  )}
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
+                    <p className="text-xs text-slate-500">{program?.title}</p>
+                  </div>
                 </div>
-                <Badge className="bg-emerald-800 text-amber-400">{c.studentIds.length} enrolled</Badge>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50" title="Upload cohort avatar">
+                    <Camera className="h-4 w-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const url = await uploadAvatar(c.id, file);
+                          await updateCohort(c.id, { avatarUrl: url });
+                          toast.success("Cohort avatar updated");
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Could not upload avatar");
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <Badge className="bg-emerald-800 text-amber-400">{c.studentIds.length} enrolled</Badge>
+                </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <p className="flex items-center gap-2 text-slate-600"><BadgeCheck className="h-4 w-4 text-emerald-700" /> {teacher?.name ?? "Unassigned"}</p>
                 <p className="flex items-center gap-2 text-slate-600"><Boxes className="h-4 w-4 text-emerald-700" /> {c.room}</p>
                 <p className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-emerald-700" /> {c.startDate}</p>
@@ -984,7 +1014,7 @@ export function CohortCoordinator() {
             <DialogTitle>{editingId ? "Edit cohort" : "Create a cohort"}</DialogTitle>
             <DialogDescription>{editingId ? "Update program, instructors, dates, room and roster." : "Assign a program, instructors and student roster."}</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
               <Label>Cohort name</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="2025 Q3 Data Analytics, Evening Batch" />
@@ -1068,7 +1098,7 @@ export function TeacherDashboard() {
             <Reveal key={c.id} className={cn(panelClass, "p-5")}>
               <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
               <p className="text-xs text-slate-500">{program?.title} / {c.room}</p>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <p className="text-slate-600"><span className="block text-lg font-semibold text-emerald-800">{c.studentIds.length}</span>Enrolled</p>
                 <p className="text-slate-600"><span className="block text-lg font-semibold text-emerald-800">{rate}%</span>Attendance</p>
               </div>

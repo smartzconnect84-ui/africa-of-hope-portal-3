@@ -16,7 +16,10 @@ const _aohPortalViewsLive = PORTAL_VIEWS.length + PORTAL_NAV_GROUPS.length;
 import PublicMarketingSite from "./components/PublicMarketingSite";
 import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/AuthPortal";
 import OfflineBanner from "./components/pwa/OfflineBanner";
+import InstallPrompt from "./components/pwa/InstallPrompt";
+import PushPermissionPrompt from "./components/pwa/PushPermissionPrompt";
 import LivePushHost from "./components/LivePushHost";
+import KnockProviderShell from "./components/notifications/KnockProviderShell";
 // Production perf: below-the-fold extras load lazily so first paint on
 // low-end Android pays only for the requested site (public or portal).
 const HopeAssistant = lazy(() => import("./components/assistant/HopeAssistant"));
@@ -27,6 +30,7 @@ import { applyPublicBranding } from './lib/publicBranding';
 import { consumePendingPushView, resolvePushDestination, takeLaunchPushTarget } from '@/lib/androidPush';
 import { initOneSignalClickRouting, oneSignalLogin } from '@/lib/onesignal';
 import { applySearchConsoleVerification } from '@/lib/seo';
+import { applyDevicePreferences } from '@/lib/devicePrefs';
 import { initNativeOneSignal } from '@/lib/nativeOneSignal';
 
 function PendingNotice({ user, onSignOut }: { user: User; onSignOut: () => void }) {
@@ -125,9 +129,11 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
   const activeView = getPortalView(activeKey);
 
   return (
-    <Navigation view={activeKey} onNavigate={setView} onExitToPublic={onExitToPublic}>
-      <div key={currentUser.id}>{activeView?.render(ctx)}</div>
-    </Navigation>
+    <KnockProviderShell>
+      <Navigation view={activeKey} onNavigate={setView} onExitToPublic={onExitToPublic}>
+        <div key={currentUser.id}>{activeView?.render(ctx)}</div>
+      </Navigation>
+    </KnockProviderShell>
   );
 }
 
@@ -185,6 +191,24 @@ function Shell() {
     } catch { /* best-effort */ }
   }, []);
 
+  // Apply per-device preferences (compact sidebar, reduce motion, large text,
+  // high contrast) stored in localStorage to the document root.
+  useEffect(() => {
+    applyDevicePreferences();
+    const onStorage = () => applyDevicePreferences();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // Apply per-device preferences (compact sidebar, reduce motion, large text,
+  // high contrast) stored in localStorage to the document root.
+  useEffect(() => {
+    applyDevicePreferences();
+    const onStorage = () => applyDevicePreferences();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // Applies the Admin > System Settings > Appearance theme as CSS variables
   // and data attributes read by src/index.css, so a saved theme takes effect
   // immediately without a rebuild.
@@ -227,6 +251,8 @@ function Shell() {
         <HopeAssistant />
       </Suspense>
       <OfflineBanner />
+      <InstallPrompt />
+      <PushPermissionPrompt />
       <Suspense fallback={null}>
         <UpdatePrompt />
       </Suspense>

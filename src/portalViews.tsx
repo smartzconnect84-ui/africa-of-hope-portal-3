@@ -32,6 +32,7 @@ import {
   TrendingUp,
   HeartHandshake,
   Inbox,
+  Bell,
   LifeBuoy,
   ReceiptText,
   Briefcase,
@@ -75,6 +76,10 @@ import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
 import EngagementInbox from "./components/portal/EngagementInbox";
 import OperationsHub from "./components/OperationsHub";
+import MyStudyMaterials from "./components/MyStudyMaterials";
+import SelfPacedLearning from "./components/SelfPacedLearning";
+import StudentPolicy from "./components/StudentPolicy";
+import ScheduleConflictChecker from "./components/ScheduleConflictChecker";
 import CoursePlayer from "./components/academic/CoursePlayer";
 import StudentCalendar from "./components/academic/StudentCalendar";
 import StudyPlanner from "./components/academic/StudyPlanner";
@@ -91,6 +96,7 @@ import EntranceTest from "./components/portal/EntranceTest";
 import EntranceTestAdmin from "./components/admin/EntranceTestAdmin";
 import EntrancePrepPack from "./components/public/EntrancePrepPack";
 import DonatePage from "./components/public/DonatePage";
+import KnockNotificationCenter from "./components/notifications/KnockNotificationCenter";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -418,8 +424,15 @@ export const PORTAL_VIEWS: PortalView[] = [
     key: "messages",
     label: "Messages",
     icon: MessageCircle,
-    visible: (ctx) => ctx.isSignedIn,
+    visible: (ctx) => ctx.can("chat.use"),
     render: () => <ChatHub />,
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <KnockNotificationCenter />,
   },
   {
     key: "website",
@@ -441,6 +454,34 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: FolderOpen,
     visible: () => true,
     render: () => <OperationsHub personalOnly />,
+  },
+  {
+    key: "my-study-materials",
+    label: "My study materials",
+    icon: BookOpen,
+    visible: () => true,
+    render: () => <MyStudyMaterials />,
+  },
+  {
+    key: "self-paced-learning",
+    label: "Self-Paced Learning",
+    icon: GraduationCap,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <SelfPacedLearning />,
+  },
+  {
+    key: "school-policy",
+    label: "Student policy",
+    icon: ShieldCheck,
+    visible: () => true,
+    render: () => <StudentPolicy />,
+  },
+  {
+    key: "schedule-conflicts",
+    label: "Schedule conflicts",
+    icon: CalendarDays,
+    visible: () => true,
+    render: () => <ScheduleConflictChecker />,
   },
   {
     key: "operations",
@@ -490,6 +531,7 @@ const NAV_RELEVANCE_ORDER = [
   "course-player",
   "academic-planning",
   "study-plan",
+  "self-paced-learning",
   "study-calendar",
   "timetable",
   "assignments",
@@ -505,6 +547,7 @@ const NAV_RELEVANCE_ORDER = [
   "announcements",
   "helpdesk",
   "messages",
+  "notifications",
   "grade-appeals",
   "policies",
   "blog",
@@ -558,6 +601,7 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
       "course-player",
       "academic-planning",
       "study-plan",
+      "self-paced-learning",
       "study-calendar",
       "assignments",
       "quizzes",
@@ -574,7 +618,7 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
   {
     id: "support",
     label: "Support & Community",
-    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate", "messages"],
+    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate", "messages", "notifications"],
   },
   {
     id: "system",

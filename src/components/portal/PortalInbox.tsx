@@ -9,7 +9,7 @@ import UserAvatar from "../UserAvatar";
 import { displayRole } from "@/lib/roleDisplay";
 
 /** Top-bar messages bell: unread direct messages, with a live thread dialog. */
-export default function PortalInbox() {
+export default function PortalInbox({ onOpen }: { onOpen?: () => void } = {}) {
   const { state, currentUser } = useApp();
   const meId = currentUser?.id;
   const [open, setOpen] = useState(false);
@@ -57,6 +57,7 @@ export default function PortalInbox() {
         type="button"
         onClick={() => {
           setTick((n) => n + 1);
+          if (onOpen) { onOpen(); return; }
           setOpen((o) => !o);
         }}
         aria-label={unread > 0 ? `Messages, ${unread} unread` : "Messages"}
@@ -71,7 +72,7 @@ export default function PortalInbox() {
           </span>
         )}
       </button>
-      {open && (
+      {!onOpen && open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 dark:bg-slate-900">

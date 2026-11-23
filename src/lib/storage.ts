@@ -213,7 +213,7 @@ export async function uploadDocument(
   userId: string,
   file: File,
   category: DocumentCategory,
-): Promise<void> {
+): Promise<string> {
   const invalid = validateFile(file, DOCUMENT_TYPES, MAX_DOCUMENT_BYTES);
   if (invalid) throw new Error(invalid);
   const path = `${docFolder(userId)}/${Date.now()}${SEP}${safeName(category)}${SEP}${newStorageId()}-${safeName(file.name)}`;
@@ -221,6 +221,7 @@ export async function uploadDocument(
     .from(DOCUMENT_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw new Error(explain(error.message));
+  return path;
 }
 
 export async function documentUrl(path: string, download = false): Promise<string> {

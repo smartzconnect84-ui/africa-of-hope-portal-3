@@ -87,6 +87,7 @@ export default function PortalSidebar({
         key={key}
         type="button"
         onClick={() => onNavigate(target.key)}
+        data-portal-nav="true"
         aria-current={active ? "page" : undefined}
         className={cn(
           "group flex w-full items-center rounded-xl text-left font-medium leading-tight transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60",

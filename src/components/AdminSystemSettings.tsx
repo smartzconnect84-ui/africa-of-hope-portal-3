@@ -17,6 +17,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { setDevicePref } from "@/lib/devicePrefs";
 import { EmptyState, panelClass, SectionHeader, StatCard } from "./Navigation";
 import BackendStatusCard from "./admin/BackendStatusCard";
 import AssistantStatusCard from "./admin/AssistantStatusCard";
@@ -93,6 +94,12 @@ export default function AdminSystemSettings() {
   const [moduleViewKey, setModuleViewKey] = useState(PORTAL_VIEWS[0]?.key ?? "dashboard");
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<null | "clear" | "reset">(null);
+  const [devicePrefs, setDevicePrefs] = useState<Record<string, boolean>>(() => ({
+    compactSidebar: localStorage.getItem("aoh-device:compactSidebar") === "1",
+    reduceMotion: localStorage.getItem("aoh-device:reduceMotion") === "1",
+    largeText: localStorage.getItem("aoh-device:largeText") === "1",
+    highContrast: localStorage.getItem("aoh-device:highContrast") === "1",
+  }));
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -283,6 +290,7 @@ export default function AdminSystemSettings() {
           <TabsTrigger value="security" className={TAB}><ShieldCheck className="mr-1.5 h-4 w-4" /> Security and RBAC</TabsTrigger>
           <TabsTrigger value="emails" className={TAB}><Mail className="mr-1.5 h-4 w-4" /> Welcome emails</TabsTrigger>
           <TabsTrigger value="backend" className={TAB}><Database className="mr-1.5 h-4 w-4" /> Backend</TabsTrigger>
+          <TabsTrigger value="devices" className={TAB}><Globe className="mr-1.5 h-4 w-4" /> Devices</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding" className="mt-4">
@@ -320,7 +328,7 @@ export default function AdminSystemSettings() {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Academic year</Label>
                   <Input value={draft.academicYear} onChange={(e) => set("academicYear", e.target.value)} />
@@ -819,6 +827,41 @@ export default function AdminSystemSettings() {
         <TabsContent value="backend" className="mt-4 space-y-4">
           <AssistantStatusCard />
           <BackendStatusCard />
+        </TabsContent>
+
+        <TabsContent value="devices" className="mt-4">
+          <div className={`${panelClass} space-y-4 p-5`}>
+            <h3 className="text-sm font-semibold text-slate-800">Per-device preferences</h3>
+            <p className="text-xs text-slate-500">These settings are stored on this device only and apply to the current browser.</p>
+            <div className="space-y-2">
+              {[
+                ["compactSidebar", "Compact sidebar", "Use smaller sidebar items to fit more on screen."],
+                ["reduceMotion", "Reduce motion", "Disable animations and transitions."],
+                ["largeText", "Large text", "Increase base font size for readability."],
+                ["highContrast", "High contrast", "Boost contrast for accessibility."],
+              ].map(([key, title, hint]) => {
+                const checked = !!devicePrefs[key];
+                return (
+                  <label key={key} className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border border-emerald-900/10 bg-white p-4">
+                    <span>
+                      <span className="block text-sm font-medium text-slate-800">{title}</span>
+                      <span className="mt-0.5 block text-xs text-slate-500">{hint}</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        setDevicePref(key as any, e.target.checked);
+                        setDevicePrefs((p) => ({ ...p, [key]: e.target.checked }));
+                        toast.success("Device preference saved");
+                      }}
+                      className="mt-1 h-4 w-4"
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
