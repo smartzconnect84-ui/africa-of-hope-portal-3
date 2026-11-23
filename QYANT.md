@@ -757,3 +757,26 @@ reads.
   code, 64 grants landed (144 → 208 rows) and every profile role matches a row in
   `public.roles`. Super Admin stays implicit; no existing grant was removed, so
   owner edits made in Roles & Permissions are preserved.
+
+- Immediate push repaired (2026-11-23, `src/lib/livePush.ts`,
+  `src/components/pwa/PushPermissionPrompt.tsx`, `src/lib/onesignal.ts`). Two
+  independent defects made the message badge count without any alert.
+  (a) `broadcastLive()` sent on the Realtime topic `aoh-live-v1` while
+  `useLivePush()` listened on `aoh-live-v1-rx`; Supabase broadcast has no
+  wildcard, so a DM from another account never reached the receiver's listener
+  and no toast/device alert fired (only the 5 s unread poll moved the badge).
+  Both sides now share one module-level channel and one topic, with
+  `broadcast.self: false` preventing the sender's own echo, and a listener
+  registry so several mounts can observe the same channel.
+  (b) `PushPermissionPrompt` called raw `Notification.requestPermission()` and
+  stopped, so the browser said "granted" while OneSignal held no player — the
+  outbox showed 89 pushes `failed` with `All included players are not
+  subscribed` and `onesignal_devices`/`push_subscriptions` were both empty.
+  The prompt now creates the real OneSignal subscription (`oneSignalOptIn()`)
+  after permission, re-links the Supabase user id (`oneSignalLogin`), keeps
+  itself visible when permission is already granted but no subscription exists
+  ("Finish setup"), and shows the honest failure message instead of hiding.
+  `oneSignalOptIn()` also re-reads `OS.User.PushSubscription` after asking the
+  notification gate, for v16 builds that only expose it afterwards. Typecheck
+  passes; a real device must press "Finish setup"/"Enable" on the production
+  origin once before any push can be delivered (still zero OneSignal players).

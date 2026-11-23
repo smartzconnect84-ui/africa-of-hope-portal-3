@@ -242,7 +242,14 @@ export async function oneSignalOptIn(): Promise<{ subscribed: boolean; message: 
   }
   try {
     const OS = window.OneSignal;
-    const subscription = OS?.User?.PushSubscription;
+    let subscription = OS?.User?.PushSubscription;
+    // Some v16 builds only expose the push-subscription object after the
+    // notification gate has been asked once, so ask through it and re-read
+    // the object rather than failing the whole opt-in.
+    if (!subscription?.optIn) {
+      try { await OS?.Notifications?.requestPermission?.(); } catch { /* fall through to the re-read */ }
+      subscription = OS?.User?.PushSubscription;
+    }
     // Optional chaining used to make this resolve successfully even when the SDK
     // had no subscription object, so the card claimed success while OneSignal
     // never recorded a player. Only report success once one exists.
