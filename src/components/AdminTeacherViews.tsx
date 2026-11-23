@@ -1,7 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { isInstructorRole } from "@/lib/roleDisplay";
-import { uploadAvatar } from "@/lib/storage";
-import UserAvatar from "./UserAvatar";
+import { useEffect, useMemo, useState } from "react";
 import { courseId } from "@/lib/identifiers";
 import { toast } from "sonner";
 import {
@@ -10,7 +7,7 @@ import {
 import {
   Users, Award, Banknote, Search, Plus, Check, X, BookOpen, Pencil, Trash2,
   Boxes, CalendarDays, ClipboardCheck, BadgeCheck, UserCheck, GraduationCap,
-  Percent, Mail, Phone, BadgeAlert, RefreshCw, Camera,
+  Percent, Mail, Phone, BadgeAlert, RefreshCw,
 } from "lucide-react";
 import { useApp, formatCurrency, letterGrade } from "../context/AppContext";
 import { DELIVERY_META, durationLabel, programModes, scheduleLabel } from "@/lib/programDelivery";
@@ -31,6 +28,7 @@ import { EmptyState, Reveal, SectionHeader, StatCard, panelClass } from "./Navig
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  DEFAULT_GRADE_EVAL_SETTINGS,
   loadGradeEvalSettings,
   saveGradeEvalSettings,
   validateGradeEvalSettings,
@@ -166,7 +164,9 @@ export function AdminDashboard() {
             pending.map((u) => (
               <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
                 <div className="flex items-center gap-3">
-                  <UserAvatar user={u} className="h-10 w-10 text-xs" />
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">
+                    {u.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                  </span>
                   <div>
                     <p className="text-sm font-medium text-slate-800">{u.name}</p>
                     <p className="text-[11px] text-slate-500">
@@ -272,7 +272,9 @@ export function StudentDirectory() {
                 <tr key={u.id} className="border-b border-slate-50 last:border-0 hover:bg-emerald-50/40">
                   <td className={TD}>
                     <button type="button" onClick={() => setSelected(u)} className="flex items-center gap-3 text-left">
-                      <UserAvatar user={u} className="h-9 w-9 text-[11px]" />
+                      <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
+                        {u.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                      </span>
                       <span className="font-medium text-slate-800">{u.name}</span>
                     </button>
                   </td>
@@ -322,7 +324,7 @@ export function StudentDirectory() {
                   </Badge>
                 ))}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <p className="flex items-center gap-2 text-slate-600"><Mail className="h-4 w-4 text-emerald-700" /> {selected.email}</p>
                 <p className="flex items-center gap-2 text-slate-600"><Phone className="h-4 w-4 text-emerald-700" /> {selected.phone}</p>
               </div>
@@ -387,10 +389,6 @@ export function ProgramBuilder() {
   const [form, setForm] = useState(emptyProgram);
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const pendingScrollRef = useRef<"new" | string | null>(null);
-  const knownIdsRef = useRef<Set<string>>(new Set());
-  const [justSavedId, setJustSavedId] = useState<string | null>(null);
 
   const seed = async () => {
     setSeeding(true);
@@ -404,7 +402,6 @@ export function ProgramBuilder() {
     setEditingId(null);
     setStep(0);
     setError(null);
-    pendingScrollRef.current = null;
     setOpen(true);
   };
 
@@ -462,40 +459,6 @@ export function ProgramBuilder() {
         : [...f.deliveryModes, m],
     }));
 
-  // The wizard scrolls inside the dialog: a new step must start at the top,
-  // otherwise Continue leaves the reader halfway down the next step.
-  useEffect(() => {
-    if (!open) return;
-    dialogRef.current?.scrollTo({ top: 0 });
-  }, [step, open, error]);
-
-  // After saving, bring the card that changed into view — the catalogue grid is
-  // long, so a toast alone left the new programme off-screen.
-  useEffect(() => {
-    if (open || !pendingScrollRef.current) return;
-    const pending = pendingScrollRef.current;
-    pendingScrollRef.current = null;
-    const targetId =
-      pending === "new"
-        ? state.programs.filter((p) => !knownIdsRef.current.has(p.id)).map((p) => p.id).pop() ?? null
-        : pending;
-    if (!targetId) return;
-    setJustSavedId(targetId);
-    const frame = requestAnimationFrame(() => {
-      document.getElementById(`program-card-${targetId}`)?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-        block: "center",
-      });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [state.programs, open]);
-
-  useEffect(() => {
-    if (!justSavedId) return;
-    const timer = window.setTimeout(() => setJustSavedId(null), 5000);
-    return () => window.clearTimeout(timer);
-  }, [justSavedId]);
-
   const moduleLines = form.modulesRaw.split("\n").map((l) => l.trim()).filter(Boolean);
   const moduleWeeks = moduleLines.reduce(
     (sum, line) => sum + (Number.parseInt(line.split("|")[1]?.trim() ?? "2", 10) || 2),
@@ -536,7 +499,6 @@ export function ProgramBuilder() {
         return;
       }
     }
-    const idsBeforeSave = new Set(state.programs.map((p) => p.id));
     const payload = {
       title: form.title.trim(),
       category: form.category.trim(),
@@ -559,7 +521,6 @@ export function ProgramBuilder() {
         return;
       }
       toast.success(form.published ? "Program updated and published" : "Program updated and kept as draft");
-      pendingScrollRef.current = editingId;
     } else {
       const error = await addProgram(payload);
       if (error) {
@@ -568,8 +529,6 @@ export function ProgramBuilder() {
         return;
       }
       toast.success(form.published ? "Program published to the catalogue" : "Program saved as draft");
-      knownIdsRef.current = idsBeforeSave;
-      pendingScrollRef.current = "new";
     }
     setEditingId(null);
     setForm(emptyProgram);
@@ -605,13 +564,7 @@ export function ProgramBuilder() {
         {state.programs.map((p) => (
           <Reveal key={p.id} className={cn(panelClass, "flex flex-col overflow-hidden")}>
             <ProgramCover program={p} editable className="h-44" />
-            <div
-              id={`program-card-${p.id}`}
-              className={cn(
-                "flex flex-1 flex-col p-5 transition-shadow",
-                justSavedId === p.id && "ring-2 ring-inset ring-amber-400",
-              )}
-            >
+            <div className="flex flex-1 flex-col p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">{p.title}</h3>
@@ -656,10 +609,7 @@ export function ProgramBuilder() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          ref={dialogRef}
-          className="max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
-        >
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit program setup" : "New program setup"}</DialogTitle>
             <DialogDescription>
@@ -684,13 +634,8 @@ export function ProgramBuilder() {
               </li>
             ))}
           </ol>
-          {error && (
-            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-              {error}
-            </p>
-          )}
           {step === 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
                 <Label>Program title</Label>
                 <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Data Analytics with Python" />
@@ -715,7 +660,7 @@ export function ProgramBuilder() {
           )}
           {step === 1 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Duration (weeks)</Label>
                   <Input type="number" min={1} value={form.durationWeeks} onChange={(e) => setForm({ ...form, durationWeeks: e.target.value })} placeholder="26" />
@@ -825,7 +770,10 @@ export function ProgramBuilder() {
               </p>
             </div>
           )}
-          <DialogFooter className="sticky bottom-0 bg-white border-t border-slate-100 flex-col gap-2 sm:flex-row">
+          {error && (
+            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button variant="outline" onClick={() => { setError(null); if (step === 0) setOpen(false); else setStep((s) => s - 1); }}>
               {step === 0 ? "Cancel" : "Back"}
             </Button>
@@ -851,7 +799,7 @@ export function CohortCoordinator() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyCohort);
   const [roster, setRoster] = useState<string[]>([]);
-  const teachers = state.users.filter((u) => isInstructorRole(u.role));
+  const teachers = state.users.filter((u) => u.role === "Teacher");
 
   const toggleStudent = (id: string) =>
     setRoster((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));
@@ -892,7 +840,7 @@ export function CohortCoordinator() {
 
   const submit = async () => {
     if (!form.name.trim() || !form.programId || !form.teacherId) {
-      toast.error("Cohort name, program and instructor are required");
+      toast.error("Cohort name, program and Teachers-Instructors are required");
       return;
     }
     const payload = {
@@ -918,7 +866,7 @@ export function CohortCoordinator() {
         return;
       }
       const teacher = state.users.find((u) => u.id === form.teacherId);
-      toast.success(`Cohort created and assigned to ${teacher?.name ?? "Instructor"}`);
+      toast.success(`Cohort created and assigned to ${teacher?.name ?? "Teachers-Instructors"}`);
     }
     setForm(emptyCohort);
     setRoster([]);
@@ -930,7 +878,7 @@ export function CohortCoordinator() {
     <div className="space-y-5">
       <SectionHeader
         title="Cohort Coordinator"
-        subtitle="Batch learners, assign instructors and schedule training rooms"
+        subtitle="Batch learners, assign Teachers-Instructors and schedule training rooms"
         action={
           <Button onClick={openCreate} className="bg-emerald-700 hover:bg-emerald-800">
             <Plus className="mr-1 h-4 w-4" /> New cohort
@@ -944,42 +892,13 @@ export function CohortCoordinator() {
           return (
             <Reveal key={c.id} className={cn(panelClass, "p-5")}>
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {c.avatarUrl ? (
-                    <img src={c.avatarUrl} alt={c.name} className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-emerald-800"><GraduationCap className="h-5 w-5" /></span>
-                  )}
-                  <div>
-                    <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
-                    <p className="text-xs text-slate-500">{program?.title}</p>
-                  </div>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
+                  <p className="text-xs text-slate-500">{program?.title}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="cursor-pointer rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50" title="Upload cohort avatar">
-                    <Camera className="h-4 w-4" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const url = await uploadAvatar(c.id, file);
-                          await updateCohort(c.id, { avatarUrl: url });
-                          toast.success("Cohort avatar updated");
-                        } catch (err) {
-                          toast.error(err instanceof Error ? err.message : "Could not upload avatar");
-                        }
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <Badge className="bg-emerald-800 text-amber-400">{c.studentIds.length} enrolled</Badge>
-                </div>
+                <Badge className="bg-emerald-800 text-amber-400">{c.studentIds.length} enrolled</Badge>
               </div>
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <p className="flex items-center gap-2 text-slate-600"><BadgeCheck className="h-4 w-4 text-emerald-700" /> {teacher?.name ?? "Unassigned"}</p>
                 <p className="flex items-center gap-2 text-slate-600"><Boxes className="h-4 w-4 text-emerald-700" /> {c.room}</p>
                 <p className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-emerald-700" /> {c.startDate}</p>
@@ -1012,9 +931,9 @@ export function CohortCoordinator() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit cohort" : "Create a cohort"}</DialogTitle>
-            <DialogDescription>{editingId ? "Update program, instructors, dates, room and roster." : "Assign a program, instructors and student roster."}</DialogDescription>
+            <DialogDescription>{editingId ? "Update program, Teachers-Instructors, dates, room and roster." : "Assign a program, Teachers-Instructors and student roster."}</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
               <Label>Cohort name</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="2025 Q3 Data Analytics, Evening Batch" />
@@ -1029,9 +948,9 @@ export function CohortCoordinator() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Instructor</Label>
+              <Label>Teachers-Instructors</Label>
               <Select value={form.teacherId} onValueChange={(v) => setForm({ ...form, teacherId: v })}>
-                <SelectTrigger>                <SelectValue placeholder="Select instructor" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select Teachers-Instructors" /></SelectTrigger>
                 <SelectContent>
                   {teachers.map((t) => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
                 </SelectContent>
@@ -1082,7 +1001,7 @@ export function TeacherDashboard() {
 
   return (
     <div className="space-y-5">
-      <SectionHeader title={`Welcome, ${currentUser?.name.split(" ")[0] ?? "Instructor"}`} subtitle="Your teaching load, rosters and grading queue at a glance." />
+      <SectionHeader title={`Welcome, ${currentUser?.name.split(" ")[0] ?? "Teachers-Instructors"}`} subtitle="Your teaching load, rosters and grading queue at a glance." />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={Boxes} label="My cohorts" value={cohorts.length} hint={currentUser?.title} />
         <StatCard icon={Users} label="Students taught" value={studentIds.size} tone="slate" />
@@ -1098,7 +1017,7 @@ export function TeacherDashboard() {
             <Reveal key={c.id} className={cn(panelClass, "p-5")}>
               <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
               <p className="text-xs text-slate-500">{program?.title} / {c.room}</p>
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <p className="text-slate-600"><span className="block text-lg font-semibold text-emerald-800">{c.studentIds.length}</span>Enrolled</p>
                 <p className="text-slate-600"><span className="block text-lg font-semibold text-emerald-800">{rate}%</span>Attendance</p>
               </div>

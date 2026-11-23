@@ -58,9 +58,6 @@ function mapUser(p: Row, cohortIds: string[]): User {
     note: p.note ? txt(p.note) : undefined,
     documents: p.documents ? txt(p.documents) : undefined,
     avatarUrl: p.avatar_url ? txt(p.avatar_url) : undefined,
-    lastSeenAt: p.last_seen_at ? txt(p.last_seen_at) : undefined,
-    schoolPolicyAcceptedAt: p.school_policy_accepted_at ? txt(p.school_policy_accepted_at) : undefined,
-    isOnline: flag(p, "is_online", false),
     bio: p.bio ? txt(p.bio) : undefined,
     address: p.address ? txt(p.address) : undefined,
     dateOfBirth: p.date_of_birth ? txt(p.date_of_birth).slice(0, 10) : undefined,
@@ -468,9 +465,6 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     description: txt(p.description),
     entryRequirements: txt(p.entry_requirements),
     imageUrl: p.image_url ? txt(p.image_url) : undefined,
-    selfPacedEnabled: p.self_paced_enabled === true,
-    selfPacedRequiresApproval: p.self_paced_requires_approval === true,
-    selfPacedMinCompletionPercent: p.self_paced_min_completion_percent == null ? 80 : Number(p.self_paced_min_completion_percent),
     studyPlan: p.study_plan ? txt(p.study_plan) : undefined,
     deliveryModes: (Array.isArray(p.delivery_modes)
       ? (p.delivery_modes as string[])
@@ -497,7 +491,6 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     startDate: txt(c.start_date).slice(0, 10),
     endDate: txt(c.end_date).slice(0, 10),
     room: txt(c.room),
-    avatarUrl: c.avatar_url ? txt(c.avatar_url) : undefined,
     studentIds: linkRows.filter((l) => txt(l.cohort_id) === txt(c.id)).map((l) => txt(l.student_id)),
   }));
 

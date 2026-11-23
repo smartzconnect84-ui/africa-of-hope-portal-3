@@ -5,12 +5,13 @@ import "./index.css";
 import App from "./App.tsx";
 import { dismissSplash, registerServiceWorker } from "./lib/pwa";
 import { restorePublicLaunch } from './lib/publicBranding';
+import { completeSignIn } from "./integrations/autobase/client";
+
 restorePublicLaunch();
 registerServiceWorker();
 
-// Supabase finishes confirmation, recovery and magic-link sign-ins itself:
-// `detectSessionInUrl` on the client in src/integrations/supabase/client.ts
-// reads the returned token and raises SIGNED_IN / PASSWORD_RECOVERY.
+// Finishes a sign-in, confirmation or password-reset link the page was opened from.
+void completeSignIn().catch(() => undefined);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,9 +22,7 @@ createRoot(document.getElementById("root")!).render(
 );
 
 // The branded splash lives in index.html so it paints before the bundle loads.
-// Fade it out once React has committed the first screen. Use setTimeout (not
-// requestAnimationFrame) so the splash is dismissed even when the tab is
-// backgrounded and rAF callbacks are throttled.
-window.setTimeout(() => {
+// Fade it out once React has committed the first screen.
+requestAnimationFrame(() => {
   window.setTimeout(dismissSplash, 150);
-}, 0);
+});

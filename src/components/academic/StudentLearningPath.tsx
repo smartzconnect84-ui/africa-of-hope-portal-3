@@ -174,7 +174,7 @@ export default function StudentLearningPath({
         <Loader2 className="mx-auto h-6 w-6 animate-spin text-emerald-700" aria-label="Loading your learning path" />
       )}
       {!error && firstLoadDone && units.length === 0 && (
-        <EmptyState icon={Layers3} title="No approved lessons yet" hint="Your instructors' approved topics will appear here, in order." />
+        <EmptyState icon={Layers3} title="No approved lessons yet" hint="Your Teachers-Instructors' approved topics will appear here, in order." />
       )}
       {!error && firstLoadDone && units.length > 0 && Array.from(groups.entries()).map(([groupId, list]) => {
         const cohort = state.cohorts.find((c) => c.id === groupId);

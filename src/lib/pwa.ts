@@ -5,29 +5,8 @@ type BIPEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+const INSTALLED_KEY = "aoh-pwa-installed";
 const DISMISSED_KEY = "aoh-pwa-dismissed-at";
-const DECLINED_KEY = "aoh-pwa-declined";
-
-/**
- * `beforeinstallprompt` fires once per page load, and it can fire before React
- * mounts — a listener added in a component effect then never sees it and the
- * install card never appears. The event is captured here, as soon as this
- * module is imported (before the first render), and handed to every hook.
- */
-let earlyPrompt: BIPEvent | null = null;
-const promptListeners = new Set<(event: BIPEvent | null) => void>();
-
-if (typeof window !== "undefined") {
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    earlyPrompt = event as BIPEvent;
-    promptListeners.forEach((listener) => listener(earlyPrompt));
-  });
-  window.addEventListener("appinstalled", () => {
-    earlyPrompt = null;
-    promptListeners.forEach((listener) => listener(null));
-  });
-}
 
 export function isIos(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -46,32 +25,41 @@ export function isStandalone(): boolean {
 /* ------------------------------------------------------------------ install */
 
 export function usePwaInstall() {
-  const [deferred, setDeferred] = useState<BIPEvent | null>(() => earlyPrompt);
-  // Only the running display mode counts as installed. A stored flag used to
-  // hide the install card forever after an uninstall or a cleared profile.
-  const [installed, setInstalled] = useState(() => isStandalone());
+  const [deferred, setDeferred] = useState<BIPEvent | null>(null);
+  const [installed, setInstalled] = useState(() => {
+    try {
+      return localStorage.getItem(INSTALLED_KEY) === "1" || isStandalone();
+    } catch {
+      return isStandalone();
+    }
+  });
   const [dismissed, setDismissed] = useState(() => {
     try {
-      return localStorage.getItem(DISMISSED_KEY) === "1" && localStorage.getItem(DECLINED_KEY) !== "1";
+      return localStorage.getItem(DISMISSED_KEY) === "1";
     } catch {
       return false;
     }
   });
-  const [declined, setDeclined] = useState(() => {
-    try { return localStorage.getItem(DECLINED_KEY) === "1"; } catch { return false; }
-  });
 
   useEffect(() => {
-    const onBip = (event: BIPEvent | null) => setDeferred(event);
+    const onBip = (e: Event) => {
+      e.preventDefault();
+      setDeferred(e as BIPEvent);
+    };
     const onInstalled = () => {
       setInstalled(true);
       setDeferred(null);
+      try {
+        localStorage.setItem(INSTALLED_KEY, "1");
+      } catch {
+        /* private mode */
+      }
     };
-    promptListeners.add(onBip);
+    window.addEventListener("beforeinstallprompt", onBip);
     window.addEventListener("appinstalled", onInstalled);
     if (isStandalone()) onInstalled();
     return () => {
-      promptListeners.delete(onBip);
+      window.removeEventListener("beforeinstallprompt", onBip);
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
@@ -82,11 +70,11 @@ export function usePwaInstall() {
     const choice = await deferred.userChoice;
     if (choice.outcome === "accepted") {
       setInstalled(true);
-    } else {
-      try { localStorage.setItem(DECLINED_KEY, "1"); } catch { /* ignore */ }
-      setDeclined(true);
-        setDismissed(true);
-      try { localStorage.setItem(DISMISSED_KEY, "1"); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(INSTALLED_KEY, "1");
+      } catch {
+        /* ignore */
+      }
     }
     setDeferred(null);
     return choice.outcome;
@@ -99,11 +87,6 @@ export function usePwaInstall() {
     } catch {
       /* ignore */
     }
-    window.setTimeout(() => {
-      try { if (localStorage.getItem(DECLINED_KEY) === "1") return; } catch { /* ignore */ }
-      setDismissed(false);
-      try { localStorage.removeItem(DISMISSED_KEY); } catch { /* ignore */ }
-    }, 30000);
   }, []);
 
   const resetDismiss = useCallback(() => {
@@ -116,12 +99,10 @@ export function usePwaInstall() {
   }, []);
 
   return {
-    canInstall: !!deferred && !installed && !declined,
-    canPrompt: !!deferred,
-    isInstalled: installed,
+    canInstall: !!deferred && !installed,
     isIos: isIos(),
-    installed: installed || declined,
-    dismissed: dismissed || declined,
+    installed,
+    dismissed,
     install,
     dismiss,
     resetDismiss,
@@ -239,11 +220,6 @@ export function useServiceWorkerUpdate() {
     setState(updateState);
     return () => { updateListeners.delete(setState); };
   }, []);
-  useEffect(() => {
-    if (!dismissed || !state.hasUpdate) return;
-    const t = window.setTimeout(() => setDismissed(false), 30000);
-    return () => window.clearTimeout(t);
-  }, [dismissed, state.hasUpdate]);
   return {
     ...state,
     hasUpdate: state.hasUpdate && !dismissed,

@@ -1,7 +1,5 @@
-// The apex domain no longer resolves; the live public site is the www host.
-// Canonicals, social cards and the sitemap must point at a URL that answers.
 export const CANONICAL_ORIGIN =
-  "https://www.africaofhopelr.org";
+  "https://africaofhopelr.org";
 
 export const SITE_NAME =
   "AFRICA OF HOPE SCHOOL OF PROFESSIONAL STUDIES";
@@ -13,7 +11,7 @@ export const SITE_KEYWORDS =
   "AFRICA OF HOPE, professional studies Liberia, certificate programmes Liberia, online admissions Liberia, verify certificate Liberia, vocational training Margibi, computer training Liberia";
 
 export const OG_IMAGE =
-  "https://www.africaofhopelr.org/og-card.png";
+  "https://africaofhopelr.org/og-card.png";
 
 export const OG_IMAGE_ALT =
   "AFRICA OF HOPE School of Professional Studies — practical certificate programmes with verifiable certificates in Liberia";

@@ -1,5 +1,4 @@
 import type { Role } from "../types";
-import { canonicalRole } from "./roleDisplay";
 
 /**
  * Single source of truth for the permission catalogue, the fixed roles
@@ -91,7 +90,6 @@ export const PERMISSION_KEYS = [
   "settings.manage",
   "assistant.use",
   "assistant.admin_help",
-  "chat.use",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -109,10 +107,10 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "students.manage", group: "People", label: "Manage students", description: "Approve applicants, suspend/reinstate students, assign programmes and cohorts.", sort: 20 },
   { key: "staff.manage", group: "People", label: "Manage staff", description: "Add staff accounts, change roles, suspend, reset passwords and delete people.", sort: 30 },
   { key: "programs.manage", group: "Academics", label: "Manage programmes", description: "Create and edit programmes and their modules.", sort: 40 },
-  { key: "cohorts.manage", group: "Academics", label: "Manage cohorts", description: "Create and edit cohorts, assign instructors and students.", sort: 50 },
+  { key: "cohorts.manage", group: "Academics", label: "Manage cohorts", description: "Create and edit cohorts, assign teachers and students.", sort: 50 },
   { key: "courses.enroll", group: "Academics", label: "Plan own courses", description: "Check conflicts and submit course enrollment plans.", sort: 51 },
   { key: "academic_plans.manage", group: "Academics", label: "Create academic plans", description: "Create course plans, lessons and class timetables for assigned cohorts.", sort: 52 },
-  { key: "academic_plans.approve", group: "Academics", label: "Approve academic plans", description: "Review student enrollments and instructor plans, lessons and schedules.", sort: 53 },
+  { key: "academic_plans.approve", group: "Academics", label: "Approve academic plans", description: "Review student enrollments and teacher plans, lessons and schedules.", sort: 53 },
   { key: "lessons.manage", group: "Academics", label: "Manage lessons", description: "Create chapters, modules and topics for assigned courses.", sort: 54 },
   { key: "materials.manage", group: "Academics", label: "Manage training materials", description: "Submit files and educational resources for assigned courses.", sort: 55 },
   { key: "materials.approve", group: "Academics", label: "Approve training materials", description: "Review training resources before students can access them.", sort: 56 },
@@ -136,7 +134,7 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "blog.manage", group: "Website", label: "Manage blog", description: "Write, schedule, publish and archive public blog posts.", sort: 185 },
   { key: "aptitude.manage", group: "Admissions", label: "Manage aptitude & entrances", description: "Run Aptitude Control: preparations, entrance results and setup.", sort: 186 },
   { key: "reports.manage", group: "Academics", label: "Manage report cards", description: "Generate term report cards with totals, grades and comments.", sort: 187 },
-  { key: "timetable.manage", group: "Academics", label: "Manage timetables", description: "Build weekly class timetables with rooms, instructors and times.", sort: 188 },
+  { key: "timetable.manage", group: "Academics", label: "Manage timetables", description: "Build weekly class timetables with rooms, teachers and times.", sort: 188 },
   { key: "transparency.manage", group: "Website", label: "Manage transparency library", description: "Publish audits, reports and accountability documents.", sort: 189 },
   { key: "policies.manage", group: "Website", label: "Manage policies", description: "Edit school policies shown on the public site and portal.", sort: 190 },
   { key: "discussions.moderate", group: "Comms", label: "Moderate discussions", description: "Moderate class discussions and remove unsuitable posts.", sort: 191 },
@@ -151,7 +149,6 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "settings.manage", group: "Settings", label: "Manage system settings", description: "Edit academy details, academic calendar and portal-wide settings.", sort: 190 },
   { key: "assistant.use", group: "AI", label: "Use AOH AI", description: "Chat with AOH AI for general help and authorized school information.", sort: 200 },
   { key: "assistant.admin_help", group: "AI", label: "Assistant screen help & stats", description: "Get screen guidance and authorized aggregate statistics from AOH AI.", sort: 210 },
-  { key: "chat.use", group: "Comms", label: "Use chat & messages", description: "Open and use direct messages and group chat.", sort: 193 },
 ];
 
 export const PERMISSION_GROUPS = Array.from(new Set(PERMISSIONS.map((p) => p.group)));
@@ -201,9 +198,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "settings.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
-  "Teacher": [
+  Teacher: [
     "academic_plans.manage",
     "lessons.manage",
     "materials.manage",
@@ -221,27 +217,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
-  ],
-  "Instructor": [
-    "academic_plans.manage",
-    "lessons.manage",
-    "materials.manage",
-    "grades.manage",
-    "library.manage",
-    "attendance.own",
-    "assignments.own",
-    "grades.review_appeals",
-    "reports.manage",
-    "timetable.manage",
-    "discussions.moderate",
-    "verification.manage",
-    "quizzes.manage",
-    "quizzes.view_results",
-    "announcements.manage",
-    "assistant.use",
-    "assistant.admin_help",
-    "chat.use",
   ],
   Registrar: [
     "people.view",
@@ -262,7 +237,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
   "Admission Officer": [
     "people.view",
@@ -270,7 +244,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "aptitude.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
   "Finance Officer": [
     "people.view",
@@ -281,7 +254,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
   "Public Relations Officer": [
     "people.view",
@@ -299,7 +271,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "helpdesk.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
   "Data Entry Officer": [
     "people.view",
@@ -314,7 +285,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "certificates.manage",
     "announcements.manage",
     "assistant.use",
-    "chat.use",
   ],
   "Executive Assistant": [
     "people.view",
@@ -331,7 +301,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "cms.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
   "Research Officer": [
     "people.view",
@@ -350,7 +319,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "blog.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
   "Customer Care Officer": [
     "people.view",
@@ -361,7 +329,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "announcements.manage",
     "helpdesk.manage",
     "assistant.use",
-    "chat.use",
   ],
   "Director of Education": [
     "people.view",
@@ -391,9 +358,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Exclude<Role, "Super Admin">, Perm
     "blog.manage",
     "assistant.use",
     "assistant.admin_help",
-    "chat.use",
   ],
-  Student: ["courses.enroll", "quizzes.take", "payments.submit", "assistant.use", "chat.use"],
+  Student: ["courses.enroll", "quizzes.take", "payments.submit", "assistant.use"],
 };
 
 /** True when `role` has `key`, using Super Admin's implicit all-access rule. */
@@ -404,12 +370,7 @@ export function roleHasPermission(
 ): boolean {
   if (!role) return false;
   if (role === "Super Admin") return true;
-  const key0 = canonicalRole(role);
-  return (
-    rolePermissions[key0] ??
-    rolePermissions[role] ??
-    DEFAULT_ROLE_PERMISSIONS[key0 as Exclude<Role, "Super Admin">] ??
-    DEFAULT_ROLE_PERMISSIONS[role as Exclude<Role, "Super Admin">] ??
-    []
-  ).includes(key);
+  return (rolePermissions[role] ?? DEFAULT_ROLE_PERMISSIONS[role as Exclude<Role, "Super Admin">] ?? []).includes(
+    key,
+  );
 }

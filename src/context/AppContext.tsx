@@ -9,9 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { resendConfirmationEmail, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchState, mergeThemeSettings, mergeWebsiteSettings, persistSettingsPatch, settingsRow, today, uid, type Row } from "@/data/liveData";
-import { displayRole } from "@/lib/roleDisplay";
 import type {
   Announcement,
   AppState,
@@ -98,8 +97,6 @@ interface AppContextValue {
   /** Bumped by resetDemoData(); components that fetch their own data outside `state` (e.g. payments, blog) should include this in their refetch effect's dependencies so the "Reload live data" action refreshes them too. */
   reloadKey: number;
   refresh: () => Promise<void>;
-  /** Re-reads every live table and bumps `reloadKey` so self-fetching modules refresh too. Used by the sidebar's "Reload live data". */
-  reloadLiveData: () => Promise<void>;
   /** Resolves to an error message, or null on success. */
   login: (emailOrUserId: string, password?: string) => Promise<string | null>;
   logout: () => void;
@@ -307,7 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSessionUserId(nextId);
       setAuthReady(true);
     };
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       gotEvent = true;
       acceptIdentity(session?.user.id ?? null);
     });
@@ -318,23 +315,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }).catch(() => { if (!gotEvent) acceptIdentity(null); });
     return () => { cancelled = true; data.subscription.unsubscribe(); };
   }, []);
-
-  const reloadLiveData = useCallback(async () => {
-    setReloadKey((key) => key + 1);
-    try {
-      await refresh();
-    } catch {
-      // refresh() already reports the failure through `live` and a toast.
-    }
-  }, [refresh]);
-
-  // Older modules dispatch this event after a write; route it to the one
-  // implementation instead of leaving the button inert.
-  useEffect(() => {
-    const handler = () => void reloadLiveData();
-    window.addEventListener("aoh-reload-live-data", handler);
-    return () => window.removeEventListener("aoh-reload-live-data", handler);
-  }, [reloadLiveData]);
 
   const value = useMemo<AppContextValue>(() => {
     const currentUser = state.users.find((u) => u.id === sessionUserId) ?? null;
@@ -359,25 +339,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       live,
       reloadKey,
       refresh,
-      reloadLiveData,
       login: async (emailOrUserId, password) => {
         if (!password) return "Enter your portal password to sign in.";
-        const email = emailOrUserId.trim().toLowerCase();
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: emailOrUserId.trim(),
           password,
         });
         if (error) {
-          // Supabase refuses sign-in until the address is confirmed. Answer with
-          // a way forward (a fresh link) instead of a dead end.
-          if (/email[_ ]?not[_ ]?confirmed/i.test(error.message)) {
-            const { error: resendError } = await resendConfirmationEmail(email);
-            const message = resendError
-              ? `This email address is not confirmed yet, and a new confirmation link could not be sent (${resendError}). Contact the admissions office.`
-              : `This email address is not confirmed yet. We sent a fresh confirmation link to ${email} — open it, then sign in.`;
-            toast.error(message, { duration: 9000 });
-            return message;
-          }
           toast.error(error.message);
           return error.message;
         }
@@ -447,20 +415,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { error: null, status: "confirm_email" };
       },
       requestPasswordReset: async (email) => {
-        // The allowlist matches full URLs, so send the origin as a path URL
-        // rather than the bare origin. The app opens its recovery dialog when
-        // Supabase finishes the link.
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: window.location.origin,
         });
-        if (error) {
-          // Give the user a way forward when their address is still unconfirmed.
-          if (/email[_ ]?not[_ ]?confirmed/i.test(error.message)) {
-            return "This email has not been confirmed yet. Check your inbox for the confirmation link we sent when you signed up, then try again. If you can't find it, ask the school office to resend it.";
-          }
-          return error.message;
-        }
-        return null;
+        return error?.message ?? null;
       },
       changePassword: async (password) => {
         const { error } = await supabase.auth.updateUser({ password });
@@ -632,7 +590,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             category: program.category,
             duration_weeks: program.durationWeeks,
             tuition: program.tuition,
-            fee: program.tuition,
             certification: program.certification,
             description: program.description,
             entry_requirements: program.entryRequirements,
@@ -640,8 +597,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             study_plan: program.studyPlan || null,
             image_url: program.imageUrl || null,
             published: program.published ?? true,
-            is_active: program.published ?? true,
-            duration: program.durationWeeks ? `${program.durationWeeks} weeks` : "",
           };
           let res = await supabase.from("programs").insert(full);
           // Duplicate code (two programmes, same title): retry once with a unique suffix.
@@ -680,9 +635,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               modules.map((m, index) => ({
                 id: m.id,
                 program_id: id,
-                name: m.title,
-                description: m.summary,
+                title: m.title,
                 weeks: m.weeks,
+                summary: m.summary,
                 position: index,
               })),
             );
@@ -729,9 +684,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
           if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
           if (rest.published !== undefined) row.published = rest.published;
-          if (rest.selfPacedEnabled !== undefined) row.self_paced_enabled = rest.selfPacedEnabled;
-          if (rest.selfPacedRequiresApproval !== undefined) row.self_paced_requires_approval = rest.selfPacedRequiresApproval;
-          if (rest.selfPacedMinCompletionPercent !== undefined) row.self_paced_min_completion_percent = rest.selfPacedMinCompletionPercent;
           if (!Object.keys(row).length && !nextModules) return null;
           if (Object.keys(row).length) {
             let res = await supabase.from("programs").update(row).eq("id", id);
@@ -767,7 +719,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           setState((s) => ({
             ...s,
-            programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(rest.selfPacedEnabled !== undefined ? { selfPacedEnabled: rest.selfPacedEnabled } : {}), ...(rest.selfPacedRequiresApproval !== undefined ? { selfPacedRequiresApproval: rest.selfPacedRequiresApproval } : {}), ...(rest.selfPacedMinCompletionPercent !== undefined ? { selfPacedMinCompletionPercent: rest.selfPacedMinCompletionPercent } : {}), ...(nextModules ? { modules: nextModules } : null) } : p)),
+            programs: s.programs.map((p) => (p.id === id ? { ...p, ...rest, ...(nextModules ? { modules: nextModules } : null) } : p)),
           }));
           await refresh();
           return null;
@@ -826,7 +778,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (payload.startDate !== undefined) row.start_date = payload.startDate;
           if (payload.endDate !== undefined) row.end_date = payload.endDate;
           if (payload.room !== undefined) row.room = payload.room;
-          if (payload.avatarUrl !== undefined) row.avatar_url = payload.avatarUrl;
           if (Object.keys(row).length) {
             const { error } = await supabase.from("cohorts").update(row).eq("id", id);
             if (error) return migrationHint(error.message, "Cohorts");
@@ -1215,12 +1166,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               return;
             }
           }
-          toast.success(`${displayRole(role)} reset to defaults.`);
+          toast.success(`${role} reset to defaults.`);
         })();
       },
     };
     return value;
-  }, [state, sessionUserId, loading, live, refresh, reloadKey, reloadLiveData]);
+  }, [state, sessionUserId, loading, live, refresh, reloadKey]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

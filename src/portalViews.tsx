@@ -1,6 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- registry module: it
-   intentionally exports the view list, nav groups and the hooks that read them
-   alongside the small hub components that render inside those views. */
 import { useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
@@ -27,23 +24,22 @@ import {
   Newspaper,
   Smartphone,
   Mail,
-  MessageCircle,
   Activity,
   TrendingUp,
   HeartHandshake,
+  Briefcase,
   Inbox,
-  Bell,
   LifeBuoy,
   ReceiptText,
-  Briefcase,
   FolderOpen,
+  FileText,
+  Lightbulb,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
 import { usePermissions, type PermissionsApi } from "./hooks/usePermission";
 import type { PermissionKey } from "./lib/permissions";
 import type { Role, User } from "./types";
-import { isInstructorRole } from "./lib/roleDisplay";
 import {
   AdminDashboard,
   ProgramBuilder,
@@ -54,6 +50,7 @@ import {
 } from "./components/AdminTeacherViews";
 import {
   StudentPortal,
+  StudentAssignments,
   FeeRegister,
 } from "./components/StudentFinancialViews";
 import { CertificateStudio, VerificationPortal } from "./components/CertificateVerification";
@@ -64,7 +61,6 @@ import ProfilePage from "./components/ProfilePage";
 import RolesPermissions from "./components/RolesPermissions";
 import PeopleManagement from "./components/PeopleManagement";
 import QuizBuilder from "./components/quiz/QuizBuilder";
-import ChatHub from "./components/chat/ChatHub";
 import StudentQuizzes from "./components/quiz/StudentQuizzes";
 import AcademicPlanning from "./components/AcademicPlanning";
 import AnnouncementManager from "./components/AnnouncementManager";
@@ -76,10 +72,6 @@ import PaymentsReview from "./components/portal/PaymentsReview";
 import EmailOutboxPanel from "./components/portal/EmailOutboxPanel";
 import EngagementInbox from "./components/portal/EngagementInbox";
 import OperationsHub from "./components/OperationsHub";
-import MyStudyMaterials from "./components/MyStudyMaterials";
-import SelfPacedLearning from "./components/SelfPacedLearning";
-import StudentPolicy from "./components/StudentPolicy";
-import ScheduleConflictChecker from "./components/ScheduleConflictChecker";
 import CoursePlayer from "./components/academic/CoursePlayer";
 import StudentCalendar from "./components/academic/StudentCalendar";
 import StudyPlanner from "./components/academic/StudyPlanner";
@@ -96,7 +88,6 @@ import EntranceTest from "./components/portal/EntranceTest";
 import EntranceTestAdmin from "./components/admin/EntranceTestAdmin";
 import EntrancePrepPack from "./components/public/EntrancePrepPack";
 import DonatePage from "./components/public/DonatePage";
-import KnockNotificationCenter from "./components/notifications/KnockNotificationCenter";
 
 /** Everything a view's `visible`/`render` function needs, computed once per render. */
 export interface PortalViewContext extends PermissionsApi {
@@ -110,6 +101,27 @@ export interface PortalView {
   icon: LucideIcon;
   visible: (ctx: PortalViewContext) => boolean;
   render: (ctx: PortalViewContext) => ReactNode;
+}
+
+function HubTabs({ tabs, initial }: { tabs: { key: string; label: string }[]; initial?: string }) {
+  const [active, setActive] = useState(initial ?? tabs[0]?.key);
+  return (
+    <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Section">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          role="tab"
+          aria-selected={active === t.key}
+          onClick={() => setActive(t.key)}
+          className={active === t.key ? "h-10 rounded-xl bg-emerald-800 px-4 text-sm font-bold text-white" : "h-10 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200"}
+        >
+          {t.label}
+        </button>
+      ))}
+      <span className="hidden" data-hub-active={active} />
+    </div>
+  );
 }
 
 function AptitudeControlHub({ ctx }: { ctx: PortalViewContext }) {
@@ -180,7 +192,7 @@ function PeopleHub({ ctx }: { ctx: PortalViewContext }) {
 
 function DashboardView({ role }: { role: Role | null }) {
   if (role === "Student") return <StudentPortal />;
-  if (isInstructorRole(role)) return <TeacherDashboard />;
+  if (role === "Teacher") return <TeacherDashboard />;
   if (role === "Admission Officer") return <PeopleManagement initialTab="applicants" />;
   if (role === "Customer Care Officer") return <Helpdesk key="dashboard-helpdesk" />;
   if (role === "Data Entry Officer") return <PeopleManagement />;
@@ -213,7 +225,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "dashboard",
     label: (ctx) =>
-      ctx.role === "Student" ? "My Portal" : isInstructorRole(ctx.role) ? "My Workspace" : "Dashboard",
+      ctx.role === "Student" ? "My Portal" : ctx.role === "Teacher" ? "My Workspace" : "Dashboard",
     icon: LayoutDashboard,
     visible: () => true,
     render: (ctx) => <DashboardView role={ctx.role} />,
@@ -234,7 +246,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "academic-planning",
-    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : isInstructorRole(ctx.role) ? "Course Planning" : "Academic Approvals",
+    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : ctx.role === "Teacher" ? "Course Planning" : "Academic Approvals",
     icon: CalendarRange,
     visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve"),
     render: () => <AcademicPlanning />,
@@ -315,7 +327,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: TrendingUp,
     visible: (ctx) =>
       ctx.canAny("reports.manage", "grades.manage", "attendance.manage", "academic_plans.manage", "academic_plans.approve") ||
-      isInstructorRole(ctx.role) ||
+      ctx.role === "Teacher" ||
       ctx.role === "School Admin" ||
       ctx.role === "Super Admin" ||
       ctx.role === "Director of Education" ||
@@ -421,20 +433,6 @@ export const PORTAL_VIEWS: PortalView[] = [
     render: () => <AdminOpportunities />,
   },
   {
-    key: "messages",
-    label: "Messages",
-    icon: MessageCircle,
-    visible: (ctx) => ctx.can("chat.use"),
-    render: () => <ChatHub />,
-  },
-  {
-    key: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    visible: (ctx) => ctx.isSignedIn,
-    render: () => <KnockNotificationCenter />,
-  },
-  {
     key: "website",
     label: "Website CMS",
     icon: Globe,
@@ -454,34 +452,6 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: FolderOpen,
     visible: () => true,
     render: () => <OperationsHub personalOnly />,
-  },
-  {
-    key: "my-study-materials",
-    label: "My study materials",
-    icon: BookOpen,
-    visible: () => true,
-    render: () => <MyStudyMaterials />,
-  },
-  {
-    key: "self-paced-learning",
-    label: "Self-Paced Learning",
-    icon: GraduationCap,
-    visible: (ctx) => ctx.isSignedIn,
-    render: () => <SelfPacedLearning />,
-  },
-  {
-    key: "school-policy",
-    label: "Student policy",
-    icon: ShieldCheck,
-    visible: () => true,
-    render: () => <StudentPolicy />,
-  },
-  {
-    key: "schedule-conflicts",
-    label: "Schedule conflicts",
-    icon: CalendarDays,
-    visible: () => true,
-    render: () => <ScheduleConflictChecker />,
   },
   {
     key: "operations",
@@ -531,11 +501,8 @@ const NAV_RELEVANCE_ORDER = [
   "course-player",
   "academic-planning",
   "study-plan",
-  "self-paced-learning",
   "study-calendar",
-  "timetable",
   "assignments",
-  "report-cards",
   "quizzes",
   "training-library",
   "entrance-control",
@@ -546,8 +513,6 @@ const NAV_RELEVANCE_ORDER = [
   "verification",
   "announcements",
   "helpdesk",
-  "messages",
-  "notifications",
   "grade-appeals",
   "policies",
   "blog",
@@ -561,7 +526,7 @@ const NAV_RELEVANCE_ORDER = [
   "profile",
 ];
 
-export const NAV_RELEVANCE_RANK = new Map(NAV_RELEVANCE_ORDER.map((key, i) => [key, i]));
+const NAV_RELEVANCE_RANK = new Map(NAV_RELEVANCE_ORDER.map((key, i) => [key, i]));
 
 /** The sidebar/router list, filtered and ordered for the signed-in user. */
 export function useVisiblePortalViews(): { ctx: PortalViewContext; views: PortalView[] } {
@@ -601,7 +566,6 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
       "course-player",
       "academic-planning",
       "study-plan",
-      "self-paced-learning",
       "study-calendar",
       "assignments",
       "quizzes",
@@ -616,9 +580,9 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
     keys: ["fees", "payments", "payment-review", "certificates", "verification"],
   },
   {
-    id: "support",
+    id: "community",
     label: "Support & Community",
-    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate", "messages", "notifications"],
+    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate"],
   },
   {
     id: "system",

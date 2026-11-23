@@ -2,7 +2,6 @@ export type Role =
   | "Super Admin"
   | "School Admin"
   | "Teacher"
-  | "Instructor"
   | "Registrar"
   | "Admission Officer"
   | "Finance Officer"
@@ -46,9 +45,6 @@ export interface User {
   /** Highest completed schooling, captured at registration. */
   educationLevel?: string;
   avatarUrl?: string;
-  lastSeenAt?: string;
-  schoolPolicyAcceptedAt?: string;
-  isOnline?: boolean;
   bio?: string;
   address?: string;
   dateOfBirth?: string;
@@ -78,12 +74,6 @@ export interface Program {
   entryRequirements: string;
   modules: Module[];
   imageUrl?: string;
-  /** Whether optional self-paced learning is enabled for this program. */
-  selfPacedEnabled?: boolean;
-  /** Whether student self-paced participation requires admin approval. */
-  selfPacedRequiresApproval?: boolean;
-  /** Minimum completion percent for a week to count as complete. */
-  selfPacedMinCompletionPercent?: number;
   /** Full-setup study plan line, e.g. delivery + schedule summary chosen in Program Builder. */
   studyPlan?: string;
   /** Explicit backend publication state; legacy records without a flag remain public. */
@@ -99,7 +89,6 @@ export interface Cohort {
   endDate: string;
   room: string;
   studentIds: string[];
-  avatarUrl?: string;
 }
 
 export interface AttendanceRecord {
@@ -184,8 +173,6 @@ export interface HeroSlide {
   highlight: string;
   description: string;
   image: string;
-  /** Optional public background video; `image` stays the poster/fallback. */
-  video?: string;
 }
 
 export interface FeatureHighlight {
@@ -296,7 +283,6 @@ export interface AuthTestimonial {
 
 export interface AuthSettings {
   showcaseImage: string;
-  authBackgroundImage: string;
   eyebrow: string;
   headline: string;
   highlight: string;

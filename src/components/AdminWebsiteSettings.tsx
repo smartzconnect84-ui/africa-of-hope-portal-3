@@ -12,9 +12,7 @@ import {
 import { useApp } from "../context/AppContext";
 import { usePermission } from "../hooks/usePermission";
 import { panelClass } from "./Navigation";
-import { Field, Area, Toggle, ImageBox, VideoBox, ListEditor, genId } from "./CmsPrimitives";
-import { uploadAuthBackground, pruneAuthBackground } from "../lib/storage";
-import AuthBackgroundBox from "./AuthBackgroundBox";
+import { Field, Area, Toggle, ImageBox, ListEditor, genId } from "./CmsPrimitives";
 import { ICON_NAMES } from "./home/icons";
 import type { CertificateBranding, HomeSectionKey, WebsiteSettings } from "../types";
 import { DEFAULT_CERTIFICATE_BRANDING } from "../lib/certificateBrand";
@@ -400,7 +398,7 @@ export default function AdminWebsiteSettings() {
           addLabel="Add hero slide"
           newItem={() => ({
             id: genId("hero"), eyebrow: "New highlight", title: "Headline",
-            highlight: "Accent phrase", description: "Describe this slide.", image: "", video: "",
+            highlight: "Accent phrase", description: "Describe this slide.", image: "",
           })}
           renderItem={(s: WebsiteSettings["heroSlides"][number], update) => (
             <>
@@ -411,7 +409,6 @@ export default function AdminWebsiteSettings() {
               </div>
               <Area label="Description" value={s.description} onChange={(v) => update({ description: v })} rows={2} />
               <ImageBox label="Background image" folder="hero" value={s.image} onChange={(v) => update({ image: v })} />
-              <VideoBox label="Background video (optional)" folder="hero" value={s.video ?? ""} onChange={(v) => update({ video: v })} />
             </>
           )}
         />
@@ -771,17 +768,6 @@ export default function AdminWebsiteSettings() {
 
       {tab === "auth" && (
         <div className="space-y-6">
-          <div className={`${panelClass} space-y-4 p-5`}>
-            <p className="text-sm font-semibold text-slate-700">Auth page background (login, sign-up and password reset)</p>
-            <p className="text-xs text-slate-500">
-              A full-bleed background image shared by the sign-in, register and password-recovery screens. Set separately from the showcase panel so the form and the decorative side can use different art. Transparent PNG/WebP keeps any soft edges; opaque images are displayed as-is.
-            </p>
-            <AuthBackgroundBox
-              value={draft.auth.authBackgroundImage ?? ""}
-              onChange={(v) => patchAuth({ authBackgroundImage: v })}
-            />
-          </div>
-
           <div className={`${panelClass} grid gap-4 p-5`}>
             <p className="text-sm font-semibold text-slate-700">Showcase panel (left side of the login screen)</p>
             <ImageBox label="Showcase image" folder="auth" value={draft.auth.showcaseImage} onChange={(v) => patchAuth({ showcaseImage: v })} />

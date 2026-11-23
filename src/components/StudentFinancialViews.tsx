@@ -261,7 +261,7 @@ export function StudentAssignments() {
     <div className="space-y-5">
       <SectionHeader title="Assignments" subtitle="Briefs, submission status and graded feedback" />
       {rows.length === 0 ? (
-        <EmptyState icon={BookOpen} title="No assignments yet" hint="Your instructors have not published any briefs." />
+        <EmptyState icon={BookOpen} title="No assignments yet" hint="Your Teachers-Instructors have not published any briefs." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map(({ a, sub, cohort }) => {
@@ -528,7 +528,7 @@ export function FeeRegister() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Category</Label>
                 <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as FeeCategory })}>

@@ -8,7 +8,6 @@ const AVATAR_BUCKET = "avatars";
 const PROGRAM_IMAGE_BUCKET = "program-images";
 const DOCUMENT_BUCKET = "documents";
 const SITE_ASSETS_BUCKET = "site-assets";
-const SITE_VIDEO_BUCKET = "site-videos";
 
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 export const DOCUMENT_TYPES = [
@@ -23,9 +22,6 @@ export const MAX_IMAGE_BYTES = 5 * MB;
 export const MAX_IMAGE_INPUT_BYTES = 15 * MB;
 export const MAX_VIDEO_BYTES = 100 * MB;
 export const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
-/** Matches the live `site-videos` bucket: public, 50 MB, mp4 / webm / mov. */
-export const MAX_SITE_VIDEO_BYTES = 50 * MB;
-export const SITE_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 export const MAX_DOCUMENT_BYTES = 10 * MB;
 
 export const DOCUMENT_CATEGORIES = [
@@ -140,39 +136,6 @@ export const uploadSiteAsset = (folder: string, file: File) =>
 export const pruneSiteAssets = (folder: string, keepUrl?: string) =>
   pruneFolder(SITE_ASSETS_BUCKET, folder, keepUrl);
 
-/**
- * Uploads a public authentication-page background (login/sign-up/password reset)
- * into the public `site-assets` bucket under `auth-background/<folder>`.
- * Branded pages keep transparent PNG/WebP backgrounds; opaque images are still
- * accepted so a photo-style backdrop is usable.
- */
-export const uploadAuthBackground = (folder: string, file: File) =>
-  uploadPublicImage(SITE_ASSETS_BUCKET, `auth-background/${folder}`, file);
-
-/** Removes stale auth-background images in `folder`, keeping only `keepUrl`. Best effort, never throws. */
-export const pruneAuthBackground = (folder: string, keepUrl?: string) =>
-  pruneFolder(SITE_ASSETS_BUCKET, `auth-background/${folder}`, keepUrl);
-
-/**
- * Uploads a public site video (hero background) and returns its public URL.
- * Videos are not re-encoded in the browser: the bucket accepts mp4, webm and
- * mov up to 50 MB, and the editor tells the member when a file is too large.
- */
-export async function uploadSiteVideo(folder: string, file: File): Promise<string> {
-  const invalid = validateFile(file, SITE_VIDEO_TYPES, MAX_SITE_VIDEO_BYTES);
-  if (invalid) throw new Error(invalid);
-  const path = `${folder}/${newStorageId()}.${extension(file)}`;
-  const { error } = await supabase.storage
-    .from(SITE_VIDEO_BUCKET)
-    .upload(path, file, { cacheControl: "31536000", upsert: false, contentType: file.type });
-  if (error) throw new Error(explain(error.message));
-  return supabase.storage.from(SITE_VIDEO_BUCKET).getPublicUrl(path).data.publicUrl;
-}
-
-/** Deletes superseded site videos in a folder, keeping only `keepUrl`. Best effort, never throws. */
-export const pruneSiteVideos = (folder: string, keepUrl?: string) =>
-  pruneFolder(SITE_VIDEO_BUCKET, folder, keepUrl);
-
 // ── Personal documents (private bucket, "profiles/<uid>/<ts>__<category>__<name>") ──
 
 const docFolder = (userId: string) => `profiles/${userId}`;
@@ -213,7 +176,7 @@ export async function uploadDocument(
   userId: string,
   file: File,
   category: DocumentCategory,
-): Promise<string> {
+): Promise<void> {
   const invalid = validateFile(file, DOCUMENT_TYPES, MAX_DOCUMENT_BYTES);
   if (invalid) throw new Error(invalid);
   const path = `${docFolder(userId)}/${Date.now()}${SEP}${safeName(category)}${SEP}${newStorageId()}-${safeName(file.name)}`;
@@ -221,7 +184,6 @@ export async function uploadDocument(
     .from(DOCUMENT_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw new Error(explain(error.message));
-  return path;
 }
 
 export async function documentUrl(path: string, download = false): Promise<string> {

@@ -732,7 +732,6 @@ html[data-portal-icons="filled"] .portal-icon {
 
   /* Mobile drawers / sheets: scroll inside, respect the viewport and safe areas. */
   .aoh-mobile-scroll {
-    max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -787,14 +786,12 @@ html[data-portal-icons="filled"] .portal-icon {
 
 /* Mobile drawers / sheets: stay inside the visual viewport on notched phones
    and when browser toolbars collapse, and keep the content clear of the
-   home indicator. No forced `height`: the drawer takes its height from its
-   `top`/`bottom` (or `inset-y-0`) so the safe-area insets are never overrun. */
+   home indicator. */
 .aoh-drawer {
+  height: 100dvh;
   max-height: 100dvh;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ===== AOH public-site motion: every button and icon responds =====
@@ -1026,64 +1023,14 @@ html:has(.aoh-public[data-visual-mode="dark"]) { color-scheme: light !important;
 
 /* ——— Professional multi-device polish: phones / tablets / desktops ———
    Layout-only. No copy, CMS or routing changes. */
-
-/* ===== Global scroll foundation =====
-   The document is the only vertical scroller. <html>, <body> and #root carry
-   no height cap, so every public page, dashboard and portal view expands to
-   its content and scrolls top to bottom on phones, tablets and desktops.
-   Horizontal overflow is clipped rather than hidden: `hidden` would turn the
-   body into a scroll box and silently detach sticky headers/footers. */
-html {
-  min-height: 100%;
-  overflow-x: clip;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-body {
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: clip;
-  -webkit-text-size-adjust: 100%;
-  text-rendering: optimizeLegibility;
-}
-#root {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: block;
-}
-@supports not (overflow: clip) {
-  html, body { overflow-x: hidden; }
-}
-
+html, body { overflow-x: clip; }
+body { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; }
 img, video, svg { max-width: 100%; }
 .aoh-public img, .aoh-public video { height: auto; }
 
-/* Drawers stay inside the visual viewport, clear of notches + home indicator. */
+/* Drawers always fill the visual viewport, clear of notches + home indicator. */
 .aoh-drawer,
-.aoh-public .aoh-drawer { max-height: 100dvh; }
-
-/* ===== Modal / popup scrolling =====
-   Long dialog and popup content must stay inside the visual viewport and
-   scroll internally instead of running off the screen. These rules sit
-   outside Tailwind's layers so they also cap dialogs that pass their own
-   `max-h-*` utility. */
-[data-slot="dialog-content"],
-[data-slot="sheet-content"] {
-  max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-[data-slot="sheet-content"] {
-  max-height: 100dvh;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-.aoh-modal-scroll {
-  max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
+.aoh-public .aoh-drawer { height: 100dvh !important; max-height: 100dvh !important; }
 
 /* Phones (<768px): compact type, full-width CTAs, scrollable tab rows. */
 @media (max-width: 767px) {
@@ -1136,24 +1083,3 @@ html { font-size: 115%; }
 .text-\[14px\] { font-size: 16.1px !important; }
 .text-\[15px\] { font-size: 17.25px !important; }
 .text-\[16px\] { font-size: 18.4px !important; }
-
-/* Per-device preferences applied via .aoh-device-* classes on <html> */
-html.aoh-device-reduce-motion *,
-html.aoh-device-reduce-motion *::before,
-html.aoh-device-reduce-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
-}
-html.aoh-device-large-text {
-  font-size: 112.5%;
-}
-html.aoh-device-high-contrast {
-  filter: contrast(1.15);
-}
-html.aoh-device-compact-sidebar [data-portal-nav="true"] {
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
-  font-size: 0.85rem;
-}

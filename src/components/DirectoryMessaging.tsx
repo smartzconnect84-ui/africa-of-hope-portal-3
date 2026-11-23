@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, CheckCheck, MessageCircle, Send } from "lucide-react";
 import type { User } from "@/types";
 import { accountId } from "@/lib/identifiers";
-import { useChatThread } from "@/lib/chat";
+import { useDirectMessages } from "@/lib/directMessages";
 import { formatLastSeen, getLastSeen } from "@/lib/presence";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import UserAvatar from "./UserAvatar";
-import { displayRole } from "@/lib/roleDisplay";
 import { cn } from "@/lib/utils";
 
 export function PresenceDot({ online, className = "" }: { online: boolean; className?: string }) {
@@ -29,6 +28,10 @@ export function PresenceDot({ online, className = "" }: { online: boolean; class
       )}
     />
   );
+}
+
+function initials(name: string) {
+  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
 export function UserProfileDialog({
@@ -57,7 +60,13 @@ export function UserProfileDialog({
             </DialogHeader>
             <div className="flex items-start gap-4">
               <div className="relative">
-                <UserAvatar user={user} className="h-16 w-16 text-lg" />
+                {user.avatarUrl ? (
+                  <UserAvatar user={user} className="h-16 w-16 text-lg" />
+                ) : (
+                  <span className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-lg font-semibold text-amber-400">
+                    {initials(user.name)}
+                  </span>
+                )}
                 <span className="absolute -bottom-0.5 -right-0.5">
                   <PresenceDot online={online} />
                 </span>
@@ -74,7 +83,7 @@ export function UserProfileDialog({
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-700/15">
-                    {displayRole(user.role)}
+                    {user.role}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                     {user.status}
@@ -118,8 +127,7 @@ export function DirectMessageDialog({
   peer: User | null;
   onClose: () => void;
 }) {
-  const thread = peer ? { kind: "dm" as const, id: peer.id } : null;
-  const { messages, peerTyping, send, sendTyping, markSeen } = useChatThread(meId, thread);
+  const { messages, peerTyping, send, sendTyping, markSeen } = useDirectMessages(meId, peer?.id ?? null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,7 +160,7 @@ export function DirectMessageDialog({
     if (!draft.trim() || sending) return;
     setSending(true);
     setError(null);
-    const ok = await send({ body: draft.trim() });
+    const ok = await send(draft);
     setSending(false);
     if (!ok) setError("Message could not be delivered. It is saved on this device and will retry automatically.");
     else {

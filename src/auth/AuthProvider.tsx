@@ -198,20 +198,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string): Promise<{ error: string | null }> => {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email.trim().toLowerCase(),
-        // Full URL with a trailing slash: the project allowlist matches paths.
-        { redirectTo: `${window.location.origin}/` }
+        { redirectTo: window.location.origin }
       );
-      if (resetError) {
-        // Give the user a way forward when their address is still unconfirmed.
-        if (/email[_ ]?not[_ ]?confirmed/i.test(resetError.message)) {
-          return {
-            error:
-              "This email has not been confirmed yet. Check your inbox for the confirmation link we sent when you signed up, then try again. If you can't find it, ask the school office to resend it.",
-          };
-        }
-        return { error: resetError.message };
-      }
-      return { error: null };
+      return { error: resetError?.message ?? null };
     },
     []
   );

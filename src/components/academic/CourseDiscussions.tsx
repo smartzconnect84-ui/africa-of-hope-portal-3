@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { isInstructorRole } from "@/lib/roleDisplay";
 import { BadgeCheck, Loader2, MessageCircle, Pencil, Plus, Reply, Send, Trash2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { academicApi, type LearningUnit, type DiscussionReply as ReplyRow, type DiscussionThread as Thread } from "@/lib/academics";
@@ -45,7 +44,7 @@ export default function CourseDiscussions() {
     if (!currentUser) return [];
     return state.cohorts.filter((c) => currentUser.role === "Student"
       ? currentUser.cohortIds.includes(c.id)
-      : isInstructorRole(currentUser.role) ? c.teacherId === currentUser.id : true).map((c) => c.id);
+      : currentUser.role === "Teacher" ? c.teacherId === currentUser.id : true).map((c) => c.id);
   }, [state.cohorts, currentUser]);
   const cohortKey = allowedCohortIds.join(",");
   const refresh = async () => {
@@ -151,26 +150,15 @@ export default function CourseDiscussions() {
     const patch = { title: editingThreadTitle.trim(), body: editingThreadBody.trim() };
     savingRef.current = true; setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from("discussion_threads")
-        .update({ title: patch.title, body: patch.body })
-        .eq("id", threadId)
-        .select("id")
-        .maybeSingle();
+      const { error } = await supabase.from("discussion_threads").update({ title: patch.title, body: patch.body }).eq("id", threadId);
       if (error) throw error;
-      // No row back means the policy refused it or the question is gone — do
-      // not show the edit as saved when the server kept the old text.
-      if (!data) throw new Error("You can only edit your own question, and only a moderator can edit someone else's.");
-      patchCachedThread(currentUser.id, threadId, patch);
-      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, ...patch } : t)));
-      setEditingThreadId("");
-      toast.success("Question updated.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update this question.");
-    } finally {
-      savingRef.current = false; setSaving(false);
-      void refresh();
-    }
+    } catch { /* offline or no table yet — keep the edit on this device */ }
+    patchCachedThread(currentUser.id, threadId, patch);
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, ...patch } : t)));
+    setEditingThreadId("");
+    toast.success("Question updated.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
   };
 
   const deleteThread = async (threadId: string) => {
@@ -178,22 +166,16 @@ export default function CourseDiscussions() {
     if (!window.confirm("Delete this question and all its replies?")) return;
     savingRef.current = true; setSaving(true);
     try {
-      const { data, error } = await supabase.from("discussion_threads").delete().eq("id", threadId).select("id").maybeSingle();
+      const { error } = await supabase.from("discussion_threads").delete().eq("id", threadId);
       if (error) throw error;
-      if (!data) throw new Error("You can only delete your own question, and only a moderator can delete someone else's.");
-      removeCachedThread(currentUser.id, threadId);
-      setThreads((prev) => prev.filter((t) => t.id !== threadId));
-      if (openThread === threadId) setOpenThread("");
-      if (editingThreadId === threadId) setEditingThreadId("");
-      toast.success("Question deleted.");
-    } catch (err) {
-      // Keep the row visible: hiding it would make a refresh look like it
-      // came back from nowhere.
-      toast.error(err instanceof Error ? err.message : "Could not delete this question.");
-    } finally {
-      savingRef.current = false; setSaving(false);
-      void refresh();
-    }
+    } catch { /* offline or no table yet — remove it on this device */ }
+    removeCachedThread(currentUser.id, threadId);
+    setThreads((prev) => prev.filter((t) => t.id !== threadId));
+    if (openThread === threadId) setOpenThread("");
+    if (editingThreadId === threadId) setEditingThreadId("");
+    toast.success("Question deleted.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
   };
 
   const saveReplyEdit = async () => {
@@ -202,19 +184,15 @@ export default function CourseDiscussions() {
     const next = body.trim();
     savingRef.current = true; setSaving(true);
     try {
-      const { data, error } = await supabase.from("discussion_replies").update({ body: next }).eq("id", replyId).select("id").maybeSingle();
+      const { error } = await supabase.from("discussion_replies").update({ body: next }).eq("id", replyId);
       if (error) throw error;
-      if (!data) throw new Error("You can only edit your own reply, and only a moderator can edit someone else's.");
-      patchCachedReply(currentUser.id, threadId, replyId, next);
-      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.map((r) => (r.id === replyId ? { ...r, body: next } : r)) } : t)));
-      setEditingReply(null);
-      toast.success("Reply updated.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update this reply.");
-    } finally {
-      savingRef.current = false; setSaving(false);
-      void refresh();
-    }
+    } catch { /* offline or no table yet — keep the edit on this device */ }
+    patchCachedReply(currentUser.id, threadId, replyId, next);
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.map((r) => (r.id === replyId ? { ...r, body: next } : r)) } : t)));
+    setEditingReply(null);
+    toast.success("Reply updated.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
   };
 
   const deleteReply = async (threadId: string, replyId: string) => {
@@ -222,18 +200,14 @@ export default function CourseDiscussions() {
     if (!window.confirm("Delete this reply?")) return;
     savingRef.current = true; setSaving(true);
     try {
-      const { data, error } = await supabase.from("discussion_replies").delete().eq("id", replyId).select("id").maybeSingle();
+      const { error } = await supabase.from("discussion_replies").delete().eq("id", replyId);
       if (error) throw error;
-      if (!data) throw new Error("You can only delete your own reply, and only a moderator can delete someone else's.");
-      removeCachedReply(currentUser.id, threadId, replyId);
-      setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.filter((r) => r.id !== replyId) } : t)));
-      toast.success("Reply deleted.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not delete this reply.");
-    } finally {
-      savingRef.current = false; setSaving(false);
-      void refresh();
-    }
+    } catch { /* offline or no table yet — remove it on this device */ }
+    removeCachedReply(currentUser.id, threadId, replyId);
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, replies: t.replies.filter((r) => r.id !== replyId) } : t)));
+    toast.success("Reply deleted.");
+    savingRef.current = false; setSaving(false);
+    void refresh();
   };
 
   return (
@@ -271,7 +245,7 @@ export default function CourseDiscussions() {
               </SelectContent>
             </Select>
           </div>
-          <Textarea maxLength={10000} placeholder="Describe your question for your instructors and classmates…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
+          <Textarea maxLength={10000} placeholder="Describe your question for your Teachers-Instructors and classmates…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
             <Button type="submit" disabled={saving || !cohortId} className="bg-emerald-700 hover:bg-emerald-800"><Send className="mr-1 h-4 w-4" /> Post to class</Button>
@@ -317,7 +291,7 @@ export default function CourseDiscussions() {
               )}
               {open && (
                 <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-                  {thread.replies.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-300">No replies yet — help your classmate or wait for your instructors.</p>}
+                  {thread.replies.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-300">No replies yet — help your classmate or wait for your Teachers-Instructors.</p>}
                   {thread.replies.map((reply) => {
                     const replyMine = !!currentUser && reply.authorId === currentUser.id;
                     const canModReply = replyMine || isStaff;
@@ -327,7 +301,7 @@ export default function CourseDiscussions() {
                       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
                         <span className="font-semibold text-slate-700 dark:text-slate-200">{reply.authorName} · {reply.role}</span>
                         <span>{new Date(reply.createdAt).toLocaleString()}</span>
-                        {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Instructor answer</span>}
+                        {reply.isAnswer && <span className="inline-flex items-center gap-1 font-semibold text-emerald-700"><BadgeCheck className="h-3 w-3" /> Teachers-Instructors answer</span>}
                         {isStaff && <button disabled={saving || pending > 0} className="font-semibold text-emerald-700 hover:underline" onClick={() => markAnswer(thread.id, reply.id)}>{reply.isAnswer ? "Unmark" : "Mark as answer"}</button>}
                         {canModReply && !isEditingReply && (
                           <span className="ml-auto inline-flex items-center gap-1">

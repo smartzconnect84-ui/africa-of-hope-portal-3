@@ -1,7 +1,6 @@
-# Cloudflare Pages redirects: single canonical domain (www) + SPA fallback.
-# The apex (africaofhopelr.org) no longer resolves, so www is canonical and
-# every canonical URL, sitemap entry and social card uses it.
-https://africaofhopelr.org/* https://www.africaofhopelr.org/:splat 301!
+# Cloudflare Pages redirects: single canonical domain (apex) + SPA fallback.
+# www always resolves to the apex so search engines see one address.
+https://www.africaofhopelr.org/* https://africaofhopelr.org/:splat 301!
 /programmes /index.html 200
 /admissions /index.html 200
 /about /index.html 200

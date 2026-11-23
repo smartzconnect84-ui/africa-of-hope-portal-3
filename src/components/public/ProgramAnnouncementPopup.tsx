@@ -157,7 +157,7 @@ export default function ProgramAnnouncementPopup({ programs, paused, onExplore, 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: 24, scale: 0.98 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="aoh-glass aoh-modal-scroll pointer-events-auto relative w-full max-w-sm rounded-3xl shadow-2xl shadow-emerald-950/30"
+            className="aoh-glass pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-3xl shadow-2xl shadow-emerald-950/30"
           >
             <div className="relative">
               <img src={programImage(program)} alt="" className="h-32 w-full object-cover" loading="lazy" />

@@ -4,7 +4,6 @@ import type { WebsiteSettings } from '@/types';
 
 const required = (name: string, max: number) => z.string().trim().min(1, `${name} is required.`).max(max, `${name} must be ${max} characters or fewer.`);
 const image = z.string().refine(value => !value || /^(https:\/\/[^\s]+|\/(?!\/)[^\s]*)$/.test(value), 'Use an HTTPS image URL or a local /path.');
-const authBackgroundImage = image.optional();
 const destination = z.string().refine(value => /^(#[^\s]*|\/(?!\/)[^\s]*|https:\/\/[^\s]+)$/.test(value), 'Use #page, a local /path or an HTTPS URL.');
 const schema = z.object({
   presentation: z.object({ font: z.enum(['manrope', 'sans', 'serif', 'system']), iconWeight: z.enum(['light', 'normal', 'bold']) }).optional(),
@@ -19,7 +18,6 @@ const schema = z.object({
     display: z.enum(['standalone', 'minimal-ui', 'browser', 'fullscreen']),
     orientation: z.enum(['any', 'portrait', 'landscape']),
   }).optional(),
-  authBackgroundImage,
   campusLife: z.object({
     enabled: z.boolean(),
     eyebrow: z.string().max(120, 'Eyebrow must be 120 characters or fewer.'),

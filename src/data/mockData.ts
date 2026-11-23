@@ -359,7 +359,6 @@ eyebrow: "Our work",
   assistantLauncherLabel: "AOH AI",
   auth: {
     showcaseImage: "",
-    authBackgroundImage: "",
     eyebrow: "Student and staff portal",
     headline: "Certificates that open doors.",
     highlight: "Skills that build communities.",

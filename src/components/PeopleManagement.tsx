@@ -17,7 +17,6 @@ import {
 import { useApp } from "../context/AppContext";
 import { usePermissions } from "../hooks/usePermission";
 import { ROLES, STAFF_ROLES } from "../lib/permissions";
-import { displayRole } from "@/lib/roleDisplay";
 import type { Role, User } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +46,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmptyState, SectionHeader, panelClass } from "./Navigation";
 import DataTools from "./DataTools";
-import UserAvatar from "./UserAvatar";
 import { UserProfileDialog, DirectMessageDialog, PresenceDot } from "./DirectoryMessaging";
 import { usePresence } from "@/lib/presence";
 import CongratulationsAction from './CongratulationsAction';
@@ -57,6 +55,10 @@ import { cn } from "@/lib/utils";
 
 const TH = "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500";
 const TD = "px-3 py-2 text-sm text-slate-700";
+
+function initials(name: string) {
+  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+}
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
@@ -80,7 +82,6 @@ type Tab = "staff" | "students" | "applicants";
 export default function PeopleManagement({ initialTab = "staff" }: { initialTab?: Tab } = {}) {
   const { state, currentUser } = useApp();
   const { isSuperAdmin, can } = usePermissions();
-
   const [tab, setTab] = useState<Tab>(initialTab);
 
   const canSeeStaff = can("staff.manage") || can("people.view");
@@ -180,7 +181,7 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
               <SelectItem value="All">All roles</SelectItem>
               {STAFF_ROLES.map((r) => (
                 <SelectItem key={r} value={r}>
-                  {displayRole(r)}
+                  {r}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -222,7 +223,9 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
                   <tr key={u.id} className="border-b border-slate-50 last:border-0 hover:bg-emerald-50/40">
                     <td className={TD}>
                       <div className="flex items-center gap-3">
-                        <UserAvatar user={u} className="h-9 w-9 text-[11px]" />
+                        <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
+                          {initials(u.name)}
+                        </span>
                         <div>
                           <button type="button" onClick={() => setViewUser(u)} title={`View ${u.name}'s profile`} className="flex items-center gap-1.5 text-left font-medium text-slate-800 underline-offset-2 hover:text-emerald-800 hover:underline">
                             <PresenceDot online={isOnline(u.id)} />
@@ -249,14 +252,14 @@ function StaffTab({ currentUser, isSuperAdmin }: { currentUser: User | null; isS
                           <SelectContent>
                             {roleOptions.map((r) => (
                               <SelectItem key={r} value={r}>
-                                {displayRole(r)}
+                                {r}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       ) : (
                         <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-                          {displayRole(u.role)}
+                          {u.role}
                         </Badge>
                       )}
                     </td>
@@ -383,7 +386,7 @@ function AddStaffDialog({
     const normalized = email.trim().toLowerCase();
     const clash = state.users.find((u) => u.email.trim().toLowerCase() === normalized);
     if (clash) {
-      const msg = `An account with this email already exists (${displayRole(clash.role)}). One email can only be used for one account (User, Admin or Staff) — ask the holder to sign in instead. Email changes only at the user's request via the school office.`;
+      const msg = `An account with this email already exists (${clash.role}). One email can only be used for one account (User, Admin or Staff) — ask the holder to sign in instead. Email changes only at the user's request via the school office.`;
       setSubmitError(msg);
       toast.error(msg);
       return;
@@ -422,7 +425,7 @@ function AddStaffDialog({
           <DialogDescription>Create a staff account and assign a role. One email = one account (User, Admin or Staff). Email addresses can only be changed at the user's request via the school office.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Full name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} data-component-id="add-staff-name" />
@@ -433,7 +436,7 @@ function AddStaffDialog({
               <p className="mt-1 text-xs text-slate-500">One email = one account across User, Admin and Staff.</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Phone</Label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} data-component-id="add-staff-phone" />
@@ -457,7 +460,7 @@ function AddStaffDialog({
                     role === r ? "border-emerald-600 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-600 hover:bg-slate-50",
                   )}
                 >
-                  {displayRole(r)}
+                  {r}
                 </button>
               ))}
             </div>
@@ -573,7 +576,9 @@ function StudentsTab() {
                   <tr key={u.id} className="border-b border-slate-50 last:border-0 hover:bg-emerald-50/40">
                     <td className={TD}>
                       <div className="flex items-center gap-3">
-                        <UserAvatar user={u} className="h-9 w-9 text-[11px]" />
+                        <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-emerald-700 to-emerald-950 text-[11px] font-semibold text-amber-400">
+                          {initials(u.name)}
+                        </span>
                         <div><button type="button" onClick={() => setViewUser(u)} title={`View ${u.name}'s profile`} className="flex items-center gap-1.5 text-left font-medium text-slate-800 underline-offset-2 hover:text-emerald-800 hover:underline"><PresenceDot online={isOnline(u.id)} />{u.name}</button><p className="max-w-64 break-all font-mono text-[10px] text-emerald-800">ID: {accountId(u)}</p></div>
                       </div>
                     </td>
@@ -771,7 +776,9 @@ function ApplicantsTab() {
               return (
                 <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
                   <div className="flex items-center gap-3">
-                    <UserAvatar user={u} className="h-10 w-10 text-xs" />
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-800 text-xs font-semibold text-amber-400">
+                      {initials(u.name)}
+                    </span>
                     <div>
                       <p className="text-sm font-medium text-slate-800"><button type="button" onClick={() => setViewUser(u)} title={`View ${u.name}'s profile`} className="underline-offset-2 hover:text-emerald-800 hover:underline">{u.name}</button> {hasPass(u) ? <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Entrance passed</span> : <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">No entrance pass</span>}</p>
                       <p className="flex items-center gap-2 text-[11px] text-slate-500">

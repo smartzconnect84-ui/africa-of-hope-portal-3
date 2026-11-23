@@ -201,7 +201,6 @@ function Showcase() {
   const { state } = useApp();
   const w = state.websiteSettings;
   const auth = w.auth;
-  const bgImage = w.auth.authBackgroundImage || "";
   const image = auth.showcaseImage || w.heroSlides[0]?.image || "/programs/default.webp";
   const testimonial = auth.testimonial;
   const stats = auth.stats.length
@@ -214,9 +213,6 @@ function Showcase() {
 
   return (
     <aside className="relative hidden overflow-hidden lg:block">
-      {bgImage && (
-        <img src={bgImage} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-      )}
       <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/95 via-emerald-900/85 to-emerald-950/70" />
       <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-amber-400/20 blur-3xl" />
@@ -225,9 +221,9 @@ function Showcase() {
         <div className="flex items-center gap-3">
           <BrandLockup
             logoUrl={w.logos?.auth || w.logoUrl}
-            academyName={w.academyName || state.settings.academyName}
-            displayName="AFRICA OF HOPE"
-            tagline={w.tagline || "Institutional Training Academy"}
+              academyName={w.academyName || state.settings.academyName}
+              displayName="AFRICA OF HOPE"
+              tagline={w.tagline || "Institutional Training Academy"}
             tone="dark"
             size="md"
           />
@@ -857,13 +853,8 @@ function ResetDialog({ open, onOpenChange, initialEmail }: {
     setBusy(true);
     const err = await requestPasswordReset(email);
     setBusy(false);
-    if (err) {
-      setError(err);
-      return;
-    }
-    // Supabase hides non-existent addresses for anti-enumeration, so "sent"
-    // only means the request was accepted — not that a real inbox received it.
-    setSent(true);
+    if (err) setError(err);
+    else setSent(true);
   };
 
   return (
@@ -877,7 +868,7 @@ function ResetDialog({ open, onOpenChange, initialEmail }: {
             <DialogTitle className="mt-4 text-lg">Check your inbox</DialogTitle>
             <DialogDescription className="mt-2">
               If an account exists for <span className="font-medium text-slate-700">{email.trim()}</span>, we sent a
-              secure link to reset your password. Check your inbox and spam folder.
+              secure link to reset your password.
             </DialogDescription>
             <Button className={cn(PRIMARY, "mt-6 w-full")} onClick={() => onOpenChange(false)}>
               Back to sign in
@@ -985,7 +976,6 @@ export default function AuthPortal({
   const [done, setDone] = useState<string | null>(null);
 
   const auth = state.websiteSettings.auth;
-  const bgImage = state.websiteSettings.auth.authBackgroundImage || "";
   const heading =
     done ? "Confirm your email" : tab === "signin" ? (auth.signinTitle || "Welcome to our School Portal") : (auth.registerTitle || "Create your account");
   const sub = done
@@ -997,13 +987,7 @@ export default function AuthPortal({
         : "Self-registration is currently closed. Please contact the admissions office.";
 
   return (
-    <div className="relative grid min-h-[100dvh] w-full max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden bg-[#f6f8f7] lg:grid-cols-2">
-      {bgImage && (
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
-          <img src={bgImage} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-sm" />
-        </div>
-      )}
+    <div className="grid min-h-[100dvh] w-full max-w-full grid-cols-[minmax(0,1fr)] overflow-x-hidden bg-[#f6f8f7] lg:grid-cols-2">
       <Showcase />
 
       <main className="flex min-h-[100dvh] min-w-0 flex-col px-4 py-6 sm:px-8">
@@ -1035,7 +1019,7 @@ export default function AuthPortal({
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">{heading}</h2>
             </div>
 
-            <div className="rounded-3xl border-2 border-[#D4AF37] bg-white/70 backdrop-blur-md p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
+            <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-b from-amber-50/70 via-white to-white p-5 shadow-xl shadow-[#D4AF37]/20 sm:p-7">
               {!isSupabaseConfigured() && (
                 <div role="alert" className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left">
                   <p className="text-sm font-semibold text-rose-800">Portal sign-in is offline — the school database is not connected in this build.</p>

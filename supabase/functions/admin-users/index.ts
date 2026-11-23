@@ -33,13 +33,6 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    // Recovery emails must be requested through an unauthenticated client: the
-    // public /recover endpoint is not tied to a session, and sending the
-    // admin's JWT can make GoTrue reject the request or bind it to the wrong
-    // account. Using a bare anon client mirrors the browser flow that works.
-    const mailer = createClient(url, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const { data: authData, error: authError } = await caller.auth.getUser();
     const user = authData?.user;
     if (authError || !user) return json({ error: "Not authenticated. Sign in again, then retry.", code: "bad_token" }, 401);
@@ -48,13 +41,6 @@ Deno.serve(async (req: Request) => {
     if (!actor) return json({ error: "Your staff profile was not found. Ask a Super Admin to check the profiles table.", code: "no_actor_profile" }, 403);
     if (actor.status !== "Active") return json({ error: "Your account is not active, so it cannot manage accounts.", code: "actor_inactive" }, 403);
     const superAdmin = actor.role === "Super Admin";
-
-    // Email links (invites, password resets) must return to the running app.
-    // The project Site URL is a stale apex domain, so an explicit redirect is
-    // required; the allowlist matches full URLs, hence the trailing slash.
-    const appBase = (Deno.env.get("APP_URL") ?? Deno.env.get("PUBLIC_SITE_URL") ?? req.headers.get("origin") ?? "")
-      .trim().replace(/\/+$/, "");
-    const emailRedirectTo = appBase ? `${appBase}/` : undefined;
 
     const hasPermission = async (perm: string): Promise<boolean> => {
       if (superAdmin) return true;
@@ -113,7 +99,7 @@ Deno.serve(async (req: Request) => {
         }
         userId = created.data.user.id;
       } else {
-        const invited = await admin.auth.admin.inviteUserByEmail(email, { data: meta, redirectTo: emailRedirectTo });
+        const invited = await admin.auth.admin.inviteUserByEmail(email, { data: meta });
         if (!invited.error && invited.data?.user) {
           userId = invited.data.user.id;
         } else {
@@ -213,26 +199,8 @@ Deno.serve(async (req: Request) => {
         return json({ ok: true, temporary_password: body.password ? undefined : password });
       }
       if (!target.email) return json({ error: "No account email is recorded", code: "bad_input" }, 400);
-      console.error("admin-users: reset_password", { email: target.email, redirectTo: emailRedirectTo });
-      const { error } = await mailer.auth.resetPasswordForEmail(
-        target.email,
-        emailRedirectTo ? { redirectTo: emailRedirectTo } : undefined,
-      );
-      if (error) {
-        const raw = error.message ?? "";
-        console.error("admin-users: resetPasswordForEmail failed", { email: target.email, redirectTo: emailRedirectTo, msg: raw, code: (error as { code?: string }).code });
-        let msg = raw || "Could not send the recovery email.";
-        if (/email_address_invalid/i.test(raw)) {
-          msg = "That email address cannot receive the reset link (the domain is blocked or has no mail server). Update the account's email to a deliverable address, or use \"Temporary password\" instead.";
-        } else if (/redirect/i.test(raw) && /not (allowed|whitelist|in allow)/i.test(raw)) {
-          // Retry once without a redirect so Supabase falls back to the site URL.
-          const retry = await mailer.auth.resetPasswordForEmail(target.email);
-          if (!retry.error) return json({ ok: true });
-          msg = retry.error?.message ?? msg;
-        }
-        return json({ error: msg, code: "reset_failed" }, 400);
-      }
-      return json({ ok: true });
+      const { error } = await caller.auth.resetPasswordForEmail(target.email);
+      return error ? json({ error: error.message, code: "reset_failed" }, 400) : json({ ok: true });
     }
     return json({ error: "Permanent deletion is disabled to preserve school records. Suspend this account instead.", code: "delete_disabled" }, 409);
   } catch (err) {

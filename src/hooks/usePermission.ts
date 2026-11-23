@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useApp } from "../context/AppContext";
 import { DEFAULT_ROLE_PERMISSIONS, type PermissionKey } from "../lib/permissions";
-import { canonicalRole } from "../lib/roleDisplay";
 import type { Role } from "../types";
 
 export interface PermissionsApi {
@@ -30,11 +29,9 @@ export function usePermissions(): PermissionsApi {
       if (!currentUser || currentUser.status !== "Active") return false;
       if (isSuperAdmin) return true;
       if (!role) return false;
-      // "Instructor" is the display name for the stored "Teacher" grants row.
-      const key0 = canonicalRole(role);
-      const fromState = state.rolePermissions[key0] ?? state.rolePermissions[role];
+      const fromState = state.rolePermissions[role];
       const grants =
-        fromState ?? DEFAULT_ROLE_PERMISSIONS[key0 as Exclude<Role, "Super Admin">] ?? [];
+        fromState ?? DEFAULT_ROLE_PERMISSIONS[role as Exclude<Role, "Super Admin">] ?? [];
       return grants.includes(key);
     };
     const canAny = (...keys: PermissionKey[]) => keys.some(can);
