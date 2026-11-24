@@ -86,6 +86,8 @@ reads.
 
 ## Change log
 
+- Fixed the spurious "Live data unavailable" toast on the public/login page: AppContext.refresh() now only toasts for a signed-in identity and logs a warning for anonymous visitors. Added a gitignored `.env` with the public Autobase URL/publishable key so `npm run dev` and the preview inline them; rebuilt and redeployed production (bundle index-1O6EmZ08.js).
+
 - Applied supabase/migrations/20261125120000_messaging_rebuild.sql to project gatnzfjpuokopqyksqoy (recorded as messaging_rebuild/20261124153859): added reply_to/edited_at/deleted_at/pinned_at/pinned_by/starred to direct_messages & group_messages, message_reactions and chat_drafts tables with RLS; verified columns/tables via read-only queries.
 
 - Built and deployed production with VITE_AUTOBASE_URL/PUBLISHABLE_KEY inlined (local build, since the platform Publish build does not pass Secrets to npm run build); live bundle is index-D27frlGA.js, byte-identical to local. Published=true, deployed_at 2026-11-24T15:26:17Z; sha256 3f6c918e… matches. Offline sign-in notice should now clear.

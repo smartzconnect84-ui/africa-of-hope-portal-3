@@ -239,7 +239,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       if (version !== refreshVersion.current || identity !== identityRef.current) return;
       setLive(false);
-      toast.error(`Live data unavailable: ${err instanceof Error ? err.message : String(err)}`);
+      // Anonymous visitors on the public and login pages cannot read private
+      // tables, so never shout "live data unavailable" at them; a genuinely
+      // disconnected build is already explained by the sign-in notice. Signed-in
+      // users still get the toast when their data cannot be read.
+      const message = err instanceof Error ? err.message : String(err);
+      if (identity) toast.error(`Live data unavailable: ${message}`);
+      else console.warn(`Live data unavailable: ${message}`);
     }
   }, []);
 
