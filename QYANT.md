@@ -105,7 +105,8 @@ frontend).
   src/integrations/supabase/client.ts turned into a bridge onto the new
   backend so every screen, helper and hook keeps its existing data calls;
   sign-in, sign-up, password reset and sign-out mapped onto the platform auth
-  client; registration details carried to the first profile row; boolean
+  client, with auth-state subscriptions emitted by the bridge because the data
+  client uses a custom token provider; registration details carried to the first profile row; boolean
   columns read from the database normalised in src/data/liveData.ts.
 
 - Backend completion pass (2026-11-18, second pass): redeployed `admin-users`
@@ -350,3 +351,8 @@ frontend).
   broad policies, preserve table-specific access, and constrain certificate
   reads. Per the user's instruction, no migrations or operational scripts
   were applied; live database state and remediation remain unverified.
+- Fixed Supabase-compatible auth bridging in `src/integrations/supabase/client.ts`.
+  The data client uses a custom token provider that disables Supabase's built-in
+  Auth API, so the bridge now manages subscriptions itself and emits session
+  events from Better Auth sign-in/sign-out operations. This resolves the auth
+  stack overflow and the follow-on blank launch screen.

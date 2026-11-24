@@ -18,6 +18,21 @@ function readEnv(): Record<string, string | undefined> {
 
 const env = readEnv();
 
+// The data client uses a custom access-token provider, which disables its
+// built-in Auth API. Maintain auth subscriptions in this compatibility bridge.
+type AuthListener = (event: string, session: unknown) => void;
+const authListeners = new Set<AuthListener>();
+
+function emitAuthState(event: string, session: unknown): void {
+  for (const listener of authListeners) {
+    try {
+      listener(event, session);
+    } catch {
+      // One consumer must not prevent other auth listeners from updating.
+    }
+  }
+}
+
 export const SUPABASE_URL: string =
   env.VITE_AUTOBASE_URL ?? env.VITE_SUPABASE_URL ?? "https://autobase-not-connected.invalid";
 export const SUPABASE_ANON_KEY: string =
@@ -215,6 +230,7 @@ const bridgeAuth: AuthBridge = {
       const user = userRaw ? toSupabaseUser(userRaw) : null;
       const needsConfirmation = !session;
       if (Object.keys(details).length) rememberRegistration(cleanEmail, details);
+      if (session) emitAuthState("SIGNED_IN", session);
       return { data: { user, session, identities: [] }, error: null, needsConfirmation };
     } catch (err) {
       return {
@@ -238,9 +254,13 @@ const bridgeAuth: AuthBridge = {
         // Fall back to getSession in case the payload shape differs.
         const current = await currentBridgeSession();
         const fallback = current.data.session as Record<string, unknown> | null;
-        if (fallback?.user) return { data: { user: fallback.user, session: fallback }, error: null };
+        if (fallback?.user) {
+          emitAuthState("SIGNED_IN", fallback);
+          return { data: { user: fallback.user, session: fallback }, error: null };
+        }
         return { data: { user: null, session: null }, error: { message: "The server did not create a sign-in session. Please retry." } };
       }
+      emitAuthState("SIGNED_IN", session);
       return { data: { user, session }, error: null };
     } catch (err) {
       return {
@@ -253,12 +273,8 @@ const bridgeAuth: AuthBridge = {
   async signOut() {
     try {
       await (platformAuth as unknown as { signOut?: () => Promise<unknown> }).signOut?.();
-    } catch {
-      // Fall through to GoTrue sign-out so local state is still cleared.
-    }
-    try {
-      const { error } = await db.auth.signOut();
-      return { error: error ? { message: error.message } : null };
+      emitAuthState("SIGNED_OUT", null);
+      return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? { message: err.message } : null };
     }
@@ -308,32 +324,19 @@ const bridgeAuth: AuthBridge = {
 
   async getSession() {
     const current = await currentBridgeSession();
-    if (current.data.session) return { data: current.data, error: null };
-    try {
-      const { data } = await db.auth.getSession();
-      return { data: { session: (data.session as unknown) ?? null }, error: null };
-    } catch {
-      return { data: { session: null }, error: null };
-    }
+    return { data: current.data, error: null };
   },
 
   onAuthStateChange(cb) {
-    // Forward GoTrue events; better-auth sign-ins also refresh via getSession polling below.
-    const { data } = db.auth.onAuthStateChange((event, session) => {
-      try {
-        cb(event, session as unknown);
-      } catch {
-        // Listener errors must never break auth state.
-      }
-    });
+    authListeners.add(cb);
     let cancelled = false;
     if (typeof window !== "undefined") {
       void currentBridgeSession().then((current) => {
-        if (!cancelled && current.data.session) {
+        if (!cancelled) {
           try {
-            cb("SIGNED_IN", current.data.session);
+            cb("INITIAL_SESSION", current.data.session);
           } catch {
-            // ignore
+            // Listener errors must never break auth state.
           }
         }
       });
@@ -343,11 +346,7 @@ const bridgeAuth: AuthBridge = {
         subscription: {
           unsubscribe: () => {
             cancelled = true;
-            try {
-              data.subscription.unsubscribe();
-            } catch {
-              // ignore
-            }
+            authListeners.delete(cb);
           },
         },
       },
