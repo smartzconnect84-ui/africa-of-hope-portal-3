@@ -97,6 +97,7 @@ interface AppContextValue {
   /** Bumped by resetDemoData(); components that fetch their own data outside `state` (e.g. payments, blog) should include this in their refetch effect's dependencies so the "Reload live data" action refreshes them too. */
   reloadKey: number;
   refresh: () => Promise<void>;
+  reloadLiveData: () => Promise<void>;
   /** Resolves to an error message, or null on success. */
   login: (emailOrUserId: string, password?: string) => Promise<string | null>;
   logout: () => void;
@@ -339,6 +340,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       live,
       reloadKey,
       refresh,
+      reloadLiveData: async () => {
+        setReloadKey((key) => key + 1);
+        await refresh();
+      },
       login: async (emailOrUserId, password) => {
         if (!password) return "Enter your portal password to sign in.";
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -684,6 +689,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
           if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
           if (rest.published !== undefined) row.published = rest.published;
+          if (rest.selfPacedEnabled !== undefined) row.self_paced_enabled = rest.selfPacedEnabled;
+          if (rest.selfPacedRequiresApproval !== undefined) row.self_paced_requires_approval = rest.selfPacedRequiresApproval;
           if (!Object.keys(row).length && !nextModules) return null;
           if (Object.keys(row).length) {
             let res = await supabase.from("programs").update(row).eq("id", id);

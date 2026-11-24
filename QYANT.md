@@ -105,7 +105,8 @@ frontend).
   src/integrations/supabase/client.ts turned into a bridge onto the new
   backend so every screen, helper and hook keeps its existing data calls;
   sign-in, sign-up, password reset and sign-out mapped onto the platform auth
-  client; registration details carried to the first profile row; boolean
+  client, with auth-state subscriptions emitted by the bridge because the data
+  client uses a custom token provider; registration details carried to the first profile row; boolean
   columns read from the database normalised in src/data/liveData.ts.
 
 - Backend completion pass (2026-11-18, second pass): redeployed `admin-users`
@@ -341,3 +342,17 @@ frontend).
   message now names the real cause. iOS is called out explicitly in both the
   message and the card: web push only works from the Home Screen app, never a
   Safari tab (iOS 16.4+).
+
+- Production security audit (2026-11-24): static review found that the
+  20261113000000 reconciliation baseline adds permissive authenticated
+  all-row policies across private tables and blanket authenticated storage
+  access, plus public access to the certificate register. Prepared
+  20261124170000_remove_reconciliation_rls_bypasses.sql to remove those
+  broad policies, preserve table-specific access, and constrain certificate
+  reads. Per the user's instruction, no migrations or operational scripts
+  were applied; live database state and remediation remain unverified.
+- Fixed Supabase-compatible auth bridging in `src/integrations/supabase/client.ts`.
+  The data client uses a custom token provider that disables Supabase's built-in
+  Auth API, so the bridge now manages subscriptions itself and emits session
+  events from Better Auth sign-in/sign-out operations. This resolves the auth
+  stack overflow and the follow-on blank launch screen.

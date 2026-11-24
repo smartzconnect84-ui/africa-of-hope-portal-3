@@ -61,6 +61,7 @@ function mapUser(p: Row, cohortIds: string[]): User {
     bio: p.bio ? txt(p.bio) : undefined,
     address: p.address ? txt(p.address) : undefined,
     dateOfBirth: p.date_of_birth ? txt(p.date_of_birth).slice(0, 10) : undefined,
+    schoolPolicyAcceptedAt: p.school_policy_accepted_at ? txt(p.school_policy_accepted_at) : null,
   };
 }
 
@@ -458,6 +459,8 @@ export async function fetchState(previous: AppState): Promise<FetchResult> {
     courseNumber: p.course_number == null ? undefined : txt(p.course_number),
     title: txt(p.title) || txt(p.name),
     published: programIsPublished(p),
+    selfPacedEnabled: flag(p, "self_paced_enabled", false),
+    selfPacedRequiresApproval: flag(p, "self_paced_requires_approval", false),
     category: txt(p.category),
     durationWeeks: num(p, "duration_weeks"),
     tuition: num(p, "tuition"),
