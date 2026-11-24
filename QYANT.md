@@ -16,16 +16,9 @@ Hash routing (#/programs, #/login, #/signup, #/verify, #/vacancies, #/yearbook,
 
 ## Data model
 
-The Supabase project `gatnzfjpuokopqyksqoy` (Postgres 17, us-east-1) is the
-source of truth: 78 tables and 3 views, all with RLS, 45 tables in
-`supabase_realtime`, 9 storage buckets, 8 active edge functions and the six
-roles with the 43-grant permission matrix. supabase/migrations keeps the schema
-history of this project; backend/migrations is the unused managed-backend port.
-
-`profiles` rows are created by the `handle_new_user` trigger on `auth.users`,
-which copies `full_name`, `phone`, `program_ids`, `note` and `documents` from
-the sign-up metadata and defaults to role Student / status Pending Approval.
-`confirmed_account_congratulations` queues the welcome email on confirmation.
+The portal's own database (Autobase, SQLite) is now the source of truth:
+backend/migrations/*.sql creates 72 tables with access policies, storage
+buckets and live updates.
 
 - portal_schema.sql — every table the app reads or writes (profiles, roles,
   permissions, programmes and modules, cohorts and cohort_students,
@@ -43,12 +36,17 @@ the sign-up metadata and defaults to role Student / status Pending Approval.
 - portal_roles_permissions_seed.sql — the six roles and the 43-grant
   permission matrix.
 
-src/integrations/supabase/client.ts is the single data client: a real
-`@supabase/supabase-js` client, so supabase.from(...), supabase.auth,
-supabase.rpc(...), supabase.storage and supabase.functions all run against this
-project. Sign-in is Supabase Auth: email + password with email confirmation,
-password reset by email. src/integrations/autobase/client.ts remains in the
-repo but is no longer imported.
+src/integrations/supabase/client.ts is now a bridge: the app keeps calling
+supabase.from(...) / supabase.auth, and those calls run against the project
+backend via src/integrations/autobase/client.ts. Sign-in is the platform's
+(better-auth): email + password, reset by email, Google/Microsoft available.
+
+Not yet ported: the ~30 SQL routines the academic, quiz, payment-ledger,
+certificate, helpdesk, grade-appeal and newsletter modules called with
+supabase.rpc(), and the 8 edge functions (send-email, newsletter,
+admin-users, onesignal-send, verify-certificate, assistant,
+send-deadline-reminders). Those calls now return a clear "not available
+yet" message instead of failing silently.
 
 ## Pages and routes
 
@@ -58,17 +56,9 @@ repo but is no longer imported.
 
 ## Environment
 
-VITE_SUPABASE_URL=https://gatnzfjpuokopqyksqoy.supabase.co and
-VITE_SUPABASE_ANON_KEY (the project's publishable key). Both are public client
-values: the publishable/anon key is designed to ship in the browser. The
-service-role key is a server-only secret and must never get a VITE_ prefix.
-Locally they live in the gitignored .env.local; a Sites bundle must be built
-with them because Sites has no build step.
-
-`APY_TOKEN` is the ApyHub API token used by the `extract-pdf-text` Edge
-Function. It is server-only: it is declared empty in `.env.example`, set with
-`supabase secrets set APY_TOKEN=...`, and never gets a `VITE_` prefix. PDF text
-extraction reports itself unconfigured (503) until the secret exists.
+Provisioned by the platform, no manual setup: VITE_AUTOBASE_URL and
+VITE_AUTOBASE_PUBLISHABLE_KEY (publishable key only; no secret keys in the
+frontend).
 
 The other function credentials are Supabase project secrets set the same way and
 never committed: the service credential Supabase injects for workers, the Resend
@@ -123,7 +113,8 @@ reads.
   src/integrations/supabase/client.ts turned into a bridge onto the new
   backend so every screen, helper and hook keeps its existing data calls;
   sign-in, sign-up, password reset and sign-out mapped onto the platform auth
-  client; registration details carried to the first profile row; boolean
+  client, with auth-state subscriptions emitted by the bridge because the data
+  client uses a custom token provider; registration details carried to the first profile row; boolean
   columns read from the database normalised in src/data/liveData.ts.
 
 - Backend completion pass (2026-11-18, second pass): redeployed `admin-users`
@@ -360,6 +351,19 @@ reads.
   message and the card: web push only works from the Home Screen app, never a
   Safari tab (iOS 16.4+).
 
+- Production security audit (2026-11-24): static review found that the
+  20261113000000 reconciliation baseline adds permissive authenticated
+  all-row policies across private tables and blanket authenticated storage
+  access, plus public access to the certificate register. Prepared
+  20261124170000_remove_reconciliation_rls_bypasses.sql to remove those
+  broad policies, preserve table-specific access, and constrain certificate
+  reads. Per the user's instruction, no migrations or operational scripts
+  were applied; live database state and remediation remain unverified.
+- Fixed Supabase-compatible auth bridging in `src/integrations/supabase/client.ts`.
+  The data client uses a custom token provider that disables Supabase's built-in
+  Auth API, so the bridge now manages subscriptions itself and emits session
+  events from Better Auth sign-in/sign-out operations. This resolves the auth
+  stack overflow and the follow-on blank launch screen.
 - Authentication repair (2026-11-20). Sign-in and sign-up were dead in every
   build: `src/integrations/supabase/client.ts` was a bridge onto the managed
   Autobase backend, whose `VITE_AUTOBASE_URL` / `VITE_AUTOBASE_PUBLISHABLE_KEY`

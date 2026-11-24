@@ -14,6 +14,6 @@ export function displayRole(role: string | null | undefined): string {
 /** Sidebar group heading for a signed-in role. */
 export function displayGroupForRole(role: string | null | undefined): string {
   if (role === "Student") return "Student Desk";
-  if (role === "Teacher" || role === "Instructor") return "Instructors";
+  if (role === "Teacher") return "Teachers-Instructors";
   return "Administration";
 }

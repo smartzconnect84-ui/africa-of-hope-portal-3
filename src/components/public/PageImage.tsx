@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Expand, X } from "lucide-react";
-import { lockPageScroll } from "@/lib/scrollLock";
 
 export const PUBLIC_PAGE_IMAGE_PAGES = [
   { key: "about", label: "About page header" },
@@ -28,10 +27,14 @@ function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: ()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    const releaseScroll = lockPageScroll();
+    const prevBody = document.body.style.overflow;
+    const prevRoot = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
     return () => {
-      releaseScroll();
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevRoot;
       document.removeEventListener("keydown", onKey);
     };
   }, [onClose]);

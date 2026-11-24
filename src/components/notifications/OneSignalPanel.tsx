@@ -125,7 +125,7 @@ export default function OneSignalPanel({ compact = false }: { compact?: boolean 
 
 function roleTag(role: unknown): string {
   const r = String(role ?? "").toLowerCase();
-  if (r.includes("instructor")) return "instructors";
+  if (r.includes("teacher") || r.includes("instruct")) return "teachers";
   if (r.includes("admin") || r.includes("registrar")) return "admins";
   if (r.includes("support") || r.includes("admission") || r.includes("staff")) return "staff";
   return "students";

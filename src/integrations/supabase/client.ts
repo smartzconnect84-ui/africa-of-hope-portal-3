@@ -1,155 +1,362 @@
-/**
- * The portal's data client.
- *
- * Every screen, hook and helper talks to the school database through this one
- * module: `supabase.from(...)` for tables, `supabase.auth` for sign-in and
- * sessions, `supabase.rpc(...)`, `supabase.storage` and `supabase.functions`.
- * The exported names (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, …) are read by the
- * backend status screens.
- *
- * It is a single real `@supabase/supabase-js` client, created once from
- * `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` — the publishable/anon key,
- * which is the only key allowed in a browser bundle. The service-role key is a
- * server-only secret and must never appear here or in any `VITE_` variable.
- *
- * Resilience: a build with those variables missing must still boot. It points
- * at an RFC 2606 `.invalid` host, so data calls fail with a clear network error
- * while the public site keeps rendering. `isSupabaseConfigured()` lets the UI
- * explain that instead of crashing.
- */
-import { createClient } from "@supabase/supabase-js";
-import { authStorage } from "../../lib/authStorage.ts";
+// Supabase-compat bridge onto the Autobase backend.
+//
+// The app keeps calling `supabase.from(...) / supabase.auth.* / supabase.storage`
+// and those calls run against the project backend via
+// `src/integrations/autobase/client.ts` (db = supabase-js API, auth = better-auth).
+// A missing backend must never crash the app: without valid env vars the db
+// client points at an unroutable placeholder and auth calls report unavailable.
+import { auth as platformAuth, db } from "../autobase/client";
 
-// `import.meta.env` only exists when Vite builds the page; reading it without a
-// guard breaks every non-bundler entry point (the node test runner imports the
-// data helpers).
-const env = (import.meta as { env?: Record<string, string | undefined> }).env;
-
-const ENV_URL = (env?.VITE_SUPABASE_URL ?? "").replace(/\/+$/, "");
-// The project ships both key styles; either one is a public client key.
-const ENV_KEY = env?.VITE_SUPABASE_ANON_KEY ?? env?.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
-
-function isValidConfig(url: string, key: string): boolean {
-  if (!url || !key) return false;
+// ── Connection info (kept for health panels / diagnostics) ───────────────────
+function readEnv(): Record<string, string | undefined> {
   try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    return (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+  } catch {
+    return {};
+  }
+}
+
+const env = readEnv();
+
+// The data client uses a custom access-token provider, which disables its
+// built-in Auth API. Maintain auth subscriptions in this compatibility bridge.
+type AuthListener = (event: string, session: unknown) => void;
+const authListeners = new Set<AuthListener>();
+
+function emitAuthState(event: string, session: unknown): void {
+  for (const listener of authListeners) {
+    try {
+      listener(event, session);
+    } catch {
+      // One consumer must not prevent other auth listeners from updating.
+    }
+  }
+}
+
+export const SUPABASE_URL: string =
+  env.VITE_AUTOBASE_URL ?? env.VITE_SUPABASE_URL ?? "https://autobase-not-connected.invalid";
+export const SUPABASE_ANON_KEY: string =
+  env.VITE_AUTOBASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_ANON_KEY ?? "sb_publishable_not_connected";
+export const SUPABASE_PUBLISHABLE_KEY: string = SUPABASE_ANON_KEY;
+
+export const SUPABASE_PROJECT_REF: string = (() => {
+  try {
+    const host = new URL(SUPABASE_URL).hostname;
+    return host.split(".")[0] ?? "";
+  } catch {
+    return "";
+  }
+})();
+
+export const SUPABASE_USING_ENV: boolean = Boolean(
+  env.VITE_AUTOBASE_URL ?? env.VITE_SUPABASE_URL,
+);
+
+export function isSupabaseConfigured(): boolean {
+  if (SUPABASE_URL.includes("autobase-not-connected.invalid")) return false;
+  if (!SUPABASE_ANON_KEY.startsWith("sb_publishable_")) return false;
+  try {
+    const u = new URL(SUPABASE_URL);
+    return u.protocol === "https:" || u.protocol === "http:";
   } catch {
     return false;
   }
-  return key.length > 20;
 }
 
-/** False when the build has no Supabase project configured. */
-export const SUPABASE_CONFIGURED = isValidConfig(ENV_URL, ENV_KEY);
-
-// Syntactically valid, can never resolve: no request leaves the device.
-const PLACEHOLDER_URL = "https://supabase-not-connected.invalid";
-
-export const SUPABASE_URL: string = SUPABASE_CONFIGURED ? ENV_URL : PLACEHOLDER_URL;
-export const SUPABASE_ANON_KEY: string = SUPABASE_CONFIGURED ? ENV_KEY : "";
-export const SUPABASE_USING_ENV = Boolean(ENV_URL && ENV_KEY);
-
-export function supabaseProjectRef(url: string = SUPABASE_URL): string {
+// True when the page was opened from a password-recovery email link.
+export const OPENED_FROM_RECOVERY_LINK: boolean = (() => {
   try {
-    return new URL(url).hostname;
+    if (typeof window === "undefined") return false;
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    if (hash.get("autobase_action") === "reset") return true;
+    if (hash.get("type") === "recovery") return true;
+    const search = new URLSearchParams(window.location.search);
+    return search.get("type") === "recovery";
   } catch {
-    return url;
+    return false;
+  }
+})();
+
+// ── Pending registration details (carried to the first profile row) ───────────
+const PENDING_KEY = "aoh:pending-registration";
+
+export function rememberRegistration(email: string, payload: Record<string, unknown>): void {
+  try {
+    const key = email.trim().toLowerCase();
+    if (!key) return;
+    localStorage.setItem(`${PENDING_KEY}:${key}`, JSON.stringify(payload));
+  } catch {
+    // Private mode: registration still works, just without the saved details.
   }
 }
 
-export const SUPABASE_PROJECT_REF = supabaseProjectRef();
-
-export const isSupabaseConfigured = (): boolean => SUPABASE_CONFIGURED;
-
-if (!SUPABASE_CONFIGURED) {
-  console.error(
-    "[supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are missing from this build, so sign-in and data features are unavailable.",
-  );
-}
-
-/**
- * The session store honours the "Remember me" preference: a remembered
- * session lives in localStorage and survives a browser restart, otherwise it
- * lives in sessionStorage and still survives a refresh. Supabase owns token
- * rotation; this only chooses the persistence lifetime.
- */
-export const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_CONFIGURED ? SUPABASE_ANON_KEY : "sb_publishable_not_connected",
-  {
-    auth: {
-      storage: authStorage,
-      storageKey: "aoh-auth-session",
-      persistSession: true,
-      autoRefreshToken: true,
-      // Confirmation, recovery and magic links come back with the session in
-      // the URL fragment; the client picks it up and fires SIGNED_IN /
-      // PASSWORD_RECOVERY. Password reset and sign-up links are emailed with
-      // this flow.
-      detectSessionInUrl: true,
-      flowType: "implicit",
-    },
-  },
-);
-
-/** True when the page was opened from a password-reset email. */
-export const OPENED_FROM_RECOVERY_LINK =
-  typeof window !== "undefined" &&
-  /(^|[#&?])type=recovery(&|$)/.test(`${window.location.hash}&${window.location.search}`);
-
-// ── registration details that outlive the page ──────────────────────────────
-
-/**
- * Registration details are kept on the device until the account's profile row
- * exists, because email confirmation finishes the sign-up on another visit.
- * The database trigger normally creates the profile from the sign-up metadata;
- * this is the fallback when the row is still missing on first sign-in.
- */
-const PENDING_PROFILE_KEY = "aoh-pending-profile:";
-
-export function rememberPendingRegistration(
-  email: string,
-  details: Record<string, unknown>,
-): void {
+export function takePendingRegistration(email: string | null): Record<string, unknown> | null {
   try {
-    localStorage.setItem(
-      `${PENDING_PROFILE_KEY}${email.toLowerCase()}`,
-      JSON.stringify(details),
-    );
-  } catch {
-    // Storage is optional: the account and profile are still created.
-  }
-}
-
-export function takePendingRegistration(
-  email: string | null,
-): Record<string, unknown> | null {
-  if (!email) return null;
-  try {
-    const key = `${PENDING_PROFILE_KEY}${email.toLowerCase()}`;
-    const raw = localStorage.getItem(key);
+    if (!email) return null;
+    const key = email.trim().toLowerCase();
+    const raw = localStorage.getItem(`${PENDING_KEY}:${key}`);
     if (!raw) return null;
-    localStorage.removeItem(key);
+    localStorage.removeItem(`${PENDING_KEY}:${key}`);
     return JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return null;
   }
 }
 
-/**
- * Email the confirmation link again. Used when someone tries to sign in
- * before confirming the address, so the form answers with a way forward
- * instead of a dead end.
- */
-export async function resendConfirmationEmail(
-  email: string,
-  redirectTo: string = typeof window === "undefined" ? "" : window.location.origin,
-): Promise<{ error: string | null }> {
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email: email.trim().toLowerCase(),
-    options: { emailRedirectTo: redirectTo },
-  });
-  return { error: error?.message ?? null };
+// ── Session mapping (better-auth → supabase-js shape) ─────────────────────────
+function toSupabaseUser(u: unknown): unknown {
+  const raw = (u ?? {}) as Record<string, unknown>;
+  const id = (raw.id as string) ?? "";
+  return {
+    id,
+    email: (raw.email as string | null) ?? null,
+    user_metadata: {
+      full_name: (raw.name as string | null) ?? (raw.full_name as string | null) ?? null,
+      avatar_url: (raw.image as string | null) ?? (raw.avatar_url as string | null) ?? null,
+    },
+    app_metadata: {},
+    aud: "authenticated",
+    created_at: (raw.createdAt as string) ?? (raw.created_at as string) ?? "",
+    // A non-empty identities list marks a genuinely new account. The app
+    // treats an empty list as "this email already exists", so only return
+    // an empty list when there is no user at all.
+    identities: id ? [{ identity_id: id, user_id: id }] : [],
+  };
 }
+
+function toSupabaseSession(payload: unknown): unknown {
+  const raw = (payload ?? {}) as Record<string, unknown>;
+  const userRaw =
+    (raw.user as unknown) ?? (raw.data as Record<string, unknown> | undefined)?.user ?? null;
+  if (!userRaw) return null;
+  const sessionRaw = ((raw.session as Record<string, any> | null) ??
+    (raw.data as Record<string, any> | undefined)?.session ??
+    null) as Record<string, any> | null;
+  const token =
+    (sessionRaw?.token as string) ??
+    (raw.token as string) ??
+    (raw.access_token as string) ??
+    "";
+  const refresh =
+    (sessionRaw?.refreshToken as string) ??
+    (raw.refresh_token as string) ??
+    "";
+  const expiresAt =
+    typeof sessionRaw?.expiresAt === "string"
+      ? Math.floor(new Date(sessionRaw.expiresAt as string).getTime() / 1000)
+      : Math.floor(Date.now() / 1000) + 3600;
+  return {
+    access_token: token,
+    refresh_token: refresh,
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: expiresAt,
+    user: toSupabaseUser(userRaw),
+  };
+}
+
+async function currentBridgeSession(): Promise<{ data: { session: unknown } }> {
+  try {
+    const res = await (platformAuth as unknown as {
+      getSession?: () => Promise<{ data?: unknown }>;
+    }).getSession?.();
+    const session = toSupabaseSession(res?.data);
+    return { data: { session } };
+  } catch {
+    return { data: { session: null } };
+  }
+}
+
+// ── Auth bridge (supabase-js auth interface → better-auth) ────────────────────
+type AuthBridge = {
+  signUp: (args: {
+    email: string;
+    password: string;
+    options?: { data?: Record<string, unknown>; emailRedirectTo?: string };
+  }) => Promise<{ data: { user: unknown; session: unknown; identities?: unknown[] }; error: { message: string } | null; needsConfirmation?: boolean }>;
+  signInWithPassword: (args: {
+    email: string;
+    password: string;
+  }) => Promise<{ data: { user: unknown; session: unknown }; error: { message: string } | null }>;
+  signOut: () => Promise<{ error: { message: string } | null }>;
+  resetPasswordForEmail: (
+    email: string,
+    options?: { redirectTo?: string },
+  ) => Promise<{ data: Record<string, never>; error: { message: string } | null }>;
+  updateUser: (attrs: {
+    password?: string;
+    [key: string]: unknown;
+  }) => Promise<{ data: { user: unknown }; error: { message: string } | null }>;
+  getSession: () => Promise<{ data: { session: unknown }; error: null }>;
+  onAuthStateChange: (
+    cb: (event: string, session: unknown) => void,
+  ) => { data: { subscription: { unsubscribe: () => void } } };
+};
+
+const bridgeAuth: AuthBridge = {
+  async signUp({ email, password, options }) {
+    const cleanEmail = email.trim().toLowerCase();
+    const details = (options?.data ?? {}) as Record<string, unknown>;
+    const name =
+      (details.full_name as string) ??
+      (details.name as string) ??
+      cleanEmail.split("@")[0] ??
+      cleanEmail;
+    try {
+      const { data, error } = await (platformAuth as unknown as {
+        signUp: {
+          email: (args: Record<string, unknown>) => Promise<{ data?: unknown; error?: { message?: string } | null }>;
+        };
+      }).signUp.email({
+        email: cleanEmail,
+        password,
+        name,
+        callbackURL:
+          options?.emailRedirectTo ??
+          (typeof window !== "undefined" ? window.location.origin : undefined),
+      });
+      if (error) {
+        const message = /exist/i.test(error.message ?? "")
+          ? "An account with this email already exists. One email can only be used for one account (User, Admin or Staff) — please sign in instead."
+          : error.message || "The account could not be created.";
+        return { data: { user: null, session: null, identities: [] }, error: { message } };
+      }
+      const session = toSupabaseSession(data);
+      const dataRec = (data ?? {}) as Record<string, unknown>;
+      const userRaw =
+        (dataRec.user as unknown) ??
+        (dataRec.data as Record<string, unknown> | undefined)?.user ??
+        null;
+      const user = userRaw ? toSupabaseUser(userRaw) : null;
+      const needsConfirmation = !session;
+      if (Object.keys(details).length) rememberRegistration(cleanEmail, details);
+      if (session) emitAuthState("SIGNED_IN", session);
+      return { data: { user, session, identities: [] }, error: null, needsConfirmation };
+    } catch (err) {
+      return {
+        data: { user: null, session: null, identities: [] },
+        error: { message: err instanceof Error ? err.message : "The account could not be created." },
+      };
+    }
+  },
+
+  async signInWithPassword({ email, password }) {
+    try {
+      const { data, error } = await (platformAuth as unknown as {
+        signIn: {
+          email: (args: Record<string, unknown>) => Promise<{ data?: unknown; error?: { message?: string } | null }>;
+        };
+      }).signIn.email({ email: email.trim().toLowerCase(), password });
+      if (error) return { data: { user: null, session: null }, error: { message: error.message || "Sign-in failed." } };
+      const session = toSupabaseSession(data) as Record<string, unknown> | null;
+      const user = (session?.user as unknown) ?? null;
+      if (!session || !user) {
+        // Fall back to getSession in case the payload shape differs.
+        const current = await currentBridgeSession();
+        const fallback = current.data.session as Record<string, unknown> | null;
+        if (fallback?.user) {
+          emitAuthState("SIGNED_IN", fallback);
+          return { data: { user: fallback.user, session: fallback }, error: null };
+        }
+        return { data: { user: null, session: null }, error: { message: "The server did not create a sign-in session. Please retry." } };
+      }
+      emitAuthState("SIGNED_IN", session);
+      return { data: { user, session }, error: null };
+    } catch (err) {
+      return {
+        data: { user: null, session: null },
+        error: { message: err instanceof Error ? err.message : "Sign-in failed." },
+      };
+    }
+  },
+
+  async signOut() {
+    try {
+      await (platformAuth as unknown as { signOut?: () => Promise<unknown> }).signOut?.();
+      emitAuthState("SIGNED_OUT", null);
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? { message: err.message } : null };
+    }
+  },
+
+  async resetPasswordForEmail(email, options) {
+    try {
+      const page = options?.redirectTo
+        ? (() => {
+            try {
+              return new URL(options.redirectTo, typeof window !== "undefined" ? window.location.origin : "https://localhost").pathname;
+            } catch {
+              return "/reset-password";
+            }
+          })()
+        : "/reset-password";
+      const { sendPasswordReset } = await import("../autobase/client");
+      await sendPasswordReset(email.trim().toLowerCase(), page);
+      return { data: {}, error: null };
+    } catch (err) {
+      return {
+        data: {},
+        error: { message: err instanceof Error ? err.message : "The reset email could not be sent." },
+      };
+    }
+  },
+
+  async updateUser({ password }) {
+    if (!password) return { data: { user: null }, error: null };
+    try {
+      const candidate = platformAuth as unknown as {
+        changePassword?: (args: Record<string, unknown>) => Promise<{ error?: { message?: string } | null }>;
+      };
+      if (typeof candidate.changePassword === "function") {
+        const { error } = await candidate.changePassword({ newPassword: password });
+        if (error) return { data: { user: null }, error: { message: error.message || "Password update failed." } };
+        return { data: { user: null }, error: null };
+      }
+      return { data: { user: null }, error: { message: "Password update is not wired yet." } };
+    } catch (err) {
+      return {
+        data: { user: null },
+        error: { message: err instanceof Error ? err.message : "Password update failed." },
+      };
+    }
+  },
+
+  async getSession() {
+    const current = await currentBridgeSession();
+    return { data: current.data, error: null };
+  },
+
+  onAuthStateChange(cb) {
+    authListeners.add(cb);
+    let cancelled = false;
+    if (typeof window !== "undefined") {
+      void currentBridgeSession().then((current) => {
+        if (!cancelled) {
+          try {
+            cb("INITIAL_SESSION", current.data.session);
+          } catch {
+            // Listener errors must never break auth state.
+          }
+        }
+      });
+    }
+    return {
+      data: {
+        subscription: {
+          unsubscribe: () => {
+            cancelled = true;
+            authListeners.delete(cb);
+          },
+        },
+      },
+    };
+  },
+};
+
+// The data client keeps the full supabase-js surface (from/storage/channel/rpc/functions)
+// with auth replaced by the better-auth bridge. Mutating the instance preserves
+// prototype-bound methods that a spread would detach.
+(db as unknown as Record<string, unknown>).auth = bridgeAuth;
+
+export const supabase = db;

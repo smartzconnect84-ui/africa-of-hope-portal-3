@@ -27,7 +27,7 @@ function suggestionsFor(role: string | null): string[] {
   if (role === "Student") {
     return ["How much do I still owe in fees?", "What quizzes do I have coming up?", "What programmes am I enrolled in?"];
   }
-  if (role === "Instructor") {
+  if (role === "Teacher") {
     return ["How many students are in my cohorts?", "How do quiz attempts get graded?"];
   }
   return ["Give me a quick overview of the academy right now", "How many students are active?"];
@@ -67,11 +67,11 @@ export default function HopeAssistant() {
     ? "AOH AI"
     : configuredLabel;
   const surface: "public" | "portal" = currentUser ? "portal" : "public";
-  // Only Instructors, Staff and Admin accounts may save research into the Resource Center.
+  // Only Teachers, Staff and Admin accounts may save research into the Resource Center.
   // Explicit staff allowlist: every non-student staff role qualifies; Students never see the save control.
-  const STAFF_SAVE_ROLES = ["Instructor", "Registrar", "Admission Officer", "Finance Officer", "School Admin", "Super Admin", "Director of Education", "Research Officer", "Executive Assistant", "Data Entry Officer", "Public Relations Officer", "Customer Care Officer"] as const;
+  const STAFF_SAVE_ROLES = ["Teacher", "Registrar", "Admission Officer", "Finance Officer", "School Admin", "Super Admin", "Director of Education", "Research Officer", "Executive Assistant", "Data Entry Officer", "Public Relations Officer", "Customer Care Officer"] as const;
   const canSaveMaterial = !!currentUser && (STAFF_SAVE_ROLES as readonly string[]).includes(currentUser.role);
-  const materialCohorts = (state.cohorts ?? []).filter((c) => !currentUser || currentUser.role !== "Instructor" || c.teacherId === currentUser.id).slice(0, 50);
+  const materialCohorts = (state.cohorts ?? []).filter((c) => !currentUser || currentUser.role !== "Teacher" || c.teacherId === currentUser.id).slice(0, 50);
 
   function saveToMaterials(bubbleId: string, content: string) {
     const text = content.trim();

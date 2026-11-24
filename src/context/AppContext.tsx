@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { resendConfirmationEmail, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchState, mergeThemeSettings, mergeWebsiteSettings, persistSettingsPatch, settingsRow, today, uid, type Row } from "@/data/liveData";
 import type {
   Announcement,
@@ -97,6 +97,7 @@ interface AppContextValue {
   /** Bumped by resetDemoData(); components that fetch their own data outside `state` (e.g. payments, blog) should include this in their refetch effect's dependencies so the "Reload live data" action refreshes them too. */
   reloadKey: number;
   refresh: () => Promise<void>;
+  reloadLiveData: () => Promise<void>;
   /** Resolves to an error message, or null on success. */
   login: (emailOrUserId: string, password?: string) => Promise<string | null>;
   logout: () => void;
@@ -339,24 +340,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       live,
       reloadKey,
       refresh,
+      reloadLiveData: async () => {
+        setReloadKey((key) => key + 1);
+        await refresh();
+      },
       login: async (emailOrUserId, password) => {
         if (!password) return "Enter your portal password to sign in.";
-        const email = emailOrUserId.trim().toLowerCase();
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: emailOrUserId.trim(),
           password,
         });
         if (error) {
-          // Supabase refuses sign-in until the address is confirmed. Answer with
-          // a way forward (a fresh link) instead of a dead end.
-          if (/email[_ ]?not[_ ]?confirmed/i.test(error.message)) {
-            const { error: resendError } = await resendConfirmationEmail(email);
-            const message = resendError
-              ? `This email address is not confirmed yet, and a new confirmation link could not be sent (${resendError}). Contact the admissions office.`
-              : `This email address is not confirmed yet. We sent a fresh confirmation link to ${email} — open it, then sign in.`;
-            toast.error(message, { duration: 9000 });
-            return message;
-          }
           toast.error(error.message);
           return error.message;
         }
@@ -601,7 +595,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             category: program.category,
             duration_weeks: program.durationWeeks,
             tuition: program.tuition,
-            fee: program.tuition,
             certification: program.certification,
             description: program.description,
             entry_requirements: program.entryRequirements,
@@ -609,8 +602,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             study_plan: program.studyPlan || null,
             image_url: program.imageUrl || null,
             published: program.published ?? true,
-            is_active: program.published ?? true,
-            duration: program.durationWeeks ? `${program.durationWeeks} weeks` : "",
           };
           let res = await supabase.from("programs").insert(full);
           // Duplicate code (two programmes, same title): retry once with a unique suffix.
@@ -649,9 +640,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               modules.map((m, index) => ({
                 id: m.id,
                 program_id: id,
-                name: m.title,
-                description: m.summary,
+                title: m.title,
                 weeks: m.weeks,
+                summary: m.summary,
                 position: index,
               })),
             );
@@ -698,6 +689,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (rest.studyPlan !== undefined) row.study_plan = rest.studyPlan || null;
           if (rest.imageUrl !== undefined) row.image_url = rest.imageUrl || null;
           if (rest.published !== undefined) row.published = rest.published;
+          if (rest.selfPacedEnabled !== undefined) row.self_paced_enabled = rest.selfPacedEnabled;
+          if (rest.selfPacedRequiresApproval !== undefined) row.self_paced_requires_approval = rest.selfPacedRequiresApproval;
           if (!Object.keys(row).length && !nextModules) return null;
           if (Object.keys(row).length) {
             let res = await supabase.from("programs").update(row).eq("id", id);

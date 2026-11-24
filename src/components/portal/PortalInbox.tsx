@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { DirectMessageDialog, UserProfileDialog } from "../DirectoryMessaging";
-import { useChatThread } from "@/lib/chat";
+import { DirectMessageDialog } from "../DirectoryMessaging";
 import type { User } from "@/types";
 import { cn } from "@/lib/utils";
-import { getLastSeen } from "@/lib/presence";
 
 interface Convo {
   peerId: string;
@@ -55,9 +53,6 @@ export default function PortalInbox() {
   const [convos, setConvos] = useState<Convo[]>([]);
   const [peer, setPeer] = useState<User | null>(null);
   const [query, setQuery] = useState("");
-  const [threadUser, setThreadUser] = useState<User | null>(null);
-
-  const { messages, send } = useChatThread(currentUser?.id, threadUser ? { kind: "dm", id: threadUser.id } : null);
 
   const refresh = () => {
     if (!currentUser) { setConvos([]); return; }
@@ -80,9 +75,6 @@ export default function PortalInbox() {
 
   const unread = useMemo(() => convos.reduce((n, c) => n + c.unread, 0), [convos]);
   const byId = useMemo(() => new Map(state.users.map((u) => [u.id, u])), [state.users]);
-
-  // Chat thread handled via the shared chat hooks so unread counts and realtime
-  // delivery are identical for DM and group conversations.
 
   const q = query.trim().toLowerCase();
   const matches = q
@@ -129,7 +121,7 @@ export default function PortalInbox() {
                     <button
                       key={u.id}
                       type="button"
-                        onClick={() => { setPeer(u); setOpen(false); setQuery(""); setThreadUser(u); }}
+                      onClick={() => { setPeer(u); setOpen(false); setQuery(""); }}
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-emerald-50"
                     >
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-800 text-[11px] font-bold text-amber-400">
@@ -177,8 +169,7 @@ export default function PortalInbox() {
           </div>
         </>
       )}
-      <DirectMessageDialog meId={currentUser?.id ?? null} meName={currentUser?.name ?? "Me"} peer={peer} onClose={() => { setPeer(null); refresh(); setThreadUser(null); }} />
-    <UserProfileDialog user={threadUser} online={false} onMessage={(u) => { setThreadUser(null); setPeer(u); }} onClose={() => setThreadUser(null)} />
+      <DirectMessageDialog meId={currentUser?.id ?? null} meName={currentUser?.name ?? "Me"} peer={peer} onClose={() => { setPeer(null); refresh(); }} />
     </div>
   );
 }

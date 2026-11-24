@@ -4,6 +4,19 @@
 # before the handler runs. Every handler still validates its own caller, body
 # size and access rights, so a public entry point is never an open door.
 #
+# Server-only secrets (never exposed to the browser, never prefixed VITE_):
+#   SUPABASE_SERVICE_ROLE_KEY   injected by Supabase, used by workers only
+#   RESEND_API_KEY              email delivery
+#   EMAIL_FROM                  verified sender identity
+#   EMAIL_CRON_SECRET           x-cron-secret for send-email (a staff JWT with
+#                               settings.manage also works)
+#   REMINDER_CRON_SECRET        x-cron-secret for send-deadline-reminders;
+#                               falls back to CRON_SECRET, then the service key
+#   GROQ_API_KEY / GROQ_MODEL   AOH AI assistant
+#   NEWSLETTER_TOKEN_SECRET     newsletter confirm/unsubscribe HMAC (>= 32 chars)
+#   PUBLIC_SITE_URL             absolute site URL used in emailed links
+#   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   push delivery
+#   APP_URL                     public app URL used in account emails
 # Server-only credentials live in Supabase's function secrets, never in this
 # repository and never behind a VITE_ prefix; QYANT.md lists what each function
 # needs and nothing in this file is a credential value.

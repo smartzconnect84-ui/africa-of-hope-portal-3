@@ -24,14 +24,13 @@ import {
   Newspaper,
   Smartphone,
   Mail,
-  MessageCircle,
   Activity,
   TrendingUp,
   HeartHandshake,
+  Briefcase,
   Inbox,
   LifeBuoy,
   ReceiptText,
-  Briefcase,
   FolderOpen,
   FileText,
   Lightbulb,
@@ -62,7 +61,6 @@ import ProfilePage from "./components/ProfilePage";
 import RolesPermissions from "./components/RolesPermissions";
 import PeopleManagement from "./components/PeopleManagement";
 import QuizBuilder from "./components/quiz/QuizBuilder";
-import ChatHub from "./components/chat/ChatHub";
 import StudentQuizzes from "./components/quiz/StudentQuizzes";
 import AcademicPlanning from "./components/AcademicPlanning";
 import AnnouncementManager from "./components/AnnouncementManager";
@@ -194,7 +192,7 @@ function PeopleHub({ ctx }: { ctx: PortalViewContext }) {
 
 function DashboardView({ role }: { role: Role | null }) {
   if (role === "Student") return <StudentPortal />;
-  if (role === "Instructor") return <TeacherDashboard />;
+  if (role === "Teacher") return <TeacherDashboard />;
   if (role === "Admission Officer") return <PeopleManagement initialTab="applicants" />;
   if (role === "Customer Care Officer") return <Helpdesk key="dashboard-helpdesk" />;
   if (role === "Data Entry Officer") return <PeopleManagement />;
@@ -227,7 +225,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   {
     key: "dashboard",
     label: (ctx) =>
-      ctx.role === "Student" ? "My Portal" : ctx.role === "Instructor" ? "My Workspace" : "Dashboard",
+      ctx.role === "Student" ? "My Portal" : ctx.role === "Teacher" ? "My Workspace" : "Dashboard",
     icon: LayoutDashboard,
     visible: () => true,
     render: (ctx) => <DashboardView role={ctx.role} />,
@@ -248,7 +246,7 @@ export const PORTAL_VIEWS: PortalView[] = [
   },
   {
     key: "academic-planning",
-    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : ctx.role === "Instructor" ? "Course Planning" : "Academic Approvals",
+    label: (ctx) => ctx.role === "Student" ? "My Course Plan" : ctx.role === "Teacher" ? "Course Planning" : "Academic Approvals",
     icon: CalendarRange,
     visible: (ctx) => ctx.canAny("courses.enroll", "academic_plans.manage", "academic_plans.approve"),
     render: () => <AcademicPlanning />,
@@ -329,7 +327,7 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: TrendingUp,
     visible: (ctx) =>
       ctx.canAny("reports.manage", "grades.manage", "attendance.manage", "academic_plans.manage", "academic_plans.approve") ||
-      ctx.role === "Instructor" ||
+      ctx.role === "Teacher" ||
       ctx.role === "School Admin" ||
       ctx.role === "Super Admin" ||
       ctx.role === "Director of Education" ||
@@ -433,13 +431,6 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: Briefcase,
     visible: (ctx) => ctx.canAny("cms.manage", "transparency.manage", "donations.manage"),
     render: () => <AdminOpportunities />,
-  },
-  {
-    key: "messages",
-    label: "Messages",
-    icon: MessageCircle,
-    visible: (ctx) => ctx.isSignedIn,
-    render: () => <ChatHub />,
   },
   {
     key: "website",
@@ -589,9 +580,9 @@ export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] 
     keys: ["fees", "payments", "payment-review", "certificates", "verification"],
   },
   {
-    id: "support",
+    id: "community",
     label: "Support & Community",
-    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate", "messages"],
+    keys: ["announcements", "helpdesk", "grade-appeals", "policies", "blog", "opportunities", "donate"],
   },
   {
     id: "system",

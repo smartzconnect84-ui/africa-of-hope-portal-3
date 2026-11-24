@@ -61,3 +61,59 @@ was never recovered (RECOVERY.md).
 Unfinished = every row marked "Unfinished" above. Backend-only gaps that block
 full wiring are recorded in the journal for follow-up (RLS inserts for
 newsletter confirm, proof upload path on payment_submissions).
+
+## Production security review — 2026-11-24
+
+This checkout is not the recovery-only scaffold described in the original
+report: it contains the portal UI, Supabase migrations, RPC callers and Edge
+Functions. The prior report is historical, not a current production sign-off.
+
+### Critical finding
+
+`20261113000000_complete_backend_reconciliation.sql` creates permissive
+`FOR ALL TO authenticated USING (true) WITH CHECK (true)` policies on dozens
+of private tables. PostgreSQL combines permissive RLS policies with OR, so
+these policies bypass the intended owner/staff restrictions: any signed-in
+account can read and mutate other users' private records, including profile,
+payment, submission, helpdesk, message, notification and learning data. The
+same migration grants all authenticated users `ALL` access to every storage
+bucket via `reconciled_portal_write`, bypassing owner-prefix policies.
+
+That baseline also grants anonymous SELECT on `certificates` and adds a public
+read policy. Certificate rows contain student IDs and grades; public
+verification should use the existing `verify_public_certificate(text)` RPC,
+which returns a limited projection, rather than direct table access.
+
+### Prepared remediation and constraints
+
+A new migration, `20261124170000_remove_reconciliation_rls_bypasses.sql`, drops
+only the reconciliation-wide policies, restores certificate SELECT to active
+owners / authorized staff, and removes anonymous access to the certificate
+register. Existing table-specific policies remain in force. It has **not** been
+applied, per the user's instruction. Until an authorized operator reviews and
+applies it, the live database may remain exposed if the reconciliation
+migration ran there. No live database access or current migration state was
+available for this audit, so exposure is a source-level confirmed risk, not a
+verified live incident.
+
+### Scope and remaining work
+
+This was a static source review. No integration or environment variable was
+added; no migration, SQL contract, deployment, or other operational script was
+run. Edge Function authorization, table-by-table ownership and RPC exposure
+still require a live-schema review and role-based security tests before anyone
+can make a production-security claim. Existing feature gaps and deployment
+configuration recorded above are not completed by this pass.
+
+### Checks
+
+- `npm run typecheck` now reports only unresolved `@knocklabs/react` and
+  `@knocklabs/client` imports (five errors); neither package is declared in
+  `package.json` or installed. Adding this third-party notification integration
+  was not authorized.
+- `npm test` compiles its test types and passes the academic API tests, but the
+  Node test runner then fails to resolve the extensionless
+  `src/integrations/autobase/client` import in blog/payment test imports.
+- `npm run lint` reports pre-existing errors across unrelated files; no broad
+  lint cleanup was attempted in this security-focused change.
+- No SQL was executed, and the prepared remediation migration was not applied.

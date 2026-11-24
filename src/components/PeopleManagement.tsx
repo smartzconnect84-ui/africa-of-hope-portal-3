@@ -15,7 +15,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { useChatThread } from "@/lib/chat";
 import { usePermissions } from "../hooks/usePermission";
 import { ROLES, STAFF_ROLES } from "../lib/permissions";
 import type { Role, User } from "../types";
@@ -83,10 +82,6 @@ type Tab = "staff" | "students" | "applicants";
 export default function PeopleManagement({ initialTab = "staff" }: { initialTab?: Tab } = {}) {
   const { state, currentUser } = useApp();
   const { isSuperAdmin, can } = usePermissions();
-  const meId = currentUser?.id ?? null;
-
-  // Backwards-compatible import for the staff directory's two DM dialogs.
-  const DirectMessageDialog2 = DirectMessageDialog;
   const [tab, setTab] = useState<Tab>(initialTab);
 
   const canSeeStaff = can("staff.manage") || can("people.view");

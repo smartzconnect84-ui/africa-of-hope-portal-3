@@ -85,7 +85,7 @@ export default function WhatsAppEnquiry({
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Send a WhatsApp enquiry">
           <div className="absolute inset-0 bg-slate-950/50" onClick={() => setOpen(false)} />
-          <div className="aoh-modal-scroll absolute inset-x-4 bottom-4 mx-auto max-w-md overflow-x-hidden rounded-3xl bg-white shadow-2xl sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+          <div className="absolute inset-x-4 bottom-4 mx-auto max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
             <div className="flex items-center justify-between bg-emerald-950 px-5 py-4 text-white">
               <div className="flex items-center gap-2.5">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-[#25D366]">
