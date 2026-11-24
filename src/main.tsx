@@ -5,13 +5,9 @@ import "./index.css";
 import App from "./App.tsx";
 import { dismissSplash, registerServiceWorker } from "./lib/pwa";
 import { restorePublicLaunch } from './lib/publicBranding';
-import { completeSignIn } from "./integrations/autobase/client";
 
 restorePublicLaunch();
 registerServiceWorker();
-
-// Finishes a sign-in, confirmation or password-reset link the page was opened from.
-void completeSignIn().catch(() => undefined);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

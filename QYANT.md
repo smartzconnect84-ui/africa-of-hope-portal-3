@@ -86,6 +86,8 @@ reads.
 
 ## Change log
 
+- Root-caused portal sign-in: the managed `src/integrations/autobase/client.ts` uses better-auth (`${url}/auth`) and its lazy import leaves a stub, so sign-in returned "Sign-in is not available right now." with no network call. The backend is plain Supabase GoTrue (`/auth/v1`). Replaced the non-managed `src/integrations/supabase/client.ts` with a native supabase-js client (GoTrue auth + PostgREST) and dropped the autobase `completeSignIn()` import from `main.tsx`; the managed file is no longer imported. Browser test now POSTs to `/auth/v1/token?grant_type=password` and gets GoTrue `400 invalid_credentials` (UI: "Invalid login credentials"), proving the auth path is live.
+
 - Fixed the spurious "Live data unavailable" toast on the public/login page: AppContext.refresh() now only toasts for a signed-in identity and logs a warning for anonymous visitors. Added a gitignored `.env` with the public Autobase URL/publishable key so `npm run dev` and the preview inline them; rebuilt and redeployed production (bundle index-1O6EmZ08.js).
 
 - Applied supabase/migrations/20261125120000_messaging_rebuild.sql to project gatnzfjpuokopqyksqoy (recorded as messaging_rebuild/20261124153859): added reply_to/edited_at/deleted_at/pinned_at/pinned_by/starred to direct_messages & group_messages, message_reactions and chat_drafts tables with RLS; verified columns/tables via read-only queries.
