@@ -462,3 +462,9 @@ reads.
   close, and iOS restores the previous scroll offset. Quiz consent/submit modals,
   the WhatsApp enquiry sheet and the programme popup use the same capped scroll.
   Verified with `npm run typecheck`, `npm test` and `VERCEL=1 npm run build:sites`.
+
+- Preview refresh on `main` (2026-11-24): aligned the package manifest with
+  the existing Knock notification imports so clean installs and TypeScript checks
+  include their SDKs. Added explicit `.ts` extensions to the Autobase client
+  imports in the Supabase-compatible bridge so Node's ESM test runner can resolve
+  them, matching the Vite app build.
