@@ -60,6 +60,14 @@ Provisioned by the platform, no manual setup: VITE_AUTOBASE_URL and
 VITE_AUTOBASE_PUBLISHABLE_KEY (publishable key only; no secret keys in the
 frontend).
 
+The other function credentials are Supabase project secrets set the same way and
+never committed: the service credential Supabase injects for workers, the Resend
+send key and verified sender, the email and reminder cron secrets, the Groq
+assistant key and model, the newsletter signing secret, the VAPID keypair and
+subject, the OneSignal app id and REST credential, the internal push dispatch
+token, and the public site/app URLs. Each function's source names the ones it
+reads.
+
 ## Decisions
 
 - Preserve the React/Vite stack and use the Vite CLI directly for development.
@@ -356,3 +364,101 @@ frontend).
   Auth API, so the bridge now manages subscriptions itself and emits session
   events from Better Auth sign-in/sign-out operations. This resolves the auth
   stack overflow and the follow-on blank launch screen.
+- Authentication repair (2026-11-20). Sign-in and sign-up were dead in every
+  build: `src/integrations/supabase/client.ts` was a bridge onto the managed
+  Autobase backend, whose `VITE_AUTOBASE_URL` / `VITE_AUTOBASE_PUBLISHABLE_KEY`
+  are set nowhere, so every `supabase.auth.*`, `supabase.from(...)` and realtime
+  call went to `autobase-not-connected.invalid`. The module is now one real
+  `@supabase/supabase-js` client for project `gatnzfjpuokopqyksqoy`, created once
+  from `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`, with `detectSessionInUrl`,
+  refresh-token rotation and the existing remember-me storage
+  (`src/lib/authStorage.ts`). No screen, table, role or policy changed.
+  `src/integrations/autobase/client.ts` stays in the repo but is no longer
+  imported (`main.tsx` dropped its `completeSignIn()` call because Supabase
+  finishes confirmation/recovery links itself).
+- Supabase Auth configuration corrected: `uri_allow_list` only allowed
+  `africaofhopelr.org`, so a confirmation or reset link sent from the deployed
+  app redirected to the wrong site. It now also allows `https://aoh.freebuff.site`,
+  the Sites preview origin, `africaofhopelr.online` / `www.africaofhopelr.online`
+  and `http://localhost:3000` / `http://127.0.0.1:3000`. Email confirmation stays
+  required (`mailer_autoconfirm=false`); SMTP is Resend through
+  `auth@africaofhopelr.online` and accepts these sends.
+- Signing in before confirming an address used to be a dead end (`email_not_confirmed`).
+  `login()` in `src/context/AppContext.tsx` now recognises it, sends a fresh
+  confirmation link (`resendConfirmationEmail`) and says so.
+- Verified against the real project and the real UI: sign-up created the auth
+  user and the `handle_new_user` trigger created its profile as Student /
+  Pending Approval with the submitted name, phone and note; the confirmation
+  email was accepted for delivery; sign-in before confirmation returned
+  `email_not_confirmed` and the resend endpoint answered 200 with an app-origin
+  redirect; after confirmation the sign-in form produced a session and the
+  student dashboard; a page refresh kept the session; sign-out cleared it and
+  returned to the public site. API checks: own profile readable under RLS, role
+  self-promotion rejected ("An active account is required"), a staff-only
+  `role_permissions` write denied (403), wrong password `invalid_credentials`,
+  refresh rotated the token, and the refresh token was refused after logout
+  (`refresh_token_not_found`). The two throwaway accounts and their profiles were
+  deleted afterwards (39 users / 39 profiles, unchanged). `npm run typecheck`,
+  `npm test` (41/41) and `VERCEL=1 npm run build:sites` pass, and the built
+  bundle now contains the project URL instead of the placeholder host.
+- This merge keeps the newer `main` work (`213b416`, `0d841a5`, `2dfa776`,
+  `00784ef`, `30af657`: portal modules, the operations hub, the website settings
+  scrolling fix and the better-auth response mapping). Only the data/auth client
+  changed: those commits tried to make the managed backend answer; this one
+  points the app at the project that actually holds the accounts.
+
+- PDF text extraction through ApyHub (2026-11-21). New Edge Function
+  `extract-pdf-text` (signed-in members only: Supabase's default gateway JWT
+  check plus an in-handler session re-check, so no `[functions.*]` override was
+  added to `config.toml`) takes the upload as multipart `file`, checks the MIME
+  type/`.pdf` name, the `%PDF-`
+  magic bytes and the 10 MB limit, then forwards it to
+  `POST https://api.eu.apyhub.com/apyhub/extract-text-from-pdf/file` with the
+  `apy-token` header and returns ApyHub's `data` string as
+  `{ text, characters, truncated }`. `APY_TOKEN` is read from the function
+  environment only and declared empty in `.env.example`; upstream 4xx/5xx,
+  401/403, 413 and 429 answers, network failures and timeouts map to safe
+  messages that never repeat the provider body, and an empty `data` string is
+  reported as a scanned/empty PDF that needs OCR (this service does not OCR).
+  Extracted text is normalised (CRLF, control bytes, 200k character cap) and is
+  untrusted document content: render it as text, never as HTML.
+  `src/lib/pdfText.ts` is the browser entry point (`extractPdfText(file)`).
+  `tests/apyhubPdf.test.ts` builds a synthetic one-page PDF with a real text
+  layer and covers the request shape, the upload checks and the error mapping;
+  it also holds an opt-in live check that uploads that PDF to ApyHub and asserts
+  the returned text contains it (`APY_TOKEN=... node --test
+  tests/apyhubPdf.test.ts`), which skips when no token is present.
+  Still owner-supplied for live use: `APY_TOKEN` as a Supabase secret — the
+  live call has not run yet, so a real ApyHub answer is unconfirmed.
+
+- PDF text extraction reconcile (2026-11-21). The `extract-pdf-text` Edge Function's
+  repo source (`index.ts` importing from `../_shared/apyhubPdfHandler.ts`) could not
+  be deployed as-is: the Supabase deploy tool bundles one file per function and cannot
+  resolve `../_shared/` imports that sit outside the function's own directory, even
+  though the same `_shared/` layout works for `newsletter` (which imports
+  `../_shared/newsletter.ts`). Reconciled by making `supabase/functions/extract-pdf-text/index.ts`
+  self-contained: it inlines the ApyHub client (`_shared/apyhubPdf.ts`) and the HTTP
+  handler (`_shared/apyhubPdfHandler.ts`) so the repo file is now byte-for-byte what
+  is deployed. The `_shared/` files are kept as the tested library source that
+  `tests/apyhubPdf.test.ts` imports directly (Node resolves the path fine), and
+  `index.ts` carries a comment pointing at them. Redeployed from repo source as
+  `extract-pdf-text` v4 (ACTIVE, `verify_jwt = true`); the `APY_TOKEN` Supabase
+  project secret was rotated to the full key and the function now returns 401
+  (auth required) for anonymous calls instead of 503 (not configured) — confirmed
+  working. To redeploy after future edits, invoke the Supabase deploy function tool
+  with `index.ts`'s content; do not point it at the multi-file import version.
+
+- Global scrolling pass: the document is the only vertical scroller. `src/index.css`
+  now gives `html`, `body` and `#root` a `100dvh` minimum with no height cap and
+  clips horizontal overflow (`clip`, not `hidden`, so sticky headers stay
+  pinned), so every public page, dashboard and portal view expands to its
+  content on phones, tablets and desktops. Long dialogs and sheets are capped at
+  `calc(100dvh - 2rem)` and scroll inside (`[data-slot="dialog-content"]`,
+  `[data-slot="sheet-content"]`, `.aoh-modal-scroll`), and `.aoh-drawer` no
+  longer forces `height: 100dvh !important` (it now derives its height from the
+  safe-area insets, so the last menu rows are reachable). The public menu, portal
+  drawer and image lightbox share one reference-counted lock in
+  `src/lib/scrollLock.ts`; the page can no longer stay locked after overlays
+  close, and iOS restores the previous scroll offset. Quiz consent/submit modals,
+  the WhatsApp enquiry sheet and the programme popup use the same capped scroll.
+  Verified with `npm run typecheck`, `npm test` and `VERCEL=1 npm run build:sites`.
