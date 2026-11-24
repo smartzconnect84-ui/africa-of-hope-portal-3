@@ -48,6 +48,9 @@ export interface User {
   bio?: string;
   address?: string;
   dateOfBirth?: string;
+  schoolPolicyAcceptedAt?: string | null;
+  isOnline?: boolean;
+  lastSeenAt?: string | null;
 }
 
 export interface Module {
@@ -78,6 +81,8 @@ export interface Program {
   studyPlan?: string;
   /** Explicit backend publication state; legacy records without a flag remain public. */
   published?: boolean;
+  selfPacedEnabled?: boolean;
+  selfPacedRequiresApproval?: boolean;
 }
 
 export interface Cohort {

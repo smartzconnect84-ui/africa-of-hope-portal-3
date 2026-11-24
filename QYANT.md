@@ -341,3 +341,12 @@ frontend).
   message now names the real cause. iOS is called out explicitly in both the
   message and the card: web push only works from the Home Screen app, never a
   Safari tab (iOS 16.4+).
+
+- Production security audit (2026-11-24): static review found that the
+  20261113000000 reconciliation baseline adds permissive authenticated
+  all-row policies across private tables and blanket authenticated storage
+  access, plus public access to the certificate register. Prepared
+  20261124170000_remove_reconciliation_rls_bypasses.sql to remove those
+  broad policies, preserve table-specific access, and constrain certificate
+  reads. Per the user's instruction, no migrations or operational scripts
+  were applied; live database state and remediation remain unverified.
