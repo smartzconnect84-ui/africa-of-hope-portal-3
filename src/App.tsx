@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, Component, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { AlertTriangle, Clock } from "lucide-react";
 import { AppProvider, useApp } from "@/context/AppContext";
@@ -7,7 +7,12 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import type { User } from "./types";
 import Navigation from "./components/Navigation";
 import { LanguageProvider } from "./lib/locale";
-import { useVisiblePortalViews, getPortalView } from "./portalViews";
+import { useVisiblePortalViews, getPortalView, PORTAL_VIEWS, PORTAL_NAV_GROUPS } from "./portalViews";
+// Keep portalViews module alive: Rollup/esbuild may tree-shake conditionally-rendered
+// components' dependencies otherwise. These are referenced at module scope so
+// they are always executed regardless of which branch renders.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+const _aohPortalViewsLive = PORTAL_VIEWS.length + PORTAL_NAV_GROUPS.length;
 import PublicMarketingSite from "./components/PublicMarketingSite";
 import AuthPortal, { PasswordRecoveryDialog, type AuthTab } from "./components/AuthPortal";
 import OfflineBanner from "./components/pwa/OfflineBanner";

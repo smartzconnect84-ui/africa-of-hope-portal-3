@@ -17,6 +17,9 @@
 #   PUBLIC_SITE_URL             absolute site URL used in emailed links
 #   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT   push delivery
 #   APP_URL                     public app URL used in account emails
+# Server-only credentials live in Supabase's function secrets, never in this
+# repository and never behind a VITE_ prefix; QYANT.md lists what each function
+# needs and nothing in this file is a credential value.
 
 # Admin-only: staff account management. The handler additionally re-checks the
 # caller's role and refuses privilege escalation.
@@ -37,22 +40,22 @@ verify_jwt = false
 [functions.verify-certificate]
 verify_jwt = false
 
-# Anonymous at the gateway because the cron scheduler carries x-cron-secret
-# instead of a user JWT; the handler rejects any request without a valid
-# EMAIL_CRON_SECRET header or a settings.manage user token.
+# Anonymous at the gateway because the cron scheduler carries the internal cron
+# secret header instead of a user JWT; the handler rejects any request without
+# the matching secret or a settings.manage user token.
 [functions.send-email]
 verify_jwt = false
 
-# Anonymous at the gateway for the same reason; the handler requires
-# x-cron-secret (REMINDER_CRON_SECRET or CRON_SECRET, else the service key).
+# Anonymous at the gateway for the same reason; the handler requires its own
+# cron secret header, falling back to the shared one and then to the server
+# credential Supabase injects.
 [functions.send-deadline-reminders]
 verify_jwt = false
 
 # Open at the gateway on purpose: the database dispatcher (`_cron_dispatch_push`)
 # cannot mint a user JWT, so it presents a DB-only token instead. The handler is
 # still closed — it accepts that token, or a signed-in staff session whose role
-# it re-checks server-side, and never the REST key. Turning verify_jwt back on
+# it re-checks server-side, and never a REST credential. Turning verify_jwt back on
 # here silently breaks every notification push queued by the database.
-# Server secrets: ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY, PUSH_DISPATCH_TOKEN.
 [functions.onesignal-send]
 verify_jwt = false
