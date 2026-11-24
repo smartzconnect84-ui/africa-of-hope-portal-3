@@ -20,7 +20,7 @@ try {
  * never touched by this worker, so private student and admin data can never be
  * served from a cache.
  */
-const VERSION = "v8-cms-brand";
+const VERSION = "v9-cms-brand";
 const BRAND_CACHE = 'aoh-public-brand-v1';
 const SHELL_CACHE = `aoh-shell-${VERSION}`;
 const ASSET_CACHE = `aoh-assets-${VERSION}`;
@@ -109,7 +109,10 @@ self.addEventListener("message", (event) => {
     return;
   }
   if (event.data === "SKIP_WAITING" || event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
+    // waitUntil keeps this worker alive until activation finishes. Called bare,
+    // the browser could reclaim the worker while it was still waiting, so the
+    // update prompt survived the Refresh click and reappeared on every load.
+    event.waitUntil(self.skipWaiting());
   }
 });
 

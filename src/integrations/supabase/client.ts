@@ -5,7 +5,7 @@
 // `src/integrations/autobase/client.ts` (db = supabase-js API, auth = better-auth).
 // A missing backend must never crash the app: without valid env vars the db
 // client points at an unroutable placeholder and auth calls report unavailable.
-import { auth as platformAuth, db } from "../autobase/client.ts";
+import { auth as platformAuth, db, isBackendConfigured } from "../autobase/client.ts";
 
 // ── Connection info (kept for health panels / diagnostics) ───────────────────
 function readEnv(): Record<string, string | undefined> {
@@ -53,6 +53,11 @@ export const SUPABASE_USING_ENV: boolean = Boolean(
 );
 
 export function isSupabaseConfigured(): boolean {
+  // The live data/auth client is the Autobase backend. VITE_SUPABASE_* only
+  // feed the diagnostics below, so on their own they must never make a
+  // disconnected build look connected (that hides the offline notice while
+  // sign-in still fails against the placeholder).
+  if (!isBackendConfigured) return false;
   if (SUPABASE_URL.includes("autobase-not-connected.invalid")) return false;
   if (!SUPABASE_ANON_KEY.startsWith("sb_publishable_")) return false;
   try {

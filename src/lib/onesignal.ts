@@ -118,6 +118,14 @@ export function initOneSignal(): Promise<boolean> {
       const safariWebId = oneSignalSafariWebId() || undefined;
       await OS.init({
         appId,
+        // One registration only. By default the SDK registers
+        // /OneSignalSDKWorker.js at scope "/" — the same scope the PWA worker
+        // owns — so each side replaces the other's script and every swap
+        // installs a fresh "waiting" worker. That made the in-app update
+        // prompt reappear moments after the user refreshed. /sw.js already
+        // importScripts the OneSignal worker, so point the SDK at it instead.
+        serviceWorkerParam: { scope: "/" },
+        serviceWorkerPath: "/sw.js",
         ...(safariWebId ? { safari_web_id: safariWebId } : {}),
         allowLocalhostAsSecureOrigin: true,
         // Custom branded subscription UI (OneSignalPanel) replaces the default bell.

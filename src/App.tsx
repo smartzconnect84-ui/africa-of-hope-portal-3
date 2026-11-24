@@ -80,6 +80,26 @@ function Portal({ onExitToPublic, initialTab }: { onExitToPublic: () => void; in
     } catch { /* best-effort */ }
   }, [currentUser?.id]);
 
+  // The header messages shortcut and the member directory open the Messages
+  // workspace instead of a second, separate chat dialog.
+  useEffect(() => {
+    const openMessages = (event: Event) => {
+      const detail = (event as CustomEvent<{ peerId?: string; groupId?: string }>).detail;
+      setView((current) => {
+        if (current !== "messages" && detail && (detail.peerId || detail.groupId)) {
+          try {
+            sessionStorage.setItem("aoh-messages-target", JSON.stringify(detail));
+          } catch {
+            /* sessionStorage may be blocked */
+          }
+        }
+        return "messages";
+      });
+    };
+    window.addEventListener("aoh-open-messages", openMessages as EventListener);
+    return () => window.removeEventListener("aoh-open-messages", openMessages as EventListener);
+  }, []);
+
   useEffect(() => {
     const resume = () => setView("course-player");
     const pushNav = (e: Event) => {

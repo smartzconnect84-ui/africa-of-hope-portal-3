@@ -34,6 +34,7 @@ import {
   FolderOpen,
   FileText,
   Lightbulb,
+  MessageSquare,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "./context/AppContext";
@@ -64,6 +65,7 @@ import QuizBuilder from "./components/quiz/QuizBuilder";
 import StudentQuizzes from "./components/quiz/StudentQuizzes";
 import AcademicPlanning from "./components/AcademicPlanning";
 import AnnouncementManager from "./components/AnnouncementManager";
+import MessagingWorkspace from "./components/messaging/MessagingWorkspace";
 import BlogManager from "./components/portal/BlogManager";
 import SchoolPolicies from "./components/policies/SchoolPolicies";
 import RecommendedTraining from "./components/portal/RecommendedTraining";
@@ -229,6 +231,13 @@ export const PORTAL_VIEWS: PortalView[] = [
     icon: LayoutDashboard,
     visible: () => true,
     render: (ctx) => <DashboardView role={ctx.role} />,
+  },
+  {
+    key: "messages",
+    label: "Messages",
+    icon: MessageSquare,
+    visible: (ctx) => ctx.isSignedIn,
+    render: () => <MessagingWorkspace />,
   },
   {
     key: "people",
@@ -492,6 +501,7 @@ export function usePortalViewContext(): PortalViewContext {
  */
 const NAV_RELEVANCE_ORDER = [
   "dashboard",
+  "messages",
   "people",
   "admissions-inbox",
   "cohorts",
@@ -553,7 +563,7 @@ export function portalViewLabel(view: PortalView, ctx: PortalViewContext): strin
  * Keys must cover every PORTAL_VIEWS key; unknown keys fall into "More".
  */
 export const PORTAL_NAV_GROUPS: { id: string; label: string; keys: string[] }[] = [
-  { id: "overview", label: "Overview", keys: ["dashboard", "insights"] },
+  { id: "overview", label: "Overview", keys: ["dashboard", "messages", "insights"] },
   {
     id: "administration",
     label: "Administration",

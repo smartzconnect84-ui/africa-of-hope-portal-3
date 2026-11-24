@@ -128,6 +128,15 @@ function requestReloadOnce() {
   if (reloaded) return;
   reloaded = true;
   window.clearTimeout(activationTimer);
+  // The new worker already controls this page, so stop advertising an update
+  // before navigating. If the browser refuses to reload (in-app browser, open
+  // dialog, bfcache restore) the banner must not come back or spin forever.
+  publishUpdate({
+    hasUpdate: false,
+    busy: false,
+    error: "",
+    notice: "Update installed. Reopen the app if it does not refresh itself.",
+  });
   window.location.reload();
 }
 
@@ -142,33 +151,69 @@ export async function checkForAppUpdate() {
       waitingWorker = registration.waiting;
       publishUpdate({ hasUpdate: true, notice: "An update is ready to install." });
     } else {
-      publishUpdate({ notice: registration.installing ? "An update is downloading. You will be notified when it is ready." : "No waiting update found." });
+      // A previously flagged update can vanish (another tab activated it), so
+      // clear the banner rather than leaving a prompt for nothing.
+      publishUpdate({
+        hasUpdate: false,
+        notice: registration.installing ? "An update is downloading. You will be notified when it is ready." : "No waiting update found.",
+      });
     }
   } catch (error) {
     publishUpdate({ error: error instanceof Error ? error.message : "Could not check for updates. Try again online.", notice: "" });
   }
 }
 
+const ACTIVATION_TIMEOUT_MS = 12000;
+
 /** Only reload after activation and only following an explicit click in this tab. */
 export async function applyServiceWorkerUpdate() {
   if (updateState.busy) return;
-  publishUpdate({ busy: true, error: "", notice: "" });
+  publishUpdate({ busy: true, error: "", notice: "Installing the update…" });
   try {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) {
+      throw new Error("App updates require HTTPS and a browser with service worker support.");
+    }
     const registration = await navigator.serviceWorker.getRegistration("/");
-    const worker = registration?.waiting ?? (waitingWorker?.state === "installed" ? waitingWorker : null);
-    if (!worker) throw new Error("The waiting update is no longer available. Check for updates again.");
+    if (!registration) throw new Error("The app worker is not ready. Reload this page online and try again.");
+
+    // The waiting worker can disappear between the banner appearing and the
+    // click (another tab installed it, or an earlier attempt already activated
+    // it). Report the truth instead of spinning on an update that is gone.
+    const worker = registration.waiting ?? (waitingWorker?.state === "installed" ? waitingWorker : null);
+    waitingWorker = worker;
+    if (!worker) {
+      publishUpdate({
+        hasUpdate: false,
+        busy: false,
+        error: "",
+        notice: navigator.serviceWorker.controller
+          ? "This app is already up to date."
+          : "The app worker is still installing. Check for updates again in a moment.",
+      });
+      return;
+    }
+
     reloadRequested = true;
     worker.addEventListener("statechange", () => {
-      if (worker.state === "activated" && reloadRequested) requestReloadOnce();
+      if (reloadRequested && worker.state === "activated") requestReloadOnce();
     });
-    worker.postMessage({ type: "SKIP_WAITING" });
+    // This timer deliberately survives the reload attempt: a browser that says
+    // the worker activated but never navigates used to leave the button on
+    // "Updating…" with no timeout left to clear it.
     activationTimer = window.setTimeout(() => {
-      if (worker.state === "activated") requestReloadOnce();
-      else {
-        reloadRequested = false;
-        publishUpdate({ busy: false, error: "Activation timed out. Your work has not been reloaded. Try again online." });
+      if (reloaded) return;
+      if (worker.state === "activated" || registration.active === worker) {
+        requestReloadOnce();
+        return;
       }
-    }, 12000);
+      reloadRequested = false;
+      waitingWorker = null;
+      publishUpdate({
+        busy: false,
+        error: "The update downloaded but did not activate. Close every tab of this app, open it again, then check for updates.",
+      });
+    }, ACTIVATION_TIMEOUT_MS);
+    worker.postMessage({ type: "SKIP_WAITING" });
   } catch (error) {
     reloadRequested = false;
     publishUpdate({ busy: false, error: error instanceof Error ? error.message : "Update failed. Try again." });

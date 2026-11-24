@@ -35,6 +35,12 @@ buckets and live updates.
   notifications, yearbook_entries and profiles.
 - portal_roles_permissions_seed.sql — the six roles and the 43-grant
   permission matrix.
+- 20261125120000_messaging_rebuild.sql — adds the rich message fields the
+  Messages workspace offers (reply_to, edited_at, deleted_at, pinned_at,
+  pinned_by, starred) to `direct_messages` and `group_messages`, plus
+  `message_reactions` (emoji reactions addressed by message_kind + message_id)
+  and `chat_drafts`. Idempotent. The workspace feature-detects every part, so
+  messaging works from the device cache before the migration is applied.
 
 src/integrations/supabase/client.ts is now a bridge: the app keeps calling
 supabase.from(...) / supabase.auth, and those calls run against the project
@@ -53,6 +59,7 @@ yet" message instead of failing silently.
 - /: public homepage with manually controlled hero slider, optional slideshow playback, mobile navigation, approach, community and admissions service notice.
 - HeroSlider in src/App.jsx accepts onApply and optional onLogin callbacks. Portal controls render only when a login callback is provided.
 - Applications and student sign-in are not connected; the public page explicitly states this and collects no personal information.
+- Portal → Messages (`messages` in `src/portalViews.tsx`): a full-height chat workspace rendered by `src/components/messaging/MessagingWorkspace.tsx`. Signed-in members reach it from the sidebar (Overview → Messages) or the header messages bell, which now summarises the inbox and opens the workspace instead of a second dialog. The member directory still offers a quick text reply; it writes to the same thread history.
 
 ## Environment
 
@@ -468,3 +475,103 @@ reads.
   include their SDKs. Added explicit `.ts` extensions to the Autobase client
   imports in the Supabase-compatible bridge so Node's ESM test runner can resolve
   them, matching the Vite app build.
+
+- Update prompt repaired (2026-11-24). The in-app "Update available" banner
+  survived every Refresh and the button sat on "Updating…": OneSignal's SDK was
+  registering `/OneSignalSDKWorker.js` at scope `/`, the same scope the PWA
+  worker owns, so the two registrations kept replacing each other's script and
+  every swap installed a fresh waiting worker (the banner came straight back
+  after each reload). `initOneSignal()` now passes
+  `serviceWorkerPath: "/sw.js"` + `serviceWorkerParam: { scope: "/" }`, and
+  `/sw.js` already imports the OneSignal worker, so there is one registration.
+  The build now also runs `scripts/stamp-service-worker.mjs` (it existed but was
+  wired into no npm script), so each deploy really changes `dist/sw.js` instead
+  of shipping the same `v8-cms-brand` bytes forever. Two smaller defects fixed:
+  `SKIP_WAITING` now uses `event.waitUntil(self.skipWaiting())` so the browser
+  cannot reclaim the worker mid-activation, and the client clears a vanished
+  waiting worker ("already up to date") instead of spinning, reloads once even
+  if a browser refuses to navigate, and always settles the busy state.
+
+- Messaging rebuilt as a full workspace (2026-11-24). `src/components/chat/ChatHub.tsx`
+  was dead code — nothing imported it — and it selected columns no migration
+  created, so the only shipped messaging was the 1:1 quick-reply modal. Messages
+  is now a portal view built from `src/components/messaging/*` with a
+  WhatsApp/Messenger-style layout: chat list with search and All/Unread/Groups
+  filters, unread badges and live presence, day dividers, grouped bubbles with
+  reply quotes, reactions, pins, stars, edits, soft deletes, copy and forward,
+  in-chat search with highlighting, a pinned strip, contact/group info with
+  shared media and starred messages, image/file/voice-note attachments,
+  per-thread drafts, typing indicators and read receipts, and one-pane mobile
+  navigation. History is preserved end to end: it reads the same
+  `direct_messages` / `group_messages` rows and the same `aoh-dm:v1:` device
+  cache the directory dialog writes, so existing conversations and their
+  timestamps appear unchanged. `src/lib/messaging.ts` probes the schema
+  (attachments, rich fields, reactions, groups) once per session and degrades to
+  the local cache plus the realtime broadcast when a capability is missing; the
+  new `supabase/migrations/20261125120000_messaging_rebuild.sql` adds the
+  durable versions. The header bell became a summary that opens the workspace,
+  and the unused ChatHub file was deleted. Verified with `npm run typecheck`
+  and a production build; the live Supabase schema, attachments bucket and
+  realtime delivery were not exercised from this environment.
+
+- Published the messaging rebuild to production (2026-11-24). `sites_deploy`
+  succeeded for site `9c1d5f42-7a3b-4c8e-9d21-6b0f4a2e7c15` (production
+  `https://aoh.freebuff.site`, still published, no duplicate site created). The
+  earlier "Couldn't reach Sites" Publish error left nothing to settle: every
+  deploy receipt in the environment is `succeeded`, that attempt never reached
+  the API, and no operation was running. The deployment artifacts were already
+  in the repo — `sites.manifest.json` + `deploy/sites-worker.js` (`spa: true`,
+  assets `./dist`) — so they were reused unchanged and the environment's
+  existing secret bindings were kept. The first rebuild after that deploy
+  uploaded stale assets: `vite build` was aborting on the checker's
+  `tsconfig.json` error `TS5102: Option 'baseUrl' has been removed`, and the
+  script's `;` chain hid the failure and left the 13:22 assets in `dist`. Fixed
+  by running `build:sites` with `VERCEL=1` (disables the checker, as this file
+  already documented) and by making a failed `vite build` exit non-zero instead
+  of continuing. Final build: exit 0, `index-C9niblG6.js` (2.72 MB) containing
+  the messaging workspace and its `aoh-open-messages` wiring, 51 files, 5.7 MB,
+  no hidden paths, `sw.js` stamped `build-46a53b661ff7`; `npm run typecheck`
+  (exit 0) and `npm test` (41/41 pass) also succeeded. The bundle is still built
+  without backend values: Sites secrets are write-only
+  runtime bindings and `VITE_*` is inlined by whichever process runs the build,
+  so the published artifact is only as configured as its build was. The bundle
+  previously in production (`index-CXq1UyLk.js`, built 13:22) predates the
+  `VITE_SUPABASE_*` secrets added at 14:00, which is why the portal shows the
+  offline sign-in notice. Sign-in needs a build run with
+  `VITE_AUTOBASE_URL` + `VITE_AUTOBASE_PUBLISHABLE_KEY`: the managed data/auth
+  client reads only that pair, while `VITE_SUPABASE_URL` +
+  `VITE_SUPABASE_ANON_KEY` clear the banner but leave `db`/`auth` pointed at the
+  `autobase-not-connected.invalid` placeholder.
+
+- Credentials moved out of the template and the offline notice made truthful
+  (2026-11-24). The owner had pasted live `VITE_SUPABASE_URL` /
+  `VITE_SUPABASE_ANON_KEY` / `VITE_KNOCK_*` values into `.env.example`, which is
+  the one env file this repo commits — so they would have entered git history,
+  and Vite never reads `.env.example` anyway. The values were copied verbatim
+  into the gitignored `.env` and `.env.example` was restored from `HEAD`, so the
+  build can see them and nothing secret is staged. `isSupabaseConfigured()` in
+  `src/integrations/supabase/client.ts` now returns false unless
+  `isBackendConfigured` is also true: `VITE_SUPABASE_*` only feed that bridge's
+  diagnostics, so they must not switch the "Portal sign-in is offline" notice
+  off while `db`/`auth` still point at `autobase-not-connected.invalid`. Rebuilt
+  with the values present (`VERCEL=1 npm run build:sites`, exit 0, 15.23 s,
+  `index-C9JRphQO.js`, 5.7 MB, `sw.js` stamped `build-096c666e7b5d`) and
+  deployed to production (receipt `289d92ba-9652-456f-a526-52e61a6a5c13`,
+  succeeded). Served bundle is byte-identical to the local build
+  (sha256 `77802454416b…`), HTTP 200, and the real Supabase host is inlined.
+  Sign-in still needs `VITE_AUTOBASE_URL` + `VITE_AUTOBASE_PUBLISHABLE_KEY`;
+  the Supabase pair alone cannot connect the backend.
+
+- Publish-button build failure fixed and production redeployed (2026-11-24).
+  The automatic build runs `npm run build` with no `VERCEL` env, so
+  `vite-plugin-checker` runs `tsc` and aborted on
+  `tsconfig.json(8,5): error TS5102: Option 'baseUrl' has been removed` — the
+  `baseUrl` entries in `tsconfig.json` and `tsconfig.app.json` were left over
+  from the TS 5.5 removal. Removed both (path aliases resolve relative to the
+  tsconfig directory now). `npm run build` now exits 0 (13.78 s, checker clean),
+  `npm run typecheck` exits 0, `npm test` 41/41 pass, no hidden paths in
+  `dist/`. Redeployed to production (receipt `e12e9911-53cb-4b09-ae72-bb6ecd3f698d`,
+  succeeded, deployed_at 14:39:01Z); served bundle byte-identical
+  (sha256 `77802454416b…`, HTTP 307 → canonical `https://www.africaofhopelr.org`).
+  All 8 secret bindings, 0 D1/R2 bindings and published state preserved; no
+  duplicate site created (site `9c1d5f42-7a3b-4c8e-9d21-6b0f4a2e7c15`).
