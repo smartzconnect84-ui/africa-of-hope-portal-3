@@ -5,7 +5,7 @@
 // `src/integrations/autobase/client.ts` (db = supabase-js API, auth = better-auth).
 // A missing backend must never crash the app: without valid env vars the db
 // client points at an unroutable placeholder and auth calls report unavailable.
-import { auth as platformAuth, db } from "../autobase/client";
+import { auth as platformAuth, db } from "../autobase/client.ts";
 
 // ── Connection info (kept for health panels / diagnostics) ───────────────────
 function readEnv(): Record<string, string | undefined> {
@@ -291,7 +291,7 @@ const bridgeAuth: AuthBridge = {
             }
           })()
         : "/reset-password";
-      const { sendPasswordReset } = await import("../autobase/client");
+      const { sendPasswordReset } = await import("../autobase/client.ts");
       await sendPasswordReset(email.trim().toLowerCase(), page);
       return { data: {}, error: null };
     } catch (err) {
