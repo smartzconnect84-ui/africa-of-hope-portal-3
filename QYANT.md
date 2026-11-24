@@ -86,6 +86,8 @@ reads.
 
 ## Change log
 
+- Built and deployed production with VITE_AUTOBASE_URL/PUBLISHABLE_KEY inlined (local build, since the platform Publish build does not pass Secrets to npm run build); live bundle is index-D27frlGA.js, byte-identical to local. Published=true, deployed_at 2026-11-24T15:26:17Z; sha256 3f6c918e… matches. Offline sign-in notice should now clear.
+
 - Wired the restored homepage to the live Supabase backend: added
   @supabase/supabase-js, password sign-in/sign-up with email confirmation
   note, separate staff sign-in, hash-routed public pages (programs,
